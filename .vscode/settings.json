@@ -1,0 +1,48 @@
+{
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "files.associations": {
+        ".eous-version": "yaml",
+        ".clangd": "yaml"
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/bazel-*": true,
+        "**/external": true
+    },
+
+    "evenBetterToml.taplo.configFile.path": "taplo.toml",
+    "bazel.lsp.command": "starpls",
+    "bazel.lsp.args": ["server", "--experimental_infer_ctx_attributes", "--experimental_enable_label_completions"],
+    "bazel.buildifierFixOnFormat": true,
+    "bazel.buildifierConfigJsonPath": ".buildifier.json",
+
+    // Nix-specific settings \\
+    "nix.enableLanguageServer": true,
+    "nix.serverSettings": {
+        "nil": {
+            "formatting": { "command": ["nix", "fmt", "--", "--"] },
+            "nix": {
+                "flake": {
+                    "autoArchive": true,
+                    "autoEvalInputs": true
+                }
+            }
+        }
+    },
+
+    "[cpp]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "[toml]": {
+        "editor.defaultFormatter": "tamasfe.even-better-toml"
+    },
+    "[nix]": {
+        "editor.defaultFormatter": "jnoortheen.nix-ide"
+    }
+}
