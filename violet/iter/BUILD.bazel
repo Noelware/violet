@@ -19,30 +19,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-module(
-    name = "violet",
-    version = "0.1.0",
-    compatibility_level = 0,
-    repo_name = "org_noelware_violet",
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "iter",
+    hdrs = [
+        "Iterator.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container",
+    ],
 )
 
-# for Noelware.Violet.Serialization
-bazel_dep(name = "nlohmann_json", version = "3.12.0")
-bazel_dep(name = "tomlplusplus", version = "3.4.0")
-
-bazel_dep(name = "abseil-cpp", version = "20250512.1")
-bazel_dep(name = "googletest", version = "1.17.0")
-bazel_dep(name = "rules_cc", version = "0.2.8")
-
-# Hedron's Compile Commands Extractor for Bazel
-# https://github.com/hedronvision/bazel-compile-commands-extractor
-bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
-git_override(
-    module_name = "hedron_compile_commands",
-    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
-    commit = "abb61a688167623088f8768cc9264798df6a9d10",
-    patches = [
-        "patches/000_hedron_compile_commands__fix_assertion.patch",
+cc_library(
+    name = "iterator",
+    hdrs = ["Iterator.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container",
     ],
-    patch_strip = 1,
+)
+
+cc_test(
+    name = "test",
+    size = "small",
+    srcs = ["Iterator.test.cpp"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":iterator",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
 )

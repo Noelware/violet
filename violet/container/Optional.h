@@ -38,25 +38,11 @@ namespace Noelware::Violet {
 
 constexpr auto Nothing = std::nullopt; ///< Newtype for [`std::nullopt`].
 
-// template<typename T>
-// struct Iter;
-
 /// A **optional** value.
 template<typename T>
 struct Optional final {
     /// Alias to get the type `T` of this [`Optional`].
     using Type = T;
-
-    /// Constructs a [`Optional`] from in-place arguments to construct type `T`.
-    /// @param args A list of arguments to use when constructing type `T`.
-    template<typename... Args>
-    constexpr static auto Make(Args&&... args) -> Optional<T>
-    {
-        Optional opt;
-        opt.construct(VIOLET_FWD(Args, args)...);
-
-        return opt;
-    }
 
     /// Creates a empty, disengaged optional value.
     constexpr Optional() noexcept = default;
@@ -64,8 +50,10 @@ struct Optional final {
     /// Creates a empty, disengaged optional value from a [`Nothing`]/[`std::nullopt`] value.
     constexpr Optional(std::nullopt_t) noexcept {} // NOLINT(google-explicit-constructor)
 
+    /// @hidden
+    /// @internal
     template<typename... Args>
-    constexpr explicit Optional(std::in_place_t, Args&&... args)
+    constexpr explicit(false) Optional(std::in_place_t, Args&&... args)
     {
         this->construct(VIOLET_FWD(Args, args)...);
     }
@@ -630,12 +618,14 @@ private:
     }
 };
 
-// /// A iterator that implements [`Noelware::Violet::Iterable`] that returns the value
-// /// of the optional and returns `Nothing` after other `Next()` chains.
-// template<typename T>
-// struct Iter final {
-// private:
-//     friend struct Optional<T>;
-// };
+/// Constructs a new [`Optional`] with in-place arguments, similar to Rust's
+/// [`std::option::Option::Some`].
+///
+/// [`std::option::Option::Some`]: https://doc.rust-lang.org/stable/std/option/enum.Option.html#variant-Some
+template<typename T, typename... Args>
+constexpr static auto Some(Args&&... args) -> Optional<T>
+{
+    return { std::in_place, VIOLET_FWD(Args, args)... };
+}
 
 } // namespace Noelware::Violet

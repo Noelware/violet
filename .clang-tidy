@@ -37,7 +37,9 @@ Checks: >
   -readability-magic-numbers,
   -cppcoreguidelines-macro-usage,
   -readability-convert-member-functions-to-static,
-  -cppcoreguidelines-non-private-member-variables-in-classes
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -google-readability-braces-around-statements,
+  -readability-braces-around-statements
 
 CheckOptions:
   - {key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor, value: true}

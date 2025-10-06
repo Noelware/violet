@@ -22,6 +22,16 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
 cc_library(
+    name = "container",
+    hdrs = [
+        "Optional.h",
+        "Result.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["//violet"],
+)
+
+cc_library(
     name = "optional",
     hdrs = ["Optional.h"],
     visibility = ["//visibility:public"],

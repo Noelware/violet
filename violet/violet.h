@@ -35,7 +35,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -60,6 +59,9 @@ concept Stringify = requires(T ty) {
 template<typename Fun, typename... Args>
 concept Callable = std::invocable<Fun, Args...>;
 
+template<typename Fun, typename ShouldReturn, typename... Args>
+concept CallableShouldReturn = std::convertible_to<std::invoke_result_t<Fun, Args...>, ShouldReturn>;
+
 using int8 = std::int8_t; ///< Newtype for [`std::int8_t`].
 using int16 = std::int16_t; ///< Newtype for [`std::int16_t`].
 using int32 = std::int32_t; ///< Newtype for [`std::int32_t`].
@@ -82,6 +84,9 @@ using Condvar = std::condition_variable; ///< Newtype for [`std::condition_varia
 
 template<typename Mutex = Noelware::Violet::Mutex>
 using UniqueLock = std::unique_lock<Mutex>; ///< Newtype for [`std::unique_lock`].
+
+template<typename T>
+using SharedPtr = std::shared_ptr<T>; ///< Newtype for [`std::shared_ptr`].
 
 template<typename T>
 using Vec = std::vector<T>; ///< Newtype for [`std::vector`].
@@ -166,3 +171,4 @@ constexpr auto ToString(uint128 val) -> String
 #define VIOLET_UNIQUE_PTR(TYPE, VALUE, ...) ::std::make_unique<TYPE>(VALUE, ##__VA_ARGS__)
 #define VIOLET_FWD(TYPE, VALUE) ::std::forward<TYPE>(VALUE)
 #define VIOLET_MOVE(VALUE) ::std::move(VALUE)
+#define VIOLET_ANY(TYPE, VALUE) ::std::make_any<TYPE>(VALUE)
