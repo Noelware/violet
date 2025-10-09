@@ -18,7 +18,31 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//
-//! # 🌺💜 `violet/serialization/Deserializable.h`
 
-#pragma once
+#include "violet/backtrace/Backtrace.h"
+#include <iostream>
+
+namespace {
+
+auto func2()
+{
+    std::cout << "at func2!\n";
+}
+
+auto func1()
+{
+    std::cout << "at func1!\n";
+
+    auto bt = Noelware::Violet::Backtrace::Capture();
+    std::cout << bt << '\n';
+
+    func2();
+}
+
+} // namespace
+
+auto main() -> int
+{
+    Noelware::Violet::InitWin32SymbolInitialization();
+    func1();
+}

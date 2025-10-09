@@ -118,6 +118,9 @@ namespace Iterators::Adapters {
     template<Iterable Impl>
     struct Peekable;
 
+    template<Iterable Impl>
+    struct Enumerate;
+
 } // namespace Iterators::Adapters
 
 /// The bound on the remaining length of a [`Iterator`].
@@ -235,9 +238,19 @@ struct Iterator {
         return Iterators::Adapters::Filter<Impl, Pred>(VIOLET_MOVE(getThisObject()), VIOLET_MOVE(pred));
     }
 
+    auto Enumerate() & noexcept
+    {
+        return Iterators::Adapters::Enumerate<Impl>(getThisObject());
+    }
+
+    auto Enumerate() && noexcept
+    {
+        return Iterators::Adapters::Enumerate<Impl>(VIOLET_MOVE(getThisObject()));
+    }
+
     template<typename Pred>
         requires Callable<Pred, IterableType<Impl>> && CallableShouldReturn<Pred, bool, IterableType<Impl>>
-    auto Any(Pred pred) &
+    auto Any(Pred pred) & -> bool
     {
         while (auto value = this->Next()) {
             if (std::invoke(pred, *value)) {
@@ -250,7 +263,7 @@ struct Iterator {
 
     template<typename Pred>
         requires Callable<Pred, IterableType<Impl>> && CallableShouldReturn<Pred, bool, IterableType<Impl>>
-    auto Any(Pred pred) &&
+    auto Any(Pred pred) && -> bool
     {
         while (auto value = this->Next()) {
             if (std::invoke(pred, *value)) {
@@ -481,6 +494,21 @@ namespace Iterators::Adapters {
             return elem == 0 ? Some<usize>(elem) : this->n_iter.Nth(nth - 1);
         }
 
+        auto Nth(usize nth) &&
+        {
+            auto val = this->n_peeked.Take();
+            if (!val)
+                return this->n_iter.Nth(nth);
+
+            Optional<Item>& value = val.Value();
+            if (!value) {
+                return decltype(this->n_iter.Next())(Nothing);
+            }
+
+            const usize& elem = value.Value();
+            return elem == 0 ? Some<usize>(elem) : this->n_iter.Nth(nth - 1);
+        }
+
     private:
         friend struct Noelware::Violet::Iterator<Impl>;
 
@@ -491,6 +519,72 @@ namespace Iterators::Adapters {
 
         Impl n_iter;
         Optional<Optional<Item>> n_peeked = Nothing;
+    };
+
+    template<Iterable Impl>
+    struct Enumerate final: public Iterator<Enumerate<Impl>> {
+        using Item = Pair<usize, IterableType<Impl>>;
+
+        auto Next() -> Optional<Item>
+        {
+            if (auto item = this->n_iter.Next()) {
+                usize count = this->n_idx;
+                this->n_idx++;
+
+                return std::make_pair(count, *item);
+            }
+
+            return Nothing;
+        }
+
+        auto Nth(usize nth) &
+        {
+            if (auto item = this->n_iter.Nth(nth)) {
+                usize count = this->n_idx + nth;
+                this->n_idx = count + 1;
+
+                return std::make_pair(count, *item);
+            }
+
+            return Nothing;
+        }
+
+        auto Nth(usize nth) &&
+        {
+            if (auto item = this->n_iter.Nth(nth)) {
+                usize count = this->n_idx + nth;
+                this->n_idx = count + 1;
+
+                return std::make_pair(count, *item);
+            }
+
+            return Nothing;
+        }
+
+        [[nodiscard]] auto SizeHint() const noexcept -> Noelware::Violet::SizeHint
+        {
+            // clang-format off
+            if constexpr (requires(Impl impl) {
+                { impl.SizeHint() } -> std::same_as<Noelware::Violet::SizeHint>;
+            }) {
+                // clang-format on
+                Noelware::Violet::SizeHint hint = this->n_iter.SizeHint();
+                return { 0, hint.High };
+            }
+
+            return {};
+        }
+
+    private:
+        friend struct Noelware::Violet::Iterator<Impl>;
+
+        explicit Enumerate(Impl iterator)
+            : n_iter(iterator)
+        {
+        }
+
+        Impl n_iter;
+        usize n_idx = 0;
     };
 
 } // namespace Iterators::Adapters

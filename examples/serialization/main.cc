@@ -25,18 +25,21 @@
 
 auto main() -> int
 {
-    auto user = User {
-        .FullName = "Noel Towa",
-        .Age = 21,
-        .Address = Address {
-            .Address1 = "123 Polar Bear Parkway",
-            .Address2 = Some<String>("Unit 3621"),
-            .City = "Fremont",
-            .State = "CA",
-            .PostalCode = 93621,
-        },
+    // clang-format off
+    User user {
+        .FirstName = "Noel",
+        .LastName = "Towa",
+        .Username = "noeltowa",
+        .Addresses = {
+            {
+                .Street = "123 Polar Bear Parkway (Unit 3621)",
+                .City = "Fremont",
+                .State = State::CA,
+                .PostalCode = 93621
+            }
+        }
     };
+    // clang-format on
 
-    std::cout << Noelware::Violet::ToString(user) << "\n\n";
-    std::cout << "serialization name: " << Noelware::Violet::Serialization::Meta<User>::name << '\n';
+    std::cout << Noelware::Violet::ToString(user);
 }

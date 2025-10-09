@@ -19,26 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary")
 
-package(default_visibility = ["//visibility:public"])
-
-cc_library(
-    name = "metadata",
-    hdrs = ["Metadata.h"],
-    deps = [
-        "//violet",
-        "//violet/container:optional",
-    ],
-)
-
-cc_library(
-    name = "serialization",
-    hdrs = [
-        "Metadata.h",
-    ],
-    deps = [
-        "//violet",
-        "//violet/container:result",
-    ],
+cc_binary(
+    name = "backtrace",
+    srcs = ["main.cc"],
+    deps = ["//violet/backtrace"],
 )

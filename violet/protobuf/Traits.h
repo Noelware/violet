@@ -18,7 +18,54 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//
-//! # 🌺💜 `violet/serialization/Deserializable.h`
 
 #pragma once
+
+#include <concepts>
+
+namespace Noelware::Violet::Protobuf {
+
+/// C++20 concept to require the constraint that `T::FromProtobuf(const Proto&)` exists and
+/// returns type `T`.
+///
+/// ## Example
+/// ```cpp
+/// #include "violet/protobuf/Traits.h"
+/// #include "violet/violet.h"
+/// #include "helloworld.pb.h"
+///
+/// using namespace Noelware::Violet;
+///
+/// struct User final {
+///
+/// };
+/// ```
+template<typename T, typename Proto>
+concept From = requires(const Proto& proto) {
+    { T::FromProtobuf(proto) } -> std::same_as<T>;
+};
+
+template<typename T, typename Proto>
+concept Into = requires(T ty) {
+    { ty.IntoProtobuf() } -> std::same_as<Proto>;
+};
+
+} // namespace Noelware::Violet::Protobuf
+
+namespace Noelware::Violet {
+
+template<typename T, typename Proto>
+    requires Protobuf::From<T, Proto>
+inline auto FromProtobuf(const Proto& proto) -> T
+{
+    return T::FromProtobuf(proto);
+}
+
+template<typename Proto, typename T>
+    requires Protobuf::Into<T, Proto>
+inline auto IntoProtobuf(const T& value) -> Proto
+{
+    return value.IntoProtobuf();
+}
+
+} // namespace Noelware::Violet

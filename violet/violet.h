@@ -42,6 +42,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace Noelware::Violet {
@@ -102,6 +103,9 @@ using Map = std::map<K, V>; ///< Newtype for [`std::map`].
 
 template<typename K, typename V>
 using UnorderedMap = std::unordered_map<K, V>; ///< Newtype for [`std::unordered_map`].
+
+template<typename T1, typename T2>
+using Pair = std::pair<T1, T2>; ///< Newtype for [`std::pair`].
 
 inline auto ToString() noexcept -> String
 {
@@ -172,3 +176,8 @@ constexpr auto ToString(uint128 val) -> String
 #define VIOLET_FWD(TYPE, VALUE) ::std::forward<TYPE>(VALUE)
 #define VIOLET_MOVE(VALUE) ::std::move(VALUE)
 #define VIOLET_ANY(TYPE, VALUE) ::std::make_any<TYPE>(VALUE)
+
+#define VIOLET_TO_STRING(TYPE, NAME, BLOCK)                                                                            \
+    namespace Noelware::Violet {                                                                                       \
+        inline auto ToString(TYPE NAME) -> ::Noelware::Violet::String BLOCK                                            \
+    }
