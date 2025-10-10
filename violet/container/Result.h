@@ -50,37 +50,37 @@ struct [[nodiscard("always check its error state")]] Result final {
 
     Result() = delete; /// do not allow construction of a default `Result`.
 
-    constexpr explicit(false) Result(const T& ok)
+    constexpr VIOLET_IMPLICIT Result(const T& ok)
         : n_isOk(true)
     {
         ::new (&this->n_storage.ok) T(ok);
     }
 
-    constexpr explicit(false) Result(T&& ok) noexcept(std::is_nothrow_move_constructible_v<T>)
+    constexpr VIOLET_IMPLICIT Result(T&& ok) noexcept(std::is_nothrow_move_constructible_v<T>)
         : n_isOk(true)
     {
         ::new (&this->n_storage.ok) T(VIOLET_MOVE(ok));
     }
 
-    constexpr explicit(false) Result(const Err<E>& err)
+    constexpr VIOLET_IMPLICIT Result(const Err<E>& err)
     {
         ::new (&this->n_storage.error) Err<E>(err);
     }
 
-    constexpr explicit(false) Result(Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<T>)
+    constexpr VIOLET_IMPLICIT Result(Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<T>)
     {
         ::new (&this->n_storage.error) Err<E>(VIOLET_MOVE(err));
     }
 
     template<typename U>
-    constexpr explicit(false) Result(const U& err)
+    constexpr VIOLET_IMPLICIT Result(const U& err)
         requires(std::is_convertible_v<U, E>)
     {
         ::new (&this->n_storage.error) Err<E>(err);
     }
 
     template<typename U>
-    constexpr explicit(false) Result(U&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
+    constexpr VIOLET_IMPLICIT Result(U&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
         requires(std::is_convertible_v<U, E>)
     {
         ::new (&this->n_storage.error) Err<E>(VIOLET_FWD(U, err));
@@ -149,17 +149,17 @@ struct [[nodiscard("always check its error state")]] Result final {
         return *this;
     }
 
-    constexpr explicit operator bool()
+    constexpr VIOLET_IMPLICIT operator bool()
     {
         return this->n_isOk;
     }
 
-    constexpr explicit operator std::expected<T, E>()
+    constexpr VIOLET_IMPLICIT operator std::expected<T, E>()
     {
         return this->n_isOk ? std::expected<T, E>(*Value()) : Err(*Error());
     }
 
-    constexpr explicit operator std::unexpected<E>()
+    constexpr VIOLET_IMPLICIT operator std::unexpected<E>()
     {
         assert(!this->n_isOk);
         return Err(*Error());
@@ -247,14 +247,14 @@ private:
         Err<E> error;
 
         Storage() {}
-        ~Storage() {};
+        ~Storage() {}
     } n_storage;
 
     void destroy()
     {
         if (this->n_isOk) {
             if constexpr (!std::is_trivially_destructible_v<T>) {
-                this->n_storage.~T();
+                this->n_storage.ok.~T();
             }
         } else {
             if constexpr (!std::is_trivially_destructible_v<E>) {
@@ -278,14 +278,14 @@ struct [[nodiscard("always check the error state before discarding")]] Result<vo
 
     /// Constructs an error result from an `Err<E>`.
     /// @param err The error value to store.
-    constexpr explicit(false) Result(const Err<E>& err)
+    constexpr VIOLET_IMPLICIT Result(const Err<E>& err)
         : n_error(new Err<E>(err))
     {
     }
 
     /// Constructs an error result from an rvalue `Err<E>`.
     /// @param err The error value to move into storage.
-    constexpr explicit(false) Result(Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
+    constexpr VIOLET_IMPLICIT Result(Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
         : n_error(new Err<E>(VIOLET_MOVE(err)))
     {
     }
@@ -293,7 +293,7 @@ struct [[nodiscard("always check the error state before discarding")]] Result<vo
     /// Constructs an error result from a convertible type.
     /// @param err The error value to store (converted to `E`).
     template<typename U>
-    constexpr explicit(false) Result(const U& err)
+    constexpr VIOLET_IMPLICIT Result(const U& err)
         requires std::is_convertible_v<U, E>
         : n_error(new Err<E>(err))
     {
@@ -302,7 +302,7 @@ struct [[nodiscard("always check the error state before discarding")]] Result<vo
     /// Constructs an error result from a movable convertible type.
     /// @param err The error value to move into storage (converted to `E`).
     template<typename U>
-    constexpr explicit(false) Result(U&& err)
+    constexpr VIOLET_IMPLICIT Result(U&& err)
         requires std::is_convertible_v<U, E>
         : n_error(new Err<E>(VIOLET_FWD(U, err)))
     {

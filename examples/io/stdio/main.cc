@@ -19,25 +19,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "violet/container/Optional.h"
 #include "violet/core/StringRef.h"
-#include "violet/sys/Environment.h"
-#include "violet/violet.h"
+#include "violet/io/Stdio.h"
 
-#include <cstdlib>
-#include <unistd.h>
+#include <iostream>
 
-auto Noelware::Violet::System::GetEnvironmentVariable(StringRef key) noexcept -> Optional<String>
+// $GLIBC_ROOT/include/stdio.h:154:16: note: expanded from macro 'stdout'
+//   154 | #define stdout stdout
+//       |                ^
+#ifdef stdout
+#undef stdout
+#endif
+
+using namespace Noelware::Violet::IO; // NOLINT(google-build-using-namespace)
+
+auto main() -> int
 {
-    auto* res = std::getenv(key.Data());
-    if (res == nullptr) {
-        return Nothing;
+    Stdout stdout;
+    if (!stdout.Writeln("hello, world!")) {
+        std::cout << "internally failed to write to stdout\n";
+        return 1;
     }
 
-    return Some<String>(res);
-}
+    Stderr stderr;
+    if (!stderr.Writeln("this is in stderr")) {
+        std::cerr << "internally failed to write to stderr\n";
+        return 1;
+    }
 
-void Noelware::Violet::System::SetEnvironmentVariable(StringRef key, StringRef value, bool replace) noexcept
-{
-    setenv(key.Data(), value.Data(), static_cast<int>(replace));
+    Stdin stdin;
+    auto _ = stdout.Write("> write something: "); // NOLINT
+    if (auto contents = ReadToString(stdin)) {
+        if (contents.IsOk()) {
+            auto _ = stdout.Writeln(">> stdin:"); // NOLINT
+            auto _ = stdout.Write(contents.Value()); // NOLINT
+        }
+    }
+
+    return 0;
 }

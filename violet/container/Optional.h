@@ -48,12 +48,12 @@ struct Optional final {
     constexpr Optional() noexcept = default;
 
     /// Creates a empty, disengaged optional value from a [`Nothing`]/[`std::nullopt`] value.
-    constexpr Optional(std::nullopt_t) noexcept {} // NOLINT(google-explicit-constructor)
+    constexpr VIOLET_IMPLICIT Optional(std::nullopt_t) noexcept {}
 
     /// @hidden
     /// @internal
     template<typename... Args>
-    constexpr explicit(false) Optional(std::in_place_t, Args&&... args)
+    constexpr VIOLET_IMPLICIT Optional(std::in_place_t, Args&&... args)
     {
         this->construct(VIOLET_FWD(Args, args)...);
     }
@@ -61,7 +61,7 @@ struct Optional final {
     /// Constructs a [`Optional`] from a copy/move value.
     /// @param other The copied/moved value.
     template<typename U = T>
-    constexpr explicit Optional(U&& other)
+    constexpr VIOLET_EXPLICIT Optional(U&& other)
         requires(
             // Requires `U` is not the same as `Optional<U>` (fwds to `Optional<U>&&` constructor)
             !std::is_same_v<std::remove_cvref_t<U>, Optional> &&
@@ -77,7 +77,7 @@ struct Optional final {
 
     /// Copy constructor.
     /// @param other The other optional to copy from.
-    constexpr Optional(const Optional& other)
+    constexpr VIOLET_IMPLICIT Optional(const Optional& other)
     {
         if (other.n_hasValue) {
             this->construct(*other.ptr());
@@ -90,7 +90,7 @@ struct Optional final {
     /// This constructor is enabled if `T` is move constructible.
     ///
     /// @param other The other optional to move from.
-    constexpr Optional(Optional&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
+    constexpr VIOLET_IMPLICIT Optional(Optional&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
         requires std::is_move_constructible_v<T>
     {
         if (other.n_hasValue) {
@@ -105,7 +105,7 @@ struct Optional final {
     /// This constructor is enabled if `T` is copy constructible.
     ///
     /// @param other The other [`std::optional`] to copy.
-    constexpr Optional(const std::optional<T>& other) // NOLINT(google-explicit-constructor)
+    constexpr VIOLET_IMPLICIT Optional(const std::optional<T>& other)
         requires std::is_copy_constructible_v<T>
     {
         if (other.has_value()) {
@@ -119,8 +119,8 @@ struct Optional final {
     /// This constructor is enabled if `T` is move constructible.
     ///
     /// @param other The other [`std::optional`] to move.
-    // NOLINTNEXTLINE(google-explicit-constructor,cppcoreguidelines-rvalue-reference-param-not-moved)
-    constexpr Optional(std::optional<T>&& other)
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    constexpr VIOLET_IMPLICIT Optional(std::optional<T>&& other)
         requires std::is_move_constructible_v<T>
     {
         if (other.has_value()) {
@@ -479,13 +479,13 @@ struct Optional final {
     }
 
     /// Returns **true** if this [`Optional`] contains a value.
-    constexpr explicit operator bool()
+    constexpr VIOLET_IMPLICIT operator bool() const
     {
         return this->n_hasValue;
     }
 
     /// Allows translating this [`Optional`] into a [`std::optional`].
-    constexpr explicit operator std::optional<T>()
+    constexpr VIOLET_IMPLICIT operator std::optional<T>()
     {
         return this->n_hasValue ? std::optional<T>(*ptr()) : Nothing;
     }

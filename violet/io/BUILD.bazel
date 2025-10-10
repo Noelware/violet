@@ -22,24 +22,48 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_library(
-    name = "sys",
+    name = "io",
     visibility = ["//visibility:public"],
-    deps = [":environment"],
+    deps = [
+        ":read",
+        ":stdio",
+        ":write",
+    ],
 )
 
 cc_library(
-    name = "environment",
-    srcs = select({
-        "@platforms//os:linux": ["impl/environment/unix.cpp"],
-        "@platforms//os:macos": ["impl/environment/unix.cpp"],
-        "@platforms//os:windows": ["impl/environment/windows.cpp"],
-        "//conditions:default": ["impl/environment/unsupported.cpp"],
-    }),
-    hdrs = ["Environment.h"],
+    name = "read",
+    hdrs = ["Read.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//violet",
-        "//violet/container:optional",
+        "//violet/container:result",
+    ],
+)
+
+cc_library(
+    name = "write",
+    hdrs = ["Write.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container:result",
+    ],
+)
+
+cc_library(
+    name = "stdio",
+    srcs = select({
+        "@platforms//os:windows": ["impl/stdio.windows.cpp"],
+        "//conditions:default": ["impl/stdio.cpp"],
+    }),
+    hdrs = ["Stdio.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":read",
+        ":write",
+        "//violet",
+        "//violet/container:result",
         "//violet/core:stringref",
     ],
 )

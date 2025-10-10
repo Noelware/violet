@@ -41,7 +41,8 @@ Checks: >
   -google-readability-braces-around-statements,
   -readability-braces-around-statements,
   -cppcoreguidelines-avoid-c-arrays,
-  -modernize-avoid-c-arrays
+  -modernize-avoid-c-arrays,
+  -google-explicit-constructor
 
 CheckOptions:
   - {key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor, value: true}

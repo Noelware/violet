@@ -47,16 +47,6 @@
 
 namespace Noelware::Violet {
 
-/// C++ concept to require type `T` to have a `ToString` instance member that can
-/// stringify `T`.
-///
-/// NOTE: You can use the [`Noelware::Violet::ToString`] function to call any `Stringify`-able
-/// types as well.
-template<typename T>
-concept Stringify = requires(T ty) {
-    { ty.ToString() } -> std::convertible_to<std::string>;
-};
-
 template<typename Fun, typename... Args>
 concept Callable = std::invocable<Fun, Args...>;
 
@@ -115,14 +105,26 @@ inline auto ToString() noexcept -> String
 template<typename T>
 inline auto ToString(const T& val) -> String
 {
-    return VioletStringify(val);
+    if constexpr (requires { val.ToString(); }) {
+        return val.ToString();
+    } else if constexpr (requires { Noelware::Violet::ToString(val); }) {
+        return Noelware::Violet::ToString(val);
+    } else {
+        static_assert(sizeof(T) == 0, "`T` doesn't satisfy the `Stringify` concept");
+    }
 }
 
-template<Stringify S>
-inline auto ToString(const S& val) -> String
-{
-    return val.ToString();
-}
+/// C++ concept to require type `T` to have a `ToString` instance member that can
+/// stringify `T`.
+///
+/// NOTE: You can use the [`Noelware::Violet::ToString`] function to call any `Stringify`-able
+/// types as well.
+template<typename T>
+concept Stringify = requires(T ty) {
+    { ty.ToString() } -> std::convertible_to<std::string>;
+} || requires(const T& value) {
+    { Noelware::Violet::ToString(value) } -> std::convertible_to<std::string>;
+};
 
 inline auto ToString(const String& val) -> String
 {
@@ -181,3 +183,6 @@ constexpr auto ToString(uint128 val) -> String
     namespace Noelware::Violet {                                                                                       \
         inline auto ToString(TYPE NAME) -> ::Noelware::Violet::String BLOCK                                            \
     }
+
+#define VIOLET_IMPLICIT explicit(false)
+#define VIOLET_EXPLICIT explicit(true)

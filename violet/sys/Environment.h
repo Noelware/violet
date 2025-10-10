@@ -22,6 +22,7 @@
 #pragma once
 
 #include "violet/container/Optional.h"
+#include "violet/core/StringRef.h"
 #include "violet/violet.h"
 
 namespace Noelware::Violet::System {
@@ -34,9 +35,9 @@ namespace Noelware::Violet::System {
 ///
 /// @param key the environment variable to fetch
 /// @returns the result, `Nothing` if not found.
-auto GetEnvironmentVariable(const String& key) noexcept -> Optional<String>;
+auto GetEnvironmentVariable(StringRef key) noexcept -> Optional<String>;
 
 /// Sets the environment variable `key` into `value`.
-auto SetEnvironmentVariable(const String& key, const String& value, bool replace = false) noexcept;
+void SetEnvironmentVariable(StringRef key, StringRef value, bool replace = false) noexcept;
 
 } // namespace Noelware::Violet::System

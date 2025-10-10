@@ -19,25 +19,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "violet/container/Optional.h"
 #include "violet/core/StringRef.h"
-#include "violet/sys/Environment.h"
-#include "violet/violet.h"
+#include <gtest/gtest.h>
 
-#include <cstdlib>
-#include <unistd.h>
+using namespace Noelware::Violet; // NOLINT
 
-auto Noelware::Violet::System::GetEnvironmentVariable(StringRef key) noexcept -> Optional<String>
+TEST(StringRefs, BasicFunctionality)
 {
-    auto* res = std::getenv(key.Data());
-    if (res == nullptr) {
-        return Nothing;
-    }
+    StringRef abc("abc");
+    EXPECT_EQ(abc.Length(), 3);
+    EXPECT_EQ(abc.Data(), "abc");
+    EXPECT_TRUE(abc.StartsWith('a'));
+    EXPECT_TRUE(abc.StartsWith("ab"));
+    EXPECT_TRUE(abc.First());
+    EXPECT_TRUE(abc.Last());
 
-    return Some<String>(res);
+    StringRef empty;
+    EXPECT_EQ(empty, 0);
+    EXPECT_FALSE(empty.StartsWith('a'));
+    EXPECT_FALSE(empty.StartsWith("ab"));
+    EXPECT_FALSE(empty.First());
+    EXPECT_FALSE(empty.Last());
 }
 
-void Noelware::Violet::System::SetEnvironmentVariable(StringRef key, StringRef value, bool replace) noexcept
+TEST(StringRefs, Trimming)
 {
-    setenv(key.Data(), value.Data(), static_cast<int>(replace));
+    StringRef hello("  \t\nhello world \r\n");
+
+    EXPECT_TRUE(hello.TrimStart().StartsWith("hello"));
 }
+
+TEST(StringRefs, Strip) {}
+TEST(StringRefs, Split) {}
