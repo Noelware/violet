@@ -19,38 +19,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+# load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
-cc_library(
-    name = "iter",
-    hdrs = [
-        "Iterator.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container",
-    ],
-)
+# cc_library(
+#     name = "iter",
+#     hdrs = [
+#         "Iterator.h",
+#     ],
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         "//violet",
+#         "//violet/container",
+#     ],
+# )
 
-cc_library(
-    name = "iterator",
-    hdrs = ["Iterator.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container",
-    ],
-)
+# cc_library(
+#     name = "iterator",
+#     hdrs = ["Iterator.h"],
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         "//violet",
+#         "//violet/container",
+#     ],
+# )
 
-cc_test(
-    name = "test",
-    size = "small",
-    srcs = ["Iterator.test.cpp"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":iterator",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
-)
+# cc_test(
+#     name = "test",
+#     size = "small",
+#     srcs = ["Iterator.test.cpp"],
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         ":iterator",
+#         "@googletest//:gtest",
+#         "@googletest//:gtest_main",
+#     ],
+# )

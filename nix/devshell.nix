@@ -43,18 +43,27 @@
 
   # Alias for `llvmPackages_XX` that we aim to support. At the moment,
   # we develop Violet in LLVM 20 and above.
-  llvm = llvmPackages_20;
-  llvmStdenv =
-    (
-      if stdenv.hostPlatform.isLinux
-      then stdenvAdapters.useMoldLinker
-      else lib.id
-    )
-    llvm.stdenv;
+  llvm = let
+    oldStdenv = stdenv;
+  in rec {
+    version = "20";
+    pkgs = llvmPackages_20;
+    stdenv =
+      (
+        if oldStdenv.hostPlatform.isLinux
+        then stdenvAdapters.useMoldLinker
+        else lib.id
+      )
+      pkgs.stdenv;
+  };
 
   packages =
     [
-      llvm.clang-tools
+      # For sanitizers
+      llvm.pkgs.compiler-rt
+      llvm.pkgs.libcxx
+
+      llvm.pkgs.clang-tools
       bazel-buildtools
       pkg-config
       bazel_7
@@ -67,10 +76,39 @@
     ++ (lib.optional stdenv.isLinux linuxPackages)
     ++ (lib.optional stdenv.isDarwin darwinPackages);
 
-  mkShell' = mkShell.override {stdenv = llvmStdenv;};
+  mkShell' = mkShell.override {stdenv = llvm.stdenv;};
 in
   mkShell' {
     inherit packages;
 
     name = "eous-dev";
+    shellHook = ''
+            realresourcepath="${llvm.pkgs.compiler-rt.dev}"
+            cwd=$(pwd)
+
+            echo "==> patching *San include headers ~> $realresourcepath ... (editing .usr.bazelrc in $cwd)"
+            line="build:san --copt=-I$realresourcepath/include"
+
+            if [ ! -f "$cwd/.usr.bazelrc" ]; then
+              echo "==> \`.usr.bazelrc\` doesn't exist! adding proper configuration..."
+              touch "$cwd/.usr.bazelrc"
+
+              cat > "$cwd/.usr.bazelrc" <<EOF
+      # Workaround for missing standard C++ headers on NixOS
+      # Related issue: https://github.com/NixOS/nixpkgs/issues/150655
+      build --cxxopt=-xc++ --host_cxxopt=-xc++
+
+      # Workaround for missing C++ headers for *San configurations (ASan, TSan, etc...)
+      build:san --copt=-I$realresourcepath/include
+      EOF
+
+              echo "==> finished!"
+            else
+              if ! grep -Fxq "$line" "$cwd/.usr.bazelrc"; then
+                sed -i "/^build:san --copt=-I.*$/d" "$cwd/.usr.bazelrc"
+                echo "$line" >> "$cwd/.usr.bazelrc"
+                echo "==> updated \`.usr.bazelrc\` to include $realresourcepath for *San configurations"
+              fi
+            fi
+    '';
   }

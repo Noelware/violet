@@ -19,49 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// #include "violet/iter/Iterator.h"
-// #include "violet/violet.h"
+#include "violet/sys/Environment.h"
 
-// #include <gtest/gtest.h>
+auto Noelware::Violet::System::GetEnvironmentVariable(const String&) noexcept -> Optional<String>
+{
+    return Nothing;
+}
 
-// using namespace Noelware::Violet; // NOLINT(google-build-using-namespace)
-
-// TEST(Iterators, Enumerate)
-// {
-//     Vec<uint32> vi{ 1, 2, 3, 4, 5 };
-//     auto it = MkIterable(vi).Peekable();
-// }
-
-// TEST(Iterators, Count)
-// {
-//     Vec<uint32> vi{ 1, 2, 3, 4, 5 };
-//     auto it = MkIterable(vi);
-
-//     ASSERT_EQ(5, it.Count());
-// }
-
-// TEST(Iterators, AdvanceBy)
-// {
-//     Vec<uint32> vi{ 1, 2, 3, 4, 5 };
-//     auto it = MkIterable(vi);
-
-//     ASSERT_TRUE(it.AdvanceBy(1).IsOk());
-//     ASSERT_EQ(it.Next(), 2);
-// }
-
-// TEST(Iterators, Nth)
-// {
-//     Vec<uint32> vi{ 1, 2, 3 };
-//     auto it = MkIterable(vi);
-
-//     ASSERT_EQ(it.Nth(1), 2);
-// }
-
-// TEST(Iterators, Any)
-// {
-//     Vec<uint32> vi{ 0, 1, 2 };
-//     auto it = MkIterable(vi);
-
-//     ASSERT_TRUE(it.Any([](int num) { return num == 2; }));
-//     ASSERT_FALSE(it.Any([](int num) { return num == 5; }));
-// }
+auto Noelware::Violet::System::SetEnvironmentVariable(const String&, const String&, bool) noexcept {}

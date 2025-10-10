@@ -19,30 +19,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "violet/backtrace/Backtrace.h"
-#include <iostream>
+#include "violet/container/Optional.h"
+#include "violet/sys/Environment.h"
+#include "violet/violet.h"
 
-namespace {
+#include <cstdlib>
+#include <unistd.h>
 
-auto func2()
+auto Noelware::Violet::System::GetEnvironmentVariable(const String& key) noexcept -> Optional<String>
 {
-    std::cout << "at func2!\n";
+    auto* res = std::getenv(key.c_str());
+    if (res == nullptr) {
+        return Nothing;
+    }
+
+    return Some<String>(res);
 }
 
-auto func1()
+auto Noelware::Violet::System::SetEnvironmentVariable(const String& key, const String& value, bool replace) noexcept
 {
-    std::cout << "at func1!\n";
-
-    auto bt = Noelware::Violet::Backtrace::Capture();
-    std::cout << bt << '\n';
-
-    func2();
-}
-
-} // namespace
-
-auto main() -> int
-{
-    Noelware::Violet::InitWin32SymbolInitialization();
-    func1();
+    setenv(key.c_str(), value.c_str(), static_cast<int>(replace));
 }

@@ -19,10 +19,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 
-cc_binary(
-    name = "backtrace",
-    srcs = ["main.cc"],
-    deps = ["//violet/backtrace"],
+cc_library(
+    name = "sys",
+    visibility = ["//visibility:public"],
+    deps = [":environment"],
+)
+
+cc_library(
+    name = "environment",
+    srcs = select({
+        "@platforms//os:linux": ["impl/environment/unix.cpp"],
+        "@platforms//os:macos": ["impl/environment/unix.cpp"],
+        "@platforms//os:windows": ["impl/environment/windows.cpp"],
+        "//conditions:default": ["impl/environment/unsupported.cpp"],
+    }),
+    hdrs = ["Environment.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container:optional",
+    ],
 )

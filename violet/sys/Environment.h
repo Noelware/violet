@@ -19,27 +19,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <iostream>
+#pragma once
 
-#include "main.h"
+#include "violet/container/Optional.h"
+#include "violet/violet.h"
 
-auto main() -> int
-{
-    // clang-format off
-    User user {
-        .FirstName = "Noel",
-        .LastName = "Towa",
-        .Username = "noeltowa",
-        .Addresses = {
-            {
-                .Street = "123 Polar Bear Parkway (Unit 3621)",
-                .City = "Fremont",
-                .State = State::CA,
-                .PostalCode = 93621
-            }
-        }
-    };
-    // clang-format on
+namespace Noelware::Violet::System {
 
-    std::cout << Noelware::Violet::ToString(user);
-}
+/// Returns a system environment variable with a given key, returning
+/// `Nothing` if it wasn't found.
+///
+/// ## Remarks
+/// This will always return `Nothing` on unsupported systems.
+///
+/// @param key the environment variable to fetch
+/// @returns the result, `Nothing` if not found.
+auto GetEnvironmentVariable(const String& key) noexcept -> Optional<String>;
+
+/// Sets the environment variable `key` into `value`.
+auto SetEnvironmentVariable(const String& key, const String& value, bool replace = false) noexcept;
+
+} // namespace Noelware::Violet::System

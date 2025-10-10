@@ -29,15 +29,18 @@ build:opt --compilation_mode=opt
 common --enable_platform_specific_config
 
 # Enable C++26 support
-build:linux --cxxopt='-std=c++26'
-build:linux --host_cxxopt='-std=c++26'
-build:macos --cxxopt='-std=c++26'
-build:macos --host_cxxopt='-std=c++26'
-build:windows --cxxopt='/std=c++latest'
-build:windows --host_cxxopt='/std=c++latest'
+build:linux --cxxopt='-std=c++26' --host_cxxopt='-std=c++26' --client_env=BAZEL_CXXOPTS=-std=c++26
+build:macos --cxxopt='-std=c++26' --host_cxxopt='-std=c++26' --client_env=BAZEL_CXXOPTS=-std=c++26
+build:windows --cxxopt='/std:c++latest' --host_cxxopt='/std:c++latest' --client_env=BAZEL_CXXOPTS=/std:c++latest
 
 # CI-based configuration
 build:ci --nokeep_state_after_build
+
+## ~ common configuration for sanitizers
+common:san --config=dbg --strip=never --copt=-O0 --copt=-fno-omit-frame-pointer
+
+## ~ `--config=asan` enables Address Sanitizer (ASan)
+common:asan --config=san --copt=-fsanitize=address --linkopt=-fsanitize=address
 
 # Import .usr.bazelrc if it exists
 try-import %workspace%/.usr.bazelrc
