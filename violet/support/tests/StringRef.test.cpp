@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "violet/core/StringRef.h"
+#include "violet/support/StringRef.h"
 #include <gtest/gtest.h>
 
 using namespace Noelware::Violet; // NOLINT

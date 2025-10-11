@@ -24,6 +24,7 @@
 #pragma once
 
 #include "violet/container/Result.h"
+#include "violet/io/Error.h"
 #include "violet/violet.h"
 
 #include <algorithm>
@@ -31,7 +32,7 @@
 
 namespace Noelware::Violet::IO {
 
-inline auto Read(Vec<uint8>& data, Span<uint8> buf) noexcept -> Result<usize, std::error_code>
+inline auto Read(Vec<uint8>& data, Span<uint8> buf) noexcept -> Result<usize, Error>
 {
     usize minCopy = std::min(buf.size(), data.size());
     std::copy_n(data.begin(), minCopy, buf.begin());
@@ -41,13 +42,13 @@ inline auto Read(Vec<uint8>& data, Span<uint8> buf) noexcept -> Result<usize, st
 
 template<typename T>
 concept Readable = requires(T ty, Span<uint8> buf) {
-    { ty.Read(buf) } -> std::same_as<Result<usize, std::error_code>>;
+    { ty.Read(buf) } -> std::same_as<Result<usize, Error>>;
 } || requires(T& data, Span<uint8> buf) {
-    { Noelware::Violet::IO::Read(data, buf) } -> std::same_as<Result<usize, std::error_code>>;
+    { Noelware::Violet::IO::Read(data, buf) } -> std::same_as<Result<usize, Error>>;
 };
 
 template<Readable R>
-inline auto ReadToString(R& reader) -> Result<String, std::error_code>
+inline auto ReadToString(R& reader) -> Result<String, Error>
 {
     String buf;
     constexpr static auto CHUNK_SIZE = 4096;

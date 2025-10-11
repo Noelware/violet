@@ -18,43 +18,47 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+//
+//! # 🌺💜 `violet/support/Demangle.h`
+//! A utility C++ header to demangle a C++ type name.
 
-#include "violet/io/Stdio.h"
-#include "violet/support/StringRef.h"
+#pragma once
 
-#include <iostream>
+#include "violet/violet.h"
+#include <memory>
 
-// $GLIBC_ROOT/include/stdio.h:154:16: note: expanded from macro 'stdout'
-//   154 | #define stdout stdout
-//       |                ^
-#ifdef stdout
-#undef stdout
+// For Clang and GCC, we can check if we have the `cxxabi.h` header.
+#if defined(__has_include) && VIOLET_IS_CLANG || VIOLET_IS_GCC
+#if __has_include(<cxxabi.h>)
+#define VIOLET_HAS_CXXABI_HDR
+#else
+#define VIOLET_HAS_CXXABI_HDR
+#endif
 #endif
 
-using namespace Noelware::Violet::IO; // NOLINT(google-build-using-namespace)
+#ifdef VIOLET_HAS_CXXABI_HDR
+#include <cxxabi.h>
+#endif
 
-auto main() -> int
+namespace Noelware::Violet::Utility {
+
+#ifdef VIOLET_HAS_CXXABI_HDR
+
+inline auto DemangleCXXName(CStr name) -> String
 {
-    Stdout stdout;
-    if (!stdout.Writeln("hello, world!")) {
-        std::cout << "internally failed to write to stdout\n";
-        return 1;
-    }
+    int32 status = -1;
+    std::unique_ptr<char, void (*)(void*)> res(abi::__cxa_demangle(name, nullptr, nullptr, &status), std::free);
 
-    Stderr stderr;
-    if (!stderr.Writeln("this is in stderr")) {
-        std::cerr << "internally failed to write to stderr\n";
-        return 1;
-    }
-
-    Stdin stdin;
-    auto _ = stdout.Write("> write something: "); // NOLINT
-    if (auto contents = ReadToString(stdin)) {
-        if (contents.IsOk()) {
-            auto _ = stdout.Writeln(">> stdin:"); // NOLINT
-            auto _ = stdout.Write(contents.Value()); // NOLINT
-        }
-    }
-
-    return 0;
+    return status == 0 ? res.get() : name;
 }
+
+#else
+
+inline auto DemangleCXXName(CStr name) -> String
+{
+    return name;
+}
+
+#endif
+
+} // namespace Noelware::Violet::Utility

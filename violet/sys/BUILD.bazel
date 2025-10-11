@@ -40,6 +40,6 @@ cc_library(
     deps = [
         "//violet",
         "//violet/container:optional",
-        "//violet/core:stringref",
+        "//violet/support:stringref",
     ],
 )

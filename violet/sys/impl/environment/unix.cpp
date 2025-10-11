@@ -20,7 +20,7 @@
 // SOFTWARE.
 
 #include "violet/container/Optional.h"
-#include "violet/core/StringRef.h"
+#include "violet/support/StringRef.h"
 #include "violet/sys/Environment.h"
 #include "violet/violet.h"
 

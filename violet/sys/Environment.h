@@ -22,7 +22,7 @@
 #pragma once
 
 #include "violet/container/Optional.h"
-#include "violet/core/StringRef.h"
+#include "violet/support/StringRef.h"
 #include "violet/violet.h"
 
 namespace Noelware::Violet::System {

@@ -107,7 +107,9 @@ inline auto ToString(const T& val) -> String
 {
     if constexpr (requires { val.ToString(); }) {
         return val.ToString();
-    } else if constexpr (requires { Noelware::Violet::ToString(val); }) {
+    } else if constexpr (requires {
+                             { Noelware::Violet::ToString(val) } -> std::convertible_to<String>;
+                         }) {
         return Noelware::Violet::ToString(val);
     } else {
         static_assert(sizeof(T) == 0, "`T` doesn't satisfy the `Stringify` concept");
@@ -180,7 +182,9 @@ constexpr auto ToString(uint128 val) -> String
 #define VIOLET_ANY(TYPE, VALUE) ::std::make_any<TYPE>(VALUE)
 
 #define VIOLET_TO_STRING(TYPE, NAME, BLOCK)                                                                            \
-    inline auto Noelware::Violet::ToString(TYPE NAME) -> ::Noelware::Violet::String BLOCK
+    namespace Noelware::Violet {                                                                                       \
+        inline auto ToString(TYPE NAME) -> ::Noelware::Violet::String BLOCK                                            \
+    }
 
 #define VIOLET_IMPLICIT
 #define VIOLET_EXPLICIT explicit
@@ -212,3 +216,32 @@ constexpr auto ToString(uint128 val) -> String
 // clang-format off
 #define VIOLET_OSTREAM_IMPL(TYPE) friend auto operator<<(::std::ostream& os, TYPE self) -> ::std::ostream&
 // clang-format on
+
+#if defined(__clang__)
+#define VIOLET_COMPILER "clang"
+#define VIOLET_IS_CLANG 1
+#define VIOLET_IS_GCC 1
+#define VIOLET_IS_MSVC 0
+#elif defined(__GNUC__)
+#define VIOLET_COMPILER "gcc"
+#define VIOLET_IS_CLANG 0
+#define VIOLET_IS_GCC 1
+#define VIOLET_IS_MSVC 0
+#elif defined(_MSC_VER)
+#define VIOLET_COMPILER "msvc"
+#define VIOLET_IS_CLANG 0
+#define VIOLET_IS_GCC 0
+#define VIOLET_IS_MSVC 1
+#endif
+
+#ifdef _MSC_VER
+#if _MSC_VER >= 1930
+#define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2022"
+#elif _MSC_VER >= 1920
+#define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2019"
+#elif _MSC_VER >= 1910
+#define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2017"
+#else
+#error "Violet requires Visual Studio 2017 or higher to be compiled correctly"
+#endif
+#endif

@@ -19,42 +19,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "violet/io/Stdio.h"
-#include "violet/support/StringRef.h"
+#include "violet/io/Error.h"
 
-#include <iostream>
-
-// $GLIBC_ROOT/include/stdio.h:154:16: note: expanded from macro 'stdout'
-//   154 | #define stdout stdout
-//       |                ^
-#ifdef stdout
-#undef stdout
-#endif
-
-using namespace Noelware::Violet::IO; // NOLINT(google-build-using-namespace)
-
-auto main() -> int
+Noelware::Violet::IO::PlatformError::PlatformError()
+    : n_value(-1)
 {
-    Stdout stdout;
-    if (!stdout.Writeln("hello, world!")) {
-        std::cout << "internally failed to write to stdout\n";
-        return 1;
-    }
+}
 
-    Stderr stderr;
-    if (!stderr.Writeln("this is in stderr")) {
-        std::cerr << "internally failed to write to stderr\n";
-        return 1;
-    }
-
-    Stdin stdin;
-    auto _ = stdout.Write("> write something: "); // NOLINT
-    if (auto contents = ReadToString(stdin)) {
-        if (contents.IsOk()) {
-            auto _ = stdout.Writeln(">> stdin:"); // NOLINT
-            auto _ = stdout.Write(contents.Value()); // NOLINT
-        }
-    }
-
-    return 0;
+auto Noelware::Violet::IO::PlatformError::ToString() const -> String
+{
+    return "";
 }

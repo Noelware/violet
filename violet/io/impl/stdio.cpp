@@ -33,26 +33,28 @@ using Noelware::Violet::IO::Locked::Stdout;
 
 Stdout::Stdout() = default;
 
-auto Stdout::Write(Span<const uint8> buf) noexcept -> Result<usize, std::error_code>
+auto Stdout::Write(Span<const uint8> buf) noexcept -> Result<usize, Error>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
 
     // Don't try to write more than what `std::streamsize` can handle.
-    if (buf.size() > std::numeric_limits<std::streamsize>::max()) {
-        return Err(std::make_error_code(std::errc::message_size));
+    auto limit = std::numeric_limits<std::streamsize>::max();
+    if (buf.size() > limit) {
+        return Err(IO::Error::New<String>(IO::ErrorKind::InvalidData,
+            std::format("buffer size {} is over the limit for `std::streamsize` ({})", buf.size(), limit)));
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     std::cout.write(reinterpret_cast<CStr>(buf.data()), static_cast<std::streamsize>(buf.size()));
     if (std::cout.fail()) {
-        return Err(std::make_error_code(std::errc::io_error));
+        return Err(IO::Error::New<String>(IO::ErrorKind::InvalidInput, "failed to write to stdout"));
     }
 
     std::cout.flush();
     return buf.size();
 }
 
-auto Stdout::Flush() const noexcept -> Result<void, std::error_code>
+auto Stdout::Flush() const noexcept -> Result<void, Error>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
     std::cout.flush();
@@ -62,25 +64,28 @@ auto Stdout::Flush() const noexcept -> Result<void, std::error_code>
 
 Stderr::Stderr() = default;
 
-auto Stderr::Write(Span<const uint8> buf) noexcept -> Result<usize, std::error_code>
+auto Stderr::Write(Span<const uint8> buf) noexcept -> Result<usize, Error>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
 
     // Don't try to write more than what `std::streamsize` can handle.
-    if (buf.size() > std::numeric_limits<std::streamsize>::max()) {
-        return Err(std::make_error_code(std::errc::message_size));
+    auto limit = std::numeric_limits<std::streamsize>::max();
+    if (buf.size() > limit) {
+        return Err(IO::Error::New<String>(IO::ErrorKind::InvalidData,
+            std::format("buffer size {} is over the limit for `std::streamsize` ({})", buf.size(), limit)));
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     std::cerr.write(reinterpret_cast<CStr>(buf.data()), static_cast<std::streamsize>(buf.size()));
-    if (std::cerr.bad()) {
-        return Err(std::make_error_code(std::errc::io_error));
+    if (std::cerr.fail()) {
+        return Err(IO::Error::New<String>(IO::ErrorKind::InvalidInput, "failed to write to stdout"));
     }
 
+    std::cerr.flush();
     return buf.size();
 }
 
-auto Stderr::Flush() const noexcept -> Result<void, std::error_code>
+auto Stderr::Flush() const noexcept -> Result<void, Error>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
     std::cerr.flush();
@@ -90,19 +95,21 @@ auto Stderr::Flush() const noexcept -> Result<void, std::error_code>
 
 Stdin::Stdin() = default;
 
-auto Stdin::Read(Span<uint8> buf) noexcept -> Result<usize, std::error_code>
+auto Stdin::Read(Span<uint8> buf) noexcept -> Result<usize, Error>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
 
-    // Don't try to read more than what `std::streamsize` can handle.
-    if (buf.size() > std::numeric_limits<std::streamsize>::max()) {
-        return Err(std::make_error_code(std::errc::message_size));
+    // Don't try to write more than what `std::streamsize` can handle.
+    auto limit = std::numeric_limits<std::streamsize>::max();
+    if (buf.size() > limit) {
+        return Err(IO::Error::New<String>(IO::ErrorKind::InvalidData,
+            std::format("buffer size {} is over the limit for `std::streamsize` ({})", buf.size(), limit)));
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     std::cin.read(reinterpret_cast<char*>(buf.data()), static_cast<std::streamsize>(buf.size()));
     if (std::cin.bad()) {
-        return Err(std::make_error_code(std::errc::io_error));
+        return Err(IO::Error::New<String>(IO::ErrorKind::InvalidInput, "failed to read from stdin"));
     }
 
     return std::cin.gcount();

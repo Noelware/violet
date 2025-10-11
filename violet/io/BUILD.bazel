@@ -19,15 +19,33 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
 cc_library(
     name = "io",
     visibility = ["//visibility:public"],
     deps = [
+        ":error",
         ":read",
         ":stdio",
         ":write",
+    ],
+)
+
+cc_library(
+    name = "error",
+    srcs = select({
+        "@platforms//os:linux": ["impl/error/unix.cpp"],
+        "@platforms//os:macos": ["impl/error/unix.cpp"],
+        "@platforms//os:windows": ["impl/error/windows.cpp"],
+        "//conditions:default": ["impl/error/unsupported.cpp"],
+    }),
+    hdrs = ["Error.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container:optional",
+        "//violet/support:demangle",
     ],
 )
 
@@ -36,6 +54,7 @@ cc_library(
     hdrs = ["Read.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":error",
         "//violet",
         "//violet/container:result",
     ],
@@ -46,6 +65,7 @@ cc_library(
     hdrs = ["Write.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":error",
         "//violet",
         "//violet/container:result",
     ],
@@ -54,16 +74,30 @@ cc_library(
 cc_library(
     name = "stdio",
     srcs = select({
-        "@platforms//os:windows": ["impl/stdio.windows.cpp"],
+        "@platforms//os:windows": ["impl/stdio/windows.cpp"],
         "//conditions:default": ["impl/stdio.cpp"],
     }),
     hdrs = ["Stdio.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":error",
         ":read",
         ":write",
         "//violet",
         "//violet/container:result",
-        "//violet/core:stringref",
+        "//violet/support:stringref",
+    ],
+)
+
+cc_test(
+    name = "error_test",
+    size = "small",
+    srcs = ["tests/Error.test.cpp"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":error",
+        "//violet/container:result",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
     ],
 )

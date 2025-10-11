@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "violet/core/StringRef.h"
+#include "violet/support/StringRef.h"
 #include "violet/sys/Environment.h"
 
 auto Noelware::Violet::System::GetEnvironmentVariable(StringRef) noexcept -> Optional<String>
