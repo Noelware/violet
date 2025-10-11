@@ -31,6 +31,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <ostream>
 #include <type_traits>
 #include <utility>
 
@@ -412,46 +413,20 @@ struct Optional final {
         return n_hasValue ? VIOLET_MOVE(*ptr()) : VIOLET_MOVE(default_value);
     }
 
-    friend constexpr auto operator==(const Optional& opt1, const Optional& opt2) -> bool
-    {
-        if (opt1.n_hasValue != opt2.n_hasValue) {
+    VIOLET_IMPL_EQUALITY_SINGLE(Optional, lhs, rhs, {
+        if (lhs.n_hasValue != rhs.n_hasValue) {
             return false;
         }
 
-        if (!opt1.n_hasValue) {
+        if (!lhs.n_hasValue) {
             return true;
         }
 
-        return *opt1.ptr() == *opt2.ptr();
-    }
+        return *lhs.ptr() == *rhs.ptr();
+    });
 
-    friend constexpr auto operator!=(const Optional& opt1, const Optional& opt2) -> bool
-    {
-        return !(opt1 == opt2);
-    }
-
-    friend constexpr auto operator==(const Optional& opt1, std::nullopt_t) noexcept -> bool
-    {
-        return !opt1.n_hasValue;
-    }
-
-    friend constexpr auto operator==(std::nullopt_t, const Optional& opt1) noexcept -> bool
-    {
-        return !opt1.n_hasValue;
-    }
-
-    friend constexpr auto operator!=(const Optional& opt1, std::nullopt_t) noexcept -> bool
-    {
-        return !opt1.n_hasValue;
-    }
-
-    friend constexpr auto operator!=(std::nullopt_t, const Optional& opt1) noexcept -> bool
-    {
-        return !opt1.n_hasValue;
-    }
-
-    friend constexpr auto operator==(const Optional& lhs, const std::optional<T>& rhs) noexcept -> bool
-    {
+    VIOLET_IMPL_EQUALITY(const Optional&, std::nullopt_t, lhs, , { return !lhs.HasValue(); });
+    VIOLET_IMPL_EQUALITY(const Optional&, const std::optional<T>&, lhs, rhs, {
         if (lhs.n_hasValue != rhs.has_value()) {
             return false;
         }
@@ -461,22 +436,7 @@ struct Optional final {
         }
 
         return *lhs.ptr() == *rhs;
-    }
-
-    friend constexpr auto operator!=(const Optional& lhs, const std::optional<T>& rhs) noexcept -> bool
-    {
-        return !(lhs == rhs);
-    }
-
-    friend constexpr auto operator==(const std::optional<T>& lhs, const Optional& rhs) noexcept -> bool
-    {
-        return rhs == lhs;
-    }
-
-    friend constexpr auto operator!=(const std::optional<T>& lhs, const Optional& rhs) noexcept -> bool
-    {
-        return !(lhs == rhs);
-    }
+    });
 
     /// Returns **true** if this [`Optional`] contains a value.
     constexpr VIOLET_IMPLICIT operator bool() const
@@ -580,7 +540,25 @@ struct Optional final {
         destroy();
     }
 
-    // auto Iter() noexcept -> Iter<T>;
+    VIOLET_OSTREAM_IMPL(const Optional&)
+    {
+        if (!self.HasValue()) {
+            return os << "«no value»";
+        }
+
+        const auto& value = self.Value();
+
+        // clang-format off
+        if constexpr (requires {
+            { os << value } -> std::same_as<std::ostream&>;
+        }) {
+            // clang-format on
+            return os << value;
+        }
+
+        const auto& type = typeid(T);
+        return os << "«type '" << type.name() << '@' << type.hash_code() << "' not streamable»";
+    }
 
 private:
     alignas(T) Array<std::byte, sizeof(T)> n_storage; ///< storage for this [`Optional`].

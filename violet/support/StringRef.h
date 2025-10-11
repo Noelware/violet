@@ -243,6 +243,43 @@ struct StringRef final {
         return parts;
     }
 
+    VIOLET_IMPL_EQUALITY_SINGLE(StringRef, lhs, rhs, {
+        if (lhs.Length() != rhs.Length()) {
+            return false;
+        }
+
+        for (usize i = 0; i < lhs.Length(); i++) {
+            if (lhs[i] != rhs[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    VIOLET_IMPL_EQUALITY(const StringRef&, CStr, lhs, rhs, {
+        if (!rhs) {
+            return false;
+        }
+
+        usize idx = 0;
+        for (; idx < lhs.Length(); idx++) {
+            if (rhs[idx] == '\0' || lhs[idx] != rhs[idx]) {
+                return false;
+            }
+        }
+
+        return rhs[idx] == '\0';
+    });
+
+    VIOLET_IMPL_EQUALITY(const StringRef&, const String&, lhs, rhs, { return lhs == rhs.data(); });
+    VIOLET_IMPL_EQUALITY(const StringRef&, const Str&, lhs, rhs, { return lhs == rhs.data(); });
+
+    VIOLET_OSTREAM_IMPL(const StringRef&)
+    {
+        return os.write(self.Data(), static_cast<std::streamsize>(self.Length()));
+    }
+
 private:
     CStr n_data = nullptr;
     usize n_len = 0;
@@ -252,10 +289,5 @@ private:
         return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\v' || ch == '\f';
     }
 };
-
-inline auto operator<<(std::ostream& os, const StringRef& value) -> std::ostream&
-{
-    return os.write(value.Data(), static_cast<std::streamsize>(value.Length()));
-}
 
 } // namespace Noelware::Violet

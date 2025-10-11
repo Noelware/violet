@@ -180,9 +180,35 @@ constexpr auto ToString(uint128 val) -> String
 #define VIOLET_ANY(TYPE, VALUE) ::std::make_any<TYPE>(VALUE)
 
 #define VIOLET_TO_STRING(TYPE, NAME, BLOCK)                                                                            \
-    namespace Noelware::Violet {                                                                                       \
-        inline auto ToString(TYPE NAME) -> ::Noelware::Violet::String BLOCK                                            \
+    inline auto Noelware::Violet::ToString(TYPE NAME) -> ::Noelware::Violet::String BLOCK
+
+#define VIOLET_IMPLICIT
+#define VIOLET_EXPLICIT explicit
+
+#define VIOLET_IMPL_EQUALITY_SINGLE(TYPE, LHS, RHS, BLOCK)                                                             \
+    friend constexpr auto operator==(const TYPE& LHS, const TYPE& RHS) noexcept -> bool BLOCK                          \
+                                                                                                                       \
+        friend constexpr auto operator!=(const TYPE& lhs, const TYPE& rhs) noexcept -> bool                            \
+    {                                                                                                                  \
+        return !(lhs == rhs);                                                                                          \
     }
 
-#define VIOLET_IMPLICIT explicit(false)
-#define VIOLET_EXPLICIT explicit(true)
+#define VIOLET_IMPL_EQUALITY(TYPE, OTHER, LHS, RHS, BLOCK)                                                             \
+    friend constexpr auto operator==(TYPE LHS, OTHER RHS) noexcept -> bool BLOCK                                       \
+                                                                                                                       \
+        friend constexpr auto operator!=(TYPE lhs, OTHER rhs) noexcept -> bool                                         \
+    {                                                                                                                  \
+        return !(lhs == rhs);                                                                                          \
+    }                                                                                                                  \
+    friend constexpr auto operator==(OTHER lhs, TYPE rhs) noexcept -> bool                                             \
+    {                                                                                                                  \
+        return rhs == lhs;                                                                                             \
+    }                                                                                                                  \
+    friend constexpr auto operator!=(OTHER lhs, TYPE rhs) noexcept -> bool                                             \
+    {                                                                                                                  \
+        return !(lhs == rhs);                                                                                          \
+    }
+
+// clang-format off
+#define VIOLET_OSTREAM_IMPL(TYPE) friend auto operator<<(::std::ostream& os, TYPE self) -> ::std::ostream&
+// clang-format on

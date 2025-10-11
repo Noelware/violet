@@ -239,6 +239,37 @@ struct [[nodiscard("always check its error state")]] Result final {
         return IsErr() ? Result<T, U>(std::invoke(VIOLET_FWD(Fun, fun), Error())) : Result<T, U>(Value());
     }
 
+    VIOLET_OSTREAM_IMPL(const Result&)
+    {
+        if (self.IsOk()) {
+            const auto& value = self.Value();
+
+            // clang-format off
+            if constexpr (requires {
+                { os << value } -> std::same_as<std::ostream&>;
+            }) {
+                // clang-format on
+                return os << value;
+            }
+
+            const auto& type = typeid(T);
+            return os << "«ok variant type '" << type.name() << '@' << type.hash_code() << "' not streamable»";
+        }
+
+        const auto& value = self.Error();
+
+        // clang-format off
+        if constexpr (requires {
+            { os << value } -> std::same_as<std::ostream&>;
+        }) {
+            // clang-format on
+            return os << value;
+        }
+
+        const auto& type = typeid(E);
+        return os << "«error variant type '" << type.name() << '@' << type.hash_code() << "' not streamable»";
+    }
+
 private:
     mutable bool n_isOk = false; ///< marker to indicate if this result is in its success state
 
@@ -384,6 +415,26 @@ struct [[nodiscard("always check the error state before discarding")]] Result<vo
     {
         assert(IsErr());
         return n_error->error();
+    }
+
+    VIOLET_OSTREAM_IMPL(const Result&)
+    {
+        if (self.IsOk()) {
+            return os << "«result of 'void' type»";
+        }
+
+        const auto& value = self.Error();
+
+        // clang-format off
+        if constexpr (requires {
+            { os << value } -> std::same_as<std::ostream&>;
+        }) {
+            // clang-format on
+            return os << value;
+        }
+
+        const auto& type = typeid(E);
+        return os << "«error variant type '" << type.name() << '@' << type.hash_code() << "' not streamable»";
     }
 
 private:

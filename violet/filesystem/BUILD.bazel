@@ -22,47 +22,23 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
 cc_library(
-    name = "container",
+    name = "path",
+    hdrs = ["Path.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":optional",
-        ":result",
+        "//violet",
+        "//violet/container",
+        "//violet/support:stringref",
     ],
 )
 
-cc_library(
-    name = "optional",
-    hdrs = ["Optional.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
 cc_test(
-    name = "optional_test",
+    name = "path_test",
     size = "small",
-    srcs = ["tests/Optional.test.cpp"],
+    srcs = ["tests/Path.test.cpp"],
     visibility = ["//visibility:public"],
     deps = [
-        ":optional",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "result",
-    hdrs = ["Result.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
-cc_test(
-    name = "result_test",
-    size = "small",
-    srcs = ["tests/Result.test.cpp"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":result",
+        ":path",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
