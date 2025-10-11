@@ -405,25 +405,4 @@ private:
     }
 };
 
-//     /*
-//     /**
-//      * @brief Compare two paths for equality.
-//      *
-//      * Paths are equal if their underlying string representation is identical.
-//      */
-//     inline constexpr bool operator==(const Path& lhs, const Path& rhs) noexcept
-//     {
-//         return lhs.n_value == rhs.n_value;
-//     }
-
-//     /**
-//      * @brief Compare two paths for inequality.
-//      */
-//     inline constexpr bool operator!=(const Path& lhs, const Path& rhs) noexcept
-//     {
-//         return !(lhs == rhs);
-//     }
-
-// */
-
 } // namespace Noelware::Violet::Filesystem
