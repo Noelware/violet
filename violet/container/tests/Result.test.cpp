@@ -21,7 +21,6 @@
 
 #include "violet/container/Result.h"
 
-#include <expected>
 #include <gtest/gtest.h>
 
 using namespace Noelware::Violet; // NOLINT(google-build-using-namespace)

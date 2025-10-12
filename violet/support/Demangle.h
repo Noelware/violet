@@ -29,15 +29,15 @@
 
 // For Clang and GCC, we can check if we have the `cxxabi.h` header.
 #if defined(__has_include) && VIOLET_IS_CLANG || VIOLET_IS_GCC
-#if __has_include(<cxxabi.h>)
-#define VIOLET_HAS_CXXABI_HDR
-#else
-#define VIOLET_HAS_CXXABI_HDR
-#endif
+#    if __has_include(<cxxabi.h>)
+#        define VIOLET_HAS_CXXABI_HDR
+#    else
+#        define VIOLET_HAS_CXXABI_HDR
+#    endif
 #endif
 
 #ifdef VIOLET_HAS_CXXABI_HDR
-#include <cxxabi.h>
+#    include <cxxabi.h>
 #endif
 
 namespace Noelware::Violet::Utility {

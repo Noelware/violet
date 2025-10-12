@@ -35,4 +35,6 @@ FixNamespaceComments: true
 RequiresClausePosition: OwnLine
 SpaceAfterTemplateKeyword: false
 AllowShortFunctionsOnASingleLine: Empty
+IndentPPDirectives: AfterHash
+PPIndentWidth: 4
 ...

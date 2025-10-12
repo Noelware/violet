@@ -218,30 +218,35 @@ constexpr auto ToString(uint128 val) -> String
 // clang-format on
 
 #if defined(__clang__)
-#define VIOLET_COMPILER "clang"
-#define VIOLET_IS_CLANG 1
-#define VIOLET_IS_GCC 1
-#define VIOLET_IS_MSVC 0
+#    define VIOLET_COMPILER "clang"
+#    define VIOLET_IS_CLANG 1
+#    define VIOLET_IS_GCC 1
+#    define VIOLET_IS_MSVC 0
 #elif defined(__GNUC__)
-#define VIOLET_COMPILER "gcc"
-#define VIOLET_IS_CLANG 0
-#define VIOLET_IS_GCC 1
-#define VIOLET_IS_MSVC 0
+#    define VIOLET_COMPILER "gcc"
+#    define VIOLET_IS_CLANG 0
+#    define VIOLET_IS_GCC 1
+#    define VIOLET_IS_MSVC 0
 #elif defined(_MSC_VER)
-#define VIOLET_COMPILER "msvc"
-#define VIOLET_IS_CLANG 0
-#define VIOLET_IS_GCC 0
-#define VIOLET_IS_MSVC 1
+#    define VIOLET_COMPILER "msvc"
+#    define VIOLET_IS_CLANG 0
+#    define VIOLET_IS_GCC 0
+#    define VIOLET_IS_MSVC 1
+#else
+#    define VIOLET_COMPILER "unknown"
+#    define VIOLET_IS_CLANG 0
+#    define VIOLET_IS_GCC 0
+#    define VIOLET_IS_MSVC 0
 #endif
 
 #ifdef _MSC_VER
-#if _MSC_VER >= 1930
-#define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2022"
-#elif _MSC_VER >= 1920
-#define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2019"
-#elif _MSC_VER >= 1910
-#define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2017"
-#else
-#error "Violet requires Visual Studio 2017 or higher to be compiled correctly"
-#endif
+#    if _MSC_VER >= 1930
+#        define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2022"
+#    elif _MSC_VER >= 1920
+#        define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2019"
+#    elif _MSC_VER >= 1910
+#        define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2017"
+#    else
+#        error "Violet requires Visual Studio 2017 or higher to be compiled correctly"
+#    endif
 #endif

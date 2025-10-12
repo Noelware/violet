@@ -34,7 +34,10 @@ cc_library(
     name = "optional",
     hdrs = ["Optional.h"],
     visibility = ["//visibility:public"],
-    deps = ["//violet"],
+    deps = [
+        "//violet",
+        "//violet/support:demangle",
+    ],
 )
 
 cc_test(
@@ -53,7 +56,10 @@ cc_library(
     name = "result",
     hdrs = ["Result.h"],
     visibility = ["//visibility:public"],
-    deps = ["//violet"],
+    deps = [
+        "//violet",
+        "//violet/support:demangle",
+    ],
 )
 
 cc_test(

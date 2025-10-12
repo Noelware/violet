@@ -29,7 +29,7 @@
 #include <gtest/gtest.h>
 
 #ifdef _WIN32
-#include <windows.h>
+#    include <windows.h>
 #endif
 
 using namespace Noelware::Violet; // NOLINT

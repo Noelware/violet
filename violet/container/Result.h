@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "violet/support/Demangle.h"
 #include "violet/violet.h"
 
 #include <expected>
@@ -253,7 +254,8 @@ struct [[nodiscard("always check its error state")]] Result final {
             }
 
             const auto& type = typeid(T);
-            return os << "«ok variant type '" << type.name() << '@' << type.hash_code() << "' not streamable»";
+            return os << "«ok variant type '" << Utility::DemangleCXXName(type.name()) << '@' << type.hash_code()
+                      << "' not streamable»";
         }
 
         const auto& value = self.Error();
@@ -267,7 +269,8 @@ struct [[nodiscard("always check its error state")]] Result final {
         }
 
         const auto& type = typeid(E);
-        return os << "«error variant type '" << type.name() << '@' << type.hash_code() << "' not streamable»";
+        return os << "«error variant type '" << Utility::DemangleCXXName(type.name()) << '@' << type.hash_code()
+                  << "' not streamable»";
     }
 
 private:
@@ -434,7 +437,8 @@ struct [[nodiscard("always check the error state before discarding")]] Result<vo
         }
 
         const auto& type = typeid(E);
-        return os << "«error variant type '" << type.name() << '@' << type.hash_code() << "' not streamable»";
+        return os << "«error variant type '" << Utility::DemangleCXXName(type.name()) << '@' << type.hash_code()
+                  << "' not streamable»";
     }
 
 private:

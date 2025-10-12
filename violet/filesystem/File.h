@@ -26,9 +26,9 @@
 #include "violet/violet.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#    include <windows.h>
 #else
-#include <sys/types.h>
+#    include <sys/types.h>
 #endif
 
 namespace Noelware::Violet::Filesystem {

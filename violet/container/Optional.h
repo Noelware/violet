@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "violet/support/Demangle.h"
 #include "violet/violet.h"
 
 #include <cstddef>
@@ -557,7 +558,8 @@ struct Optional final {
         }
 
         const auto& type = typeid(T);
-        return os << "«type '" << type.name() << '@' << type.hash_code() << "' not streamable»";
+        return os << "«type '" << Utility::DemangleCXXName(type.name()) << '@' << type.hash_code()
+                  << "' not streamable»";
     }
 
 private:

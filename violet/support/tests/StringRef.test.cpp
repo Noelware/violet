@@ -20,6 +20,7 @@
 // SOFTWARE.
 
 #include "violet/support/StringRef.h"
+
 #include <gtest/gtest.h>
 
 using namespace Noelware::Violet; // NOLINT
