@@ -43,3 +43,19 @@ cc_library(
         "//violet/support:stringref",
     ],
 )
+
+cc_library(
+    name = "randomness",
+    srcs = select({
+        "@platforms//os:linux": ["impl/randomness/unix.cpp"],
+        "@platforms//os:macos": ["impl/randomness/unix.cpp"],
+        "@platforms//os:windows": ["impl/randomness/windows.cpp"],
+        "//conditions:default": ["impl/randomness/unsupported.cpp"],
+    }),
+    hdrs = ["Randomness.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/io:error",
+    ],
+)

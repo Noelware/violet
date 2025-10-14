@@ -22,6 +22,7 @@
 #pragma once
 
 #include "violet/container/Optional.h"
+#include "violet/container/Result.h"
 #include "violet/support/Demangle.h"
 #include "violet/violet.h"
 
@@ -348,5 +349,8 @@ private:
     ErrorKind n_kind;
     std::variant<PlatformError, std::any> n_value;
 };
+
+template<typename T>
+using Result = Noelware::Violet::Result<T, Error>;
 
 } // namespace Noelware::Violet::IO
