@@ -557,6 +557,10 @@ struct Optional final {
             return os << value;
         }
 
+        if constexpr (Noelware::Violet::Stringify<T>) {
+            return os << Noelware::Violet::ToString(value);
+        }
+
         const auto& type = typeid(T);
         return os << "«type '" << Utility::DemangleCXXName(type.name()) << '@' << type.hash_code()
                   << "' not streamable»";

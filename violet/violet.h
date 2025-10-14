@@ -173,6 +173,12 @@ constexpr auto ToString(uint128 val) -> String
     return buf.str();
 }
 
+template<Stringify T, Stringify U>
+constexpr auto ToString(const Pair<T, U>& pair) -> String
+{
+    return std::format("({}, {})", pair.first, pair.second);
+}
+
 } // namespace Noelware::Violet
 
 #define VIOLET_SHARED_PTR(TYPE, VALUE, ...) ::std::make_shared<TYPE>(VALUE, ##__VA_ARGS__)
@@ -250,3 +256,24 @@ constexpr auto ToString(uint128 val) -> String
 #        error "Violet requires Visual Studio 2017 or higher to be compiled correctly"
 #    endif
 #endif
+
+#ifdef __has_cpp_attribute
+#    if __has_cpp_attribute(likely)
+#        define VIOLET_LIKELY_ATTRIBUTE [[likely]]
+#    else
+#        define VIOLET_LIKELY_ATTRIBUTE
+#    endif
+#    if __has_cpp_attribute(unlikely)
+#        define VIOLET_UNLIKELY_ATTRIBUTE [[unlikely]]
+#    else
+#        define VIOLVIOLET_UNLIKELY_ATTRIBUTE
+#    endif
+#endif
+
+// clang-format off
+#define VIOLET_LIKELY(expr) if (expr) VIOLET_LIKELY_ATTRIBUTE
+#define VIOLET_UNLIKELY(expr) if (expr) VIOLET_UNLIKELY_ATTRIBUTE
+// clang-format on
+
+#define __CONCAT_IDENT_INNER(a, b) a##b
+#define CONCAT(a, b) __CONCAT_IDENT_INNER(a, b)

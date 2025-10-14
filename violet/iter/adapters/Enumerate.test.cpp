@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "violet/iter/adapters/Enumerate.h"
 #include "violet/iter/Iterator.h"
 #include "violet/violet.h"
 
@@ -26,44 +27,27 @@
 
 using namespace Noelware::Violet; // NOLINT(google-build-using-namespace)
 
-TEST(Iterators, Position)
-{
-    Vec<char> chars = { 'h', 'e', 'l', 'l', 'o', '.' };
-    auto it = MkIterable(chars);
-
-    auto pos = it.Position([](auto ch) { return ch == '.'; });
-    EXPECT_TRUE(pos);
-    EXPECT_EQ(*pos, 5);
-}
-
-TEST(Iterators, Count)
+TEST(IterEnumerate, Declarative)
 {
     Vec<uint32> vi = { 1, 2, 3, 4, 5 };
-    ASSERT_EQ(MkIterable(vi).Count(), 5);
+    auto it = MkIterable(vi).Enumerate();
+
+    auto first = Some<Pair<usize, uint32>>(std::make_pair(0, 1));
+    EXPECT_EQ(it.Next(), first);
+
+    auto second = Some<Pair<usize, uint32>>(std::make_pair(1, 2));
+    EXPECT_EQ(it.Next(), second);
 }
 
-TEST(Iterators, AdvanceBy)
+TEST(IterEnumate, Pipe)
 {
     Vec<uint32> vi = { 1, 2, 3, 4, 5 };
     auto it = MkIterable(vi);
 
-    ASSERT_TRUE(it.AdvanceBy(1));
-    ASSERT_EQ(it.Next(), Some<uint32>(2));
-}
+    auto it2 = it | Enumerate;
+    auto first = Some<Pair<usize, uint32>>(std::make_pair(0, 1));
+    EXPECT_EQ(it2.Next(), first);
 
-TEST(Iterators, Nth)
-{
-    Vec<uint32> vi{ 1, 2, 3 };
-    auto it = MkIterable(vi);
-
-    ASSERT_EQ(it.Nth(1), Some<uint32>(2));
-}
-
-TEST(Iterators, Any)
-{
-    Vec<uint32> vi{ 0, 1, 2 };
-    auto it = MkIterable(vi);
-
-    ASSERT_TRUE(it.Any([](int num) { return num == 2; }));
-    ASSERT_FALSE(it.Any([](int num) { return num == 5; }));
+    auto second = Some<Pair<usize, uint32>>(std::make_pair(1, 2));
+    EXPECT_EQ(it2.Next(), second);
 }

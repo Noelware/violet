@@ -392,6 +392,22 @@ struct [[nodiscard("always check the error state before discarding")]] Result<vo
         return *this;
     }
 
+    constexpr VIOLET_EXPLICIT operator bool() const noexcept
+    {
+        return this->n_error == nullptr;
+    }
+
+    constexpr VIOLET_IMPLICIT operator std::expected<void, E>() noexcept
+    {
+        return this->IsOk() ? std::expected<void, E>({}) : Err(*Error());
+    }
+
+    constexpr VIOLET_IMPLICIT operator std::unexpected<E>() noexcept
+    {
+        assert(this->IsErr());
+        return Err(*Error());
+    }
+
     /// Returns true if the result is a success (`Ok`).
     [[nodiscard]] constexpr auto IsOk() const noexcept -> bool
     {
