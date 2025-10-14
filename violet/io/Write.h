@@ -23,7 +23,6 @@
 
 #pragma once
 
-#include "violet/container/Result.h"
 #include "violet/io/Error.h"
 #include "violet/violet.h"
 
@@ -42,7 +41,7 @@ namespace Noelware::Violet::IO {
 /// @param data The target string to append bytes to.
 /// @param buf The source buffer containing bytes to write.
 /// @returns A `Result` holding the number of bytes written, or an error code on failure.
-inline auto Write(String& data, Span<const uint8> buf) noexcept -> Result<usize, Error>
+inline auto Write(String& data, Span<const uint8> buf) noexcept -> Result<usize>
 {
     // SAFETY: reinterpret_cast from const std::byte* to const char* is required to append bytes to a string.
     // Only safe if buf contains valid character data.
@@ -61,7 +60,7 @@ inline auto Write(String& data, Span<const uint8> buf) noexcept -> Result<usize,
 /// @param data The target vector to append bytes to.
 /// @param buf The source buffer containing bytes to write.
 /// @returns A `Result` holding the number of bytes written.
-inline auto Write(Vec<uint8>& data, Span<const uint8> buf) noexcept -> Result<usize, Error>
+inline auto Write(Vec<uint8>& data, Span<const uint8> buf) noexcept -> Result<usize>
 {
     data.insert(data.end(), buf.begin(), buf.end());
     return buf.size();
@@ -80,10 +79,10 @@ inline auto Write(Vec<uint8>& data, Span<const uint8> buf) noexcept -> Result<us
 /// This concept allows generic algorithms to work with strings, vectors, or any custom writable type or lambda.
 template<typename T>
 concept Writable = requires(T ty, Span<const uint8> cnt) {
-    { ty.Write(cnt) } -> std::same_as<Result<usize, Error>>;
-    { ty.Flush() } -> std::same_as<Result<void, Error>>;
+    { ty.Write(cnt) } -> std::same_as<Result<usize>>;
+    { ty.Flush() } -> std::same_as<Result<void>>;
 } || requires(T& data, Span<const uint8> cnt) {
-    { Noelware::Violet::IO::Write(data, cnt) } -> std::same_as<Result<usize, Error>>;
+    { Noelware::Violet::IO::Write(data, cnt) } -> std::same_as<Result<usize>>;
 };
 
 } // namespace Noelware::Violet::IO

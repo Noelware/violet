@@ -32,7 +32,7 @@
 
 namespace Noelware::Violet::IO {
 
-inline auto Read(Vec<uint8>& data, Span<uint8> buf) noexcept -> Result<usize, Error>
+inline auto Read(Vec<uint8>& data, Span<uint8> buf) noexcept -> Result<usize>
 {
     usize minCopy = std::min(buf.size(), data.size());
     std::copy_n(data.begin(), minCopy, buf.begin());
@@ -42,13 +42,13 @@ inline auto Read(Vec<uint8>& data, Span<uint8> buf) noexcept -> Result<usize, Er
 
 template<typename T>
 concept Readable = requires(T ty, Span<uint8> buf) {
-    { ty.Read(buf) } -> std::same_as<Result<usize, Error>>;
+    { ty.Read(buf) } -> std::same_as<Result<usize>>;
 } || requires(T& data, Span<uint8> buf) {
-    { Noelware::Violet::IO::Read(data, buf) } -> std::same_as<Result<usize, Error>>;
+    { Noelware::Violet::IO::Read(data, buf) } -> std::same_as<Result<usize>>;
 };
 
 template<Readable R>
-inline auto ReadToString(R& reader) -> Result<String, Error>
+inline auto ReadToString(R& reader) -> Result<String>
 {
     String buf;
     constexpr static auto CHUNK_SIZE = 4096;

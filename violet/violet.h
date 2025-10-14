@@ -111,6 +111,11 @@ inline auto ToString(const T& val) -> String
                              { Noelware::Violet::ToString(val) } -> std::convertible_to<String>;
                          }) {
         return Noelware::Violet::ToString(val);
+    } else if constexpr (std::integral<T>) {
+        std::stringstream buf;
+        buf << val;
+
+        return buf.str();
     } else {
         static_assert(sizeof(T) == 0, "`T` doesn't satisfy the `Stringify` concept");
     }
@@ -146,15 +151,6 @@ inline auto ToString(CStr val) -> String
 inline auto ToString(bool val) -> String
 {
     return val ? "true" : "false";
-}
-
-template<std::integral T>
-constexpr auto ToString(T val) -> String
-{
-    std::stringstream buf;
-    buf << val;
-
-    return buf.str();
 }
 
 constexpr auto ToString(int128 val) -> String

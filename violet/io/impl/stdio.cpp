@@ -33,7 +33,7 @@ using Noelware::Violet::IO::Locked::Stdout;
 
 Stdout::Stdout() = default;
 
-auto Stdout::Write(Span<const uint8> buf) noexcept -> Result<usize, Error>
+auto Stdout::Write(Span<const uint8> buf) noexcept -> Result<usize>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
 
@@ -54,7 +54,7 @@ auto Stdout::Write(Span<const uint8> buf) noexcept -> Result<usize, Error>
     return buf.size();
 }
 
-auto Stdout::Flush() const noexcept -> Result<void, Error>
+auto Stdout::Flush() const noexcept -> Result<void>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
     std::cout.flush();
@@ -64,7 +64,7 @@ auto Stdout::Flush() const noexcept -> Result<void, Error>
 
 Stderr::Stderr() = default;
 
-auto Stderr::Write(Span<const uint8> buf) noexcept -> Result<usize, Error>
+auto Stderr::Write(Span<const uint8> buf) noexcept -> Result<usize>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
 
@@ -85,7 +85,7 @@ auto Stderr::Write(Span<const uint8> buf) noexcept -> Result<usize, Error>
     return buf.size();
 }
 
-auto Stderr::Flush() const noexcept -> Result<void, Error>
+auto Stderr::Flush() const noexcept -> Result<void>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
     std::cerr.flush();
@@ -95,7 +95,7 @@ auto Stderr::Flush() const noexcept -> Result<void, Error>
 
 Stdin::Stdin() = default;
 
-auto Stdin::Read(Span<uint8> buf) noexcept -> Result<usize, Error>
+auto Stdin::Read(Span<uint8> buf) noexcept -> Result<usize>
 {
     std::lock_guard<Mutex> lock(this->n_mux);
 

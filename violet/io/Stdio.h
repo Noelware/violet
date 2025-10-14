@@ -42,8 +42,8 @@ struct Stderr;
 namespace Locked {
 
     struct Stdout final {
-        auto Write(Span<const uint8> buf) noexcept -> Result<usize, Error>;
-        auto Flush() const noexcept -> Result<void, Error>;
+        auto Write(Span<const uint8> buf) noexcept -> Result<usize>;
+        auto Flush() const noexcept -> Result<void>;
 
     private:
         friend struct Noelware::Violet::IO::Stdout;
@@ -58,8 +58,8 @@ namespace Locked {
     };
 
     struct Stderr final {
-        auto Write(Span<const uint8> buf) noexcept -> Result<usize, Error>;
-        auto Flush() const noexcept -> Result<void, Error>;
+        auto Write(Span<const uint8> buf) noexcept -> Result<usize>;
+        auto Flush() const noexcept -> Result<void>;
 
     private:
         friend struct Noelware::Violet::IO::Stderr;
@@ -74,7 +74,7 @@ namespace Locked {
     };
 
     struct Stdin final {
-        auto Read(Span<uint8> buf) noexcept -> Result<usize, Error>;
+        auto Read(Span<uint8> buf) noexcept -> Result<usize>;
 
     private:
         friend struct Noelware::Violet::IO::Stdin;
@@ -100,7 +100,7 @@ struct Stdout final {
     /// Construct a new [`Stdout`] handle. It'll use `std::cout` to write data.
     Stdout() = default;
 
-    auto Writeln(StringRef str) const noexcept -> Result<usize, Error>
+    auto Writeln(StringRef str) const noexcept -> Result<usize>
     {
         auto res = this->Write(str);
         if (!res) {
@@ -112,17 +112,17 @@ struct Stdout final {
 
     /// Extension for [`Stdout::Write(Span<const uint8>)`] to allow writing strings from
     /// a [`StringRef`] into the process' standard output.
-    auto Write(StringRef str) const noexcept -> Result<usize, Error>
+    [[nodiscard]] auto Write(StringRef str) const noexcept -> Result<usize>
     {
         return this->Write(str.AsBytes());
     }
 
-    auto Write(Span<const uint8> buf) const noexcept -> Result<usize, Error>
+    [[nodiscard]] auto Write(Span<const uint8> buf) const noexcept -> Result<usize>
     {
         return this->Lock().Write(buf);
     }
 
-    auto Flush() const noexcept -> Result<void, Error>
+    [[nodiscard]] auto Flush() const noexcept -> Result<void>
     {
         return this->Lock().Flush();
     }
@@ -141,7 +141,7 @@ struct Stderr final {
     /// Construct a new [`Stderr`] handle. It'll use `std::cerr` to write data.
     Stderr() = default;
 
-    auto Writeln(StringRef str) const noexcept -> Result<usize, Error>
+    auto Writeln(StringRef str) const noexcept -> Result<usize>
     {
         auto res = this->Write(str);
         if (!res) {
@@ -153,17 +153,17 @@ struct Stderr final {
 
     /// Extension for [`Stdout::Write(Span<const uint8>)`] to allow writing strings from
     /// a [`StringRef`] into the process' standard output.
-    auto Write(StringRef str) const noexcept -> Result<usize, Error>
+    auto Write(StringRef str) const noexcept -> Result<usize>
     {
         return this->Write(str.AsBytes());
     }
 
-    auto Write(Span<const uint8> buf) const noexcept -> Result<usize, Error>
+    auto Write(Span<const uint8> buf) const noexcept -> Result<usize>
     {
         return this->Lock().Write(buf);
     }
 
-    auto Flush() const noexcept -> Result<void, Error>
+    auto Flush() const noexcept -> Result<void>
     {
         return this->Lock().Flush();
     }
@@ -183,7 +183,7 @@ struct Stdin final {
     Stdin() = default;
 
     /// Implements the [`Readable`] concept.
-    auto Read(Span<uint8> buf) const noexcept -> Result<usize, Error>
+    auto Read(Span<uint8> buf) const noexcept -> Result<usize>
     {
         return this->Lock().Read(buf);
     }

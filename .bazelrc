@@ -33,6 +33,10 @@ build:linux --cxxopt='-std=c++26' --host_cxxopt='-std=c++26' --client_env=BAZEL_
 build:macos --cxxopt='-std=c++26' --host_cxxopt='-std=c++26' --client_env=BAZEL_CXXOPTS=-std=c++26
 build:windows --cxxopt='/std:c++latest' --host_cxxopt='/std:c++latest' --client_env=BAZEL_CXXOPTS=/std:c++latest
 
+# Include build information
+build --stamp
+build --workspace_status_command=./hack/stamp.sh
+
 # CI-based configuration
 build:ci --nokeep_state_after_build
 

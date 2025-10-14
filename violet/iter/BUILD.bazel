@@ -32,12 +32,12 @@ cc_library(
 )
 
 cc_test(
-    name = "tests",
+    name = "test",
     size = "small",
     srcs = ["Iterator.test.cpp"],
     visibility = ["//visibility:public"],
     deps = [
-        ":iterator",
+        ":iter",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],

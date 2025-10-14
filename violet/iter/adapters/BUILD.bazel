@@ -103,7 +103,7 @@ cc_library(
 cc_test(
     name = "filtermap_test",
     size = "small",
-    srcs = ["Enumerate.test.cpp"],
+    srcs = ["FilterMap.test.cpp"],
     visibility = ["//visibility:public"],
     deps = [
         ":filtermap",
@@ -127,7 +127,7 @@ cc_library(
 cc_test(
     name = "map_test",
     size = "small",
-    srcs = ["Enumerate.test.cpp"],
+    srcs = ["Map.test.cpp"],
     visibility = ["//visibility:public"],
     deps = [
         ":map",
