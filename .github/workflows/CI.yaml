@@ -61,8 +61,7 @@ jobs:
             fail-fast: false
             matrix:
                 compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20]
-                include:
-                    - bazel-version: ["7.6.0", "8.4.2"]
+                bazel-version: ["7.6.0", "8.4.2"]
         env:
             USE_BAZEL_VERSION: ${{matrix.bazel-version}}
             BAZELFLAGS: "--config=ci"
