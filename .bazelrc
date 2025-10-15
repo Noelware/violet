@@ -28,6 +28,10 @@ build:opt --compilation_mode=opt
 # For `.bazelrc`, we can specify platform-specific Bazel flags with this.
 common --enable_platform_specific_config
 
+# Requires for Windows usage
+startup --windows_enable_symlinks
+build:windows --enable_runfiles
+
 # Enable C++26 support
 build:linux --cxxopt='-std=c++26' --host_cxxopt='-std=c++26' --client_env=BAZEL_CXXOPTS=-std=c++26
 build:macos --cxxopt='-std=c++26' --host_cxxopt='-std=c++26' --client_env=BAZEL_CXXOPTS=-std=c++26
@@ -43,6 +47,8 @@ test --test_output=errors
 # CI-based configuration
 build:ci --nokeep_state_after_build
 test:ci --test_output=all
+common:ci --noshow_progress
+common:ci --verbose_failures
 
 ## ~ common configuration for sanitizers
 common:san --config=dbg --strip=never --copt=-O0 --copt=-fno-omit-frame-pointer

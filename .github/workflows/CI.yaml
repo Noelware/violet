@@ -73,5 +73,13 @@ jobs:
             BAZELFLAGS: "--config=ci --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}}"
         steps:
             - uses: actions/checkout@v5
+            - uses: actions/cache@v4
+              with:
+                key: bazel-cache-linux-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                restore-keys: bazel-cache-linux-
+                path: |
+                    ~/.cache/bazel
+                    ~/.cache/bazelisk
+
             - run: bazel build ${{env.BAZELFLAGS}} //...
             - run: bazel test ${{env.BAZELFLAGS}} //...
