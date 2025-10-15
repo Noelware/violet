@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
     name = "adapters",
@@ -57,11 +57,7 @@ cc_test(
     size = "small",
     srcs = ["Enumerate.test.cpp"],
     visibility = ["//visibility:public"],
-    deps = [
-        ":enumerate",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
+    deps = [":enumerate"],
 )
 
 cc_library(
@@ -81,11 +77,7 @@ cc_test(
     size = "small",
     srcs = ["Filter.test.cpp"],
     visibility = ["//visibility:public"],
-    deps = [
-        ":filter",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
+    deps = [":filter"],
 )
 
 cc_library(
@@ -105,11 +97,7 @@ cc_test(
     size = "small",
     srcs = ["FilterMap.test.cpp"],
     visibility = ["//visibility:public"],
-    deps = [
-        ":filtermap",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
+    deps = [":filtermap"],
 )
 
 cc_library(
@@ -129,11 +117,7 @@ cc_test(
     size = "small",
     srcs = ["Map.test.cpp"],
     visibility = ["//visibility:public"],
-    deps = [
-        ":map",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
+    deps = [":map"],
 )
 
 cc_library(
@@ -153,11 +137,7 @@ cc_test(
     size = "small",
     srcs = ["Peekable.test.cpp"],
     visibility = ["//visibility:public"],
-    deps = [
-        ":peekable",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
+    deps = [":peekable"],
 )
 
 cc_library(
@@ -177,11 +157,7 @@ cc_test(
     size = "small",
     srcs = ["Skip.test.cpp"],
     visibility = ["//visibility:public"],
-    deps = [
-        ":enumerate",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
+    deps = [":enumerate"],
 )
 
 cc_library(
@@ -201,9 +177,5 @@ cc_test(
     size = "small",
     srcs = ["Take.test.cpp"],
     visibility = ["//visibility:public"],
-    deps = [
-        ":enumerate",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
+    deps = [":take"],
 )

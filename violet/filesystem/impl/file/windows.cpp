@@ -19,36 +19,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "violet/support/StringRef.h"
+#ifdef _WIN32
 
-#include <gtest/gtest.h>
-
-using namespace Noelware::Violet; // NOLINT
-
-TEST(StringRefs, BasicFunctionality)
-{
-    StringRef abc("abc");
-    EXPECT_EQ(abc.Length(), 3);
-    EXPECT_EQ(abc.Data(), "abc");
-    EXPECT_TRUE(abc.StartsWith('a'));
-    EXPECT_TRUE(abc.StartsWith("ab"));
-    EXPECT_TRUE(abc.First());
-    EXPECT_TRUE(abc.Last());
-
-    StringRef empty;
-    EXPECT_EQ(empty.Length(), 0);
-    EXPECT_FALSE(empty.StartsWith('a'));
-    EXPECT_FALSE(empty.StartsWith("ab"));
-    EXPECT_FALSE(empty.First());
-    EXPECT_FALSE(empty.Last());
-}
-
-TEST(StringRefs, Trimming)
-{
-    StringRef hello("  \t\nhello world \r\n");
-
-    EXPECT_TRUE(hello.TrimStart().StartsWith("hello"));
-}
-
-TEST(StringRefs, Strip) {}
-TEST(StringRefs, Split) {}
+#endif

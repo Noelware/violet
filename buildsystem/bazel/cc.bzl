@@ -19,49 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("@rules_cc//cc:defs.bzl", cc_library_ = "cc_library", cc_test_ = "cc_test")
 
-cc_library(
-    name = "container",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":optional",
-        ":result",
-    ],
-)
+def cc_library(name, hdrs = [], **kwargs):
+    return cc_library_(name = name, hdrs = hdrs, **kwargs)
 
-cc_library(
-    name = "optional",
-    hdrs = ["Optional.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/support:demangle",
-    ],
-)
+def cc_test(name, **kwargs):
+    deps = kwargs.pop("deps") or []
+    deps += ["@googletest//:gtest", "@googletest//:gtest_main"]
 
-cc_test(
-    name = "optional_test",
-    size = "small",
-    srcs = ["tests/Optional.test.cpp"],
-    visibility = ["//visibility:public"],
-    deps = [":optional"],
-)
-
-cc_library(
-    name = "result",
-    hdrs = ["Result.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/support:demangle",
-    ],
-)
-
-cc_test(
-    name = "result_test",
-    size = "small",
-    srcs = ["tests/Result.test.cpp"],
-    visibility = ["//visibility:public"],
-    deps = [":result"],
-)
+    return cc_test_(name = name, deps = deps, **kwargs)

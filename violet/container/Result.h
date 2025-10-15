@@ -215,13 +215,15 @@ struct [[nodiscard("always check its error state")]] Result final {
     }
 
     template<typename U>
-    constexpr auto MapOr(U&& def) const& -> decltype(T{} + def)
+        requires std::is_default_constructible_v<T>
+    constexpr auto MapOr(U&& def) const&
     {
         return IsOk() ? Value() : VIOLET_FWD(U, def);
     }
 
     template<typename U>
-    constexpr auto MapOr(U&& def) && -> decltype(T{} + def)
+        requires std::is_default_constructible_v<T>
+    constexpr auto MapOr(U&& def) &&
     {
         return IsOk() ? Value() : VIOLET_FWD(U, def);
     }

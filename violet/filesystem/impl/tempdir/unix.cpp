@@ -19,36 +19,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "violet/support/StringRef.h"
+#if defined(__unix__) || defined(__APPLE__) || defined(__linux__)
 
-#include <gtest/gtest.h>
+// clang-format off
+#include "violet/io/Error.h"
+#include "violet/filesystem/Path.h"
+#include "violet/filesystem/TempDir.h"
+#include "violet/sys/Environment.h"
+// clang-format on
 
-using namespace Noelware::Violet; // NOLINT
-
-TEST(StringRefs, BasicFunctionality)
+auto Noelware::Violet::Filesystem::SystemTempDirectory() -> IO::Result<Path>
 {
-    StringRef abc("abc");
-    EXPECT_EQ(abc.Length(), 3);
-    EXPECT_EQ(abc.Data(), "abc");
-    EXPECT_TRUE(abc.StartsWith('a'));
-    EXPECT_TRUE(abc.StartsWith("ab"));
-    EXPECT_TRUE(abc.First());
-    EXPECT_TRUE(abc.Last());
-
-    StringRef empty;
-    EXPECT_EQ(empty.Length(), 0);
-    EXPECT_FALSE(empty.StartsWith('a'));
-    EXPECT_FALSE(empty.StartsWith("ab"));
-    EXPECT_FALSE(empty.First());
-    EXPECT_FALSE(empty.Last());
+    auto tmpdir = System::GetEnvironmentVariable("TMPDIR");
+    return Path(tmpdir.ValueOr("/tmp"));
 }
 
-TEST(StringRefs, Trimming)
-{
-    StringRef hello("  \t\nhello world \r\n");
-
-    EXPECT_TRUE(hello.TrimStart().StartsWith("hello"));
-}
-
-TEST(StringRefs, Strip) {}
-TEST(StringRefs, Split) {}
+#endif

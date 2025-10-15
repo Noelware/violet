@@ -68,7 +68,7 @@ struct StringRef final {
     }
 
     /// Returns **true** if this string contains data.
-    constexpr VIOLET_IMPLICIT operator bool() const noexcept
+    constexpr VIOLET_EXPLICIT operator bool() const noexcept
     {
         return !this->Empty();
     }

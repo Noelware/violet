@@ -112,6 +112,13 @@ concept DoubleEndedIterable = detail::ValidDoubleEndedIterable<std::remove_cvref
 template<typename T>
 using IterableType = detail::optional_type_t<decltype(std::declval<T>().Next())>;
 
+template<typename T, typename Item>
+concept Collectable = requires(T& ty, Item value) {
+    { ty.insert(ty.end(), value) } -> std::same_as<typename T::iterator>;
+} || requires(T& cnt, Item value) {
+    { cnt.push_back(value) } -> std::same_as<void>;
+};
+
 namespace detail {
     /// A sentinel object that is used to end iteration for a [`Iterator`](Noelware::Violet::Iterator)'s
     /// implementation of C++ range syntax.
@@ -423,6 +430,37 @@ struct Iterator {
         }
 
         return decltype(getThisObject().Next())(Nothing);
+    }
+
+    template<typename Container>
+    auto Collect()
+    {
+        if constexpr (Collectable<Container, IterableType<Impl>>) {
+            Container out;
+            while (auto value = getThisObject().Next()) {
+                if constexpr (requires { out.push_back(VIOLET_MOVE(*value)); }) {
+                    out.push_back(VIOLET_MOVE(*value));
+                } else {
+                    out.insert(out.end(), VIOLET_MOVE(*value));
+                }
+            }
+        } else if constexpr (requires { typename Container::value_type{}; }) {
+            constexpr usize N = std::tuple_size_v<Container>; // NOLINT(readability-identifier-length)
+
+            Container out{};
+            usize idx = 0;
+            while (auto value = getThisObject().Next()) {
+                if (idx >= N) {
+                    break;
+                }
+
+                out[idx++] = VIOLET_MOVE(*value);
+            }
+
+            return out;
+        } else {
+            static_assert([] { return false; }(), "unsupported container type");
+        }
     }
 
     [[nodiscard]] constexpr auto SizeHint() const noexcept -> SizeHint

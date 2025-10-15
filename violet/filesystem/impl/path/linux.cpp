@@ -19,36 +19,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "violet/support/StringRef.h"
+#ifdef __linux__
 
-#include <gtest/gtest.h>
+// clang-format off
+#include "violet/filesystem/Path.h"
+// clang-format on
 
-using namespace Noelware::Violet; // NOLINT
-
-TEST(StringRefs, BasicFunctionality)
+auto Noelware::Violet::Filesystem::Path::FromFileDescriptor(int32 fd) -> IO::Result<Path>
 {
-    StringRef abc("abc");
-    EXPECT_EQ(abc.Length(), 3);
-    EXPECT_EQ(abc.Data(), "abc");
-    EXPECT_TRUE(abc.StartsWith('a'));
-    EXPECT_TRUE(abc.StartsWith("ab"));
-    EXPECT_TRUE(abc.First());
-    EXPECT_TRUE(abc.Last());
+    Array<char, PATH_MAX> buf;
 
-    StringRef empty;
-    EXPECT_EQ(empty.Length(), 0);
-    EXPECT_FALSE(empty.StartsWith('a'));
-    EXPECT_FALSE(empty.StartsWith("ab"));
-    EXPECT_FALSE(empty.First());
-    EXPECT_FALSE(empty.Last());
+    StringRef path = std::format("/proc/self/fd/{}", fd);
+    int64 len = ::readlink(path, buf.data(), buf.size());
+    if (len == -1) {
+        return IO::Error::Platform(IO::ErrorKind::InvalidInput);
+    }
+
+    return Path(path);
 }
 
-TEST(StringRefs, Trimming)
-{
-    StringRef hello("  \t\nhello world \r\n");
-
-    EXPECT_TRUE(hello.TrimStart().StartsWith("hello"));
-}
-
-TEST(StringRefs, Strip) {}
-TEST(StringRefs, Split) {}
+#endif

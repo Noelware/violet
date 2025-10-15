@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
     name = "io",
@@ -97,7 +97,5 @@ cc_test(
     deps = [
         ":error",
         "//violet/container:result",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
     ],
 )

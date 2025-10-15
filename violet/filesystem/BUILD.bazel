@@ -19,15 +19,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
     name = "path",
+    srcs = select({
+        "@platforms//os:linux": ["impl/path/linux.cpp"],
+        "@platforms//os:macos": ["impl/path/macos.cpp"],
+        "@platforms//os:windows": ["impl/path/windows.cpp"],
+        "//conditions:default": [],
+    }),
     hdrs = ["Path.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet/container",
+        "//violet/io:error",
         "//violet/support:stringref",
     ],
 )
@@ -37,9 +44,63 @@ cc_test(
     size = "small",
     srcs = ["tests/Path.test.cpp"],
     visibility = ["//visibility:public"],
+    deps = [":path"],
+)
+
+cc_library(
+    name = "file",
+    srcs = select({
+        "@platforms//os:linux": [
+            "impl/dirs/unix.cpp",
+            "impl/file/unix.cpp",
+        ],
+        "@platforms//os:macos": [
+            "impl/dirs/unix.cpp",
+            "impl/file/unix.cpp",
+        ],
+        "@platforms//os:windows": [
+            "impl/dirs/windows.cpp",
+            "impl/file/windows.cpp",
+        ],
+        "//conditions:default": [
+            "impl/dirs/unsupported.cpp",
+            "impl/file/unsupported.cpp",
+        ],
+    }),
+    hdrs = ["File.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":path",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
+        "//violet",
+        "//violet/io:error",
+        "//violet/iter",
+    ],
+)
+
+cc_library(
+    name = "tempdir",
+    srcs = select({
+        "@platforms//os:linux": [
+            "impl/tempdir/unix.cpp",
+        ],
+        "@platforms//os:macos": [
+            "impl/tempdir/unix.cpp",
+        ],
+        "@platforms//os:windows": [
+            "impl/tempdir/windows.cpp",
+        ],
+        "//conditions:default": [
+            "impl/tempdir/unsupported.cpp",
+        ],
+    }),
+    hdrs = ["TempDir.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":file",
+        ":path",
+        "//violet",
+        "//violet/container:optional",
+        "//violet/io:error",
+        "//violet/sys:environment",
     ],
 )

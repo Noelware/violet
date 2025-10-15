@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include "violet/io/Error.h"
 #include "violet/support/StringRef.h"
 #include "violet/violet.h"
 
@@ -63,6 +64,12 @@ struct Path final {
         : n_value(VIOLET_MOVE(path))
     {
     }
+
+#ifdef _WIN32
+    static auto FromHandle(HHANDLE hdl) -> IO::Result<Path>;
+#else
+    static auto FromFileDescriptor(int32 fd) -> IO::Result<Path>;
+#endif
 
     /// Conversion operator for **Path** -> **bool**.
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
