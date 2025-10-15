@@ -75,8 +75,8 @@ jobs:
             - uses: actions/checkout@v5
             - uses: actions/cache@v4
               with:
-                key: bazel-cache-linux-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
-                restore-keys: bazel-cache-linux-
+                key: bazel-cache-linux-${{matrix.compiler}}-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                restore-keys: bazel-cache-linux-${{matrix.compiler}}-
                 path: |
                     ~/.cache/bazel
                     ~/.cache/bazelisk
