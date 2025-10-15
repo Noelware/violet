@@ -64,7 +64,7 @@ jobs:
                 bazel-version: ["7.6.0", "8.4.2"]
         env:
             USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-            BAZELFLAGS: "--config=ci"
+            BAZELFLAGS: "--config=ci ${{startsWith(matrix.compiler, 'clang-') && '--action_env=CC=clang --action_env=CXX=clang++' || '--action_env=CC=gcc --action_env=CXX=g++'}}"
         steps:
             - uses: actions/checkout@v5
             - run: bazel build ${{env.BAZELFLAGS}} //...

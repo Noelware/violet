@@ -1,1 +1,7 @@
-.gitignore
+.cache/
+.direnv/
+.ci/
+.github/
+.vscode/
+
+compile_commands.json

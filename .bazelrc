@@ -37,8 +37,12 @@ build:windows --cxxopt='/std:c++latest' --host_cxxopt='/std:c++latest' --client_
 build --stamp
 build --workspace_status_command=./hack/stamp.sh
 
+# Only show errors in test output
+test --test_output=errors
+
 # CI-based configuration
 build:ci --nokeep_state_after_build
+test:ci --test_output=all
 
 ## ~ common configuration for sanitizers
 common:san --config=dbg --strip=never --copt=-O0 --copt=-fno-omit-frame-pointer
