@@ -1,37 +1,46 @@
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------
+# 🌺💜 Violet: Extended standard library for C++26
 # Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
 #
-# This file is part of the Eous project.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# This file is dual-licensed under the terms of the Apache 2.0 License
-# and the GNU General Public License v3.0 License. You are freely able
-# to choose either license to govern your use of this file.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 #
-# You should've received copies of both licenses in the source tree
-# of the project. You can also visit the licenses at:
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# ---------------------------------------------------------------------------------
+# The `.ci/gcc/Dockerfile` image is the official image for Violet's CI pipeline that
+# tests Clang coverage. Each tag corresponds to what Clang version we test, which as of
+# 2025-10-14, we test on the following Clang versions:
 #
-#         *** https://apache.org/licenses/LICENSE-2.0 ***
-#          *** https://gnu.org/licenses/gpl-3.0.html ***
-# -----------------------------------------------------------------------------
-# The `ci.Dockerfile` image is the official image we use for CI on TeamCity and
-# GitHub Actions. Only TC and GHA have little to no access to Noelware's
-# container registry, where we store the image. So, only TC and GHA have access
-# to the `cr.noelware.cloud/private/violet/ci:latest` image.
+#    * `clang-21`
+#    * `clang-20`
 #
-# Every time at 00:00 PST, this image gets updated so we get the latest updates
-# from the Debian repositories for our dependencies. We do pin LLVM to 20 as that
-# is what we support (for now) but newer versions will work as well.
+# Older compilers are not avaliable under Noelware's container registry. Once a new
+# version of Clang is released, we provide tests and soft-deprecate the second latest
+# compiler.
 #
-# We pin from `debian:bookworm-slim` so that if any supply chain occurs, our CI isn't
-# really affected by it. Renovate will also update this if needed but if you need
-# to manually update it:
+# Every time at 00:00 PST (America/Los_Angeles), this image does get updated. We also
+# pin what Debian version we use as well by the image digest. Renovate will also
+# update if needed. To manually update it, you can use the following commands:
 #
 #   $ docker pull debian:trixie-slim
 #   $ docker image inspect debian:trixie-slim | jq '.[0].RepoDigests[0]' | tr -d '"'
 FROM debian@sha256:1caf1c703c8f7e15dcf2e7769b35000c764e6f50e4d7401c355fb0248f3ddfdb
 
 LABEL org.opencontainers.image.source="https://git.noelware.org/libraries/violet"
-LABEL org.opencontainers.image.licenses="GPL-3.0-only OR Apache-2.0"
+LABEL org.opencontainers.image.licenses="MIT"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -95,6 +104,8 @@ RUN apt install -y \
     ninja-build \
     cmake \
     sudo \
+    meson \
+    cmake \
     gh
 
 ## 6. Create user that acts like they own this server.

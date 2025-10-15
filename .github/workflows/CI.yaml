@@ -1,0 +1,70 @@
+# 🌺💜 Violet: Extended standard library for C++26
+# Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+name: CI
+on:
+    workflow_dispatch: {}
+    push:
+        branches:
+            - 'issues/gh-**'
+            - 'feat/**'
+            - master
+
+        paths-ignore:
+            - '.github/**'
+            - '.vscode/**'
+            - 'nix/**'
+
+            - .*ignore
+            - .clangd
+            - .envrc
+            - flake.lock
+    pull_request:
+        types: [opened, synchronize]
+        branches:
+            - 'issues/gh-**'
+            - 'feat/**'
+            - master
+        paths:
+            - '**'
+permissions:
+    contents: read
+    checks: write
+concurrency:
+    group: ${{github.workflow}}-${{github.ref}}
+    cancel-in-progress: true
+jobs:
+    linux:
+        name: "Linux [${{matrix.compiler}}]"
+        runs-on: ubuntu-latest
+        container:
+            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+        strategy:
+            fail-fast: false
+            matrix:
+                compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20]
+                bazel-version: ["7.6.0", "8.4.2"]
+        env:
+            USE_BAZEL_VERSION: ${{matrix.bazel-version}}
+            BAZELFLAGS: "--config=ci"
+        steps:
+            - uses: actions/checkout@v5
+            - run: bazel build ${{env.BAZELFLAGS}} //...
