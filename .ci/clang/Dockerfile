@@ -106,6 +106,7 @@ RUN apt install -y \
     sudo \
     meson \
     cmake \
+    git \
     gh
 
 ## 6. Create user that acts like they own this server.
