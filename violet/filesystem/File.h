@@ -23,7 +23,7 @@
 
 #include "violet/filesystem/Path.h"
 #include "violet/io/Error.h"
-#include "violet/iter/Iterator.h"
+#include "violet/support/Bitflags.h"
 #include "violet/violet.h"
 
 #include <utility>
@@ -259,7 +259,7 @@ private:
         kCreateNew = 1 << 5 //< atomically creates the file or fails if it already exists.
     };
 
-    uint8 n_flags = 0;
+    Bitflags<Flag> n_flags = Bitflags<Flag>(0);
 
 #ifdef _WIN32
     DWORD n_attributes = FILE_ATTRIBUTE_NORMAL;
@@ -267,17 +267,12 @@ private:
     mode_t n_mode = 0644;
 #endif
 
-    [[nodiscard]] auto containsFlag(const Flag& flag) const noexcept -> bool
-    {
-        return (n_flags & static_cast<uint8>(flag)) != 0;
-    }
-
     void populateFlag(const Flag& flag, bool yes = true) noexcept
     {
-        if (!containsFlag(flag) && yes) {
-            this->n_flags |= static_cast<uint8>(flag);
-        } else if (containsFlag(flag) && !yes) {
-            this->n_flags &= static_cast<uint8>(flag);
+        if (!this->n_flags.Contains(flag) && yes) {
+            this->n_flags.Add(flag);
+        } else if (this->n_flags.Contains(flag) && !yes) {
+            this->n_flags &= Bitflags(flag);
         }
     }
 };
@@ -286,44 +281,5 @@ inline auto File::Open(Path path, OpenOptions opts) -> IO::Result<File>
 {
     return opts.Open(VIOLET_MOVE(path));
 }
-
-/* iterators */
-
-/// [`Iterator`] that iterates through a list of paths from its parent path.
-struct Dirs final: public Iterator<Dirs> {
-    Dirs() = delete;
-
-    VIOLET_EXPLICIT Dirs(Path parent)
-        : n_parent(VIOLET_MOVE(parent))
-    {
-    }
-
-    auto Next() noexcept -> Optional<Path>;
-
-private:
-    Path n_parent;
-
-#ifdef _WIN32
-    HANDLE n_handle = INVALID_HANDLE_VALUE;
-    WIN32_FIND_DATAW n_iter;
-    bool n_valid = false;
-#else
-    DIR* n_iter = nullptr;
-#endif
-};
-
-/* free-hand functions */
-
-/// Creates a directory that points to `path`.
-auto CreateDirectory(const Path& path) -> IO::Result<void>;
-
-/// Creates a directory and recursively create directories of parents if they don't exist.
-auto CreateAllDirs(const Path& path) -> IO::Result<void>;
-
-/// Creates a iterator that lists all the files in a directory.
-auto ReadDir(const Path& path) -> IO::Result<Dirs>;
-
-auto RemoveDirectory(const Path& path) -> IO::Result<void>;
-auto RemoveAll(const Path& path) -> IO::Result<void>;
 
 } // namespace Noelware::Violet::Filesystem

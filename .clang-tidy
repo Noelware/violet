@@ -43,7 +43,8 @@ Checks: >
   -cppcoreguidelines-avoid-c-arrays,
   -modernize-avoid-c-arrays,
   -google-explicit-constructor,
-  -cppcoreguidelines-owning-memory
+  -cppcoreguidelines-owning-memory,
+  -misc-no-recursion
 
 CheckOptions:
   - {key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor, value: true}

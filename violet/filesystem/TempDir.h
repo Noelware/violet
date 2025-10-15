@@ -22,6 +22,7 @@
 #pragma once
 
 #include "violet/filesystem/File.h"
+#include "violet/filesystem/Filesystem.h"
 #include "violet/filesystem/Path.h"
 #include "violet/io/Error.h"
 
@@ -56,7 +57,7 @@ struct TempDir final {
     ~TempDir()
     {
         if (!this->n_keep) {
-            assert(Filesystem::RemoveAll(this->n_path));
+            assert(Filesystem::RemoveDirectory(this->n_path));
         }
     }
 

@@ -300,7 +300,7 @@ struct Path final {
         return Some<Path>(val.substr(0, pos));
     }
 
-    [[nodiscard]] auto Stem() const -> StringRef
+    [[nodiscard]] constexpr auto Stem() const -> StringRef
     {
         Str filename = this->Filename();
         if (filename.empty()) {
@@ -323,7 +323,7 @@ struct Path final {
         return { filename.substr(0, dotpos) };
     }
 
-    [[nodiscard]] auto WithFilename(StringRef filename) const noexcept -> Path
+    [[nodiscard]] constexpr auto WithFilename(StringRef filename) const noexcept -> Path
     {
         if (Empty()) {
             return Path(filename);
@@ -358,6 +358,20 @@ struct Path final {
         }
 
         return this->WithFilename(std::format("{}{}", stem, final));
+    }
+
+    [[nodiscard]] constexpr auto IsRoot() const noexcept -> bool
+    {
+#ifdef VIOLET_WINDOWS
+        return this->n_value.length() == 2 && std::isalpha(this->n_value[0]) && this->n_value[1] == ':';
+#else
+        return this->n_value == "/";
+#endif
+    }
+
+    constexpr VIOLET_EXPLICIT operator StringRef() const noexcept
+    {
+        return this->n_value;
     }
 
 #ifdef _WIN32

@@ -219,10 +219,11 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 #define VIOLET_OSTREAM_IMPL(TYPE) friend auto operator<<(::std::ostream& os, TYPE self) -> ::std::ostream&
 // clang-format on
 
+// -- compiler detection --
 #if defined(__clang__)
 #    define VIOLET_COMPILER "clang"
 #    define VIOLET_IS_CLANG 1
-#    define VIOLET_IS_GCC 1
+#    define VIOLET_IS_GCC 0
 #    define VIOLET_IS_MSVC 0
 #elif defined(__GNUC__)
 #    define VIOLET_COMPILER "gcc"
@@ -243,11 +244,11 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 
 #ifdef _MSC_VER
 #    if _MSC_VER >= 1930
-#        define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2022"
+#        define VIOLET_VS_VERSION 2022
 #    elif _MSC_VER >= 1920
-#        define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2019"
+#        define VIOLET_VS_VERSION 2019
 #    elif _MSC_VER >= 1910
-#        define VIOLET_VISUAL_STUDIO_VERSION "Visual Studio 2017"
+#        define VIOLET_VS_VERSION 2017
 #    else
 #        error "Violet requires Visual Studio 2017 or higher to be compiled correctly"
 #    endif
@@ -262,8 +263,11 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 #    if __has_cpp_attribute(unlikely)
 #        define VIOLET_UNLIKELY_ATTRIBUTE [[unlikely]]
 #    else
-#        define VIOLVIOLET_UNLIKELY_ATTRIBUTE
+#        define VIOLET_UNLIKELY_ATTRIBUTE
 #    endif
+#else
+#    define VIOLET_LIKELY_ATTRIBUTE
+#    define VIOLET_UNLIKELY_ATTRIBUTE
 #endif
 
 // clang-format off
@@ -273,3 +277,25 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 
 #define __CONCAT_IDENT_INNER(a, b) a##b
 #define CONCAT(a, b) __CONCAT_IDENT_INNER(a, b)
+
+// -- os detection
+#ifdef _WIN32
+#    define VIOLET_OS "Windows"
+#    define VIOLET_WINDOWS
+#elif defined(__unix__)
+#    define VIOLET_UNIX
+#    ifdef __linux__
+#        define VIOLET_OS "Linux"
+#        define VIOLET_LINUX
+#    elif defined(__APPLE__)
+#        include <TargetConditionals.h>
+#        if TARGET_OS_MAC
+#            define VIOLET_OS "macOS"
+#            define VIOLET_MACOS
+#        else
+#            error "Unsupported Apple platform -- only supporting macOS"
+#        endif
+#    endif
+#else
+#    error "unsupported platform"
+#endif

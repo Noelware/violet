@@ -73,30 +73,43 @@ cc_library(
         ":path",
         "//violet",
         "//violet/io:error",
+        "//violet/support:bitflags",
+    ],
+)
+
+cc_library(
+    name = "filesystem",
+    srcs = select({
+        "@platforms//os:linux": ["impl/filesystem/unix.cpp"],
+        "@platforms//os:macos": ["impl/filesystem/unix.cpp"],
+        "@platforms//os:windows": ["impl/filesystem/windows.cpp"],
+        "//conditions:default": [],
+    }),
+    hdrs = ["Filesystem.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":file",
+        ":path",
+        "//violet",
+        "//violet/io:error",
         "//violet/iter",
+        "//violet/support:bitflags",
     ],
 )
 
 cc_library(
     name = "tempdir",
     srcs = select({
-        "@platforms//os:linux": [
-            "impl/tempdir/unix.cpp",
-        ],
-        "@platforms//os:macos": [
-            "impl/tempdir/unix.cpp",
-        ],
-        "@platforms//os:windows": [
-            "impl/tempdir/windows.cpp",
-        ],
-        "//conditions:default": [
-            "impl/tempdir/unsupported.cpp",
-        ],
+        "@platforms//os:linux": ["impl/tempdir/unix.cpp"],
+        "@platforms//os:macos": ["impl/tempdir/unix.cpp"],
+        "@platforms//os:windows": ["impl/tempdir/windows.cpp"],
+        "//conditions:default": ["impl/tempdir/unsupported.cpp"],
     }),
     hdrs = ["TempDir.h"],
     visibility = ["//visibility:public"],
     deps = [
         ":file",
+        ":filesystem",
         ":path",
         "//violet",
         "//violet/container:optional",
