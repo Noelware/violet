@@ -21,11 +21,49 @@
 
 load("@rules_cc//cc:defs.bzl", cc_library_ = "cc_library", cc_test_ = "cc_test")
 
+SANITIZER_OPTS = select({
+    "//buildsystem/bazel/configs:asan_enabled": ["-fsanitize=address"],
+    "//buildsystem/bazel/configs:msan_enabled": ["-fsanitize=memory"],
+    "//buildsystem/bazel/configs:tsan_enabled": ["-fsanitize=thread"],
+    "//buildsystem/bazel/configs:ubsan_enabled": ["-fsanitize=undefined"],
+    "//conditions:default": [],
+})
+
+MSAN_OPTS = []
+UBSAN_OPTS = ["print_summary=1", "print_stacktrace=1"]
+ASAN_OPTS = ["print_summary=1"]
+TSAN_OPTS = ["print_summary=1"]
+
+SANITIZER_ENV = select({
+    "//buildsystem/bazel/configs:ubsan_enabled": {"UBSAN_OPTIONS": ":".join(UBSAN_OPTS)},
+    "//conditions:default": {},
+}) | select({
+    "//buildsystem/bazel/configs:asan_enabled": {"ASAN_OPTIONS": ":".join(ASAN_OPTS)},
+    "//conditions:default": {},
+}) | select({
+    "//buildsystem/bazel/configs:tsan_enabled": {"TSAN_OPTIONS": ":".join(TSAN_OPTS)},
+    "//conditions:default": {},
+}) | select({
+    "//buildsystem/bazel/configs:tsan_enabled": {"MSAN_OPTIONS": ":".join(MSAN_OPTS)},
+    "//conditions:default": {},
+})
+
 def cc_library(name, hdrs = [], **kwargs):
     return cc_library_(name = name, hdrs = hdrs, **kwargs)
 
 def cc_test(name, **kwargs):
-    deps = kwargs.pop("deps") or []
+    deps = kwargs.pop("deps", [])
     deps += ["@googletest//:gtest", "@googletest//:gtest_main"]
 
-    return cc_test_(name = name, deps = deps, **kwargs)
+    copts = kwargs.pop("copts", [])
+    linkopts = kwargs.pop("linkopts", [])
+    env = kwargs.pop("env", {})
+
+    return cc_test_(
+        name = name,
+        deps = deps,
+        copts = copts + SANITIZER_OPTS,
+        linkopts = linkopts + SANITIZER_OPTS,
+        env = env | SANITIZER_ENV,
+        **kwargs
+    )

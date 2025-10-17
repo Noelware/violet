@@ -99,8 +99,8 @@ private:
 };
 
 struct DirEntry final {
-    Path Path; ///< path of this entry
-    FileType FileType; ///< the file type of this entry
+    struct Path Path; ///< path of this entry
+    struct FileType FileType; ///< the file type of this entry
 };
 
 /// A iterator that iterates through a list of files in a directory. You create this

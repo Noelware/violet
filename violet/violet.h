@@ -299,3 +299,17 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 #else
 #    error "unsupported platform"
 #endif
+
+// -- sanitizer check
+/// ~ MSan
+#if VIOLET_IS_CLANG && defined(__has_feature)
+#    if __has_feature(memory_sanitizer)
+#        define VIOLET_MSAN
+#    endif
+#endif
+
+#if defined(__has_feature)
+#    if __has_feature(address_sanitizer)
+#        define VIOLET_ASAN
+#    endif
+#endif

@@ -93,11 +93,11 @@ jobs:
             matrix:
                 compiler: [gcc-15, clang-21]
                 include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21"}
-                    - {compiler: gcc-15, cc: "gcc", cxx: "g++"}
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", testenv: "--test_env=ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
+                    - {compiler: gcc-15, cc: "gcc", cxx: "g++", testenv: ""}
         env:
             USE_BAZEL_VERSION: "8.4.2"
-            BAZELFLAGS: "--config=ci --config=asan --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}}"
+            BAZELFLAGS: "--config=ci --config=asan --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.testenv}}"
         steps:
             - uses: actions/checkout@v5
             - uses: actions/cache@v4
@@ -117,7 +117,7 @@ jobs:
             image: ghcr.io/noelware/violet/ci:clang-21
         env:
             USE_BAZEL_VERSION: "8.4.2"
-            BAZELFLAGS: "--config=ci --config=msan --action_env=CC=clang-21 --action_env=CXX=clang-21"
+            BAZELFLAGS: "--config=ci --config=msan --action_env=CC=clang-21 --action_env=CXX=clang-21 --test_env=MSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"
         steps:
             - uses: actions/checkout@v5
             - uses: actions/cache@v4
@@ -140,11 +140,38 @@ jobs:
             matrix:
                 compiler: [gcc-15, clang-21]
                 include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21"}
-                    - {compiler: gcc-15, cc: "gcc", cxx: "g++"}
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", testenv: "--test_env=UBSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
+                    - {compiler: gcc-15, cc: "gcc", cxx: "g++", testenv: ""}
         env:
             USE_BAZEL_VERSION: "8.4.2"
-            BAZELFLAGS: "--config=ci --config=ubsan --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}}"
+            BAZELFLAGS: "--config=ci --config=ubsan --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.testenv}}"
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/cache@v4
+              with:
+                key: bazel-cache-linux-${{matrix.compiler}}-ubsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                restore-keys: bazel-cache-linux-${{matrix.compiler}}-ubsan-
+                path: |
+                    ~/.cache/bazel
+                    ~/.cache/bazelisk
+
+            - run: bazel build ${{env.BAZELFLAGS}} //...
+            - run: bazel test ${{env.BAZELFLAGS}} //...
+    t1san-linux:
+        name: "Bazel / Linux [${{matrix.compiler}} (TSan)]"
+        runs-on: ubuntu-latest
+        container:
+            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+        strategy:
+            fail-fast: false
+            matrix:
+                compiler: [gcc-15, clang-21]
+                include:
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", testenv: "--test_env=TSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
+                    - {compiler: gcc-15, cc: "gcc", cxx: "g++", testenv: ""}
+        env:
+            USE_BAZEL_VERSION: "8.4.2"
+            BAZELFLAGS: "--config=ci --config=tsan --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.testenv}}"
         steps:
             - uses: actions/checkout@v5
             - uses: actions/cache@v4

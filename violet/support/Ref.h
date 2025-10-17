@@ -60,7 +60,7 @@ struct Ref final {
         try {
             ::new (blk->ValuePtr()) T(VIOLET_FWD(Args, args)...);
         } catch (...) {
-            blk_type::Dealloc(this->n_blk);
+            blk_type::Dealloc(blk);
             throw;
         }
 
@@ -161,7 +161,7 @@ struct Ref final {
             abort();
         }
 
-        this->n_blk->Strong++;
+        ++this->n_blk->Strong;
         return Ref<T>(this->n_blk);
     }
 
@@ -175,6 +175,32 @@ struct Ref final {
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
     {
         return this->n_blk != nullptr;
+    }
+
+    VIOLET_OSTREAM_IMPL(const Ref&)
+    {
+        const auto& type = typeid(T);
+        if (self.n_blk == nullptr) {
+            return os << "«type '" << Utility::DemangleCXXName(type.name()) << '@' << type.hash_code()
+                      << "' not streamble: reference no longer valid»";
+        }
+
+        const auto& value = self.Value();
+
+        // clang-format off
+        if constexpr (requires {
+            { os << value } -> std::same_as<std::ostream&>;
+        }) {
+            // clang-format on
+            return os << value;
+        }
+
+        if constexpr (Noelware::Violet::Stringify<T>) {
+            return os << Noelware::Violet::ToString(value);
+        }
+
+        return os << "«type '" << Utility::DemangleCXXName(type.name()) << '@' << type.hash_code()
+                  << "' not streamable»";
     }
 
 private:
@@ -196,9 +222,9 @@ private:
             return;
         }
 
-        if (this->n_blk->Strong-- == 0) {
+        if (--this->n_blk->Strong == 0) {
             this->n_blk->Destroy();
-            if (this->n_blk->Weak-- == 0) {
+            if (--this->n_blk->Weak == 0) {
                 blk_type::Dealloc(this->n_blk);
             }
         }

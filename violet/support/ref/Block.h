@@ -26,6 +26,10 @@
 #include <atomic>
 #include <type_traits>
 
+#ifdef VIOLET_MSAN
+#    include <sanitizer/msan_interface.h>
+#endif
+
 /// @internal
 namespace Noelware::Violet::__detail {
 
@@ -50,7 +54,17 @@ struct Block final {
         usize alignment = std::max(alignof(Block), alignof(T));
         void* blk = ::operator new(sizeof(Block) + sizeof(T), std::align_val_t(alignment));
 
+#ifdef VIOLET_MSAN
+        std::memset(blk, 0, sizeof(Block) + sizeof(T));
+
+        Block* block = new (blk) Block();
+        __msan_unpoison(&block->Strong, sizeof(Strong));
+        __msan_unpoison(&block->Weak, sizeof(Weak));
+
+        return block;
+#else
         return new (blk) Block();
+#endif
     }
 
     /// Deallocates a `blk` out of existence.
@@ -89,6 +103,10 @@ struct Block final {
     void Destroy() noexcept(std::is_nothrow_destructible_v<T>)
     {
         std::destroy_at(ValuePtr());
+
+#ifdef VIOLET_MSAN
+        __msan_unpoison(ValuePtr(), sizeof(T));
+#endif
     }
 };
 
