@@ -44,6 +44,16 @@ build --workspace_status_command=./hack/stamp.sh
 # Only show errors in test output
 test --test_output=errors
 
+# For `--config=clang` (if on Clang), use libc++ instead of libstdc++
+build:clang --cxxopt=-nostdinc++ --host_cxxopt=-nostdinc++ --client_env=BAZEL_CXXOPTS=-nostdinc++
+build:clang --cxxopt=-stdlib=libc++ --host_cxxopt=-stdlib=libc++ --client_env=BAZEL_CXXOPTS=-stdlib=libc++
+build:clang --linkopt=-stdlib=libc++ --host_linkopt=-stdlib=libc++ --client_env=BAZEL_LINKOPTS=-stdlib=libc++
+build:clang --linkopt=-lc++abi --host_linkopt=-lc++abi --client_env=BAZEL_LINKOPTS=-lc++abi
+build:clang --linkopt=-lc++ --host_linkopt=-lc++ --client_env=BAZEL_LINKOPTS=-lc++
+
+# For `--config=gcc` (if on GCC), use libstdc++ instead if libc++
+build:gcc --cxxopt=-stdlib=libstdc++ --host_cxxopt=-stdlib=libstdc++ --client_env=BAZEL_CXXOPTS=-stdlib=libstdc++
+
 # CI-based configuration
 build:ci --nokeep_state_after_build
 test:ci --test_output=all
