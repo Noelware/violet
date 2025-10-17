@@ -41,9 +41,9 @@ struct WalkDir;
 auto CreateDirectory(const Path& path) -> IO::Result<void>;
 auto CreateDirectories(const Path& path) -> IO::Result<void>;
 auto ReadDir(const Path& path) -> IO::Result<Dirs>;
-auto WalkDir(const Path& path) -> IO::Result<struct WalkDir>;
+// auto WalkDir(const Path& path) -> IO::Result<struct WalkDir>;
 auto RemoveDirectory(const Path& path) -> IO::Result<void>;
-auto RemoveAllDirs(const Path& path) -> IO::Result<void>;
+// auto RemoveAllDirs(const Path& path) -> IO::Result<void>;
 auto Exists(const Path& path) -> IO::Result<bool>;
 
 struct FileType final {

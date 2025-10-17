@@ -44,13 +44,30 @@ auto Noelware::Violet::Filesystem::Dirs::Next() noexcept -> Optional<IO::Result<
     return errno != 0 ? Some<IO::Result<Path>>(IO::Error::Platform(IO::ErrorKind::Other)) : Nothing;
 }
 
+auto Noelware::Violet::Filesystem::Exists(const Path& path) -> IO::Result<bool>
+{
+    struct stat st{};
+    if (::lstat(static_cast<StringRef>(path), &st) == 0) {
+        return true;
+    }
+
+    auto err = IO::Error::Platform(IO::ErrorKind::Other);
+    assert(err.RawOSError());
+
+    if (err.RawOSError().HasValueAnd([](int value) { return value == ENOENT || value == ENOTDIR; })) {
+        return false;
+    }
+
+    return Err(err);
+}
+
 auto Noelware::Violet::Filesystem::CreateDirectory(const Path& path) -> IO::Result<void>
 {
-    if (path.Empty() || path.IsRoot()) {
+    if (path.Empty()) {
         return {};
     }
 
-    if (mkdir(static_cast<StringRef>(path).Data(), 0755) == 0) {
+    if (mkdir(static_cast<StringRef>(path), 0755) == 0) {
         return {};
     }
 
@@ -103,6 +120,15 @@ auto Noelware::Violet::Filesystem::ReadDir(const Path& path) -> IO::Result<Dirs>
     }
 
     return Dirs(path, dir);
+}
+
+auto Noelware::Violet::Filesystem::RemoveDirectory(const Path& path) -> IO::Result<void>
+{
+    if (::rmdir(static_cast<StringRef>(path)) != 0) {
+        return Err(IO::Error::Platform(IO::ErrorKind::Other));
+    }
+
+    return {};
 }
 
 #endif

@@ -19,7 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#if defined(__unix__) || defined(__APPLE__) || defined(__linux__)
+#include "violet/violet.h"
+
+#ifdef VIOLET_UNIX
 
 // clang-format off
 #include "violet/filesystem/File.h"
@@ -29,6 +31,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 // clang-format on
+
+auto Noelware::Violet::Filesystem::File::doOpen() const noexcept -> IO::Result<void>
+{
+    return {};
+}
 
 void Noelware::Violet::Filesystem::File::Close()
 {

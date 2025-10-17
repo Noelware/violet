@@ -52,8 +52,8 @@ concurrency:
     group: ${{github.workflow}}-${{github.ref}}
     cancel-in-progress: true
 jobs:
-    linux:
-        name: "Linux [${{matrix.compiler}} / Bazel ${{matrix.bazel-version}}]"
+    bazel-linux:
+        name: "Bazel / Linux [${{matrix.compiler}} / Bazel ${{matrix.bazel-version}}]"
         runs-on: ubuntu-latest
         container:
             image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
@@ -77,6 +77,99 @@ jobs:
               with:
                 key: bazel-cache-linux-${{matrix.compiler}}-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
                 restore-keys: bazel-cache-linux-${{matrix.compiler}}-
+                path: |
+                    ~/.cache/bazel
+                    ~/.cache/bazelisk
+
+            - run: bazel build ${{env.BAZELFLAGS}} //...
+            - run: bazel test ${{env.BAZELFLAGS}} //...
+    asan-bazel-linux:
+        name: "Bazel / Linux [${{matrix.compiler}} / Bazel ${{matrix.bazel-version}} (ASan)]"
+        runs-on: ubuntu-latest
+        container:
+            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+        strategy:
+            fail-fast: false
+            matrix:
+                compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20]
+                bazel-version: ["7.6.0", "8.4.2"]
+                include:
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21"}
+                    - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20"}
+                    - {compiler: gcc-15, cc: "gcc", cxx: "g++"}
+                    - {compiler: gcc-14, cc: "gcc", cxx: "g++"}
+                    - {compiler: gcc-13, cc: "gcc", cxx: "g++"}
+        env:
+            USE_BAZEL_VERSION: ${{matrix.bazel-version}}
+            BAZELFLAGS: "--config=ci --config=asan --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}}"
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/cache@v4
+              with:
+                key: bazel-cache-linux-${{matrix.compiler}}-asan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                restore-keys: bazel-cache-linux-${{matrix.compiler}}-asan-
+                path: |
+                    ~/.cache/bazel
+                    ~/.cache/bazelisk
+
+            - run: bazel build ${{env.BAZELFLAGS}} //...
+            - run: bazel test ${{env.BAZELFLAGS}} //...
+    msan-bazel-linux:
+        name: "Bazel / Linux [${{matrix.compiler}} / Bazel ${{matrix.bazel-version}} (MSan)]"
+        runs-on: ubuntu-latest
+        container:
+            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+        strategy:
+            fail-fast: false
+            matrix:
+                compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20]
+                bazel-version: ["7.6.0", "8.4.2"]
+                include:
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21"}
+                    - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20"}
+                    - {compiler: gcc-15, cc: "gcc", cxx: "g++"}
+                    - {compiler: gcc-14, cc: "gcc", cxx: "g++"}
+                    - {compiler: gcc-13, cc: "gcc", cxx: "g++"}
+        env:
+            USE_BAZEL_VERSION: ${{matrix.bazel-version}}
+            BAZELFLAGS: "--config=ci --config=msan --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}}"
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/cache@v4
+              with:
+                key: bazel-cache-linux-${{matrix.compiler}}-msan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                restore-keys: bazel-cache-linux-${{matrix.compiler}}-msan-
+                path: |
+                    ~/.cache/bazel
+                    ~/.cache/bazelisk
+
+            - run: bazel build ${{env.BAZELFLAGS}} //...
+            - run: bazel test ${{env.BAZELFLAGS}} //...
+    ubsan-bazel-linux:
+        name: "Bazel / Linux [${{matrix.compiler}} / Bazel ${{matrix.bazel-version}} (UBSan)]"
+        runs-on: ubuntu-latest
+        container:
+            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+        strategy:
+            fail-fast: false
+            matrix:
+                compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20]
+                bazel-version: ["7.6.0", "8.4.2"]
+                include:
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21"}
+                    - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20"}
+                    - {compiler: gcc-15, cc: "gcc", cxx: "g++"}
+                    - {compiler: gcc-14, cc: "gcc", cxx: "g++"}
+                    - {compiler: gcc-13, cc: "gcc", cxx: "g++"}
+        env:
+            USE_BAZEL_VERSION: ${{matrix.bazel-version}}
+            BAZELFLAGS: "--config=ci --config=ubsan --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}}"
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/cache@v4
+              with:
+                key: bazel-cache-linux-${{matrix.compiler}}-ubsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                restore-keys: bazel-cache-linux-${{matrix.compiler}}-ubsan-
                 path: |
                     ~/.cache/bazel
                     ~/.cache/bazelisk

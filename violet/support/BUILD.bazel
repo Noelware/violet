@@ -38,6 +38,44 @@ cc_library(
 )
 
 cc_library(
+    name = "aref",
+    hdrs = ["ARef.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container:optional",
+        "//violet/support/ref:block",
+    ],
+)
+
+cc_test(
+    name = "aref_test",
+    size = "small",
+    srcs = ["tests/ARef.test.cpp"],
+    visibility = ["//visibility:public"],
+    deps = [":aref"],
+)
+
+cc_library(
+    name = "ref",
+    hdrs = ["Ref.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container:optional",
+        "//violet/support/ref:block",
+    ],
+)
+
+cc_test(
+    name = "ref_test",
+    size = "small",
+    srcs = ["tests/Ref.test.cpp"],
+    visibility = ["//visibility:public"],
+    deps = [":ref"],
+)
+
+cc_library(
     name = "stringref",
     hdrs = ["StringRef.h"],
     visibility = ["//visibility:public"],

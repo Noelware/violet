@@ -150,7 +150,7 @@ struct [[nodiscard("always check its error state")]] Result final {
         return *this;
     }
 
-    constexpr VIOLET_IMPLICIT operator bool()
+    constexpr VIOLET_IMPLICIT operator bool() const noexcept
     {
         return this->n_isOk;
     }
@@ -201,9 +201,9 @@ struct [[nodiscard("always check its error state")]] Result final {
     }
 
     template<typename Fun>
-    constexpr auto Map(Fun&& fun) const& -> Result<std::invoke_result_t<Fun, const T&>, E>
+    constexpr auto Map(Fun&& fun) & -> Result<std::invoke_result_t<Fun, T&>, E>
     {
-        using U = std::invoke_result_t<Fun, const T&>;
+        using U = std::invoke_result_t<Fun, T&>;
         return IsOk() ? Result<U, E>(std::invoke(VIOLET_FWD(Fun, fun), Value())) : Result<U, E>(Error());
     }
 

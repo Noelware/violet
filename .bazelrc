@@ -22,7 +22,7 @@
 # For `--config=dbg`, we set `--compilation_mode` to `dbg`
 build:dbg --compilation_mode=dbg
 
-# For `--config=opt`, we set `--compilation_mode` to `dbg`
+# For `--config=opt`, we set `--compilation_mode` to `opt`
 build:opt --compilation_mode=opt
 
 # For `.bazelrc`, we can specify platform-specific Bazel flags with this.
@@ -55,6 +55,12 @@ common:san --config=dbg --strip=never --copt=-O0 --copt=-fno-omit-frame-pointer
 
 ## ~ `--config=asan` enables Address Sanitizer (ASan)
 common:asan --config=san --copt=-fsanitize=address --linkopt=-fsanitize=address
+
+## ~ `--config=msan` enables Memory Sanitizer (MSan)
+common:msan --config=san --copt=-fsanitize=memory --linkopt=-fsanitize=memory
+
+## ~ `--config=ubsan` enables Undefined Behaviour Sanitizer (UBSan)
+common:ubsan --config=san --copt=-fsanitize=undefined --linkopt=-fsanitize=undefined
 
 # Import .usr.bazelrc if it exists
 try-import %workspace%/.usr.bazelrc
