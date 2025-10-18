@@ -62,6 +62,8 @@ RUN apt update -y && apt install -y \
     clang-format-${LLVM_VERSION} \
     clang-tools-${LLVM_VERSION} \
     clang-${LLVM_VERSION} \
+    libc++-${LLVM_VERSION}-dev \
+    libc++abi-${LLVM_VERSION}-dev \
     llvm-${LLVM_VERSION}
 
 ## 3. Install Bazelisk (which will be aliased as `bazel`) and Bazel build-tools.
