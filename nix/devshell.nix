@@ -89,8 +89,6 @@ in
 
             echo "==> patching *San include headers ~> $realresourcepath ... (editing .usr.bazelrc in $cwd)"
             line="build:san --copt=-I${llvm.pkgs.compiler-rt.dev}/include"
-            line2="build:clang --cxxopt=-I${llvm.pkgs.libcxx.dev.outPath}/include/c++/v1"
-            line3="build:clang --linkopt=-L${llvm.pkgs.libcxx.outPath}/lib"
 
             if [ ! -f "$cwd/.usr.bazelrc" ]; then
               echo "==> \`.usr.bazelrc\` doesn't exist! adding proper configuration..."
@@ -105,12 +103,6 @@ in
 
       # Workaround for missing C++ headers for *San configurations (ASan, TSan, etc...)
       build:san --copt=-I$realresourcepath/include
-
-      # Since we are using the Clang toolchain for this Nix devshell, let's make sure
-      # we can link with LLVM's `libc++` for no false positives.
-      build --config=clang
-      build:clang --cxxopt=-I${llvm.pkgs.libcxx.dev.outPath}/include/c++/v1
-      build:clang --linkopt=-L${llvm.pkgs.libcxx.outPath}/lib
       EOF
 
               echo "==> finished!"

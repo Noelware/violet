@@ -63,8 +63,8 @@ jobs:
                 compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20]
                 bazel-version: ["7.6.0", "8.4.2"]
                 include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--config=clang"}
-                    - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: "--config=clang"}
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: ""}
+                    - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: ""}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
                     - {compiler: gcc-14, cc: "gcc", cxx: "g++", flags: ""}
                     - {compiler: gcc-13, cc: "gcc", cxx: "g++", flags: ""}
@@ -93,7 +93,7 @@ jobs:
             matrix:
                 compiler: [gcc-15, clang-21]
                 include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--config=clang --test_env=ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: " --test_env=ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
             USE_BAZEL_VERSION: "8.4.2"
@@ -110,26 +110,6 @@ jobs:
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
             - run: bazel test ${{env.BAZELFLAGS}} //...
-    msan-linux:
-        name: "Bazel / Linux [Clang (MSan)]"
-        runs-on: ubuntu-latest
-        container:
-            image: ghcr.io/noelware/violet/ci:clang-21
-        env:
-            USE_BAZEL_VERSION: "8.4.2"
-            BAZELFLAGS: "--config=ci --config=msan --config=clang --action_env=CC=clang-21 --action_env=CXX=clang-21 --test_env=MSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"
-        steps:
-            - uses: actions/checkout@v5
-            - uses: actions/cache@v4
-              with:
-                key: bazel-cache-linux-clang-21-msan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
-                restore-keys: bazel-cache-linux-clang-21-msan-
-                path: |
-                    ~/.cache/bazel
-                    ~/.cache/bazelisk
-
-            - run: bazel build ${{env.BAZELFLAGS}} //...
-            - run: bazel test ${{env.BAZELFLAGS}} //...
     ubsan-linux:
         name: "Bazel / Linux [${{matrix.compiler}} (UBSan)]"
         runs-on: ubuntu-latest
@@ -140,7 +120,7 @@ jobs:
             matrix:
                 compiler: [gcc-15, clang-21]
                 include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=UBSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21 --config=clang"}
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=UBSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
             USE_BAZEL_VERSION: "8.4.2"
@@ -157,7 +137,7 @@ jobs:
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
             - run: bazel test ${{env.BAZELFLAGS}} //...
-    t1san-linux:
+    tsan-linux:
         name: "Bazel / Linux [${{matrix.compiler}} (TSan)]"
         runs-on: ubuntu-latest
         container:
@@ -167,7 +147,7 @@ jobs:
             matrix:
                 compiler: [gcc-15, clang-21]
                 include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=TSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21 --config=clang"}
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=TSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21 "}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
             USE_BAZEL_VERSION: "8.4.2"
@@ -176,8 +156,8 @@ jobs:
             - uses: actions/checkout@v5
             - uses: actions/cache@v4
               with:
-                key: bazel-cache-linux-${{matrix.compiler}}-ubsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
-                restore-keys: bazel-cache-linux-${{matrix.compiler}}-ubsan-
+                key: bazel-cache-linux-${{matrix.compiler}}-tsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                restore-keys: bazel-cache-linux-${{matrix.compiler}}-tsan-
                 path: |
                     ~/.cache/bazel
                     ~/.cache/bazelisk

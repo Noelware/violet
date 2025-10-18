@@ -33,9 +33,9 @@ startup --windows_enable_symlinks
 build:windows --enable_runfiles
 
 # Enable C++26 support
-build:linux --cxxopt='-std=c++26' --host_cxxopt='-std=c++26' --client_env=BAZEL_CXXOPTS=-std=c++26
-build:macos --cxxopt='-std=c++26' --host_cxxopt='-std=c++26' --client_env=BAZEL_CXXOPTS=-std=c++26
-build:windows --cxxopt='/std:c++latest' --host_cxxopt='/std:c++latest' --client_env=BAZEL_CXXOPTS=/std:c++latest
+build:linux --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26
+build:macos --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26
+build:windows --cxxopt=/std:c++latest --host_cxxopt=/std:c++latest --client_env=BAZEL_CXXOPTS=/std:c++latest
 
 # Include build information
 build --stamp
@@ -43,13 +43,6 @@ build --workspace_status_command=./hack/stamp.sh
 
 # Only show errors in test output
 test --test_output=errors
-
-# For `--config=clang` (if on Clang), use libc++ instead of libstdc++
-build:clang --cxxopt=-nostdinc++ --host_cxxopt=-nostdinc++ --client_env=BAZEL_CXXOPTS=-nostdinc++
-build:clang --cxxopt=-stdlib=libc++ --host_cxxopt=-stdlib=libc++ --client_env=BAZEL_CXXOPTS=-stdlib=libc++
-build:clang --linkopt=-stdlib=libc++ --host_linkopt=-stdlib=libc++ --client_env=BAZEL_LINKOPTS=-stdlib=libc++
-build:clang --linkopt=-lc++abi --host_linkopt=-lc++abi --client_env=BAZEL_LINKOPTS=-lc++abi
-build:clang --linkopt=-lc++ --host_linkopt=-lc++ --client_env=BAZEL_LINKOPTS=-lc++
 
 # CI-based configuration
 build:ci --nokeep_state_after_build
