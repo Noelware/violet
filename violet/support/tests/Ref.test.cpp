@@ -51,7 +51,7 @@ TEST(RefTests, MoveConstructionAndAssignment)
     ASSERT_TRUE(b);
     EXPECT_TRUE(*b == 42);
 
-    Ref<int32> c(nullptr); // NOLINT(readability-identifier-length)
+    Ref<int32> c; // NOLINT(readability-identifier-length)
     c = VIOLET_MOVE(b);
     ASSERT_FALSE(b);
     ASSERT_TRUE(c);
@@ -75,4 +75,55 @@ TEST(RefTests, WeakRefUpgrade)
 
     upgraded->Release();
     ASSERT_FALSE(weak.Upgrade());
+}
+
+struct TestStruct {
+    int32 Value = 42;
+
+    TestStruct() = default;
+};
+
+TEST(ARefTests, UniquePtrConstructor)
+{
+    Noelware::Violet::UniquePtr<TestStruct> test = std::make_unique<TestStruct>();
+    Ref<TestStruct> ref(VIOLET_MOVE(test));
+
+    ASSERT_TRUE(test == nullptr);
+    ASSERT_TRUE(ref);
+
+    ASSERT_NE(ref.Value(), nullptr);
+}
+
+struct AbstractCls {
+    virtual ~AbstractCls() = default;
+
+    [[nodiscard]] virtual auto Foo() const noexcept -> int32 = 0;
+};
+
+struct ConcreteCls: public AbstractCls {
+    explicit ConcreteCls(int32 value)
+        : x(value)
+    {
+    }
+
+    [[nodiscard]] auto Foo() const noexcept -> int32 override
+    {
+        return x;
+    }
+
+private:
+    int32 x;
+};
+
+TEST(RefTests, AbstractClasses)
+{
+    Ref<AbstractCls> ref(new ConcreteCls(42));
+    ASSERT_EQ(ref->Foo(), 42);
+    ASSERT_EQ((*ref).Foo(), 42);
+
+    {
+        Ref<AbstractCls> ref2(new ConcreteCls(100));
+        ASSERT_EQ(ref2->Foo(), 100);
+        ASSERT_EQ((*ref2).Foo(), 100);
+    } // RAII will guarantee that `ref2` = destroyed
 }

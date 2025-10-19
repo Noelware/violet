@@ -39,7 +39,10 @@ template<typename T>
 struct Ref final {
     using value_type = T;
 
-    Ref() = delete;
+    Ref()
+        : n_blk(nullptr)
+    {
+    }
 
     constexpr VIOLET_IMPLICIT Ref(std::nullptr_t)
         : n_blk(nullptr)
@@ -57,11 +60,47 @@ struct Ref final {
     VIOLET_EXPLICIT Ref(std::in_place_t, Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
     {
         blk_type* blk = blk_type::Alloc();
-        try {
-            ::new (blk->ValuePtr()) T(VIOLET_FWD(Args, args)...);
-        } catch (...) {
-            blk_type::Dealloc(blk);
-            throw;
+        if constexpr (!std::is_abstract_v<T>) {
+            try {
+                ::new (blk->ValuePtr()) T(VIOLET_FWD(Args, args)...);
+            } catch (...) {
+                blk_type::Dealloc(blk);
+                throw;
+            }
+        } else {
+            static_assert(
+                sizeof...(Args) == 1 && std::is_convertible_v<std::tuple_element_t<0, std::tuple<Args...>>, T*>,
+                "abstract class pointer must be passed in this constructor");
+
+            *blk->ValuePtr() = std::get<0>(std::forward_as_tuple(args...));
+        }
+
+        this->n_blk = blk;
+    }
+
+    /// Constructs a [`Ref`] from a C++ `std::unique_ptr`.
+    /// @param ptr the unique ptr that is going to be moved.
+    template<typename U = T>
+    VIOLET_EXPLICIT Ref(UniquePtr<U>&& ptr) noexcept( // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        std::is_nothrow_constructible_v<T, U&&>)
+    {
+        if (!ptr) {
+            this->n_blk = nullptr;
+            return;
+        }
+
+        blk_type* blk = blk_type::Alloc();
+        if constexpr (!std::is_abstract_v<T>) {
+            try {
+                ::new (blk->ValuePtr()) T(VIOLET_MOVE(*ptr));
+            } catch (...) {
+                blk_type::Dealloc(blk);
+                throw;
+            }
+
+            ptr.reset();
+        } else {
+            *blk->ValuePtr() = ptr.release();
         }
 
         this->n_blk = blk;
@@ -111,12 +150,20 @@ struct Ref final {
 
     constexpr auto Value() noexcept -> T*
     {
-        return this->n_blk ? this->n_blk->ValuePtr() : nullptr;
+        if constexpr (std::is_abstract_v<T>) {
+            return this->n_blk ? *this->n_blk->ValuePtr() : nullptr;
+        } else {
+            return this->n_blk ? this->n_blk->ValuePtr() : nullptr;
+        }
     }
 
     constexpr auto Value() const noexcept -> const T*
     {
-        return this->n_blk ? this->n_blk->ValuePtr() : nullptr;
+        if constexpr (std::is_abstract_v<T>) {
+            return this->n_blk ? *this->n_blk->ValuePtr() : nullptr;
+        } else {
+            return this->n_blk ? this->n_blk->ValuePtr() : nullptr;
+        }
     }
 
     constexpr auto operator*() noexcept -> T&

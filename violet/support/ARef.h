@@ -65,11 +65,19 @@ struct ARef final {
     VIOLET_EXPLICIT ARef(std::in_place_t, Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
     {
         blk_type* blk = blk_type::Alloc();
-        try {
-            ::new (blk->ValuePtr()) T(VIOLET_FWD(Args, args)...);
-        } catch (...) {
-            blk_type::Dealloc(blk);
-            throw;
+        if constexpr (std::is_abstract_v<T>) {
+            static_assert(
+                sizeof...(Args) == 1 && std::is_convertible_v<std::tuple_element_t<0, std::tuple<Args...>>, T*>,
+                "abstract class pointer must be passed in this constructor");
+
+            *blk->ValuePtr() = std::get<0>(std::forward_as_tuple(args...));
+        } else {
+            try {
+                ::new (blk->ValuePtr()) T(VIOLET_FWD(Args, args)...);
+            } catch (...) {
+                blk_type::Dealloc(blk);
+                throw;
+            }
         }
 
         this->n_blk = blk;
@@ -78,7 +86,7 @@ struct ARef final {
     /// Constructs a [`ARef`] from a C++ `std::unique_ptr`.
     /// @param ptr the unique ptr that is going to be moved.
     template<typename U = T>
-    VIOLET_EXPLICIT ARef(UniquePtr<T>&& ptr) noexcept( // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    VIOLET_EXPLICIT ARef(UniquePtr<U>&& ptr) noexcept( // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
         std::is_nothrow_constructible_v<T, U&&>)
     {
         if (!ptr) {
@@ -87,14 +95,19 @@ struct ARef final {
         }
 
         blk_type* blk = blk_type::Alloc();
-        try {
-            ::new (blk->ValuePtr()) T(VIOLET_MOVE(*ptr));
-        } catch (...) {
-            blk_type::Dealloc(blk);
-            throw;
+        if constexpr (!std::is_abstract_v<T>) {
+            try {
+                ::new (blk->ValuePtr()) T(VIOLET_MOVE(*ptr));
+            } catch (...) {
+                blk_type::Dealloc(blk);
+                throw;
+            }
+
+            ptr.reset();
+        } else {
+            *blk->ValuePtr() = ptr.release();
         }
 
-        ptr.reset();
         this->n_blk = blk;
     }
 
@@ -145,12 +158,20 @@ struct ARef final {
 
     auto Value() noexcept -> T*
     {
-        return this->n_blk ? this->n_blk->ValuePtr() : nullptr;
+        if constexpr (std::is_abstract_v<T>) {
+            return this->n_blk ? *this->n_blk->ValuePtr() : nullptr;
+        } else {
+            return this->n_blk ? this->n_blk->ValuePtr() : nullptr;
+        }
     }
 
     auto Value() const noexcept -> const T*
     {
-        return this->n_blk ? this->n_blk->ValuePtr() : nullptr;
+        if constexpr (std::is_abstract_v<T>) {
+            return this->n_blk ? *this->n_blk->ValuePtr() : nullptr;
+        } else {
+            return this->n_blk ? this->n_blk->ValuePtr() : nullptr;
+        }
     }
 
     auto operator*() noexcept -> T&
@@ -277,7 +298,10 @@ template<typename T>
 struct AWeak final {
     using value_type = T;
 
-    AWeak() = delete; ///< cannot construct [`AWeak`] without data.
+    AWeak()
+        : n_blk(nullptr)
+    {
+    }
 
     constexpr AWeak(std::nullptr_t) noexcept
         : n_blk(nullptr)

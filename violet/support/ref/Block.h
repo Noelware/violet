@@ -26,10 +26,6 @@
 #include <atomic>
 #include <type_traits>
 
-#ifdef VIOLET_MSAN
-#    include <sanitizer/msan_interface.h>
-#endif
-
 /// @internal
 namespace Noelware::Violet::__detail {
 
@@ -41,6 +37,10 @@ template<typename T, bool Atomic = false>
 struct Block final {
     /// Counter type for strong and weak references.
     using ref_count_type = std::conditional_t<Atomic, std::atomic<usize>, usize>;
+
+    /// The stored type for [`ValuePtr()`]. For abstract types, it'll be a pointer instead
+    /// of in-placement new.
+    using stored_type = std::conditional_t<std::is_abstract_v<T>, T*, T>;
 
     /// amount of strong references in this controlled block. if there is only one, then `T` can be dropped safely.
     ref_count_type Strong;
@@ -54,17 +54,7 @@ struct Block final {
         usize alignment = std::max(alignof(Block), alignof(T));
         void* blk = ::operator new(sizeof(Block) + sizeof(T), std::align_val_t(alignment));
 
-#ifdef VIOLET_MSAN
-        std::memset(blk, 0, sizeof(Block) + sizeof(T));
-
-        Block* block = new (blk) Block();
-        __msan_unpoison(&block->Strong, sizeof(Strong));
-        __msan_unpoison(&block->Weak, sizeof(Weak));
-
-        return block;
-#else
         return new (blk) Block();
-#endif
     }
 
     /// Deallocates a `blk` out of existence.
@@ -83,30 +73,32 @@ struct Block final {
     }
 
     /// Returns the pointer where the value of `T` is stored.
-    auto ValuePtr() noexcept
+    auto ValuePtr() noexcept -> stored_type*
     {
         // Safety: We allocated `sizeof(Block)+sizeof(T)` bytes, aligned to `max(alignof(Block), alignof(T)).
         //         The memory immediately after this block is to be suitably aligned for `T`, hopefully.
         //
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        return reinterpret_cast<T*>(reinterpret_cast<uint8*>(std::addressof(*this)) + sizeof(Block));
+        return reinterpret_cast<stored_type*>(reinterpret_cast<uint8*>(std::addressof(*this)) + sizeof(Block));
     }
 
     /// Returns the pointer where the value of `T` is stored.
-    auto ValuePtr() const noexcept -> const T*
+    auto ValuePtr() const noexcept -> const stored_type*
     {
         // Safety: read above ^^
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        return reinterpret_cast<const T*>(reinterpret_cast<const uint8*>(std::addressof(*this)) + sizeof(Block));
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        return reinterpret_cast<const stored_type*>(
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            reinterpret_cast<const uint8*>(std::addressof(*this)) + sizeof(Block));
     }
 
     void Destroy() noexcept(std::is_nothrow_destructible_v<T>)
     {
-        std::destroy_at(ValuePtr());
-
-#ifdef VIOLET_MSAN
-        __msan_unpoison(ValuePtr(), sizeof(T));
-#endif
+        if constexpr (!std::is_abstract_v<T>) {
+            std::destroy_at(ValuePtr());
+        } else {
+            delete *ValuePtr();
+        }
     }
 };
 

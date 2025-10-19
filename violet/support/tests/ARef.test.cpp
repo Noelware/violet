@@ -73,7 +73,7 @@ TEST(AWeakTests, DowngradeAndUpgrade)
 
 TEST(AWeakTests, ExpiredWeakPtrReturnsNothing)
 {
-    AWeak<int32> weak(nullptr);
+    AWeak<int32> weak;
     {
         ARef<int32> strong(42);
         weak = strong.Downgrade();
@@ -105,8 +105,42 @@ TEST(ARefTests, UniquePtrConstructor)
     Noelware::Violet::UniquePtr<TestStruct> test = std::make_unique<TestStruct>();
     ARef<TestStruct> ref(VIOLET_MOVE(test));
 
-    ASSERT_TRUE(test == nullptr);
-    ASSERT_TRUE(ref);
+    EXPECT_TRUE(test == nullptr);
+    EXPECT_TRUE(ref);
 
-    ASSERT_NE(ref.Value(), nullptr);
+    EXPECT_NE(ref.Value(), nullptr);
+}
+
+struct AbstractCls {
+    virtual ~AbstractCls() = default;
+
+    [[nodiscard]] virtual auto Foo() const noexcept -> int32 = 0;
+};
+
+struct ConcreteCls: public AbstractCls {
+    explicit ConcreteCls(int32 value)
+        : x(value)
+    {
+    }
+
+    [[nodiscard]] auto Foo() const noexcept -> int32 override
+    {
+        return x;
+    }
+
+private:
+    int32 x;
+};
+
+TEST(ARefTests, AbstractClasses)
+{
+    ARef<AbstractCls> ref(new ConcreteCls(42));
+    ASSERT_EQ(ref->Foo(), 42);
+    ASSERT_EQ((*ref).Foo(), 42);
+
+    {
+        ARef<AbstractCls> ref2(new ConcreteCls(100));
+        ASSERT_EQ(ref2->Foo(), 100);
+        ASSERT_EQ((*ref2).Foo(), 100);
+    } // RAII will guarantee that `ref2` = destroyed
 }
