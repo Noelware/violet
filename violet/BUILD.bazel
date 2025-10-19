@@ -25,8 +25,5 @@ cc_library(
     name = "violet",
     hdrs = ["violet.h"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//violet/build:info",
-        "@abseil-cpp//absl/numeric:int128",
-    ],
+    deps = ["@abseil-cpp//absl/numeric:int128"],
 )
