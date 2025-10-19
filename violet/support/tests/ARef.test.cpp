@@ -93,3 +93,20 @@ TEST(ARefTests, WeakCountDropsAfterDestroy)
     EXPECT_EQ(weak.StrongCount(), 0);
     EXPECT_FALSE(weak.Upgrade());
 }
+
+struct TestStruct {
+    int32 Value = 42;
+
+    TestStruct() = default;
+};
+
+TEST(ARefTests, UniquePtrConstructor)
+{
+    Noelware::Violet::UniquePtr<TestStruct> test = std::make_unique<TestStruct>();
+    ARef<TestStruct> ref(VIOLET_MOVE(test));
+
+    ASSERT_TRUE(test == nullptr);
+    ASSERT_TRUE(ref);
+
+    ASSERT_NE(ref.Value(), nullptr);
+}

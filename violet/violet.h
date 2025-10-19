@@ -80,6 +80,9 @@ template<typename T>
 using SharedPtr = std::shared_ptr<T>; ///< Newtype for [`std::shared_ptr`].
 
 template<typename T>
+using UniquePtr = std::unique_ptr<T>; ///< Newtype for [`std::unique_ptr`].
+
+template<typename T>
 using Vec = std::vector<T>; ///< Newtype for [`std::vector`].
 
 template<typename T, usize Extent = std::dynamic_extent>

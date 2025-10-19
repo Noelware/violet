@@ -54,7 +54,7 @@
         then stdenvAdapters.useMoldLinker
         else lib.id
       )
-      pkgs.libcxxStdenv;
+      pkgs.stdenv;
   };
 
   packages =

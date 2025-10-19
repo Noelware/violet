@@ -44,7 +44,10 @@ struct ARef final {
     /// The type of this [`ARef`] uses.
     using value_type = T;
 
-    ARef() = delete; // cannot create a [`ARef`] from empty data.
+    ARef()
+        : n_blk(nullptr)
+    {
+    }
 
     constexpr VIOLET_IMPLICIT ARef(std::nullptr_t)
         : n_blk(nullptr)
@@ -69,6 +72,29 @@ struct ARef final {
             throw;
         }
 
+        this->n_blk = blk;
+    }
+
+    /// Constructs a [`ARef`] from a C++ `std::unique_ptr`.
+    /// @param ptr the unique ptr that is going to be moved.
+    template<typename U = T>
+    VIOLET_EXPLICIT ARef(UniquePtr<T>&& ptr) noexcept( // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        std::is_nothrow_constructible_v<T, U&&>)
+    {
+        if (!ptr) {
+            this->n_blk = nullptr;
+            return;
+        }
+
+        blk_type* blk = blk_type::Alloc();
+        try {
+            ::new (blk->ValuePtr()) T(VIOLET_MOVE(*ptr));
+        } catch (...) {
+            blk_type::Dealloc(blk);
+            throw;
+        }
+
+        ptr.reset();
         this->n_blk = blk;
     }
 
