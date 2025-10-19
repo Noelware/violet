@@ -100,6 +100,11 @@ struct Stdout final {
     /// Construct a new [`Stdout`] handle. It'll use `std::cout` to write data.
     Stdout() = default;
 
+    auto Writeln() const noexcept -> Result<usize>
+    {
+        return this->Writeln("");
+    }
+
     auto Writeln(StringRef str) const noexcept -> Result<usize>
     {
         auto res = this->Write(str);
@@ -140,6 +145,11 @@ static_assert(Writable<Stdout>, "`Stderr` is not writable");
 struct Stderr final {
     /// Construct a new [`Stderr`] handle. It'll use `std::cerr` to write data.
     Stderr() = default;
+
+    auto Writeln() const noexcept -> Result<usize>
+    {
+        return this->Writeln("");
+    }
 
     auto Writeln(StringRef str) const noexcept -> Result<usize>
     {
