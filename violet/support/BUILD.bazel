@@ -94,6 +94,19 @@ cc_test(
 )
 
 cc_library(
+    name = "terminal",
+    srcs = select({
+        "@platforms//os:linux": ["impl/terminal/unix.cpp"],
+        "@platforms//os:macos": ["impl/terminal/unix.cpp"],
+        "@platforms//os:windows": ["impl/terminal/windows.cpp"],
+        "//conditions:default": ["impl/terminal/unsupported.cpp"],
+    }),
+    hdrs = ["Terminal.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//violet"],
+)
+
+cc_library(
     name = "ulid",
     srcs = ["Ulid.cpp"],
     hdrs = ["Ulid.h"],

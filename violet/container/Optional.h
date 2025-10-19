@@ -38,7 +38,20 @@
 
 namespace Noelware::Violet {
 
+template<typename T>
+struct Optional;
+
 constexpr auto Nothing = std::nullopt; ///< Newtype for [`std::nullopt`].
+
+/// Constructs a new [`Optional`] with in-place arguments, similar to Rust's
+/// [`std::option::Option::Some`].
+///
+/// [`std::option::Option::Some`]: https://doc.rust-lang.org/stable/std/option/enum.Option.html#variant-Some
+template<typename T, typename... Args>
+constexpr static auto Some(Args&&... args) -> Optional<T>
+{
+    return { std::in_place, VIOLET_FWD(Args, args)... };
+}
 
 /// A **optional** value.
 template<typename T>
@@ -440,13 +453,13 @@ struct Optional final {
     });
 
     /// Returns **true** if this [`Optional`] contains a value.
-    constexpr VIOLET_IMPLICIT operator bool() const
+    constexpr VIOLET_EXPLICIT operator bool() const
     {
         return this->n_hasValue;
     }
 
     /// Allows translating this [`Optional`] into a [`std::optional`].
-    constexpr VIOLET_IMPLICIT operator std::optional<T>()
+    constexpr VIOLET_EXPLICIT operator std::optional<T>()
     {
         return this->n_hasValue ? std::optional<T>(*ptr()) : Nothing;
     }
@@ -468,28 +481,61 @@ struct Optional final {
     /// [**lvalue**] Calls the `fun`ction if this [`Optional`] contains a value
     /// and maps it to a new value.
     template<typename Fun>
-    constexpr auto Map(Fun&& fun) const& noexcept -> Optional<T>
+    constexpr auto Map(Fun&& fun) const& noexcept
     {
         using U = std::invoke_result_t<Fun, const T&>;
-        return HasValue() ? Optional<U>(std::in_place, VIOLET_FWD(Fun, fun)(*ptr())) : Nothing;
+        if (HasValue()) {
+            auto result = std::invoke(VIOLET_FWD(Fun, fun), *ptr());
+            return Some<U>(result);
+        }
+
+        return decltype(Optional<U>())(Nothing);
     }
 
     /// [**rvalue**] Calls the `fun`ction if this [`Optional`] contains a value
     /// and maps it to a new value.
     template<typename Fun>
-    constexpr auto Map(Fun&& fun) const&& noexcept -> Optional<T>
+        requires Callable<Fun, const T&>
+    constexpr auto Map(Fun&& fun) const&& noexcept
     {
         using U = std::invoke_result_t<Fun, const T&>;
-        return HasValue() ? Optional<U>(std::in_place, VIOLET_FWD(Fun, fun)(VIOLET_MOVE(*ptr()))) : Nothing;
+        if (HasValue()) {
+            auto result = std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(*ptr()));
+            return Some<U>(result);
+        }
+
+        return decltype(Optional<U>())(Nothing);
+    }
+
+    template<typename Fun>
+        requires Callable<Fun, const T&>
+    constexpr auto MapOr(auto defaultValue, Fun&& fun) const&
+    {
+        if (HasValue()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), *ptr());
+        }
+
+        return defaultValue;
+    }
+
+    template<typename Fun>
+        requires Callable<Fun, const T&>
+    constexpr auto MapOr(auto defaultValue, Fun&& fun) const&&
+    {
+        if (HasValue()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(*ptr()));
+        }
+
+        return defaultValue;
     }
 
     /// [**lvalue**] Calls the `fun`ction if this [`Optional`] contains a value
     /// and inspects the value of it.
     template<typename Fun>
-    constexpr auto Inspect(Fun&& fun) const& noexcept -> Optional<T>
+    constexpr auto Inspect(Fun&& fun) const& noexcept
     {
         if (HasValue()) {
-            VIOLET_FWD(Fun, fun)(*ptr());
+            std::invoke(VIOLET_FWD(Fun, fun), *ptr());
         }
 
         return *this;
@@ -501,7 +547,7 @@ struct Optional final {
     constexpr auto Inspect(Fun&& fun) const&& noexcept -> Optional<T>
     {
         if (HasValue()) {
-            VIOLET_FWD(Fun, fun)(VIOLET_MOVE(*ptr()));
+            std::invoke(VIOLET_FWD(Fun, fun), *ptr());
         }
 
         return *this;
@@ -601,15 +647,5 @@ private:
         }
     }
 };
-
-/// Constructs a new [`Optional`] with in-place arguments, similar to Rust's
-/// [`std::option::Option::Some`].
-///
-/// [`std::option::Option::Some`]: https://doc.rust-lang.org/stable/std/option/enum.Option.html#variant-Some
-template<typename T, typename... Args>
-constexpr static auto Some(Args&&... args) -> Optional<T>
-{
-    return { std::in_place, VIOLET_FWD(Args, args)... };
-}
 
 } // namespace Noelware::Violet
