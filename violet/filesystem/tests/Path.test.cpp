@@ -60,8 +60,8 @@ TEST(Paths, Stem)
 
 TEST(Paths, Parent)
 {
-    EXPECT_EQ(Path("/usr/local/bin/clang++").Parent(), Some<StringRef>("/usr/local/bin"));
-    EXPECT_EQ(Path("/usr/local/").Parent(), Some<StringRef>("/usr"));
+    EXPECT_EQ(Path("/usr/local/bin/clang++").Parent(), Some<Path>("/usr/local/bin"));
+    EXPECT_EQ(Path("/usr/local/").Parent(), Some<Path>("/usr"));
 
     EXPECT_FALSE(Path("README.md").Parent());
     EXPECT_FALSE(Path("/").Parent());
