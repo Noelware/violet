@@ -103,7 +103,13 @@ cc_library(
     }),
     hdrs = ["Terminal.h"],
     visibility = ["//visibility:public"],
-    deps = ["//violet"],
+    deps = [
+        ":stringref",
+        "//violet",
+        "//violet/container:optional",
+        "//violet/io:error",
+        "//violet/sys:environment",
+    ],
 )
 
 cc_library(
