@@ -49,7 +49,16 @@ SANITIZER_ENV = select({
 })
 
 def cc_library(name, hdrs = [], **kwargs):
-    return cc_library_(name = name, hdrs = hdrs, **kwargs)
+    copts = kwargs.pop("copts", [])
+    linkopts = kwargs.pop("linkopts", [])
+
+    return cc_library_(
+        name = name,
+        hdrs = hdrs,
+        copts = copts + SANITIZER_OPTS,
+        linkopts = linkopts + SANITIZER_OPTS,
+        **kwargs
+    )
 
 def cc_test(name, **kwargs):
     deps = kwargs.pop("deps", [])
