@@ -18,3 +18,41 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#include "violet/filesystem/Filesystem.h"
+#include "violet/io/Error.h"
+
+auto Noelware::Violet::Filesystem::Dirs::Next() noexcept -> Optional<IO::Result<DirEntry>>
+{
+    return Nothing;
+}
+
+auto Noelware::Violet::Filesystem::Exists(const Path&) -> IO::Result<bool>
+{
+    return Err(IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation"));
+}
+
+auto Noelware::Violet::Filesystem::CreateDirectory(const Path&) -> IO::Result<void>
+{
+    return Err(IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation"));
+}
+
+auto Noelware::Violet::Filesystem::CreateDirectories(const Path&) -> IO::Result<void>
+{
+    return Err(IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation"));
+}
+
+auto Noelware::Violet::Filesystem::ReadDir(const Path&) -> IO::Result<Dirs>
+{
+    return Err(IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation"));
+}
+
+auto Noelware::Violet::Filesystem::WalkDir(const Path&) -> IO::Result<WalkDirs>
+{
+    return Err(IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation"));
+}
+
+auto Noelware::Violet::Filesystem::RemoveDirectory(const Path&) -> IO::Result<void>
+{
+    return Err(IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation"));
+}

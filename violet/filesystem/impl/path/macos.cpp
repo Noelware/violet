@@ -19,7 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifdef __APPLE__
+#include "violet/violet.h"
+
+#ifdef VIOLET_MACOS
 
 // clang-format off
 #include "violet/filesystem/Path.h"

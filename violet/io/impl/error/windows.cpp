@@ -19,9 +19,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "violet/violet.h"
+
+#ifdef VIOLET_WINDOWS
+
+// clang-format off
 #include "violet/io/Error.h"
+// clang-format on
 
 auto Noelware::Violet::IO::PlatformError::ToString() const -> String
 {
     return "";
 }
+
+#endif

@@ -36,14 +36,14 @@
 namespace Noelware::Violet::Filesystem {
 
 struct Dirs;
-struct WalkDir;
+struct WalkDirs;
 
 auto CreateDirectory(const Path& path) -> IO::Result<void>;
 auto CreateDirectories(const Path& path) -> IO::Result<void>;
 auto ReadDir(const Path& path) -> IO::Result<Dirs>;
-// auto WalkDir(const Path& path) -> IO::Result<struct WalkDir>;
+auto WalkDir(const Path& path) -> IO::Result<WalkDirs>;
 auto RemoveDirectory(const Path& path) -> IO::Result<void>;
-// auto RemoveAllDirs(const Path& path) -> IO::Result<void>;
+auto RemoveAllDirs(const Path& path) -> IO::Result<void>;
 auto Exists(const Path& path) -> IO::Result<bool>;
 
 struct FileType final {
@@ -73,6 +73,38 @@ struct FileType final {
         return ft;
     }
 
+    static constexpr auto MkBlockDevice() noexcept -> FileType
+    {
+        FileType ft;
+        ft.n_tag.Add(Tag::kBlockDevice);
+
+        return ft;
+    }
+
+    static constexpr auto MkCharDevice() noexcept -> FileType
+    {
+        FileType ft;
+        ft.n_tag.Add(Tag::kCharDevice);
+
+        return ft;
+    }
+
+    static constexpr auto MkFIFOPipe() noexcept -> FileType
+    {
+        FileType ft;
+        ft.n_tag.Add(Tag::kFIFOPipe);
+
+        return ft;
+    }
+
+    static constexpr auto MkUnixSocket() noexcept -> FileType
+    {
+        FileType ft;
+        ft.n_tag.Add(Tag::kFIFOPipe);
+
+        return ft;
+    }
+
     [[nodiscard]] constexpr auto File() const noexcept -> bool
     {
         return this->n_tag.Contains(Tag::kFile);
@@ -88,16 +120,41 @@ struct FileType final {
         return this->n_tag.Contains(Tag::kSymlink);
     }
 
+    [[nodiscard]] constexpr auto BlockDevice() const noexcept -> bool
+    {
+        return this->n_tag.Contains(Tag::kBlockDevice);
+    }
+
+    [[nodiscard]] constexpr auto CharDevice() const noexcept -> bool
+    {
+        return this->n_tag.Contains(Tag::kCharDevice);
+    }
+
+    [[nodiscard]] constexpr auto FIFOPipe() const noexcept -> bool
+    {
+        return this->n_tag.Contains(Tag::kFIFOPipe);
+    }
+
+    [[nodiscard]] constexpr auto UnixSock() const noexcept -> bool
+    {
+        return this->n_tag.Contains(Tag::kUnixSock);
+    }
+
 private:
     enum struct Tag : uint8 {
         kFile = 1 << 0, ///< this is a file
         kDir = 1 << 1, ///< this is a directory
         kSymlink = 1 << 2, ///< this is a symlink
+        kBlockDevice = 1 << 3, ///< this is a block device
+        kCharDevice = 1 << 4, ///< this is a character device
+        kFIFOPipe = 1 << 5, ///< this is a named pipe (FIFO).
+        kUnixSock = 1 << 6 ///< this is a unix socket
     };
 
     Bitflags<Tag> n_tag = Bitflags<Tag>(0);
 };
 
+/// A entry from the [`Dirs`] or [`WalkDirs`] iterators.
 struct DirEntry final {
     struct Path Path; ///< path of this entry
     struct FileType FileType; ///< the file type of this entry
@@ -108,7 +165,7 @@ struct DirEntry final {
 struct Dirs final: public Iterator<Dirs> {
     Dirs() = delete;
 
-    auto Next() noexcept -> Optional<IO::Result<Path>>;
+    auto Next() noexcept -> Optional<IO::Result<DirEntry>>;
 
 private:
     friend auto Noelware::Violet::Filesystem::ReadDir(const Path&) -> IO::Result<Dirs>;
@@ -123,6 +180,31 @@ private:
     DIR* n_dir = nullptr; ///< directory handle
 
     VIOLET_EXPLICIT Dirs(Path parent, DIR* ptr)
+        : n_parent(VIOLET_MOVE(parent))
+        , n_dir(ptr)
+    {
+    }
+#endif
+};
+
+struct WalkDirs final {
+    WalkDirs() = delete;
+
+    auto Next() noexcept -> Optional<IO::Result<DirEntry>>;
+
+private:
+    friend auto Noelware::Violet::Filesystem::ReadDir(const Path&) -> IO::Result<Dirs>;
+
+    Path n_parent;
+
+#ifdef VIOLET_WINDOWS
+    HANDLE n_handle = INVALID_HANDLE_VALUE;
+    WIN32_FIND_DATAW n_iter;
+    bool n_valid = false;
+#elif defined(VIOLET_UNIX)
+    DIR* n_dir = nullptr; ///< directory handle
+
+    VIOLET_EXPLICIT WalkDirs(Path parent, DIR* ptr)
         : n_parent(VIOLET_MOVE(parent))
         , n_dir(ptr)
     {

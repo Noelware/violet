@@ -19,29 +19,68 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "violet/violet.h"
+
+#ifdef VIOLET_UNIX
+
+// clang-format off
 #include "violet/filesystem/Filesystem.h"
 #include "violet/filesystem/Path.h"
 #include "violet/io/Error.h"
 #include "violet/support/StringRef.h"
-#include "violet/violet.h"
+
 #include <sys/stat.h>
+// clang-format on
 
-#ifdef VIOLET_UNIX
-
-auto Noelware::Violet::Filesystem::Dirs::Next() noexcept -> Optional<IO::Result<Path>>
+auto Noelware::Violet::Filesystem::Dirs::Next() noexcept -> Optional<IO::Result<DirEntry>>
 {
     if (this->n_dir == nullptr) {
         return Nothing;
     }
 
-    // Overwrite any errors that might've happend (for now)
+    // Overwrite any errors that could happen (for now).
     errno = 0;
     if (auto* entry = ::readdir(this->n_dir)) {
+        FileType ft;
+        switch (entry->d_type) {
+        case DT_DIR:
+            ft = FileType::MkDir();
+            break;
+
+        case DT_REG:
+            ft = FileType::MkFile();
+            break;
+
+        case DT_BLK:
+            ft = FileType::MkBlockDevice();
+            break;
+
+        case DT_CHR:
+            ft = FileType::MkCharDevice();
+            break;
+
+        case DT_FIFO:
+            ft = FileType::MkFIFOPipe();
+            break;
+
+        case DT_SOCK:
+            ft = FileType::MkUnixSocket();
+            break;
+
+        default:
+            break;
+        }
+
         auto path = this->n_parent.Join(StringRef(static_cast<CStr>(entry->d_name)));
-        return Some<IO::Result<Path>>(path);
+        return Some<IO::Result<DirEntry>>(DirEntry{ .Path = path, .FileType = ft });
     }
 
-    return errno != 0 ? Some<IO::Result<Path>>(IO::Error::Platform(IO::ErrorKind::Other)) : Nothing;
+    return errno != 0 ? Some<IO::Result<DirEntry>>(IO::Error::Platform(IO::ErrorKind::Other)) : Nothing;
+}
+
+auto Noelware::Violet::Filesystem::WalkDirs::Next() noexcept -> Optional<IO::Result<DirEntry>>
+{
+    return Nothing;
 }
 
 auto Noelware::Violet::Filesystem::Exists(const Path& path) -> IO::Result<bool>
@@ -129,6 +168,11 @@ auto Noelware::Violet::Filesystem::RemoveDirectory(const Path& path) -> IO::Resu
     }
 
     return {};
+}
+
+auto Noelware::Violet::Filesystem::WalkDir(const Path&) -> IO::Result<WalkDirs>
+{
+    return Err(IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation"));
 }
 
 #endif
