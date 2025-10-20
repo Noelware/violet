@@ -25,18 +25,17 @@
 #pragma once
 
 #include "violet/violet.h"
-#include <memory>
 
 // For Clang and GCC, we can check if we have the `cxxabi.h` header.
-#if defined(__has_include) && VIOLET_IS_CLANG || VIOLET_IS_GCC
-#    if __has_include(<cxxabi.h>)
-#        define VIOLET_HAS_CXXABI_HDR
-#    else
-#        define VIOLET_HAS_CXXABI_HDR
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+#    ifdef __has_include
+#        if __has_include(<cxxabi.h>)
+#            define VIOLET_COMPILER_SUPPORTS_CXXABI_HDR
+#        endif
 #    endif
 #endif
 
-#ifdef VIOLET_HAS_CXXABI_HDR
+#ifdef VIOLET_COMPILER_SUPPORTS_CXXABI_HDR
 #    include <cxxabi.h>
 #endif
 
@@ -51,9 +50,9 @@ namespace Noelware::Violet::Utility {
 /// @return the demangled name, or the name itself if unsupported
 inline auto DemangleCXXName(CStr name) -> String
 {
-#ifdef VIOLET_HAS_CXXABI_HDR
+#ifdef VIOLET_COMPILER_SUPPORTS_CXXABI_HDR
     int32 status = -1;
-    std::unique_ptr<char, void (*)(void*)> res(abi::__cxa_demangle(name, nullptr, nullptr, &status), std::free);
+    UniquePtr<char, void (*)(void*)> res(abi::__cxa_demangle(name, nullptr, nullptr, &status), std::free);
 
     return status == 0 ? res.get() : name;
 #else

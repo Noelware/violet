@@ -79,8 +79,8 @@ using UniqueLock = std::unique_lock<Mutex>; ///< Newtype for [`std::unique_lock`
 template<typename T>
 using SharedPtr = std::shared_ptr<T>; ///< Newtype for [`std::shared_ptr`].
 
-template<typename T>
-using UniquePtr = std::unique_ptr<T>; ///< Newtype for [`std::unique_ptr`].
+template<typename T, typename Destructor = std::default_delete<T>>
+using UniquePtr = std::unique_ptr<T, Destructor>; ///< Newtype for [`std::unique_ptr`].
 
 template<typename T>
 using Vec = std::vector<T>; ///< Newtype for [`std::vector`].
@@ -225,24 +225,15 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 // -- compiler detection --
 #if defined(__clang__)
 #    define VIOLET_COMPILER "clang"
-#    define VIOLET_IS_CLANG 1
-#    define VIOLET_IS_GCC 0
-#    define VIOLET_IS_MSVC 0
+#    define VIOLET_CLANG
 #elif defined(__GNUC__)
 #    define VIOLET_COMPILER "gcc"
-#    define VIOLET_IS_CLANG 0
-#    define VIOLET_IS_GCC 1
-#    define VIOLET_IS_MSVC 0
+#    define VIOLET_GCC
 #elif defined(_MSC_VER)
 #    define VIOLET_COMPILER "msvc"
-#    define VIOLET_IS_CLANG 0
-#    define VIOLET_IS_GCC 0
-#    define VIOLET_IS_MSVC 1
+#    define VIOLET_MSVC
 #else
 #    define VIOLET_COMPILER "unknown"
-#    define VIOLET_IS_CLANG 0
-#    define VIOLET_IS_GCC 0
-#    define VIOLET_IS_MSVC 0
 #endif
 
 #ifdef _MSC_VER
@@ -305,7 +296,7 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 
 // -- sanitizer check
 /// ~ MSan
-#if VIOLET_IS_CLANG && defined(__has_feature)
+#if defined(VIOLET_CLANG) && defined(__has_feature)
 #    if __has_feature(memory_sanitizer)
 #        define VIOLET_MSAN
 #    endif
