@@ -34,6 +34,9 @@
   python3,
   bazel_7,
   bazel-buildtools,
+  meson,
+  cmake,
+  ninja,
   ## lsp
   starpls,
   nil,
@@ -67,8 +70,13 @@
       llvm.pkgs.bintools
       bazel-buildtools
       pkg-config
-      bazel_7
       python3
+
+      # build systems (we support Bazel, CMake, and Meson)
+      bazel_7
+      cmake
+      meson
+      ninja
 
       # LSPs
       starpls
