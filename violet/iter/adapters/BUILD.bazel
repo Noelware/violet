@@ -29,6 +29,7 @@ cc_library(
         ":filtermap",
         ":map",
         ":peekable",
+        ":pipes",
         ":skip",
         ":take",
     ],
@@ -38,6 +39,15 @@ cc_library(
     name = "pipes",
     hdrs = ["Pipes.h"],
     visibility = ["//visibility:public"],
+    deps = ["//violet/iter"],
+)
+
+cc_test(
+    name = "pipe_test",
+    size = "small",
+    srcs = ["Pipes.test.cpp"],
+    visibility = ["//visibility:public"],
+    deps = [":pipes"],
 )
 
 cc_library(

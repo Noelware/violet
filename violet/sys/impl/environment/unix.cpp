@@ -19,13 +19,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "violet/violet.h"
+
+#ifdef VIOLET_UNIX
+
+// clang-format off
 #include "violet/container/Optional.h"
 #include "violet/support/StringRef.h"
 #include "violet/sys/Environment.h"
-#include "violet/violet.h"
 
 #include <cstdlib>
 #include <unistd.h>
+// clang-format on
 
 auto Noelware::Violet::System::GetEnvironmentVariable(StringRef key) noexcept -> Optional<String>
 {
@@ -41,3 +46,5 @@ void Noelware::Violet::System::SetEnvironmentVariable(StringRef key, StringRef v
 {
     setenv(key.Data(), value.Data(), static_cast<int>(replace));
 }
+
+#endif

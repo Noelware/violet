@@ -19,12 +19,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "violet/violet.h"
+
+#ifdef VIOLET_UNIX
+
+// clang-format off
 #include "violet/io/Error.h"
 #include "violet/sys/Randomness.h"
-#include "violet/violet.h"
 
 #include <fcntl.h>
 #include <unistd.h>
+// clang-format on
 
 auto Noelware::Violet::System::RandomBytes(uint8* buf, usize len) -> IO::Result<void>
 {
@@ -47,3 +52,5 @@ auto Noelware::Violet::System::RandomBytes(uint8* buf, usize len) -> IO::Result<
     ::close(fd);
     return {};
 }
+
+#endif

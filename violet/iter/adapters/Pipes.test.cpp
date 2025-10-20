@@ -18,3 +18,49 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#include "violet/iter/adapters/Pipes.h"
+#include "violet/violet.h"
+
+#include <gtest/gtest.h>
+
+using namespace Noelware::Violet; // NOLINT(google-build-using-namespace)
+
+TEST(PipeSyntax, Position)
+{
+    Vec<char> chars{ 'h', 'e', 'l', 'l', 'o', '.' };
+
+    auto it = MkIterable(chars) | Position([](char ch) { return ch == '.'; });
+    ASSERT_TRUE(it);
+    EXPECT_EQ(*it, 5);
+}
+
+TEST(PipeSyntax, Count)
+{
+    Vec<uint32> vi = { 1, 2, 3, 4, 5 };
+    ASSERT_EQ(MkIterable(vi) | Count, 5);
+}
+
+TEST(PipeSyntax, AdvanceBy)
+{
+    Vec<uint32> vi = { 1, 2, 3, 4, 5 };
+    auto it = MkIterable(vi);
+
+    ASSERT_TRUE(it | AdvanceBy(1));
+    ASSERT_EQ(it.Next(), Some<uint32>(2));
+}
+
+TEST(PipeSyntax, Nth)
+{
+    Vec<uint32> vi{ 1, 2, 3 };
+    auto it = MkIterable(vi);
+
+    ASSERT_EQ(it | Nth(1), Some<uint32>(2));
+}
+
+TEST(PipeSyntax, Any)
+{
+    Vec<uint32> vi{ 0, 1, 2 };
+    ASSERT_TRUE(MkIterable(vi) | Iterators::Any([](uint32 num) { return num == 2; }));
+    ASSERT_FALSE(MkIterable(vi) | Iterators::Any([](uint32 num) { return num == 5; }));
+}

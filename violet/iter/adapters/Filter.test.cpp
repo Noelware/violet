@@ -18,3 +18,31 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+// #include "violet/iter/adapters/Filter.h"
+// #include "violet/iter/Iterator.h"
+// #include "violet/violet.h"
+
+// #include <gtest/gtest.h>
+
+// using namespace Noelware::Violet; // NOLINT(google-build-using-namespace)
+
+// TEST(FilterTest, Declarative)
+// {
+//     Vec<uint32> vi{ 1, 2, 3, 4, 5, 6 };
+
+//     auto it = MkIterable(vi).Filter([](uint32 value) { return value % 2 == 0; });
+//     Vec<uint32> expected = { 2, 4, 6 };
+
+//     ASSERT_EQ(it.Collect<Vec<uint32>>(), expected);
+// }
+
+// TEST(FilterTest, Pipe)
+// {
+//     Vec<uint32> vi{ 1, 2, 3, 4, 5, 6 };
+
+//     auto it = MkIterable(vi) | Filter([](uint32 value) -> bool { return value % 2 == 0; });
+//     Vec<uint32> expected{ 2, 4, 6 };
+
+//     ASSERT_EQ(it.Collect<Vec<uint32>>(), expected);
+// }

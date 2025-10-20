@@ -21,101 +21,103 @@
 
 #pragma once
 
-#include "violet/iter/Iterator.h"
-#include "violet/iter/adapters/Pipes.h"
+// #include "violet/iter/Iterator.h"
+// #include "violet/iter/adapters/Pipes.h"
 
-namespace Noelware::Violet::Iterators {
+// namespace Noelware::Violet::Iterators {
 
-template<Iterable Impl, typename Pred>
-    requires Callable<Pred, IterableType<Impl>> && CallableShouldReturn<Pred, bool, IterableType<Impl>>
-struct Filter final: public Noelware::Violet::Iterator<Impl> {
-    using Item = IterableType<Impl>;
+// template<Iterable Impl, typename Pred>
+//     requires Callable<Pred, IterableType<Impl>> && CallableShouldReturn<Pred, bool, IterableType<Impl>>
+// struct Filter final: public Noelware::Violet::Iterator<Impl> {
+//     using Item = IterableType<Impl>;
 
-    Filter() = delete;
-    VIOLET_IMPLICIT Filter(Impl iter, Pred predicate)
-        : n_iter(VIOLET_MOVE(iter))
-        , n_predicate(VIOLET_MOVE(predicate))
-    {
-    }
+//     Filter() = delete;
+//     VIOLET_IMPLICIT Filter(Impl iter, Pred predicate)
+//         : n_iter(VIOLET_MOVE(iter))
+//         , n_predicate(VIOLET_MOVE(predicate))
+//     {
+//     }
 
-    auto Next() noexcept -> Optional<Item>
-    {
-        while (auto value = this->n_iter.Next()) {
-            if (std::invoke(this->n_predicate, *value)) {
-                return value;
-            }
-        }
+//     auto Next() noexcept -> Optional<Item>
+//     {
+//         while (auto value = this->n_iter.Next()) {
+//             if (std::invoke(this->n_predicate, *value)) {
+//                 return Some<Item>(*value); // copy/move
+//             }
+//         }
 
-        return Nothing;
-    }
+//         return Nothing;
+//     }
 
-    auto NextBack() noexcept -> Optional<Item>
-        requires DoubleEndedIterable<Impl>
-    {
-        while (auto value = this->n_iter.NextBack()) {
-            if (std::invoke(this->n_predicate, *value)) {
-                return value;
-            }
-        }
+//     auto NextBack() noexcept -> Optional<Item>
+//         requires DoubleEndedIterable<Impl>
+//     {
+//         while (auto value = this->n_iter.NextBack()) {
+//             if (std::invoke(this->n_predicate, *value)) {
+//                 return Some<Item>(*value); // copy/move
+//             }
+//         }
 
-        return Nothing;
-    }
+//         return Nothing;
+//     }
 
-    [[nodiscard]] auto SizeHint() const noexcept -> Noelware::Violet::SizeHint
-    {
-        if constexpr (requires { this->n_iter.SizeHint(); }) {
-            Noelware::Violet::SizeHint hint = this->n_iter.SizeHint();
-            return SizeHint(0, hint.High);
-        }
+//     [[nodiscard]] auto SizeHint() const noexcept -> Noelware::Violet::SizeHint
+//     {
+//         if constexpr (requires { this->n_iter.SizeHint(); }) {
+//             Noelware::Violet::SizeHint hint = this->n_iter.SizeHint();
+//             return SizeHint(0, hint.High);
+//         }
 
-        return {};
-    }
+//         return {};
+//     }
 
-private:
-    Impl n_iter;
-    Pred n_predicate;
-};
+// private:
+//     Impl n_iter;
+//     Pred n_predicate;
+// };
 
-template<typename Pred>
-struct FilterPipe final: PipeFactory<FilterPipe<Pred>> {
-    FilterPipe() = delete;
-    VIOLET_IMPLICIT FilterPipe(Pred predicate)
-        : n_predicate(VIOLET_MOVE(predicate))
-    {
-    }
+// template<typename Pred>
+// struct FilterPipe final: PipeFactory<FilterPipe<Pred>> {
+//     FilterPipe() = delete;
+//     VIOLET_IMPLICIT FilterPipe(Pred predicate)
+//         : n_predicate(VIOLET_MOVE(predicate))
+//     {
+//     }
 
-    template<typename Inner>
-    auto Apply(Inner&& inner) const noexcept
-    {
-        return Filter<Inner, Pred>(VIOLET_FWD(Inner, inner), this->n_predicate);
-    }
+//     template<typename Inner>
+//     auto Apply(Inner&& inner) const noexcept
+//     {
+//         return Filter<Inner, Pred>(VIOLET_FWD(Inner, inner), this->n_predicate);
+//     }
 
-private:
-    Pred n_predicate;
-};
+// private:
+//     Pred n_predicate;
+// };
 
-} // namespace Noelware::Violet::Iterators
+// } // namespace Noelware::Violet::Iterators
 
-namespace Noelware::Violet {
+// namespace Noelware::Violet {
 
-template<typename Pred>
-inline auto Filter(Pred predicate) noexcept
-{
-    return Iterators::FilterPipe(predicate);
-}
+// template<typename Pred>
+// inline auto Filter(Pred predicate) noexcept
+// {
+//     return Iterators::FilterPipe(predicate);
+// }
 
-template<class Impl>
-template<typename Pred>
-inline auto Iterator<Impl>::Filter(Pred predicate) & noexcept
-{
-    return Iterators::Filter(getThisObject(), predicate);
-}
+// template<class Impl>
+// template<typename Pred>
+//     requires Callable<Pred, IterableType<Impl>> && CallableShouldReturn<Pred, bool, IterableType<Impl>>
+// inline auto Iterator<Impl>::Filter(Pred predicate) & noexcept
+// {
+//     return Iterators::Filter(getThisObject(), predicate);
+// }
 
-template<class Impl>
-template<typename Pred>
-inline auto Iterator<Impl>::Filter(Pred predicate) && noexcept
-{
-    return Iterators::Filter(VIOLET_MOVE(getThisObject()), predicate);
-}
+// template<class Impl>
+// template<typename Pred>
+//     requires Callable<Pred, IterableType<Impl>> && CallableShouldReturn<Pred, bool, IterableType<Impl>>
+// inline auto Iterator<Impl>::Filter(Pred predicate) && noexcept
+// {
+//     return Iterators::Filter(VIOLET_MOVE(getThisObject()), predicate);
+// }
 
-} // namespace Noelware::Violet
+// } // namespace Noelware::Violet

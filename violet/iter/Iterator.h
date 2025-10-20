@@ -27,6 +27,7 @@
 #include "violet/container/Result.h"
 #include "violet/violet.h"
 
+#include <concepts>
 #include <type_traits>
 #include <utility>
 
@@ -251,15 +252,19 @@ struct Iterator {
     auto Map(Fun fun) && noexcept;
 
     template<typename Pred>
+        requires Callable<Pred, IterableType<Impl>> && CallableShouldReturn<Pred, bool, IterableType<Impl>>
     auto Filter(Pred predicate) & noexcept;
 
     template<typename Pred>
+        requires Callable<Pred, IterableType<Impl>> && CallableShouldReturn<Pred, bool, IterableType<Impl>>
     auto Filter(Pred predicate) && noexcept;
 
     template<typename Fun>
+        requires Callable<Fun, IterableType<Impl>>
     auto FilterMap(Fun fun) & noexcept;
 
     template<typename Fun>
+        requires Callable<Fun, IterableType<Impl>>
     auto FilterMap(Fun fun) && noexcept;
 
     auto Skip(usize skip) & noexcept;
@@ -267,6 +272,66 @@ struct Iterator {
 
     auto Take(usize take) & noexcept;
     auto Take(usize take) && noexcept;
+
+    template<typename Acc, typename Fun>
+        requires Callable<Fun, Acc, IterableType<Impl>>
+        && std::convertible_to<std::invoke_result_t<Fun, Acc, IterableType<Impl>>, Acc>
+    auto Fold(Acc init, Fun&& fun) & noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, *std::declval<IterableType<Impl>>())))
+    {
+        auto acc = VIOLET_MOVE(init);
+
+        while (auto value = getThisObject().Next()) {
+            acc = std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(acc), *value);
+        }
+
+        return acc;
+    }
+
+    template<typename Acc, typename Fun>
+        requires Callable<Fun, Acc, IterableType<Impl>>
+        && std::convertible_to<std::invoke_result_t<Fun, Acc, IterableType<Impl>>, Acc>
+    auto Fold(Acc init, Fun&& fun) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, *std::declval<IterableType<Impl>>())))
+    {
+        auto acc = VIOLET_MOVE(init);
+        while (auto value = getThisObject().Next()) {
+            acc = std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(acc), *value);
+        }
+
+        return acc;
+    }
+
+    template<typename Acc, typename Fun>
+    // clang-format off
+    requires(
+        DoubleEndedIterable<Impl> &&
+        Callable<Fun, Acc, IterableType<Impl>> &&
+        std::convertible_to<std::invoke_result_t<Fun, Acc, IterableType<Impl>>, Acc>
+    )
+    // clang-format on
+    auto RFold(Acc init, Fun&& fun) & noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(init), *std::declval<IterableType<Impl>>())))
+    {
+        auto acc = VIOLET_MOVE(init);
+        while (auto value = getThisObject().NextBack()) {
+            acc = std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(acc), *value);
+        }
+
+        return acc;
+    }
+
+    template<typename Acc, typename Fun>
+    auto RFold(Acc init, Fun&& fun) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(init), *std::declval<IterableType<Impl>>())))
+    {
+        auto acc = VIOLET_MOVE(init);
+        while (auto value = getThisObject().NextBack()) {
+            acc = std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(acc), *value);
+        }
+
+        return acc;
+    }
 
     template<typename Pred>
         requires Callable<Pred, IterableType<Impl>> && CallableShouldReturn<Pred, bool, IterableType<Impl>>
@@ -324,6 +389,37 @@ struct Iterator {
         }
 
         return Nothing;
+    }
+
+    template<typename Fun>
+        requires Callable<Fun, IterableType<Impl>>
+        && detail::is_optional_v<std::invoke_result_t<Fun, IterableType<Impl>>>
+    auto FindMap(Fun fun) & noexcept
+    {
+        using U = std::invoke_result_t<std::invoke_result_t<Fun, IterableType<Impl>>>;
+
+        while (auto value = getThisObject().Next()) {
+            if (auto mapped = std::invoke(fun, *value)) {
+                return Some<U>(mapped);
+            }
+        }
+
+        return decltype(Optional<U>())(Nothing);
+    }
+
+    template<typename Fun>
+        requires Callable<Fun, IterableType<Impl>>
+    auto FindMap(Fun fun) && noexcept
+    {
+        using U = std::invoke_result_t<std::invoke_result_t<Fun, IterableType<Impl>>>;
+
+        while (auto value = getThisObject().Next()) {
+            if (auto mapped = std::invoke(fun, *value)) {
+                return Some<U>(mapped);
+            }
+        }
+
+        return decltype(Optional<U>())(Nothing);
     }
 
     template<typename Pred>
@@ -444,6 +540,8 @@ struct Iterator {
                     out.insert(out.end(), VIOLET_MOVE(*value));
                 }
             }
+
+            return out;
         } else if constexpr (requires { typename Container::value_type{}; }) {
             constexpr usize N = std::tuple_size_v<Container>; // NOLINT(readability-identifier-length)
 
@@ -483,9 +581,14 @@ struct Iterator {
     }
 
 private:
-    constexpr auto getThisObject() -> Impl&
+    constexpr auto getThisObject() & noexcept -> Impl&
     {
         return static_cast<Impl&>(*this);
+    }
+
+    constexpr auto getThisObject() && noexcept -> Impl&&
+    {
+        return static_cast<Impl&&>(*this);
     }
 };
 

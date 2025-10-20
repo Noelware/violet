@@ -19,8 +19,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "violet/violet.h"
+
+#ifdef VIOLET_WINDOWS
+
+// clang-format off
 #include "violet/support/StringRef.h"
 #include "violet/sys/Environment.h"
+// clang-format on
 
 auto Noelware::Violet::System::GetEnvironmentVariable(StringRef) noexcept -> Optional<String>
 {
@@ -28,3 +34,5 @@ auto Noelware::Violet::System::GetEnvironmentVariable(StringRef) noexcept -> Opt
 }
 
 void Noelware::Violet::System::SetEnvironmentVariable(StringRef, StringRef, bool) noexcept {}
+
+#endif

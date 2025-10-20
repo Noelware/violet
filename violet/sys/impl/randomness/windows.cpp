@@ -19,11 +19,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "violet/violet.h"
+
+#ifdef VIOLET_WINDOWS
+
+// clang-format off
 #include "violet/io/Error.h"
 #include "violet/sys/Randomness.h"
-#include "violet/violet.h"
+// clang-format on
 
 auto Noelware::Violet::System::RandomBytes(uint8*, usize) -> IO::Result<void>
 {
     return IO::Error::New<Str>(IO::ErrorKind::Unsupported, "unsupported operation");
 }
+
+#endif

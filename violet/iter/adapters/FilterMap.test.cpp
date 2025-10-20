@@ -18,3 +18,35 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#include "violet/iter/adapters/FilterMap.h"
+#include "violet/iter/Iterator.h"
+#include "violet/violet.h"
+
+#include <gtest/gtest.h>
+
+using namespace Noelware::Violet; // NOLINT(google-build-using-namespace)
+
+TEST(FilterMapTest, Declarative)
+{
+    Vec<uint32> vi{ 1, 2, 3, 4, 5 };
+    auto it = MkIterable(vi).FilterMap([](uint32 value) {
+        auto yy = value * 2;
+        return value * 2 > 5 ? Some<uint32>(yy) : Nothing;
+    });
+
+    Vec<uint32> expected = { 6, 8, 10 };
+    ASSERT_EQ(it.Collect<Vec<uint32>>(), expected);
+}
+
+TEST(FilterMapTest, Pipe)
+{
+    Vec<uint32> vi{ 1, 2, 3, 4, 5 };
+    auto it = MkIterable(vi) | FilterMap([](uint32 value) {
+        auto yy = value * 2;
+        return value * 2 > 5 ? Some<uint32>(yy) : Nothing;
+    });
+
+    Vec<uint32> expected = { 6, 8, 10 };
+    ASSERT_EQ(it.Collect<Vec<uint32>>(), expected);
+}

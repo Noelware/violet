@@ -82,7 +82,7 @@ struct PipeConsumer {
         template<Iterable Impl>                                                                                        \
         auto Consume(Impl&& it) const noexcept                                                                         \
         {                                                                                                              \
-            return VIOLET_FWD(Impl, it).NAME();                                                                        \
+            return VIOLET_FWD(Impl, it).NAME(this->n_predicate);                                                       \
         }                                                                                                              \
                                                                                                                        \
     private:                                                                                                           \
