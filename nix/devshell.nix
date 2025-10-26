@@ -23,7 +23,7 @@
   stdenv,
   lib,
   stdenvAdapters,
-  llvmPackages_20,
+  llvmPackages_21,
   ## os-specific
   ### - linux
   valgrind,
@@ -32,7 +32,7 @@
   ## tools
   pkg-config,
   python3,
-  bazel_7,
+  bazel_8,
   bazel-buildtools,
   meson,
   cmake,
@@ -49,8 +49,8 @@
   llvm = let
     oldStdenv = stdenv;
   in rec {
-    version = "20";
-    pkgs = llvmPackages_20;
+    version = "21";
+    pkgs = llvmPackages_21;
     stdenv =
       (
         if oldStdenv.hostPlatform.isLinux
@@ -75,7 +75,7 @@
       python3
 
       # build systems (we support Bazel, CMake, and Meson)
-      bazel_7
+      bazel_8
       cmake
       meson
       ninja

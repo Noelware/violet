@@ -192,3 +192,4 @@ build.ninja
 **/.usr.bazelrc
 .direnv/
 build/
+include/
