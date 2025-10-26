@@ -31,29 +31,28 @@
 // clang-format on
 
 using Noelware::Violet::Terminal;
-using Noelware::Violet::TerminalStreamSource;
-using Noelware::Violet::TermWindow;
+using Noelware::Violet::Term::StreamSource;
 
-auto Noelware::Violet::Terminal::TTY(TerminalStreamSource source) noexcept -> bool
+auto Noelware::Violet::Terminal::TTY(StreamSource source) noexcept -> bool
 {
     switch (source) {
-    case TerminalStreamSource::Stdout:
+    case StreamSource::Stdout:
         return static_cast<bool>(isatty(fileno(stdout)));
 
-    case TerminalStreamSource::Stderr:
+    case StreamSource::Stderr:
         return static_cast<bool>(isatty(fileno(stderr)));
     }
 }
 
-auto Terminal::Window(TerminalStreamSource source) noexcept -> IO::Result<TermWindow>
+auto Terminal::Window(StreamSource source) noexcept -> IO::Result<Term::Window>
 {
     struct winsize win{};
     switch (source) {
-    case TerminalStreamSource::Stdout:
+    case StreamSource::Stdout:
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &win);
         break;
 
-    case TerminalStreamSource::Stderr:
+    case StreamSource::Stderr:
         ioctl(STDERR_FILENO, TIOCGWINSZ, &win);
         break;
     }
@@ -62,7 +61,7 @@ auto Terminal::Window(TerminalStreamSource source) noexcept -> IO::Result<TermWi
         return Err(IO::Error::Platform(IO::ErrorKind::Other));
     }
 
-    return TermWindow{ .Columns = win.ws_col, .Rows = win.ws_row };
+    return Term::Window{ .Columns = win.ws_col, .Rows = win.ws_row };
 }
 
 #endif

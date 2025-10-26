@@ -307,3 +307,25 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 #        define VIOLET_ASAN
 #    endif
 #endif
+
+// -- pragmas
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+#    ifndef __clang_analyzer__
+#        define STRINGIFY(x) #x
+#        define PRAGMA(w) _Pragma(STRINGIFY(w))
+#
+#        ifdef VIOLET_CLANG
+#            define VIOLET_DISABLE_WARNING_PUSH PRAGMA(clang diagnostic push)
+#            define VIOLET_DISABLE_WARNING_POP PRAGMA(clang diagnostic pop)
+#            define VIOLET_DISABLE_WARNING(w) PRAGMA(clang diagnostic ignored "-W" w)
+#        elif defined(VIOLET_GCC)
+#            define VIOLET_DISABLE_WARNING_PUSH PRAGMA(GCC diagnostic push)
+#            define VIOLET_DISABLE_WARNING_POP PRAGMA(GCC diagnostic pop)
+#            define VIOLET_DISABLE_WARNING(w) PRAGMA(GCC diagnostic ignored "-W" w)
+#        endif
+#    endif
+#else
+#    define VIOLET_DISABLE_WARNING_PUSH
+#    define VIOLET_DISABLE_WARNING_POP
+#    define VIOLET_DISABLE_WARNING(w)
+#endif

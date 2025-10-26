@@ -64,6 +64,12 @@ def cc_test(name, **kwargs):
     deps = kwargs.pop("deps", [])
     deps += ["@googletest//:gtest", "@googletest//:gtest_main"]
 
+    # remove `visibility` in `cc_test` and make them private
+    kwargs.pop("visibility", [])
+
+    # set `size` if it is not defined
+    size = kwargs.pop("size", "small")
+
     copts = kwargs.pop("copts", [])
     linkopts = kwargs.pop("linkopts", [])
     env = kwargs.pop("env", {})
@@ -74,5 +80,7 @@ def cc_test(name, **kwargs):
         copts = copts + SANITIZER_OPTS,
         linkopts = linkopts + SANITIZER_OPTS,
         env = env | SANITIZER_ENV,
+        visibility = ["//visibility:private"],
+        size = size,
         **kwargs
     )

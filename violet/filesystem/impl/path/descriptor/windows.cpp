@@ -21,23 +21,24 @@
 
 #include "violet/violet.h"
 
-#ifdef VIOLET_LINUX
+#ifdef VIOLET_WINDOWS
 
 // clang-format off
 #include "violet/filesystem/Path.h"
+#include "violet/io/Descriptor.h"
 // clang-format on
 
-auto Noelware::Violet::Filesystem::Path::FromFileDescriptor(int32 fd) -> IO::Result<Path>
+using Noelware::Violet::Filesystem::Path;
+using Noelware::Violet::Filesystem::PathRef;
+
+auto Path::FromDescriptor(IO::Descriptor) -> IO::Result<PathRef>
 {
-    Array<char, PATH_MAX> buf;
+    return IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation");
+}
 
-    StringRef path = std::format("/proc/self/fd/{}", fd);
-    int64 len = ::readlink(path, buf.data(), buf.size());
-    if (len == -1) {
-        return IO::Error::Platform(IO::ErrorKind::InvalidInput);
-    }
-
-    return Path(path);
+auto PathRef::FromDescriptor(IO::Descriptor) -> IO::Result<PathRef>
+{
+    return IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation");
 }
 
 #endif

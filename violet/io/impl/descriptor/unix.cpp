@@ -21,15 +21,34 @@
 
 #include "violet/violet.h"
 
-#ifdef VIOLET_MACOS
+#ifdef VIOLET_UNIX
 
 // clang-format off
-#include "violet/filesystem/Path.h"
+#include "violet/io/Descriptor.h"
 // clang-format on
 
-auto Noelware::Violet::Filesystem::Path::FromFileDescriptor(int32 fd) -> IO::Result<Path>
+using Noelware::Violet::int32;
+using Noelware::Violet::String;
+using Noelware::Violet::IO::Descriptor;
+
+Descriptor::Descriptor(Descriptor::native_type fd) noexcept
+    : n_fd(fd)
 {
-    return Path("/");
+}
+
+auto Descriptor::Valid() const noexcept -> bool
+{
+    return this->n_fd >= 0;
+}
+
+auto Descriptor::ToString() const noexcept -> String
+{
+    return std::format("Descriptor({})", this->n_fd);
+}
+
+Descriptor::operator bool() const noexcept
+{
+    return this->Valid();
 }
 
 #endif

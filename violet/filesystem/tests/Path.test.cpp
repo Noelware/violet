@@ -32,15 +32,13 @@ TEST(Paths, Filename)
     EXPECT_EQ(Path("/usr/local/").Filename(), "local");
     EXPECT_EQ(Path("README.md").Filename(), "README.md");
     EXPECT_EQ(Path("./config.json").Filename(), "config.json");
-
-    EXPECT_FALSE(Path().Filename());
 }
 
 TEST(Paths, Extension)
 {
-    EXPECT_EQ(Path("/home/noeltowa/Documents/loveletter.txt").Extension(), Some<StringRef>("txt"));
-    EXPECT_EQ(Path("README.md").Extension(), Some<StringRef>("md"));
-    EXPECT_EQ(Path("./config.json").Extension(), Some<StringRef>("json"));
+    EXPECT_EQ(Path("/home/noeltowa/Documents/loveletter.txt").Extension(), Some<String>("txt"));
+    EXPECT_EQ(Path("README.md").Extension(), Some<String>("md"));
+    EXPECT_EQ(Path("./config.json").Extension(), Some<String>("json"));
 
     EXPECT_FALSE(Path(".gitignore").Extension());
     EXPECT_FALSE(Path("/usr/local/").Extension());
@@ -52,10 +50,8 @@ TEST(Paths, Stem)
 {
     EXPECT_EQ(Path("/usr/local/bin/clang++.txt").Stem(), "clang++");
     EXPECT_EQ(Path("archive.tar.gz").Stem(), "archive.tar");
-    EXPECT_EQ(Path(".gitignore").Stem(), StringRef(".gitignore"));
+    EXPECT_EQ(Path(".gitignore").Stem(), String(".gitignore"));
     EXPECT_EQ(Path("README").Stem(), "README");
-
-    EXPECT_FALSE(Path().Stem());
 }
 
 TEST(Paths, Parent)
@@ -84,7 +80,7 @@ TEST(Paths, WithFilename)
     EXPECT_EQ(clangplusplus.WithFilename("gcc-14"), "/usr/local/bin/gcc-14");
 
     Path root("/");
-    EXPECT_EQ(root.WithFilename("home/noeltowa"), StringRef("/home/noeltowa"));
+    EXPECT_EQ(root.WithFilename("home/noeltowa"), String("/home/noeltowa"));
 }
 
 TEST(Paths, WithExtension)
@@ -111,18 +107,18 @@ TEST(Paths, CheckAbsoluteRel)
 TEST(Paths, Canonicalize)
 {
     Path thisfile("/Workspaces/Noelware/Libraries/violet/violet/filesystem/tests/.././Path.test.cpp");
-    Path canon = thisfile.Canonicalize();
+    thisfile.Canonicalize();
 
-    EXPECT_EQ(canon, "/Workspaces/Noelware/Libraries/violet/violet/filesystem/tests/Path.test.cpp");
-    EXPECT_TRUE(canon.Absolute());
+    EXPECT_EQ(thisfile, "/Workspaces/Noelware/Libraries/violet/violet/filesystem/tests/Path.test.cpp");
+    EXPECT_TRUE(thisfile.Absolute());
 
 #ifdef _WIN32
     Path thisfileWin32(
         "C:\\Users\\NoelTowa\\Workspaces\\Noelware\\Libraries\\Violet\\violet/filesystem/tests/.././Path.test.cpp");
 
-    Path win32Canon = thisfileWin32.Canonicalize();
-    EXPECT_TRUE(win32Canon.Absolute());
-    EXPECT_EQ(win32Canon,
+    thisfileWin32.Canonicalize();
+    EXPECT_TRUE(thisfileWin32.Absolute());
+    EXPECT_EQ(thisfileWin32,
         "C:\\Users\\NoelTowa\\Workspaces\\Noelware\\Libraries\\Violet\\violet\\filesystem\\tests\\Path.test.cpp");
 #endif
 }

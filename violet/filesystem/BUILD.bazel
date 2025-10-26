@@ -22,18 +22,43 @@
 load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
-    name = "path",
+    name = "permissions",
     srcs = select({
-        "@platforms//os:linux": ["impl/path/linux.cpp"],
-        "@platforms//os:macos": ["impl/path/macos.cpp"],
-        "@platforms//os:windows": ["impl/path/windows.cpp"],
-        "//conditions:default": [],
+        "@platforms//os:linux": ["impl/permissions/unix.cpp"],
+        "@platforms//os:macos": ["impl/permissions/unix.cpp"],
+        "@platforms//os:windows": ["impl/permissions/windows.cpp"],
+        "//conditions:default": ["impl/permissions/unsupported.cpp"],
+    }),
+    hdrs = ["Permissions.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//violet"],
+)
+
+cc_library(
+    name = "path",
+    srcs = ["impl/path.cpp"] + select({
+        "@platforms//os:linux": [
+            "impl/path/descriptor/linux.cpp",
+            "impl/path/posix.cpp",
+        ],
+        "@platforms//os:macos": [
+            "impl/path/descriptor/macos.cpp",
+            "impl/path/posix.cpp",
+        ],
+        "@platforms//os:windows": [
+            "impl/path/descriptor/windows.cpp",
+            "impl/path/windows.cpp",
+        ],
+        "//conditions:default": [
+            "impl/path/descriptor/unsupported.cpp",
+            "impl/path/posix.cpp",
+        ],
     }),
     hdrs = ["Path.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//violet",
-        "//violet/container",
+        "//violet/io:descriptor",
         "//violet/io:error",
         "//violet/support:stringref",
     ],
@@ -41,9 +66,7 @@ cc_library(
 
 cc_test(
     name = "path_test",
-    size = "small",
     srcs = ["tests/Path.test.cpp"],
-    visibility = ["//visibility:public"],
     deps = [":path"],
 )
 
@@ -52,14 +75,16 @@ cc_library(
     srcs = select({
         "@platforms//os:linux": ["impl/file/unix.cpp"],
         "@platforms//os:macos": ["impl/file/unix.cpp"],
-        "@platforms//os:windows": ["impl/file/windows.cpp"],
+        "@platforms//os:windows": ["impl/file/descriptor/windows.cpp"],
         "//conditions:default": ["impl/file/unsupported.cpp"],
     }),
     hdrs = ["File.h"],
     visibility = ["//visibility:public"],
     deps = [
         ":path",
+        ":permissions",
         "//violet",
+        "//violet/io:descriptor",
         "//violet/io:error",
         "//violet/support:bitflags",
     ],
@@ -71,16 +96,15 @@ cc_library(
         "@platforms//os:linux": ["impl/filesystem/unix.cpp"],
         "@platforms//os:macos": ["impl/filesystem/unix.cpp"],
         "@platforms//os:windows": ["impl/filesystem/windows.cpp"],
-        "//conditions:default": [],
+        "//conditions:default": ["impl/filesystem/unsupported.cpp"],
     }),
     hdrs = ["Filesystem.h"],
     visibility = ["//visibility:public"],
     deps = [
         ":file",
         ":path",
+        ":permissions",
         "//violet",
         "//violet/io:error",
-        "//violet/iter",
-        "//violet/support:bitflags",
     ],
 )

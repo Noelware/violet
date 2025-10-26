@@ -40,7 +40,7 @@ auto Noelware::Violet::System::RandomBytes(uint8* buf, usize len) -> IO::Result<
 
     usize total = 0;
     while (total < len) {
-        int64 nbytes = ::read(fd, buf + total, len - total); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        int64 nbytes = ::read(fd, buf + total, len - total);
         if (nbytes <= 0) {
             ::close(fd);
             return IO::Error::Platform(IO::ErrorKind::InvalidInput);

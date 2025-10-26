@@ -24,86 +24,383 @@
 #ifdef VIOLET_UNIX
 
 // clang-format off
+#include "violet/io/Descriptor.h"
 #include "violet/filesystem/File.h"
+#include "violet/filesystem/Path.h"
+#include "violet/io/Error.h"
 
 #include <fcntl.h>
-#include <sys/file.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <sys/types.h>
 // clang-format on
 
-auto Noelware::Violet::Filesystem::File::doOpen() const noexcept -> IO::Result<void>
+using Noelware::Violet::Filesystem::File;
+using Noelware::Violet::Filesystem::FileType;
+using Noelware::Violet::Filesystem::Metadata;
+using Noelware::Violet::Filesystem::OpenOptions;
+using Noelware::Violet::Filesystem::PathRef;
+using Noelware::Violet::Filesystem::ScopedLock;
+
+////// --=-- START :: FileType --=-- //////
+
+constexpr auto FileType::File() const noexcept -> bool
 {
-    return {};
+    return this->n_tags.Contains(flag::kFile);
 }
 
-void Noelware::Violet::Filesystem::File::Close()
+constexpr auto FileType::Dir() const noexcept -> bool
 {
-    if (this->n_fd >= 0) {
-        ::close(this->n_fd);
-        this->n_fd = -1;
+    return this->n_tags.Contains(flag::kDir);
+}
+
+constexpr auto FileType::Symlink() const noexcept -> bool
+{
+    return this->n_tags.Contains(flag::kSymlink);
+}
+
+constexpr auto FileType::BlockDevice() const noexcept -> bool
+{
+    return this->n_tags.Contains(flag::kBlkDev);
+}
+
+constexpr auto FileType::CharDevice() const noexcept -> bool
+{
+    return this->n_tags.Contains(flag::kCharDev);
+}
+
+constexpr auto FileType::FIFOPipe() const noexcept -> bool
+{
+    return this->n_tags.Contains(flag::kFIFO);
+}
+
+constexpr auto FileType::UnixSocket() const noexcept -> bool
+{
+    return this->n_tags.Contains(flag::kSocket);
+}
+
+constexpr auto FileType::mkfile(bool symlink) noexcept -> FileType
+{
+    FileType ft{};
+    ft.n_tags.Add(flag::kFile);
+
+    if (symlink) {
+        ft.n_tags.Add(flag::kSymlink);
+    }
+
+    return ft;
+}
+
+constexpr auto FileType::mkdir(bool symlink) noexcept -> FileType
+{
+    FileType ft{};
+    ft.n_tags.Add(flag::kDir);
+
+    if (symlink) {
+        ft.n_tags.Add(flag::kSymlink);
+    }
+
+    return ft;
+}
+
+constexpr auto FileType::mkblkdev(bool symlink) noexcept -> FileType
+{
+    FileType ft{};
+    ft.n_tags.Add(flag::kBlkDev);
+
+    if (symlink) {
+        ft.n_tags.Add(flag::kSymlink);
+    }
+
+    return ft;
+}
+
+constexpr auto FileType::mkchardev(bool symlink) noexcept -> FileType
+{
+    FileType ft{};
+    ft.n_tags.Add(flag::kCharDev);
+
+    if (symlink) {
+        ft.n_tags.Add(flag::kSymlink);
+    }
+
+    return ft;
+}
+
+constexpr auto FileType::mkfifo(bool symlink) noexcept -> FileType
+{
+    FileType ft{};
+    ft.n_tags.Add(flag::kFIFO);
+
+    if (symlink) {
+        ft.n_tags.Add(flag::kSymlink);
+    }
+
+    return ft;
+}
+
+constexpr auto FileType::mksocket(bool symlink) noexcept -> FileType
+{
+    FileType ft{};
+    ft.n_tags.Add(flag::kSocket);
+
+    if (symlink) {
+        ft.n_tags.Add(flag::kSymlink);
+    }
+
+    return ft;
+}
+
+////// --=-- END :: FileType --=-- //////
+
+////// --=-- START :: OpenOptions --=-- //////
+
+auto OpenOptions::Read(bool yes) noexcept -> OpenOptions&
+{
+    this->populateFlag(flag::kRead, yes);
+    return *this;
+}
+
+auto OpenOptions::Write(bool yes) noexcept -> OpenOptions&
+{
+    this->populateFlag(flag::kWrite, yes);
+    return *this;
+}
+
+auto OpenOptions::Create(bool yes) noexcept -> OpenOptions&
+{
+    this->populateFlag(flag::kCreate, yes);
+    return *this;
+}
+
+auto OpenOptions::Append(bool yes) noexcept -> OpenOptions&
+{
+    this->populateFlag(flag::kAppend, yes);
+    return *this;
+}
+
+auto OpenOptions::Truncate(bool yes) noexcept -> OpenOptions&
+{
+    this->populateFlag(flag::kTruncate, yes);
+    return *this;
+}
+
+auto OpenOptions::CreateNew(bool yes) noexcept -> OpenOptions&
+{
+    this->populateFlag(flag::kCreateNew, yes);
+    return *this;
+}
+
+auto OpenOptions::Mode(mode_t mode) noexcept -> OpenOptions&
+{
+    this->n_mode = mode;
+    return *this;
+}
+
+auto OpenOptions::Flags(int32 flags) noexcept -> OpenOptions&
+{
+    this->n_flags |= flags;
+    return *this;
+}
+
+auto OpenOptions::Open(PathRef path) -> IO::Result<File>
+{
+    auto ret = File::doOpen(path, *this);
+    if (!ret) {
+        return ret.Error();
+    }
+
+    return VIOLET_MOVE(ret.Value());
+}
+
+////// --=-- END :: OpenOptions --=-- //////
+
+////// --=-- START :: ScopedLock --=-- //////
+
+ScopedLock::ScopedLock(File* ptr)
+    : n_file(ptr)
+{
+}
+
+ScopedLock::~ScopedLock()
+{
+    if (this->n_file != nullptr) {
+        std::ignore = this->n_file->Unlock();
+        std::ignore = this->n_file->Close();
     }
 }
 
-auto Noelware::Violet::Filesystem::File::Lock() const noexcept -> IO::Result<void>
+ScopedLock::ScopedLock(ScopedLock&& other) noexcept
+    : n_file(std::exchange(other.n_file, nullptr))
 {
-    if (flock(this->n_fd, LOCK_EX) == -1) {
-        return IO::Error::Platform(IO::ErrorKind::ExecutableFileBusy);
+}
+
+auto ScopedLock::operator=(ScopedLock&& other) noexcept -> ScopedLock&
+{
+    if (this != &other) {
+        if (this->n_file != nullptr) {
+            std::ignore = this->n_file->Unlock();
+            std::ignore = this->n_file->Close();
+        }
+
+        this->n_file = std::exchange(other.n_file, nullptr);
+    }
+
+    return *this;
+}
+
+////// --=-- END :: ScopedLock --=-- //////
+
+////// --=-- START :: File --=-- //////
+
+constexpr File::File(PathRef path) noexcept
+    : n_path(path)
+{
+}
+
+File::~File()
+{
+    std::ignore = this->Close();
+}
+
+File::File(File&& other) noexcept
+    : n_descriptor(std::exchange(other.n_descriptor, {}))
+    , n_path(std::exchange(other.n_path, {}))
+{
+}
+
+auto File::operator=(File&& other) noexcept -> File&
+{
+    if (this != &other) {
+        std::ignore = this->Close();
+
+        n_descriptor = std::exchange(other.n_descriptor, {});
+        n_path = std::exchange(other.n_path, {});
+    }
+
+    return *this;
+}
+
+constexpr auto File::Valid() const noexcept -> bool
+{
+    return this->n_descriptor.Valid();
+}
+
+constexpr File::operator bool() const noexcept
+{
+    return this->Valid();
+}
+
+auto File::Close() -> IO::Result<void>
+{
+    if (this->Valid()) {
+        if (::close(this->n_descriptor.AsFD()) == -1) {
+            return IO::Error::Platform(IO::ErrorKind::Other);
+        }
     }
 
     return {};
 }
 
-auto Noelware::Violet::Filesystem::File::SharedLock() const noexcept -> IO::Result<void>
+auto File::Open(const OpenOptions& opts) -> IO::Result<void>
 {
-    if (flock(this->n_fd, LOCK_SH) == -1) {
-        return IO::Error::Platform(IO::ErrorKind::ExecutableFileBusy);
+    if (!this->Valid()) {
+        auto file = File::doOpen(this->n_path, opts);
+        if (!file) {
+            return file.Error();
+        }
+
+        *this = VIOLET_MOVE(file.Value());
     }
 
     return {};
 }
 
-auto Noelware::Violet::Filesystem::File::Unlock() const noexcept -> IO::Result<void>
+auto File::Lock() const -> IO::Result<void>
 {
-    if (flock(this->n_fd, LOCK_UN) == -1) {
+    return IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation");
+}
+
+auto File::SharedLock() const -> IO::Result<void>
+{
+    return IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation");
+}
+
+auto File::Unlock() const -> IO::Result<void>
+{
+    return IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation");
+}
+
+auto File::MkScopedLock() -> IO::Result<ScopedLock>
+{
+    return IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation");
+}
+
+auto File::MkSharedScopedLock() -> IO::Result<ScopedLock>
+{
+    return IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation");
+}
+
+auto File::Metadata(bool) const -> IO::Result<Filesystem::Metadata>
+{
+    return IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation");
+}
+
+auto File::Clone() const -> IO::Result<File>
+{
+    return IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation");
+}
+
+auto File::doOpen(PathRef path, OpenOptions opts) -> IO::Result<File>
+{
+    // Build the flags
+    int32 flags = 0;
+    if (opts.n_bits.Contains(OpenOptions::flag::kRead) && opts.n_bits.Contains(OpenOptions::flag::kRead)) {
+        flags |= O_RDWR;
+    } else if (opts.n_bits.Contains(OpenOptions::flag::kRead)) {
+        flags |= O_RDONLY;
+    } else if (opts.n_bits.Contains(OpenOptions::flag::kWrite)) {
+        flags |= O_WRONLY;
+    }
+
+    if (opts.n_bits.Contains(OpenOptions::flag::kAppend)) {
+        flags |= O_APPEND;
+    }
+
+    if (opts.n_bits.Contains(OpenOptions::flag::kCreate)) {
+        flags |= O_CREAT;
+    }
+
+    if (opts.n_bits.Contains(OpenOptions::flag::kTruncate)) {
+        flags |= O_TRUNC;
+    }
+
+    if (opts.n_bits.Contains(OpenOptions::flag::kCreateNew)) {
+        flags |= O_CREAT | O_EXCL;
+    }
+
+    if (opts.n_flags != 0) {
+        flags |= opts.n_flags;
+    }
+
+    int fd = ::open(static_cast<StringRef>(path), flags, opts.n_mode);
+    if (fd == -1) {
         return IO::Error::Platform(IO::ErrorKind::Other);
     }
 
-    return {};
-}
-
-auto Noelware::Violet::Filesystem::File::ScopedLock() -> IO::Result<struct ScopedLock>
-{
-    if (this->Lock()) {
-        return Noelware::Violet::Filesystem::ScopedLock(this);
-    }
-
-    return IO::Error::Platform(IO::ErrorKind::ExecutableFileBusy);
-}
-
-auto Noelware::Violet::Filesystem::File::ScopedSharedLock() -> IO::Result<struct ScopedLock>
-{
-    if (this->SharedLock()) {
-        return Noelware::Violet::Filesystem::ScopedLock(this);
-    }
-
-    return IO::Error::Platform(IO::ErrorKind::ExecutableFileBusy);
-}
-
-auto Noelware::Violet::Filesystem::File::Clone() const noexcept -> IO::Result<File>
-{
-    int32 dupfd = 0;
-    if ((dupfd = fcntl(this->n_fd, F_DUPFD_CLOEXEC, 0)) == -1) {
-        return IO::Error::Platform(IO::ErrorKind::ExecutableFileBusy);
-    }
-
-    auto res = Path::FromFileDescriptor(dupfd);
-    assert(res.IsOk());
-
-    File file(res.Value());
-    file.n_fd = dupfd;
+    File file;
+    file.n_descriptor = IO::Descriptor(fd);
+    file.n_path = path;
 
     return file;
+}
+
+auto File::Path() const noexcept -> PathRef
+{
+    return this->n_path;
+}
+
+auto File::Descriptor() const noexcept -> IO::Descriptor
+{
+    return this->n_descriptor;
 }
 
 #endif

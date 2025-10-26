@@ -56,14 +56,24 @@ struct Bitflags final {
         return (this->n_bits & ty) != 0;
     }
 
-    constexpr auto Add(underlying_type bit) noexcept
+    constexpr void Add(underlying_type bit) noexcept
     {
         this->n_bits |= bit;
     }
 
-    constexpr auto Add(E enum_) noexcept
+    constexpr void Add(E enum_) noexcept
     {
         return Add(static_cast<underlying_type>(enum_));
+    }
+
+    constexpr void Remove(underlying_type ty) noexcept
+    {
+        this->n_bits &= ty;
+    }
+
+    constexpr void Remove(E enum_) noexcept
+    {
+        return Remove(static_cast<underlying_type>(enum_));
     }
 
     constexpr VIOLET_EXPLICIT operator bool() const noexcept

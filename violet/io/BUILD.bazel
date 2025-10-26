@@ -25,11 +25,25 @@ cc_library(
     name = "io",
     visibility = ["//visibility:public"],
     deps = [
+        ":descriptor",
         ":error",
         ":read",
         ":stdio",
         ":write",
     ],
+)
+
+cc_library(
+    name = "descriptor",
+    srcs = select({
+        "@platforms//os:linux": ["impl/descriptor/unix.cpp"],
+        "@platforms//os:macos": ["impl/descriptor/unix.cpp"],
+        "@platforms//os:windows": ["impl/descriptor/windows.cpp"],
+        "//conditions:default": ["impl/error/unsupported.cpp"],
+    }),
+    hdrs = ["Descriptor.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//violet"],
 )
 
 cc_library(

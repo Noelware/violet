@@ -44,7 +44,12 @@ Checks: >
   -modernize-avoid-c-arrays,
   -google-explicit-constructor,
   -cppcoreguidelines-owning-memory,
-  -misc-no-recursion
+  -misc-no-recursion,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -readability-inconsistent-declaration-parameter-name,
+  -modernize-use-nodiscard,
+  -readability-function-cognitive-complexity,
+  -misc-use-anonymous-namespace
 
 CheckOptions:
   - {key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor, value: true}

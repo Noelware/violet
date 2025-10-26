@@ -21,10 +21,10 @@
 
 #pragma once
 
+#include "violet/filesystem/File.h"
 #include "violet/filesystem/Path.h"
+#include "violet/filesystem/Permissions.h"
 #include "violet/io/Error.h"
-#include "violet/iter/Iterator.h"
-#include "violet/support/Bitflags.h"
 #include "violet/violet.h"
 
 #ifdef VIOLET_WINDOWS
@@ -35,6 +35,39 @@
 
 namespace Noelware::Violet::Filesystem {
 
+struct Dirs;
+struct WalkDirs;
+
+// START   :: FUNCTIONS (DIRECTORY)
+
+auto CreateDirectory(const PathRef&) -> IO::Result<void>;
+auto CreateDirectories(const PathRef&) -> IO::Result<void>;
+auto RemoveDirectory(const PathRef&) -> IO::Result<void>;
+auto RemoveAllDirs(const PathRef&) -> IO::Result<void>;
+auto ReadDir(const PathRef&) -> IO::Result<Dirs>;
+auto WalkDir(const PathRef&) -> IO::Result<WalkDirs>;
+
+// END   :: FUNCTIONS (DIRECTORY)
+// START :: FUNCTIONS (FILES)
+
+auto CreateFile(const PathRef&) -> IO::Result<File>;
+auto Canonicalize(const PathRef&) -> IO::Result<Path>;
+auto Copy(const PathRef&, const PathRef&) -> IO::Result<uint64>;
+auto Exists(const PathRef&) -> IO::Result<bool>;
+auto Metadata(const PathRef&, bool symlinks = false) -> IO::Result<Metadata>;
+auto RemoveFile(const PathRef&) -> IO::Result<void>;
+auto Rename(const PathRef&, const PathRef&) -> IO::Result<void>;
+auto SetPermissions(const PathRef&, Permissions) -> IO::Result<void>;
+
+// END   :: FUNCTIONS (FILES)
+
+struct DirEntry final {};
+struct Dirs final {};
+struct WalkDirs final {};
+
+} // namespace Noelware::Violet::Filesystem
+
+/*
 struct Dirs;
 struct WalkDirs;
 
@@ -211,5 +244,4 @@ private:
     }
 #endif
 };
-
-} // namespace Noelware::Violet::Filesystem
+*/

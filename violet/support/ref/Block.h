@@ -78,7 +78,7 @@ struct Block final {
         // Safety: We allocated `sizeof(Block)+sizeof(T)` bytes, aligned to `max(alignof(Block), alignof(T)).
         //         The memory immediately after this block is to be suitably aligned for `T`, hopefully.
         //
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         return reinterpret_cast<stored_type*>(reinterpret_cast<uint8*>(std::addressof(*this)) + sizeof(Block));
     }
 
@@ -88,7 +88,7 @@ struct Block final {
         // Safety: read above ^^
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         return reinterpret_cast<const stored_type*>(
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             reinterpret_cast<const uint8*>(std::addressof(*this)) + sizeof(Block));
     }
 

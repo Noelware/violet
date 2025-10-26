@@ -57,12 +57,12 @@ constexpr static Array<uint8, 256> LOOKUP_TABLE = {
 
 auto Noelware::Violet::Ulid::FromStr(StringRef str) -> Result<Ulid, DecodeUlidError>
 {
-    if (str.Length() != Length) {
+    if (str.Size() != Length) {
         return DecodeUlidError(DecodeUlidError::Tag::kInvalidLength);
     }
 
     uint128 result;
-    for (usize i = 0; i < str.Length(); i++) {
+    for (usize i = 0; i < str.Size(); i++) {
         uint8 value = LOOKUP_TABLE[static_cast<uint8>(str[i])];
         if (value == 255) {
             return DecodeUlidError(DecodeUlidError::Tag::kInvalidChar);

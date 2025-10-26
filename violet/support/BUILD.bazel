@@ -95,7 +95,7 @@ cc_test(
 
 cc_library(
     name = "terminal",
-    srcs = select({
+    srcs = ["impl/terminal.cpp"] + select({
         "@platforms//os:linux": ["impl/terminal/unix.cpp"],
         "@platforms//os:macos": ["impl/terminal/unix.cpp"],
         "@platforms//os:windows": ["impl/terminal/windows.cpp"],
@@ -108,6 +108,7 @@ cc_library(
         "//violet",
         "//violet/container:optional",
         "//violet/io:error",
+        "//violet/support:bitflags",
         "//violet/sys:environment",
     ],
 )

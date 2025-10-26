@@ -24,15 +24,14 @@
 
 using Noelware::Violet::String;
 using Noelware::Violet::Terminal;
-using Noelware::Violet::TerminalStreamSource;
-using Noelware::Violet::TermWindow;
+using Noelware::Violet::Term::StreamSource;
 
-auto Noelware::Violet::Terminal::TTY(TerminalStreamSource) noexcept -> bool
+auto Noelware::Violet::Terminal::TTY(StreamSource) noexcept -> bool
 {
     return false;
 }
 
-auto Terminal::Window(TerminalStreamSource) noexcept -> IO::Result<TermWindow>
+auto Terminal::Window(StreamSource) noexcept -> IO::Result<Term::Window>
 {
     return Err(IO::Error::New<String>(IO::ErrorKind::Unsupported, "unsupported operation"));
 }

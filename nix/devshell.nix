@@ -68,6 +68,8 @@
 
       llvm.pkgs.clang-tools
       llvm.pkgs.bintools
+      llvm.pkgs.lldb
+
       bazel-buildtools
       pkg-config
       python3
@@ -90,7 +92,7 @@ in
   mkShell' {
     inherit packages;
 
-    name = "eous-dev";
+    name = "violet-dev";
     shellHook = ''
             realresourcepath="${llvm.pkgs.compiler-rt.dev}"
             cwd=$(pwd)

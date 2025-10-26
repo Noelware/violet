@@ -22,235 +22,97 @@
 #pragma once
 
 #include "violet/filesystem/Path.h"
+#include "violet/filesystem/Permissions.h"
+#include "violet/io/Descriptor.h"
 #include "violet/io/Error.h"
 #include "violet/support/Bitflags.h"
 #include "violet/violet.h"
 
-#include <utility>
-
-#ifdef _WIN32
+#ifdef VIOLET_WINDOWS
 #    include <windows.h>
-#else
+#elif defined(VIOLET_UNIX)
 #    include <dirent.h>
 #    include <sys/types.h>
 #endif
 
 namespace Noelware::Violet::Filesystem {
 
-struct OpenOptions;
-struct ScopedLock;
+struct Path;
+struct File;
 
-struct Metadata final {
-    uint64 Size = 0;
-    uint64 Modified = 0;
-    uint64 Created = 0;
-    uint64 Accessed = 0;
+struct FileType final {
+    FileType() = default;
 
-    bool Readonly = false;
-    bool Symlink = false;
-    bool Directory = false;
+    constexpr auto File() const noexcept -> bool;
+    constexpr auto Dir() const noexcept -> bool;
+    constexpr auto Symlink() const noexcept -> bool;
 
-    [[nodiscard]] constexpr auto File() const noexcept -> bool
-    {
-        return !this->Directory;
-    }
-};
-
-/// A RAII-based wrapper around Unix file descriptors or Windows' `HANDLE`.
-struct File final {
-    File() = delete;
-    File(Path path)
-        : n_path(VIOLET_MOVE(path))
-    {
-    }
-
-    ~File()
-    {
-        this->Close();
-    }
-
-    File(const File&) = delete;
-    auto operator=(const File&) -> File& = delete;
-
-    File(File&& other) noexcept
-    {
-        *this = VIOLET_MOVE(other);
-    }
-
-    auto operator=(File&& other) noexcept -> File&
-    {
-        if (this != &other) {
-            this->Close();
-
-#ifdef _WIN32
-            this->n_handle = other.n_handle;
-            other.n_handle = INVALID_HANDLE_VALUE;
-#else
-            this->n_fd = other.n_fd;
-            other.n_fd = -1;
+#ifdef VIOLET_UNIX
+    constexpr auto BlockDevice() const noexcept -> bool;
+    constexpr auto CharDevice() const noexcept -> bool;
+    constexpr auto FIFOPipe() const noexcept -> bool;
+    constexpr auto UnixSocket() const noexcept -> bool;
 #endif
-        }
-
-        return *this;
-    }
-
-    static auto Open(Path path, OpenOptions opts) -> IO::Result<File>;
-
-    [[nodiscard]] auto Valid() const noexcept -> bool
-    {
-#ifdef _WIN32
-        return this->n_handle == INVALID_HANDLE_VALUE;
-#else
-        return this->n_fd != -1;
-#endif
-    }
-
-    VIOLET_EXPLICIT operator bool() const noexcept
-    {
-        return this->Valid();
-    }
-
-    void Close();
-
-    [[nodiscard]] auto Lock() const noexcept -> IO::Result<void>;
-    [[nodiscard]] auto SharedLock() const noexcept -> IO::Result<void>;
-    [[nodiscard]] auto Unlock() const noexcept -> IO::Result<void>;
-
-    [[nodiscard]] auto ScopedLock() -> IO::Result<ScopedLock>;
-    [[nodiscard]] auto ScopedSharedLock() -> IO::Result<struct ScopedLock>;
-
-    [[nodiscard]] auto Metadata(bool followSymlinks = true) const noexcept -> IO::Result<Metadata>;
-    [[nodiscard]] auto Clone() const noexcept -> IO::Result<File>;
-
-private:
-    friend struct OpenOptions;
-
-#ifdef _WIN32
-    HANDLE n_handle = INVALID_HANDLE_VALUE;
-#else
-    constexpr static auto n_invalidFd = -1;
-    int32 n_fd = n_invalidFd;
-#endif
-
-    Path n_path;
-
-    [[nodiscard]] auto doOpen() const noexcept -> IO::Result<void>;
-};
-
-struct ScopedLock final {
-    ScopedLock() = delete;
-    ~ScopedLock() noexcept(false)
-    {
-        if (this->n_file != nullptr) {
-            auto res = this->n_file->Unlock(); // NOLINT(readability-identifier-length)
-            if (!res) {
-                throw VIOLET_MOVE(res.Error());
-            }
-        }
-    }
-
-    ScopedLock(const ScopedLock&) = delete;
-    auto operator=(const ScopedLock&) -> ScopedLock& = delete;
-
-    ScopedLock(ScopedLock&& other) noexcept
-        : n_file(std::exchange(other.n_file, nullptr))
-    {
-    }
-
-    auto operator=(ScopedLock&& other) noexcept(false) -> ScopedLock&
-    {
-        if (this != &other) {
-            auto res = this->n_file->Unlock(); // NOLINT(readability-identifier-length)
-            if (!res) {
-                throw VIOLET_MOVE(res.Error());
-            }
-
-            this->n_file = std::exchange(other.n_file, nullptr);
-        }
-
-        return *this;
-    }
 
 private:
     friend struct File;
 
-    VIOLET_EXPLICIT ScopedLock(File* file)
-        : n_file(file)
-    {
-    }
+    enum class flag : uint8 {
+        kFile = 1 << 0, ///< this is a file
+        kDir = 1 << 1, ///< this is a directory
+        kSymlink = 1 << 2, ///< this is a symlink
 
-    File* n_file;
+#ifdef VIOLET_UNIX
+        kBlkDev = 1 << 3, ///< this is a character device
+        kCharDev = 1 << 4, ///< this is a character device
+        kFIFO = 1 << 5, ///< this is a named pipe (FIFO).
+        kSocket = 1 << 6 ///< this is a unix socket
+#endif
+    };
+
+    Bitflags<flag> n_tags;
+
+    static constexpr auto mkfile(bool symlink = false) noexcept -> FileType;
+    static constexpr auto mkdir(bool symlink = false) noexcept -> FileType;
+
+#ifdef VIOLET_UNIX
+    static constexpr auto mkblkdev(bool symlink = false) noexcept -> FileType;
+    static constexpr auto mkchardev(bool symlink = false) noexcept -> FileType;
+    static constexpr auto mkfifo(bool symlink = false) noexcept -> FileType;
+    static constexpr auto mksocket(bool symlink = false) noexcept -> FileType;
+#endif
 };
 
-/// Builder for opening a [`File`], analgous to Rust's [`std::fs::OpenOptions`].
-///
-/// [`std::fs::OpenOptions`]: https://doc.rust-lang.org/1.90.0/std/fs/struct.OpenOptions.html
 struct OpenOptions final {
     OpenOptions() = default;
 
-    auto Read(bool yes = true) noexcept -> OpenOptions&
-    {
-        populateFlag(Flag::kRead, yes);
-        return *this;
-    }
+    auto Read(bool yes = true) noexcept -> OpenOptions&;
+    auto Write(bool yes = true) noexcept -> OpenOptions&;
+    auto Create(bool yes = true) noexcept -> OpenOptions&;
+    auto Truncate(bool yes = true) noexcept -> OpenOptions&;
+    auto Append(bool yes = true) noexcept -> OpenOptions&;
+    auto CreateNew(bool yes = true) noexcept -> OpenOptions&;
 
-    auto Write(bool yes = true) noexcept -> OpenOptions&
-    {
-        populateFlag(Flag::kWrite, yes);
-        return *this;
-    }
-
-    auto Create(bool yes = true) noexcept -> OpenOptions&
-    {
-        populateFlag(Flag::kCreate, yes);
-        return *this;
-    }
-
-    auto Append(bool yes = true) noexcept -> OpenOptions&
-    {
-        populateFlag(Flag::kAppend, yes);
-        return *this;
-    }
-
-    auto Truncate(bool yes = true) noexcept -> OpenOptions&
-    {
-        populateFlag(Flag::kTruncate, yes);
-        return *this;
-    }
-
-    auto CreateNew(bool yes = true) noexcept -> OpenOptions&
-    {
-        populateFlag(Flag::kCreateNew, yes);
-        return *this;
-    }
-
-#ifdef _WIN32
-    auto Attributes(DWORD attributes) noexcept -> OpenOptions&
-    {
-        this->n_attributes = attributes;
-        return *this;
-    }
-#else
-    auto Mode(mode_t mode) noexcept -> OpenOptions&
-    {
-        this->n_mode = mode;
-        return *this;
-    }
+#ifdef VIOLET_WINDOWS
+    auto Attributes(DWORD) noexcept -> OpenOptions&;
+#elif defined(VIOLET_UNIX)
+    auto Mode(mode_t) noexcept -> OpenOptions&;
+    auto Flags(int32) noexcept -> OpenOptions&;
 #endif
 
-    [[nodiscard]] auto Open(Path path) const noexcept -> IO::Result<File>
-    {
-        File file(VIOLET_MOVE(path));
-        auto res = file.doOpen();
-        if (!res) {
-            return Err(res.Error());
-        }
-
-        return file;
-    }
+    [[nodiscard]] auto Open(PathRef) -> IO::Result<File>;
 
 private:
-    enum struct Flag : uint8 {
+#ifdef VIOLET_WINDOWS
+    DWORD n_attributes;
+#elif defined(VIOLET_UNIX)
+    mode_t n_mode;
+    int32 n_flags;
+#endif
+
+    friend struct File;
+
+    enum struct flag : uint8 {
         kRead = 1 << 0, //< marks this file as it should be opened for reading
         kWrite = 1 << 1, //< marks this file as it should be opened for writing
         kCreate = 1 << 2, //< ensures that this file is created before the handle is given
@@ -259,27 +121,79 @@ private:
         kCreateNew = 1 << 5 //< atomically creates the file or fails if it already exists.
     };
 
-    Bitflags<Flag> n_flags = Bitflags<Flag>(0);
+    Bitflags<flag> n_bits;
 
-#ifdef _WIN32
-    DWORD n_attributes = FILE_ATTRIBUTE_NORMAL;
-#else
-    mode_t n_mode = 0644;
-#endif
-
-    void populateFlag(const Flag& flag, bool yes = true) noexcept
+    void populateFlag(const flag& flag, bool yes = true) noexcept
     {
-        if (!this->n_flags.Contains(flag) && yes) {
-            this->n_flags.Add(flag);
-        } else if (this->n_flags.Contains(flag) && !yes) {
-            this->n_flags &= Bitflags(flag);
+        if (!this->n_bits.Contains(flag) && yes) {
+            this->n_bits.Add(flag);
+        } else if (this->n_bits.Contains(flag) && !yes) {
+            this->n_bits.Remove(flag);
         }
     }
 };
 
-inline auto File::Open(Path path, OpenOptions opts) -> IO::Result<File>
-{
-    return opts.Open(VIOLET_MOVE(path));
-}
+struct Metadata final {
+    struct FileType FileType;
+    struct Permissions Permissions;
+    uint64 Size;
+};
+
+struct ScopedLock final {
+    ScopedLock() = delete;
+    ~ScopedLock();
+
+    ScopedLock(const ScopedLock&) = delete;
+    auto operator=(const ScopedLock&) -> ScopedLock& = delete;
+
+    ScopedLock(ScopedLock&&) noexcept;
+    auto operator=(ScopedLock&&) noexcept -> ScopedLock&;
+
+private:
+    friend struct File;
+
+    VIOLET_EXPLICIT ScopedLock(File* ptr);
+
+    File* n_file;
+};
+
+struct File final {
+    constexpr File() noexcept = default;
+    constexpr VIOLET_EXPLICIT File(PathRef) noexcept;
+
+    static auto FromDescriptor(IO::Descriptor, OpenOptions = {}) noexcept -> IO::Result<File>;
+
+    ~File();
+
+    File(const File&) noexcept = delete;
+    auto operator=(const File&) -> File& = delete;
+
+    File(File&&) noexcept;
+    auto operator=(File&&) noexcept -> File&;
+
+    constexpr auto Valid() const noexcept -> bool;
+
+    [[nodiscard]] auto Close() -> IO::Result<void>;
+    [[nodiscard]] auto Open(const OpenOptions&) -> IO::Result<void>;
+    [[nodiscard]] auto Lock() const -> IO::Result<void>;
+    [[nodiscard]] auto SharedLock() const -> IO::Result<void>;
+    [[nodiscard]] auto Unlock() const -> IO::Result<void>;
+    [[nodiscard]] auto MkScopedLock() -> IO::Result<ScopedLock>;
+    [[nodiscard]] auto MkSharedScopedLock() -> IO::Result<ScopedLock>;
+    [[nodiscard]] auto Metadata(bool followSymlinks = false) const -> IO::Result<Metadata>;
+    [[nodiscard]] auto Clone() const -> IO::Result<File>;
+    [[nodiscard]] auto Path() const noexcept -> PathRef;
+    [[nodiscard]] auto Descriptor() const noexcept -> IO::Descriptor;
+
+    constexpr VIOLET_EXPLICIT operator bool() const noexcept;
+
+private:
+    friend struct OpenOptions;
+
+    [[nodiscard]] static auto doOpen(PathRef, OpenOptions) -> IO::Result<File>;
+
+    IO::Descriptor n_descriptor;
+    PathRef n_path;
+};
 
 } // namespace Noelware::Violet::Filesystem

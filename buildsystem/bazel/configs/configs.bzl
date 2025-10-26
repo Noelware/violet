@@ -28,3 +28,13 @@ sanitizer = rule(
     implementation = lambda ctx: SanitizerInfo(enabled = ctx.build_setting_value),
     build_setting = config.bool(flag = True),
 )
+
+FeatureInfo = provider(
+    "information about if a feature flag is provided",
+    fields = ["enabled"],
+)
+
+feature = rule(
+    implementation = lambda ctx: FeatureInfo(enabled = ctx.build_setting_value),
+    build_setting = config.bool(flag = True),
+)
