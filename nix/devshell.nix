@@ -40,6 +40,9 @@
   ## lsp
   starpls,
   nil,
+  ## libraries
+  abseil-cpp,
+  gtest,
 }: let
   darwinPackages = [apple-sdk_15];
   linuxPackages = [valgrind];
@@ -79,6 +82,10 @@
       cmake
       meson
       ninja
+
+      # libraries (so it's easier to develop with)
+      abseil-cpp
+      gtest
 
       # LSPs
       starpls

@@ -20,7 +20,33 @@
 # SOFTWARE.
 
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 
 refresh_compile_commands(
     name = "rcc",
 )
+
+cc_library(
+    name = "include_hack",
+    includes = ["include"],
+    visibility = ["//:__subpackages__"],
+)
+
+# Alias `--@violet//:win32_dllexport` -> `--@violet//buildsystem/bazel/configs:win32_dllexport`
+alias(
+    name = "win32_dllexport",
+    actual = "//buildsystem/bazel/configs:win32_dllexport",
+    visibility = ["//visibility:public"],
+)
+
+# Alias `--@violet//:[a|s|t|ub]san` -> `--@violet//buildsystem/bazel/configs:[a|s|t|ub]`
+[alias(
+    name = "%ssan" % san,
+    actual = "//buildsystem/bazel/configs:%ssan" % san,
+    visibility = ["//visibility:public"],
+) for san in [
+    "a",
+    "m",
+    "t",
+    "ub",
+]]

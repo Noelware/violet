@@ -48,15 +48,59 @@ SANITIZER_ENV = select({
     "//conditions:default": {},
 })
 
+OS_DEFINES = select({
+    "@platforms//os:linux": ["VIOLET_UNIX", "VIOLET_LINUX"],
+    "@platforms//os:macos": ["VIOLET_UNIX", "VIOLET_APPLE_MACOS"],
+    "@platforms//os:windows": ["VIOLET_WINDOWS"],
+    "//conditions:default": [],
+})
+
+ARCH_DEFINES = select({
+    "@platforms//cpu:aarch64": ["VIOLET_AARCH64"],
+    "@platforms//cpu:x86_64": ["VIOLET_X86_64"],
+    "//conditions:default": [],
+})
+
+COMPILER_DEFINES = select({
+    "@rules_cc//cc/compiler:clang": ["VIOLET_CLANG"],
+    "@rules_cc//cc/compiler:clang-cl": ["VIOLET_CLANG"],
+    "@rules_cc//cc/compiler:gcc": ["VIOLET_GCC"],
+    "@rules_cc//cc/compiler:msvc-cl": ["VIOLET_MSVC"],
+    "//conditions:default": [],
+}) + select({
+    "//buildsystem/bazel/configs:win32_dllexport_enabled": ["VIOLET_DLL_EXPORT"],
+    "//conditions:default": [],
+})
+
+COMPILER_COPTS = select({
+    "@rules_cc//cc/compiler:clang": ["-DNOMINMAX"],
+    "@rules_cc//cc/compiler:clang-cl": ["-DNOMINMAX"],
+    "@rules_cc//cc/compiler:gcc": ["-DNOMINMAX"],
+    "@rules_cc//cc/compiler:msvc-cl": ["/DNOMINMAX", "/DWIN32_LEAN_AND_MEAN"],
+    "//conditions:default": [],
+})
+
 def cc_library(name, hdrs = [], **kwargs):
     copts = kwargs.pop("copts", [])
     linkopts = kwargs.pop("linkopts", [])
 
+    deps = kwargs.pop("deps", [])
+
+    # buildifier: disable=list-append
+    deps += ["//:include_hack"]
+
+    # Remove `includes` from any `cc_library` definition.
+    # buildifier: disable=unused-variable
+    _ = kwargs.pop("includes", [])
+
     return cc_library_(
         name = name,
         hdrs = hdrs,
-        copts = copts + SANITIZER_OPTS,
+        copts = copts + SANITIZER_OPTS + COMPILER_COPTS,
         linkopts = linkopts + SANITIZER_OPTS,
+        includes = ["include"],
+        defines = ["BAZEL"] + OS_DEFINES + ARCH_DEFINES + COMPILER_DEFINES,
+        deps = deps,
         **kwargs
     )
 

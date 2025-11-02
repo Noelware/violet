@@ -19,20 +19,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+include(CXX)
 
-cc_library(
-    name = "optional",
-    hdrs = ["//include/violet/Container:Optional.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/support:demangle",
-    ],
+violet_cc_library(
+    optional
+    HDRS
+        ../../include/violet/Container/Optional.h
+    DEPS
+        violet::violet
+        violet::cxx_demangle
 )
 
-cc_test(
-    name = "optional_test",
-    srcs = ["//tests/container:Optional.test.cc"],
-    deps = [":optional"],
+violet_cc_test(
+    optional_test
+    SRCS
+        ../../tests/container/Optional.test.cc
+    DEPS
+        violet::optional
 )
+
+# violet_cc_library(
+#     result
+#     HDRS
+#         ../../include/violet/Container/Result.h
+#     DEPS
+#         violet::violet
+#         violet:cxx_demangle
+# )
+
+# violet_cc_test(
+#     result_test
+#     SRCS
+#         ../../tests/container/Result.test.cc
+#     DEPS
+#         violet::result
+# )

@@ -47,7 +47,6 @@ Checks: >
   -misc-no-recursion,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -readability-inconsistent-declaration-parameter-name,
-  -modernize-use-nodiscard,
   -readability-function-cognitive-complexity,
   -misc-use-anonymous-namespace
 
@@ -55,3 +54,4 @@ CheckOptions:
   - {key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor, value: true}
   - {key: readability-identifier-length.MinimumVariableNameLength, value: 2}
   - {key: readability-identifier-length.MinimumParameterNameLength, value: 2}
+  - {key: cppcoreguidelines-pro-type-member-init.IgnoreArrays, value: true}

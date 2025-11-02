@@ -19,11 +19,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load(":configs.bzl", "sanitizer")
+load(":configs.bzl", "feature", "sanitizer")
+
+# If the `@violet//buildsystem/bazel/configs:win32_dllexport` is defined, it'll mark
+# any APIs as `__declspec(dllexport)` instead of `__declspec(dllimport)`.
+feature(
+    name = "win32_dllexport",
+    build_setting_default = False,
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "win32_dllexport_enabled",
+    flag_values = {"//buildsystem/bazel/configs:win32_dllexport": "True"},
+)
 
 sanitizer(
     name = "asan",
     build_setting_default = False,
+    visibility = ["//visibility:public"],
 )
 
 config_setting(
@@ -34,6 +48,7 @@ config_setting(
 sanitizer(
     name = "msan",
     build_setting_default = False,
+    visibility = ["//visibility:public"],
 )
 
 config_setting(
@@ -44,6 +59,7 @@ config_setting(
 sanitizer(
     name = "tsan",
     build_setting_default = False,
+    visibility = ["//visibility:public"],
 )
 
 config_setting(
@@ -54,6 +70,7 @@ config_setting(
 sanitizer(
     name = "ubsan",
     build_setting_default = False,
+    visibility = ["//visibility:public"],
 )
 
 config_setting(

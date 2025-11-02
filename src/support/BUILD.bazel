@@ -19,20 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
-
-cc_library(
-    name = "optional",
-    hdrs = ["//include/violet/Container:Optional.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/support:demangle",
-    ],
-)
-
-cc_test(
-    name = "optional_test",
-    srcs = ["//tests/container:Optional.test.cc"],
-    deps = [":optional"],
-)
+exports_files(glob(["*.cc"]))

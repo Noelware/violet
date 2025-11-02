@@ -19,20 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+function(get_violet_version variable)
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/.violet-version" hdrfile)
+    string(STRIP ${hdrfile} hdrfile_stripped)
 
-cc_library(
-    name = "optional",
-    hdrs = ["//include/violet/Container:Optional.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/support:demangle",
-    ],
-)
-
-cc_test(
-    name = "optional_test",
-    srcs = ["//tests/container:Optional.test.cc"],
-    deps = [":optional"],
-)
+    set(${variable} "${hdrfile_stripped}" PARENT_SCOPE)
+endfunction()

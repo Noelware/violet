@@ -18,21 +18,50 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  cmake,
+  gtest,
+  abseil-cpp,
+  nix-gitignore,
+  static ? stdenv.hostPlatform.isStatic,
+  cxxStandard ? null,
+}: let
+  version = builtins.readFile ../.violet-version;
+in
+  stdenv.mkDerivation (finalAttrs: {
+    inherit version;
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+    pname = "violet";
+    src = nix-gitignore.gitIgnoreSource [] ../.gitignore;
 
-cc_library(
-    name = "optional",
-    hdrs = ["//include/violet/Container:Optional.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/support:demangle",
-    ],
-)
+    cmakeFlags =
+      [
+        "-DBUILD_SHARED_LIBS=${
+          if static
+          then "OFF"
+          else "ON"
+        }"
+        "-DVIOLET_USE_SYSTEM_GOOGLETEST=ON"
+        "-DVIOLET_USE_SYSTEM_ABSEIL=ON"
+        "-DVIOLET_ENABLE_TESTS=ON"
+      ]
+      ++ lib.optionals (cxxStandard != null) [
+        "-DCMAKE_CXX_STANDARD=${cxxStandard}"
+      ];
 
-cc_test(
-    name = "optional_test",
-    srcs = ["//tests/container:Optional.test.cc"],
-    deps = [":optional"],
-)
+    strictDeps = true;
+    nativeBuildInputs = [cmake];
+    buildInputs = [gtest abseil-cpp];
+
+    meta = {
+      description = "Extended C++26 standard library";
+      changelog = "https://oss.noelware.org/libraries/cxx/violet#${version}";
+      homepage = "https://docs.noelware.org/library/violet/${version}";
+      license = with lib.licenses; [mit];
+      platforms = with lib.platforms; [all];
+      maintainers = with lib.maintainers; [auguwu];
+    };
+  })

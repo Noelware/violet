@@ -19,20 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+include(CXX)
 
-cc_library(
-    name = "optional",
-    hdrs = ["//include/violet/Container:Optional.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/support:demangle",
-    ],
-)
-
-cc_test(
-    name = "optional_test",
-    srcs = ["//tests/container:Optional.test.cc"],
-    deps = [":optional"],
+violet_cc_library(
+    cxx_demangle
+    SRCS
+        "${CMAKE_SOURCE_DIR}/src/support/demangle.cc"
+    HDRS
+        "${CMAKE_SOURCE_DIR}/include/violet/Support/Demangle.h"
+    DEPS
+        violet::violet
 )

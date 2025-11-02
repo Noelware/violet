@@ -19,109 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
-
-cc_library(
-    name = "bitflags",
-    hdrs = ["Bitflags.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
+load("//buildsystem/bazel:cc.bzl", "cc_library")
 
 cc_library(
     name = "demangle",
-    hdrs = ["Demangle.h"],
+    srcs = ["//src/support:demangle.cc"],
+    hdrs = ["//include/violet/Support:Demangle.h"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-    ],
-)
-
-cc_library(
-    name = "aref",
-    hdrs = ["ARef.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container:optional",
-        "//violet/support/ref:block",
-    ],
-)
-
-cc_test(
-    name = "aref_test",
-    size = "small",
-    srcs = ["tests/ARef.test.cpp"],
-    visibility = ["//visibility:public"],
-    deps = [":aref"],
-)
-
-cc_library(
-    name = "ref",
-    hdrs = ["Ref.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container:optional",
-        "//violet/support/ref:block",
-    ],
-)
-
-cc_test(
-    name = "ref_test",
-    size = "small",
-    srcs = ["tests/Ref.test.cpp"],
-    visibility = ["//visibility:public"],
-    deps = [":ref"],
-)
-
-cc_library(
-    name = "stringref",
-    hdrs = ["StringRef.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container:optional",
-    ],
-)
-
-cc_test(
-    name = "stringref_test",
-    size = "small",
-    srcs = ["tests/StringRef.test.cpp"],
-    visibility = ["//visibility:public"],
-    deps = [":stringref"],
-)
-
-cc_library(
-    name = "terminal",
-    srcs = ["impl/terminal.cpp"] + select({
-        "@platforms//os:linux": ["impl/terminal/unix.cpp"],
-        "@platforms//os:macos": ["impl/terminal/unix.cpp"],
-        "@platforms//os:windows": ["impl/terminal/windows.cpp"],
-        "//conditions:default": ["impl/terminal/unsupported.cpp"],
-    }),
-    hdrs = ["Terminal.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":stringref",
-        "//violet",
-        "//violet/container:optional",
-        "//violet/io:error",
-        "//violet/support:bitflags",
-        "//violet/sys:environment",
-    ],
-)
-
-cc_library(
-    name = "ulid",
-    srcs = ["Ulid.cpp"],
-    hdrs = ["Ulid.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":stringref",
-        "//violet",
-        "//violet/io:error",
-        "//violet/sys:randomness",
-    ],
+    deps = ["//violet"],
 )

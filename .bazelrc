@@ -24,6 +24,7 @@ build:dbg --compilation_mode=dbg
 
 # For `--config=opt`, we set `--compilation_mode` to `opt`
 build:opt --compilation_mode=opt
+build:opt --copt=-DNDEBUG
 
 # For `.bazelrc`, we can specify platform-specific Bazel flags with this.
 common --enable_platform_specific_config

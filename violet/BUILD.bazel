@@ -22,8 +22,29 @@
 load("//buildsystem/bazel:cc.bzl", "cc_library")
 
 cc_library(
-    name = "violet",
-    hdrs = ["violet.h"],
+    name = "macros",
+    hdrs = ["//include/violet/Language:Macros.h"],
     visibility = ["//visibility:public"],
-    deps = ["@abseil-cpp//absl/numeric:int128"],
+)
+
+cc_library(
+    name = "policy_checks",
+    hdrs = ["//include/violet/Language:Policy.h"],
+    visibility = ["//violet:__pkg__"],
+)
+
+cc_library(
+    name = "violet",
+    hdrs = ["//include/violet:Violet.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":macros",
+        ":policy_checks",
+        "@absl//absl/container:btree",
+        "@absl//absl/container:flat_hash_map",
+        "@absl//absl/container:flat_hash_set",
+        "@absl//absl/container:node_hash_map",
+        "@absl//absl/container:node_hash_set",
+        "@absl//absl/numeric:int128",
+    ],
 )

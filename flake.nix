@@ -28,19 +28,14 @@
     };
   };
 
-  outputs = {
-    nixpkgs,
-    ...
-  }: let
+  outputs = {nixpkgs, ...}: let
     eachSystem = nixpkgs.lib.genAttrs [
       "x86_64-linux"
       "x86_64-darwin"
       "aarch64-darwin"
     ];
 
-    overlays = [
-    ];
-
+    overlays = [];
     nixpkgsFor = system:
       import nixpkgs {
         inherit system overlays;
@@ -51,6 +46,15 @@
       inherit (nixpkgsFor system) callPackage;
     in {
       default = callPackage ./nix/devshell.nix {};
+    });
+
+    packages = eachSystem (system: let
+      inherit (nixpkgsFor system) callPackage;
+
+      violet = callPackage ./nix {};
+    in {
+      inherit violet;
+      default = violet;
     });
   };
 }
