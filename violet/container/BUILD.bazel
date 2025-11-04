@@ -36,3 +36,22 @@ cc_test(
     srcs = ["//tests/container:Optional.test.cc"],
     deps = [":optional"],
 )
+
+cc_library(
+    name = "result",
+    hdrs = ["//include/violet/Container:Result.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/support:demangle",
+    ],
+)
+
+cc_test(
+    name = "result_test",
+    srcs = ["//tests/container:Result.test.cc"],
+    deps = [
+        ":optional",
+        ":result",
+    ],
+)

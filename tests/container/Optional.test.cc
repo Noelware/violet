@@ -151,3 +151,58 @@ TEST(Optionals, AndThen)
     ASSERT_TRUE(res.HasValue());
     ASSERT_EQ(*res.Value(), 4);
 }
+
+TEST(Optionals, Map)
+{
+    const auto opt1 = Some<String>("hello");
+    const auto opt2 = Optional<String>();
+
+    const auto res1 = opt1.Map([](const String& value) -> UInt { return value.length(); });
+    const auto res2 = opt2.Map([](const String& value) -> UInt { return value.length(); });
+
+    ASSERT_TRUE(res1.HasValue());
+    ASSERT_EQ(*res1.Value(), 5);
+    ASSERT_FALSE(res2.HasValue());
+}
+
+TEST(Optionals, MapOr)
+{
+    const auto opt1 = Some<String>("hello");
+    const auto opt2 = Optional<String>();
+
+    const auto res1 = opt1.MapOr(0, [](const String& value) -> UInt { return value.length(); });
+    const auto res2 = opt2.MapOr(0, [](const String& value) -> UInt { return value.length(); });
+
+    ASSERT_EQ(res1, 5);
+    ASSERT_EQ(res2, 0);
+}
+
+TEST(Optionals, HasValueAnd)
+{
+    const auto opt1 = Some<UInt32>(2);
+    const auto opt2 = Some<UInt32>(3);
+    const auto opt3 = Optional<UInt32>();
+
+    ASSERT_TRUE(opt1.HasValueAnd([](UInt32 value) -> bool { return value % 2 == 0; }));
+    ASSERT_FALSE(opt2.HasValueAnd([](UInt32 value) -> bool { return value % 2 == 0; }));
+    ASSERT_FALSE(opt3.HasValueAnd([](UInt32 value) -> bool { return value % 2 == 0; }));
+}
+
+TEST(Optionals, Take)
+{
+    auto opt1 = Some<String>("hello");
+    const auto opt2 = opt1.Take();
+
+    ASSERT_FALSE(opt1.HasValue());
+    ASSERT_TRUE(opt2.HasValue());
+    ASSERT_EQ(*opt2.Value(), "hello");
+}
+
+TEST(Optionals, Reset)
+{
+    auto opt = Some<String>("hello");
+    ASSERT_TRUE(opt.HasValue());
+
+    opt.Reset();
+    ASSERT_FALSE(opt.HasValue());
+}

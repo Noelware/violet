@@ -41,8 +41,12 @@ namespace violet {
 /* --=-- START :: internals --=--*/
 
 #ifndef VIOLET_HAS_EXCEPTIONS
+/// @internal
+///
+/// This is an internal function that is called when `Optional<T>::Unwrap()` fails. This will
+/// print a message to `stdout` and aborts the current process.
 VIOLET_COLD
-[[noreturn, deprecated("this is an internal function for `Optional<T>::Unwrap()`; do not use")]] void _unwrap_fail(
+[[noreturn, deprecated("this is an internal function for `Optional<T>::Unwrap()`; do not use")]] void unwrap_fail(
     const std::source_location& loc)
 {
     std::cout << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
@@ -51,12 +55,16 @@ VIOLET_COLD
     std::abort();
 }
 
+/// @internal
+///
+/// This is an internal function that is called when `Optional<T>::Expect()` fails. This will
+/// print a message to `stdout` and aborts the current process.
 VIOLET_COLD
-[[noreturn, deprecated("this is an internal function for `Optional<T>::Except()`; do not use")]] void _unwrap_fail(
+[[noreturn, deprecated("this is an internal function for `Optional<T>::Except()`; do not use")]] void unwrap_fail(
     CStr msg, const std::source_location& loc)
 {
     std::cout << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
-              << "]: `violet::Optional<T>::Unwrap()` failed: " << msg << '\n';
+              << "]: `violet::Optional<T>::Expect()` failed: " << msg << '\n';
 
     std::abort();
 }
@@ -67,31 +75,47 @@ VIOLET_COLD
 template<typename T>
 struct Optional;
 
+/// Represents an empty `Optional<T>` value.
 inline constexpr static std::nullopt_t Nothing = std::nullopt;
 
 // /// An iterator for a [`Optional`].
 // template<typename T>
 // struct Iter;
 
+/// Creates a new `Optional<T>` that contains a value.
+///
+/// @tparam T The underlying type to construct.
+/// @tparam Args The arguments to pass to `T`'s constructor.
+/// @param args The arguments to pass to `T`'s constructor.
+/// @return An `Optional<T>` with the value constructed.
 template<typename T, typename... Args>
 constexpr static auto Some(Args&&... args) -> Optional<T>
 {
     return Optional<T>(std::in_place, VIOLET_FWD(Args, args)...);
 }
 
+/// Represents an optional value, which is a value that can either be something or nothing.
+/// @tparam T The underlying type of this `Optional`.
 template<typename T>
 struct VIOLET_API Optional final {
     using value_type = T;
 
+    /// Constructs a new `Optional<T>` that is empty.
     constexpr VIOLET_IMPLICIT Optional() noexcept = default;
-    constexpr VIOLET_IMPLICIT Optional(std::nullopt_t) noexcept
-    {
-    }
 
+    /// Constructs a new `Optional<T>` that is empty.
+    constexpr VIOLET_IMPLICIT Optional(std::nullopt_t) noexcept {}
+
+    /// Constructs a new `Optional<T>` with a value, constructed in-place.
+    /// @tparam ...Args The argument types to forward to `T`'s constructor.
+    /// @param ...args The arguments to forward to `T`'s constructor.
     template<typename... Args>
     constexpr VIOLET_EXPLICIT Optional(std::in_place_t, Args&&... args) noexcept(
         std::is_nothrow_constructible_v<T, Args...>)
     {
+        // This is safe since we are constructing a new value, so we don't need to
+        // worry about the old value.
+        // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
         this->construct(VIOLET_FWD(Args, args)...);
     }
 
@@ -108,6 +132,9 @@ struct VIOLET_API Optional final {
             // Ensures that our `T` can be constructible from `U`.
             std::constructible_from<T, const U&>)
     {
+        // This is safe since we are constructing a new value, so we don't need to
+        // worry about the old value.
+        // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
         this->construct(other);
     }
 
@@ -124,11 +151,17 @@ struct VIOLET_API Optional final {
             // Ensures that our `T` can be constructible from `U`.
             std::constructible_from<T, U &&>)
     {
+        // This is safe since we are constructing a new value, so we don't need to
+        // worry about the old value.
+        // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
         this->construct(VIOLET_FWD(U, other));
     }
 
+    /// Constructs a new `Optional<T>` by copying another `Optional<T>`.
+    /// @param other The other `Optional<T>` to copy from.
     constexpr VIOLET_IMPLICIT Optional(const Optional& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
         if (other.HasValue()) {
             this->construct(*other.ptr());
         }
@@ -136,6 +169,7 @@ struct VIOLET_API Optional final {
 
     constexpr VIOLET_IMPLICIT Optional(Optional&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
         if (other.HasValue()) {
             this->construct(VIOLET_MOVE(*other.ptr()));
             other.reset();
@@ -144,6 +178,7 @@ struct VIOLET_API Optional final {
 
     constexpr VIOLET_IMPLICIT Optional(const std::optional<T>& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
         if (other.has_value()) {
             this->construct(*other);
         }
@@ -154,6 +189,7 @@ struct VIOLET_API Optional final {
         std::is_nothrow_move_constructible_v<T>)
     {
         if (other.has_value()) {
+            // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
             this->construct(VIOLET_MOVE(*other));
             other.reset();
         }
@@ -164,12 +200,14 @@ struct VIOLET_API Optional final {
         reset();
     }
 
+    /// Resets this `Optional` to an empty state.
     constexpr auto operator=(std::nullopt_t) noexcept -> Optional&
     {
         reset();
         return *this;
     }
 
+    /// Assigns this `Optional` to the value of another `Optional`.
     constexpr auto operator=(const Optional& other) noexcept(
         std::is_nothrow_copy_assignable_v<T> && std::is_nothrow_copy_constructible_v<T>) -> Optional&
         requires std::is_copy_assignable_v<T> || std::is_copy_constructible_v<T>
@@ -189,6 +227,7 @@ struct VIOLET_API Optional final {
         return *this;
     }
 
+    /// Moves the value of another `Optional` into this one.
     constexpr auto operator=(Optional&& other) noexcept(
         std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_constructible_v<T>) -> Optional&
         requires std::is_move_assignable_v<T> || std::is_move_constructible_v<T>
@@ -210,6 +249,7 @@ struct VIOLET_API Optional final {
         return *this;
     }
 
+    /// Assigns this `Optional` to a new value.
     template<typename U = T>
     constexpr auto operator=(const U& other) noexcept(std::is_nothrow_constructible_v<T, const U&>) -> Optional&
         requires(
@@ -232,6 +272,7 @@ struct VIOLET_API Optional final {
         return *this;
     }
 
+    /// Moves a new value into this `Optional`.
     template<typename U = T>
     constexpr auto operator=(U&& other) noexcept(std::is_nothrow_constructible_v<T, U&&>) -> Optional&
         requires(
@@ -254,6 +295,7 @@ struct VIOLET_API Optional final {
         return *this;
     }
 
+    /// Assigns this `Optional` to the value of a `std::optional`.
     constexpr auto operator=(std::optional<T>& other) noexcept(
         std::is_nothrow_copy_assignable_v<T> && std::is_nothrow_copy_constructible_v<T>) -> Optional&
         requires std::is_copy_assignable_v<T> || std::is_copy_constructible_v<T>
@@ -271,6 +313,7 @@ struct VIOLET_API Optional final {
         return *this;
     }
 
+    /// Moves the value of a `std::optional` into this one.
     constexpr auto operator=(std::optional<T>&& other) noexcept(
         std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_constructible_v<T>) -> Optional&
         requires std::is_move_assignable_v<T> || std::is_move_constructible_v<T>
@@ -291,41 +334,96 @@ struct VIOLET_API Optional final {
         return *this;
     }
 
+    /// Returns a pointer to the contained value.
+    ///
+    /// ## Remarks
+    /// This will assert in debug builds if this optional is not empty.
+    ///
+    /// @return A pointer to the contained value.
     constexpr auto Value() noexcept -> T*
     {
         VIOLET_DEBUG_ASSERT(this->n_containsValue);
         return this->ptr();
     }
 
+    /// Returns a pointer to the contained value.
+    ///
+    /// ## Remarks
+    /// This will assert in debug builds if this optional is not empty.
+    ///
+    /// @return A pointer to the contained value.
     constexpr auto Value() const noexcept -> const T*
     {
         VIOLET_DEBUG_ASSERT(this->n_containsValue);
         return this->ptr();
     }
 
+    /// Returns `true` if the `Optional` contains a value.
     constexpr auto HasValue() const noexcept -> bool
     {
         return this->n_containsValue;
     }
 
-    constexpr auto Unwrap(
 #ifndef VIOLET_HAS_EXCEPTIONS
-        const std::source_location& loc = std::source_location::current()
-#endif
-            ) && -> T
+    /// Returns the contained value, consuming the `Optional`.
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
+    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto opt = violet::Some<int>(42);
+    /// int val = std::move(opt).Unwrap(); // val == 42
+    /// ```
+    ///
+    /// @param loc The source location of the call, which is used for the termination message.
+    /// @return The contained value.
+    ///
+    constexpr auto Unwrap(const std::source_location& loc = std::source_location::current()) && -> T
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return VIOLET_MOVE(*ptr());
         }
 
-#ifdef VIOLET_HAS_EXCEPTIONS
-        throw std::logic_error("`unwrap()` failed: tried to unwrap nothing");
-#else
-        __unwrap_fail(loc);
-#endif
+        unwrap_fail(loc);
     }
+#else
+    /// Returns the contained value, consuming the `Optional`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto opt = violet::Some<int>(42);
+    /// int val = std::move(opt).Unwrap(); // val == 42
+    /// ```
+    ///
+    /// @throws [std::logic_error] if this `Optional` is empty.
+    /// @return The contained value.
+    constexpr auto Unwrap() && -> T
+    {
+        VIOLET_LIKELY_IF(this->HasValue())
+        {
+            return VIOLET_MOVE(*ptr());
+        }
 
+        throw std::logic_error("`unwrap()` failed: this optional contained nothing.");
+    }
+#endif
+
+    /// Returns the contained value, consuming the `Optional`, or a default value.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto opt1 = violet::Some<int>(42);
+    /// int val1 = std::move(opt1).UnwrapOr(0); // val1 == 42
+    ///
+    /// auto opt2 = violet::Optional<int>();
+    /// int val2 = std::move(opt2).UnwrapOr(0); // val2 == 0
+    /// ```
+    ///
+    /// @param def The default value to return if the `Optional` is empty.
+    /// @return The contained value or the default value.
     constexpr auto UnwrapOr(T&& def) && -> T
     {
         VIOLET_LIKELY_IF(this->HasValue())
@@ -338,6 +436,18 @@ struct VIOLET_API Optional final {
         }
     }
 
+    /// Returns the contained value, consuming the `Optional`, or computes it from a closure.
+    /// ## Example
+    /// ```cpp
+    /// auto opt1 = violet::Some<int>(42);
+    /// int val1 = std::move(opt1).UnwrapOrElse([]() { return 0; }); // val1 == 42
+    ///
+    /// auto opt2 = violet::Optional<int>();
+    /// int val2 = std::move(opt2).UnwrapOrElse([]() { return 0; }); // val2 == 0
+    /// ```
+    ///
+    /// @param fun The closure to call to compute the default value.
+    /// @return The contained value or the computed default value.
     template<typename Fun>
         requires callable<Fun> && std::convertible_to<std::invoke_result_t<Fun>, T>
     constexpr auto UnwrapOrElse(Fun&& fun) &&
@@ -352,466 +462,183 @@ struct VIOLET_API Optional final {
         }
     }
 
+    /// Returns the contained value, consuming the `Optional`, without checking if it has a value.
+    ///
+    /// ## Safety
+    /// This function is unsafe because it does not check if the `Optional` has a value. If the `Optional` is
+    /// empty, this will result in undefined behavior.
+    ///
+    /// @return The contained value.
     constexpr auto UnwrapUnchecked(Unsafe) && -> T
     {
         return VIOLET_MOVE(*ptr());
     }
 
-    constexpr auto Expect(Str msg
 #ifndef VIOLET_HAS_EXCEPTIONS
-        ,
-        const std::source_location& loc = std::source_location::current(),
-#endif
-        ) && -> T
+    /// Returns the contained value, consuming the `Optional`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto opt = violet::Optional<int>();
+    /// int val = std::move(opt).Expect("value was not present"); // terminates
+    /// ```
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Optional` is empty, with a custom message.
+    ///
+    /// @param message The message to print on termination.
+    /// @param loc The source location of the call, which is used for the termination message.
+    /// @return The contained value.
+    constexpr auto Expect(Str message, const std::source_location& loc = std::source_location::current()) && -> T
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return VIOLET_MOVE(*ptr());
         }
 
-#ifdef VIOLET_HAS_EXCEPTIONS
-        throw std::logic_error(std::format("`expect()` failed: {}", msg));
-#else
-        __except_fail(msg, loc);
-#endif
+        unwrap_fail(message, loc);
     }
-
-    template<typename U>
-    constexpr auto And(const Optional<U>& opt) const noexcept -> Optional<U>
+#else
+    /// Returns the contained value, consuming the `Optional`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto opt = violet::Optional<int>();
+    /// int val = std::move(opt).Expect("value was not present"); // throws
+    /// ```
+    ///
+    /// @throws [std::logic_error] if the `Optional` is empty, with a custom message.
+    /// @param message The message to use for the exception.
+    /// @return The contained value.
+    ///
+    constexpr auto Expect(Str message) && -> T
     {
-        if (this->HasValue()) {
-            return opt;
+        VIOLET_LIKELY_IF(this->HasValue())
+        {
+            return VIOLET_MOVE(*ptr());
         }
 
-        return Nothing;
+        throw std::logic_error(std::format("`expect()` failed: {}", message));
     }
+#endif
 
+    /// Calls a function with the contained value if it exists, and returns the result.
     template<typename Fun>
-        requires callable<Fun, T>
+        requires callable<Fun, T&>
     constexpr auto AndThen(Fun&& fun) &
     {
-        using R = std::invoke_result_t<Fun, decltype(*ptr())>;
-        static_assert(std::is_same_v<R, Optional<std::remove_reference_t<R>>>
-                || std::is_same_v<R, Optional<typename R::value_type>>,
-            "`AndThen` return value must be `Optional<U>`");
+        using U = std::invoke_result_t<Fun, T&>;
+        if (HasValue()) {
+            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), *ptr()));
+        }
 
-        return HasValue() ? std::invoke(VIOLET_FWD(Fun, fun), *ptr()) : Optional<R>();
+        return decltype(Optional<U>{})(Nothing);
     }
 
+    /// Calls a function with the contained value if it exists, and returns the result.
     template<typename Fun>
         requires callable<Fun, const T&>
     constexpr auto AndThen(Fun&& fun) const&
     {
-        using R = std::invoke_result_t<Fun, decltype(*ptr())>;
-        return HasValue() ? std::invoke(VIOLET_FWD(Fun, fun), *ptr()) : Optional<std::remove_reference_t<R>>();
+        using U = std::invoke_result_t<Fun, const T&>;
+        if (HasValue()) {
+            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), *ptr()));
+        }
+
+        return decltype(Optional<U>{})(Nothing);
     }
 
-    template<typename U, typename Fun>
-        requires callable<Fun, T> && std::convertible_to<std::invoke_result_t<Fun, T>, U>
+    /// Calls a function with the contained value if it exists, and returns the result.
+    template<typename Fun>
+        requires callable<Fun, T&&>
     constexpr auto AndThen(Fun&& fun) &&
     {
-        using R = std::invoke_result_t<Fun, decltype(VIOLET_MOVE(*ptr()))>;
+        using U = std::invoke_result_t<Fun, T&&>;
         if (HasValue()) {
-            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(*ptr()));
+            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), *ptr()));
         }
 
-        return Optional<std::remove_reference_t<R>>();
+        return decltype(Optional<U>{})(Nothing);
     }
 
-    // constexpr auto HasValueAnd() &;
-    // constexpr auto HasValueAnd() const&;
-    // constexpr auto HasValueAnd() &&;
-
-    // constexpr auto Map() &;
-    // constexpr auto Map() const&;
-    // constexpr auto Map() &&;
-
-    // constexpr auto MapOr() &;
-    // constexpr auto MapOr() const&;
-    // constexpr auto MapOr() &&;
-
-    // constexpr auto MapOrElse() &;
-    // constexpr auto MapOrElse() const&;
-    // constexpr auto MapOrElse() &&;
-
-    // constexpr auto Inspect() &;
-    // constexpr auto Inspect() const&;
-    // constexpr auto Inspect() &&;
-
-    // constexpr auto Zip() &;
-    // constexpr auto Zip() const&;
-    // constexpr auto Zip() &&;
-
-    // constexpr auto operator->() noexcept -> T*;
-    // constexpr auto operator->() const noexcept -> const T*;
-    // constexpr auto operator*() noexcept -> T&;
-    // constexpr auto operator*() const noexcept -> const T&;
-
-    // constexpr VIOLET_EXPLICIT operator bool() const noexcept;
-    // constexpr VIOLET_EXPLICIT operator std::optional<T>() const noexcept;
-
-    auto operator==(const Optional& other) const noexcept -> bool
+    /// Returns `other` if this `Optional` has a value, otherwise returns an empty `Optional`.
+    template<typename U>
+    constexpr auto And(const Optional<U>& other) const -> Optional<U>
     {
-        if (this->n_containsValue != other.n_containsValue) {
-            return false;
-        }
-
-        return *this->ptr() == *other.ptr();
+        return HasValue() ? other : Optional<U>();
     }
 
-    auto operator!=(const Optional& other) const noexcept -> bool
-    {
-        return !(this == other);
-    }
-
-    auto operator==(const std::optional<T>& other) const noexcept -> bool
-    {
-        if (this->n_containsValue != other.has_value()) {
-            return false;
-        }
-
-        return *this->ptr() == *other;
-    }
-
-    auto operator!=(const std::optional<T>& other) const noexcept -> bool
-    {
-        return !(this == other);
-    }
-
-    auto operator==(const T& other) const noexcept -> bool requires std::equality_comparable<T>
-    {
-        if (!this->n_containsValue) {
-            return false;
-        }
-
-        return *this->ptr() == other;
-    }
-
-    auto operator!=(const T& value) const noexcept -> bool requires std::equality_comparable<T>
-    {
-        return !(this == value);
-    }
-
-private:
-    mutable bool n_containsValue = false;
-    alignas(T) UInt8 n_storage[sizeof(T)];
-
-    template<typename... Args>
-    constexpr void construct(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-    {
-        std::construct_at(ptr(), VIOLET_FWD(Args, args)...);
-        this->n_containsValue = true;
-    }
-
-    constexpr auto ptr() noexcept -> T*
-    {
-        // Safety: This is usually correct in most cases.
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        return std::launder(reinterpret_cast<T*>(this->n_storage));
-    }
-
-    constexpr auto ptr() const noexcept -> const T*
-    {
-        // Safety: This is usually correct in most cases.
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        return std::launder(reinterpret_cast<const T*>(this->n_storage));
-    }
-
-    /// This will reset the storage contained in this `Optional` by dropping
-    /// the contents then de-allocating the memory as well.
-    constexpr void reset() noexcept(std::is_nothrow_destructible_v<T>)
-    {
-        if (this->n_containsValue) {
-            if constexpr (!std::is_trivially_destructible_v<T>) {
-                std::destroy_at(this->ptr());
-            }
-
-            this->n_containsValue = false;
-        }
-    }
-};
-
-} // namespace violet
-
-/*
-/// A **optional** value.
-template<typename T>
-struct Optional final {
-
-    /// Allows to access the contained value by pointer.
-    ///
-    /// ## Remarks
-    /// This [`Optional`] will terminate if this [`Optional`] is empty. It is recommended to use
-    /// the [`Optional::ValueOr`] function to provide a default if you don't want to terminate.
-    ///
-    /// @returns A pointer to the contained value while preserving const-ness.
-    constexpr auto operator->() const -> const T*
-    {
-        assert(this->n_hasValue);
-        return ptr();
-    }
-
-    /// Allows to access the contained value by pointer.
-    ///
-    /// ## Remarks
-    /// This [`Optional`] will terminate if this [`Optional`] is empty. It is recommended to use
-    /// the [`Optional::ValueOr`] function to provide a default if you don't want to terminate.
-    ///
-    /// @returns A pointer to the contained value.
-    constexpr auto operator->() -> T*
-    {
-        assert(this->n_hasValue);
-        return ptr();
-    }
-
-    /// Allows deferencing this [`Optional`] to retrieve the contained value by const-ness lvalue.
-    ///
-    /// ## Remarks
-    /// This [`Optional`] will terminate if this [`Optional`] is empty. It is recommended to use
-    /// the [`Optional::ValueOr`] function to provide a default if you don't want to terminate.
-    ///
-    /// @returns A rvalue reference to the contained value while preserving const-ness for this lvalue return.
-    constexpr auto operator*() const& -> const T&
-    {
-        assert(this->n_hasValue);
-        return *ptr();
-    }
-
-    /// Allows deferencing this [`Optional`] to retrieve the contained value by lvalue.
-    ///
-    /// ## Remarks
-    /// This [`Optional`] will terminate if this [`Optional`] is empty. It is recommended to use
-    /// the [`Optional::ValueOr`] function to provide a default if you don't want to terminate.
-    ///
-    /// @returns A lvalue reference to the contained value.
-    constexpr auto operator*() & -> T&
-    {
-        assert(this->n_hasValue);
-        return *ptr();
-    }
-
-    /// Allows deferencing this [`Optional`] to retrieve the contained value by const-ness rvalue.
-    ///
-    /// ## Remarks
-    /// This [`Optional`] will terminate if this [`Optional`] is empty. It is recommended to use
-    /// the [`Optional::ValueOr`] function to provide a default if you don't want to terminate.
-    ///
-    /// @returns A rvalue reference to the contained value while preserving const-ness.
-    constexpr auto operator*() const&& -> const T&
-    {
-        assert(this->n_hasValue);
-        return *ptr();
-    }
-
-    /// Allows deferencing this [`Optional`] to retrieve the contained value by rvalue.
-    ///
-    /// ## Remarks
-    /// This [`Optional`] will terminate if this [`Optional`] is empty. It is recommended to use
-    /// the [`Optional::ValueOr`] function to provide a default if you don't want to terminate.
-    ///
-    /// @returns A rvalue reference to the contained value.
-    constexpr auto operator*() && -> T&
-    {
-        assert(this->n_hasValue);
-        return *ptr();
-    }
-
-    /// Returns the contained value by lvalue reference.
-    ///
-    /// @throws [std::bad_optional_access] Only thrown if this [`Optional`] is empty.
-    /// @returns A lvalue reference to the contained value.
-    constexpr auto Value() & -> T&
-    {
-        if (!this->n_hasValue) {
-            throw std::bad_optional_access{};
-        }
-
-        return *ptr();
-    }
-
-    /// Returns the contained value by lvalue reference.
-    ///
-    /// @throws [std::bad_optional_access] Only thrown if this [`Optional`] is empty.
-    /// @returns A lvalue reference to the contained value while preserving const-ness for the lvalue return.
-    constexpr auto Value() const& -> const T&
-    {
-        if (!this->n_hasValue) {
-            throw std::bad_optional_access{};
-        }
-
-        return *ptr();
-    }
-
-    /// Returns the contained value by rvalue reference.
-    ///
-    /// @throws [std::bad_optional_access] Only thrown if this [`Optional`] is empty.
-    /// @returns A rvalue reference to the contained value.
-    constexpr auto Value() && -> T&&
-    {
-        if (!this->n_hasValue) {
-            throw std::bad_optional_access{};
-        }
-
-        return *ptr();
-    }
-
-    /// Returns the contained value by rvalue reference.
-    ///
-    /// @throws [std::bad_optional_access] Only thrown if this [`Optional`] is empty.
-    /// @returns A reference to the contained value while preserving const-ness for the rvalue return.
-    constexpr auto Value() const&& -> const T&&
-    {
-        if (!this->n_hasValue) {
-            throw std::bad_optional_access{};
-        }
-
-        return *ptr();
-    }
-
-    /// [**lvalue**] Returns the contained value if present, otherwise `default_value`
-    /// is returned instead.
-    ///
-    /// @param default_value The value to return if this [`Optional`] is empty.
-    /// @return if engaged, returns the contained value in this [`Optional`] or `default_value` otherwise.
-    constexpr auto ValueOr(const T& default_value) const& -> T
-    {
-        return n_hasValue ? *ptr() : default_value;
-    }
-
-    /// [**rvalue**] Returns the contained value if present, otherwise `default_value`
-    /// is returned instead.
-    ///
-    /// @param default_value The value to return if this [`Optional`] is empty.
-    /// @return if engaged, returns the contained value in this [`Optional`] or `default_value` otherwise.
-    constexpr auto ValueOr(T&& default_value) && -> T
-    {
-        return n_hasValue ? VIOLET_MOVE(*ptr()) : VIOLET_MOVE(default_value);
-    }
-
-    VIOLET_IMPL_EQUALITY_SINGLE(Optional, lhs, rhs, {
-        if (lhs.n_hasValue != rhs.n_hasValue) {
-            return false;
-        }
-
-        if (!lhs.n_hasValue) {
-            return true;
-        }
-
-        return *lhs.ptr() == *rhs.ptr();
-    });
-
-    VIOLET_IMPL_EQUALITY(const Optional&, std::nullopt_t, lhs, , { return !lhs.HasValue(); });
-    VIOLET_IMPL_EQUALITY(const Optional&, const std::optional<T>&, lhs, rhs, {
-        if (lhs.n_hasValue != rhs.has_value()) {
-            return false;
-        }
-
-        if (!lhs.n_hasValue) {
-            return true;
-        }
-
-        return *lhs.ptr() == *rhs;
-    });
-
-    /// Returns **true** if this [`Optional`] contains a value.
-    constexpr VIOLET_EXPLICIT operator bool() const
-    {
-        return this->n_hasValue;
-    }
-
-    /// Allows translating this [`Optional`] into a [`std::optional`].
-    constexpr VIOLET_EXPLICIT operator std::optional<T>()
-    {
-        return this->n_hasValue ? std::optional<T>(*ptr()) : Nothing;
-    }
-
-    /// Returns **true** if this [`Optional`] contains a value.
-    constexpr auto HasValue() const noexcept -> bool
-    {
-        return this->n_hasValue;
-    }
-
-    /// Applies the `fun`ction if this [`Optional`] contains a value.
-    /// @param func The predicate to call.
+    /// Returns `true` if the `Optional` has a value and the predicate returns `true`.
     template<typename Fun>
-    constexpr auto HasValueAnd(Fun&& fun) const noexcept -> bool
+        requires callable<Fun, const T&>
+    constexpr auto HasValueAnd(Fun&& fun) const -> bool
     {
         return HasValue() && std::invoke(VIOLET_FWD(Fun, fun), *ptr());
     }
 
-    /// [**lvalue**] Calls the `fun`ction if this [`Optional`] contains a value
-    /// and maps it to a new value.
+    /// Maps an `Optional<T>` to `Optional<U>` by applying a function to a contained value.
     template<typename Fun>
-    constexpr auto Map(Fun&& fun) const& noexcept
+        requires callable<Fun, T&>
+    constexpr auto Map(Fun&& fun) &
+    {
+        using U = std::invoke_result_t<Fun, T&>;
+        if (HasValue()) {
+            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), *ptr()));
+        }
+
+        return decltype(Optional<U>{})(Nothing);
+    }
+
+    /// Maps an `Optional<T>` to `Optional<U>` by applying a function to a contained value.
+    template<typename Fun>
+        requires callable<Fun, const T&>
+    constexpr auto Map(Fun&& fun) const&
     {
         using U = std::invoke_result_t<Fun, const T&>;
         if (HasValue()) {
-            auto result = std::invoke(VIOLET_FWD(Fun, fun), *ptr());
-            return Some<U>(result);
+            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), *ptr()));
         }
 
-        return decltype(Optional<U>())(Nothing);
+        return decltype(Optional<U>{})(Nothing);
     }
 
-    /// [**rvalue**] Calls the `fun`ction if this [`Optional`] contains a value
-    /// and maps it to a new value.
+    /// Maps an `Optional<T>` to `Optional<U>` by applying a function to a contained value.
     template<typename Fun>
-        requires Callable<Fun, const T&>
-    constexpr auto Map(Fun&& fun) const&& noexcept
+        requires callable<Fun, T&&>
+    constexpr auto Map(Fun&& fun) &&
     {
-        using U = std::invoke_result_t<Fun, const T&>;
+        using U = std::invoke_result_t<Fun, T&&>;
         if (HasValue()) {
-            auto result = std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(*ptr()));
-            return Some<U>(result);
+            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(*ptr())));
         }
 
-        return decltype(Optional<U>())(Nothing);
+        return decltype(Optional<U>{})(Nothing);
     }
 
-    template<typename Fun>
-        requires Callable<Fun, const T&>
-    constexpr auto MapOr(auto defaultValue, Fun&& fun) const&
+    /// Returns the provided default value if the `Optional` is empty, otherwise applies a function to the contained
+    /// value and returns the result.
+    template<typename U, typename Fun>
+        requires callable<Fun, const T&> && std::convertible_to<std::invoke_result_t<Fun, const T&>, U>
+    constexpr auto MapOr(U&& default_value, Fun&& fun) const& -> U
     {
         if (HasValue()) {
             return std::invoke(VIOLET_FWD(Fun, fun), *ptr());
         }
 
-        return defaultValue;
+        return VIOLET_FWD(U, default_value);
     }
 
-    template<typename Fun>
-        requires Callable<Fun, const T&>
-    constexpr auto MapOr(auto defaultValue, Fun&& fun) const&&
+    /// Returns the provided default value if the `Optional` is empty, otherwise applies a function to the contained
+    /// value and returns the result.
+    template<typename U, typename Fun>
+        requires callable<Fun, T&&> && std::convertible_to<std::invoke_result_t<Fun, T&&>, U>
+    constexpr auto MapOr(U&& default_value, Fun&& fun) && -> U
     {
         if (HasValue()) {
             return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(*ptr()));
         }
 
-        return defaultValue;
-    }
-
-    /// [**lvalue**] Calls the `fun`ction if this [`Optional`] contains a value
-    /// and inspects the value of it.
-    template<typename Fun>
-    constexpr auto Inspect(Fun&& fun) const& noexcept
-    {
-        if (HasValue()) {
-            std::invoke(VIOLET_FWD(Fun, fun), *ptr());
-        }
-
-        return *this;
-    }
-
-    /// [**rvalue**] Calls the `fun`ction if this [`Optional`] contains a value
-    /// and inspects the value of it.
-    template<typename Fun>
-    constexpr auto Inspect(Fun&& fun) const&& noexcept -> Optional<T>
-    {
-        if (HasValue()) {
-            std::invoke(VIOLET_FWD(Fun, fun), *ptr());
-        }
-
-        return *this;
+        return VIOLET_FWD(U, default_value);
     }
 
     /// Moves the contained value out and leaves this [`Optional`] empty.
@@ -845,72 +672,160 @@ struct Optional final {
     /// Destroys the contained value (if present) and leaves this [`Optional`] empty.
     constexpr auto Reset()
     {
-        destroy();
+        reset();
     }
 
-    VIOLET_OSTREAM_IMPL(const Optional&)
+    constexpr auto operator<<(std::ostream& os) const -> std::ostream&
     {
-        if (!self.HasValue()) {
+        if (!this->HasValue()) {
             return os << "«no value»";
         }
 
-        const auto& value = self.Value();
-
-        // clang-format off
-        if constexpr (requires {
-            { os << value } -> std::same_as<std::ostream&>;
-        }) {
-            // clang-format on
-            return os << value;
+        if constexpr (Stringify<T>) {
+            return os << violet::ToString(Value());
         }
 
-        if constexpr (Noelware::Violet::Stringify<T>) {
-            return os << Noelware::Violet::ToString(value);
-        }
-
+#if VIOLET_USE_RTTI
         const auto& type = typeid(T);
-        return os << "«type '" << Utility::DemangleCXXName(type.name()) << '@' << type.hash_code()
-                  << "' not streamable»";
+        return os << "«type `" << util::DemangleCXXName(type.name()) << '@' << type.hash_code() << "` not streamable»";
+#else
+        return os << "«type `T` not streamable»";
+#endif
+    }
+
+    constexpr auto operator->() noexcept -> T*
+    {
+        VIOLET_DEBUG_ASSERT(HasValue());
+        return ptr();
+    }
+
+    constexpr auto operator->() const noexcept -> const T*
+    {
+        VIOLET_DEBUG_ASSERT(HasValue());
+        return ptr();
+    }
+
+    constexpr auto operator*() noexcept -> T&
+    {
+        VIOLET_DEBUG_ASSERT(HasValue());
+        return *ptr();
+    }
+
+    constexpr auto operator*() const noexcept -> const T&
+    {
+        VIOLET_DEBUG_ASSERT(HasValue());
+        return *ptr();
+    }
+
+    constexpr VIOLET_EXPLICIT operator bool() const noexcept
+    {
+        return this->n_containsValue;
+    }
+
+    constexpr VIOLET_EXPLICIT operator std::optional<T>() const noexcept
+    {
+        return this->n_containsValue ? std::optional<T>(*ptr()) : Nothing;
+    }
+
+    /// Checks if two `Optional`s are equal.
+    /// @return `true` if they are equal, `false` otherwise.
+    auto operator==(const Optional& other) const noexcept -> bool
+    {
+        if (this->n_containsValue != other.n_containsValue) {
+            return false;
+        }
+
+        return *this->ptr() == *other.ptr();
+    }
+
+    /// Checks if two `Optional`s are not equal.
+    /// @return `true` if they are not equal, `false` otherwise.
+    auto operator!=(const Optional& other) const noexcept -> bool
+    {
+        return !(this == other);
+    }
+
+    /// Checks if an `Optional` and a `std::optional` are equal.
+    /// @return `true` if they are equal, `false` otherwise.
+    auto operator==(const std::optional<T>& other) const noexcept -> bool
+    {
+        if (this->n_containsValue != other.has_value()) {
+            return false;
+        }
+
+        return *this->ptr() == *other;
+    }
+
+    /// Checks if an `Optional` and a `std::optional` are not equal.
+    /// @return `true` if they are not equal, `false` otherwise.
+    auto operator!=(const std::optional<T>& other) const noexcept -> bool
+    {
+        return !(this == other);
+    }
+
+    /// Checks if an `Optional` and a value are equal.
+    /// @return `true` if the `Optional` has a value and it is equal to the other value, `false` otherwise.
+    auto operator==(const T& other) const noexcept -> bool
+        requires std::equality_comparable<T>
+    {
+        if (!this->n_containsValue) {
+            return false;
+        }
+
+        return *this->ptr() == other;
+    }
+
+    /// Checks if an `Optional` and a value are not equal.
+    /// @return `true` if the `Optional` does not have a value or it is not equal to the other value, `false` otherwise.
+    auto operator!=(const T& value) const noexcept -> bool
+        requires std::equality_comparable<T>
+    {
+        return !(this == value);
     }
 
 private:
-    alignas(T) Array<std::byte, sizeof(T)> n_storage; ///< storage for this [`Optional`].
-    mutable bool n_hasValue = false; ///< marker to indicate if this `Optional` has a value.
+    mutable bool n_containsValue = false;
+    alignas(T) UInt8 n_storage[sizeof(T)];
+
+    /// Constructs a value in-place in the storage.
+    /// @param ...args The arguments to forward to the `T`'s constructor.
+    template<typename... Args>
+    constexpr void construct(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+    {
+        std::construct_at(ptr(), VIOLET_FWD(Args, args)...);
+        this->n_containsValue = true;
+    }
 
     constexpr auto ptr() noexcept -> T*
     {
-        // SAFETY: Since all valid bits inside of the pointer (as a `std::any<uint8, {sizeof})`),
-        //         the only way we can do this without any errors is with `reinterpret_cast`.
+        // Safety: This is usually correct in most cases.
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        return std::launder(reinterpret_cast<T*>(this->n_storage.data()));
+        return std::launder(reinterpret_cast<T*>(this->n_storage));
     }
 
     constexpr auto ptr() const noexcept -> const T*
     {
-        // SAFETY: Since all valid bits inside of the pointer (as a `std::any<uint8, {sizeof})`),
-        //         the only way we can do this without any errors is with `reinterpret_cast`.
+        // Safety: This is usually correct in most cases.
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        return std::launder(reinterpret_cast<const T*>(this->n_storage.data()));
+        return std::launder(reinterpret_cast<const T*>(this->n_storage));
     }
 
-    template<typename... Args>
-    auto construct(Args&&... args)
+    /// @internal
+    /// This will reset the storage contained in this `Optional` by dropping
+    /// the contents then de-allocating the memory as well.
+    constexpr void reset() noexcept(std::is_nothrow_destructible_v<T>)
     {
-        ::new (this->n_storage.data()) T(VIOLET_FWD(Args, args)...);
-        this->n_hasValue = true;
-    }
+        if (this->n_containsValue) {
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                std::destroy_at(this->ptr());
+            }
 
-    auto destroy()
-    {
-        if (this->n_hasValue) {
-            ptr()->~T();
-            this->n_hasValue = false;
+            this->n_containsValue = false;
         }
     }
 };
 
-} // namespace Noelware::Violet
-*/
+} // namespace violet
 
 /**
  * @macro LET_IF_SOME(opt, val)

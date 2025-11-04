@@ -279,6 +279,7 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
     return std::format("({}, {})", pair.first, pair.second);
 }
 
+/// A marker type that determines a function is unsafe for a specific reason.
 struct Unsafe final {
     constexpr VIOLET_IMPLICIT Unsafe() = delete;
     constexpr VIOLET_EXPLICIT Unsafe(const char*) {}

@@ -38,19 +38,19 @@ violet_cc_test(
         violet::optional
 )
 
-# violet_cc_library(
-#     result
-#     HDRS
-#         ../../include/violet/Container/Result.h
-#     DEPS
-#         violet::violet
-#         violet:cxx_demangle
-# )
+violet_cc_library(
+    result
+    HDRS
+        ../../include/violet/Container/Result.h
+    DEPS
+        violet::violet
+        violet:cxx_demangle
+)
 
-# violet_cc_test(
-#     result_test
-#     SRCS
-#         ../../tests/container/Result.test.cc
-#     DEPS
-#         violet::result
-# )
+violet_cc_test(
+    result_test
+    SRCS
+        ../../tests/container/Result.test.cc
+    DEPS
+        violet::result
+)
