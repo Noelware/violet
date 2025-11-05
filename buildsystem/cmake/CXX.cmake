@@ -141,11 +141,24 @@ function(violet_cc_library TARGET_NAME)
             ${VIOLET_DEFINES}
         )
 
-        target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
+        target_include_directories(${TARGET_NAME} PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        )
+
         target_link_libraries(${TARGET_NAME} PUBLIC ${VCC_DEPS})
 
         set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 26)
         target_sources(${TARGET_NAME} PRIVATE ${VCC_HDRS})
+    endif()
+
+    if (VIOLET_INSTALL)
+        install(TARGETS ${TARGET_NAME} EXPORT VioletTargets
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
     endif()
 
     add_library(violet::${TARGET_NAME} ALIAS ${TARGET_NAME})

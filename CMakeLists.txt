@@ -52,6 +52,12 @@ option(VIOLET_USE_SYSTEM_ABSEIL "Uses the system's Abseil instead of vendoring" 
 option(VIOLET_ENABLE_TESTS "Enables the test suite" OFF)
 option(VIOLET_USE_SYSTEM_GOOGLETEST "Uses the system's GoogleTest instead of vendoring" OFF)
 
+if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    option(VIOLET_INSTALL "Enables the install rule" OFF)
+else()
+    option(VIOLET_INSTALL "Enables the install rule" ON)
+endif()
+
 include(FetchContent)
 
 if (VIOLET_USE_SYSTEM_ABSEIL)
@@ -86,7 +92,65 @@ if (VIOLET_ENABLE_TESTS)
     endif()
 endif()
 
-# Set the minimum CXX Standard to C++20
-set(CMAKE_CXX_STANDARD 20)
+# Set the minimum CXX Standard to C++26
+set(CMAKE_CXX_STANDARD 26)
 
 add_subdirectory(violet)
+
+if(VIOLET_INSTALL)
+    install(TARGETS violet EXPORT violet FILE_SET HEADERS)
+    install(EXPORT VioletTargets NAMESPACE violet:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/violet")
+    configure_package_config_file(
+        buildsystem/cmake/VioletConfig.cmake.in
+        "${PROJECT_BINARY_DIR}/VioletConfig.cmake"
+
+        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/violet"
+    )
+
+    # INCLUDE EXPORT +-+ libviolet
+    install(FILES ${PROJECT_SOURCE_DIR}/include/violet/Violet.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet)
+
+    # INCLUDE EXPORT +-+ libviolet_container
+    file(GLOB_RECURSE CONTAINER_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Container/*.h")
+    install(FILES ${CONTAINER_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Container)
+
+    # INCLUDE EXPORT +-+ libviolet_filesystem
+    file(GLOB_RECURSE FILESYSTEM_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Filesystem/*.h")
+    install(FILES ${FILESYSTEM_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Filesystem)
+
+    # INCLUDE EXPORT +-+ libviolet_io
+    file(GLOB_RECURSE IO_HDRS "${PROJECT_SOURCE_DIR}/include/violet/IO/*.h")
+    install(FILES ${IO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/IO)
+
+    # INCLUDE EXPORT +-+ libviolet_iterator
+    file(GLOB_RECURSE ITERATOR_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Iterator/*.h")
+    install(FILES ${ITERATOR_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Iterator)
+
+    # INCLUDE EXPORT +-+ libviolet_language
+    file(GLOB_RECURSE LANG_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Language/*.h")
+    install(FILES ${LANG_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Language)
+
+    # INCLUDE EXPORT +-+ libviolet_networking
+    file(GLOB_RECURSE NETWORKING_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/*.h")
+    file(GLOB_RECURSE NETWORKING_IP_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/IP/*.h")
+    file(GLOB_RECURSE NETWORKING_SOCKET_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/*.h")
+    install(FILES ${NETWORKING_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking)
+    install(FILES ${NETWORKING_IP_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking/IO)
+    install(FILES ${NETWORKING_SOCKET_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking/Socket)
+
+    # INCLUDE EXPORT +-+ libviolet_numeric
+    file(GLOB_RECURSE NUMERIC_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Numeric/*.h")
+    install(FILES ${NUMERIC_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Numeric)
+
+    # INCLUDE EXPORT +-+ libviolet_subprocess
+    file(GLOB_RECURSE SUBPROCESS_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Subprocess/*.h")
+    install(FILES ${SUBPROCESS_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Subprocess)
+
+    # INCLUDE EXPORT +-+ libviolet_support
+    file(GLOB_RECURSE SUPPORT_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Support/*.h")
+    install(FILES ${SUPPORT_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Support)
+
+    # INCLUDE EXPORT +-+ libviolet_system
+    file(GLOB_RECURSE SYSTEM_HDRS "${PROJECT_SOURCE_DIR}/include/violet/System/*.h")
+    install(FILES ${SYSTEM_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/System)
+endif()

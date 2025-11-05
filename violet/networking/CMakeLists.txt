@@ -19,30 +19,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-include(CXX)
-
-violet_cc_library(
-    macros
-    HDRS
-        ../include/violet/Language/Macros.h
-)
-
-violet_cc_library(
-    policy_checks
-    HDRS
-        ../include/violet/Language/Policy.h
-)
-
-violet_cc_library(
-    violet
-    HDRS
-        ../include/violet/Violet.h
-    DEPS
-        macros
-        policy_checks
-)
-
-add_subdirectory(support)
-add_subdirectory(container)
-add_subdirectory(numeric)
-add_subdirectory(networking)
+add_subdirectory(ip)
+add_subdirectory(socket)

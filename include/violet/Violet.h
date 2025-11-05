@@ -36,6 +36,7 @@
 #include <any>
 #include <condition_variable>
 #include <cstddef>
+#include <span>
 #include <string>
 #include <string_view>
 

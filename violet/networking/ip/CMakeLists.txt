@@ -22,27 +22,27 @@
 include(CXX)
 
 violet_cc_library(
-    macros
+    net_ipaddr
     HDRS
-        ../include/violet/Language/Macros.h
-)
-
-violet_cc_library(
-    policy_checks
-    HDRS
-        ../include/violet/Language/Policy.h
-)
-
-violet_cc_library(
-    violet
-    HDRS
-        ../include/violet/Violet.h
+        "../../../include/violet/Networking/IP/Addr.h"
     DEPS
-        macros
-        policy_checks
+        violet::violet
+        violet::net_ipaddrv4
+        violet::net_ipaddrv6
 )
 
-add_subdirectory(support)
-add_subdirectory(container)
-add_subdirectory(numeric)
-add_subdirectory(networking)
+violet_cc_library(
+    net_ip_addrv4
+    HDRS
+        "../../../include/violet/Networking/IP/V4.h"
+    DEPS
+        violet::violet
+)
+
+violet_cc_library(
+    net_ip_addrv6
+    HDRS
+        "../../../include/violet/Networking/IP/V6.h"
+    DEPS
+        violet::violet
+)

@@ -19,30 +19,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-include(CXX)
+load("//buildsystem/bazel:cc.bzl", "cc_library")
 
-violet_cc_library(
-    macros
-    HDRS
-        ../include/violet/Language/Macros.h
+cc_library(
+    name = "ip",
+    deps = [
+        ":addr",
+        ":addr_v4",
+        ":addr_v6",
+    ],
 )
 
-violet_cc_library(
-    policy_checks
-    HDRS
-        ../include/violet/Language/Policy.h
+cc_library(
+    name = "addr",
+    hdrs = ["//include/violet/Networking/IP:Addr.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":addr_v4",
+        ":addr_v6",
+        "//violet",
+    ],
 )
 
-violet_cc_library(
-    violet
-    HDRS
-        ../include/violet/Violet.h
-    DEPS
-        macros
-        policy_checks
+cc_library(
+    name = "addr_v4",
+    hdrs = ["//include/violet/Networking/IP:V4.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//violet"],
 )
 
-add_subdirectory(support)
-add_subdirectory(container)
-add_subdirectory(numeric)
-add_subdirectory(networking)
+cc_library(
+    name = "addr_v6",
+    hdrs = ["//include/violet/Networking/IP:V6.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//violet"],
+)

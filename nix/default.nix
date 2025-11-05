@@ -21,21 +21,21 @@
 {
   lib,
   stdenv,
-  fetchFromGitHub,
   cmake,
   gtest,
   abseil-cpp,
   nix-gitignore,
   static ? stdenv.hostPlatform.isStatic,
   cxxStandard ? null,
+  llvmPackages_21,
 }: let
   version = builtins.readFile ../.violet-version;
 in
-  stdenv.mkDerivation (finalAttrs: {
+  llvmPackages_21.stdenv.mkDerivation (finalAttrs: {
     inherit version;
 
     pname = "violet";
-    src = nix-gitignore.gitIgnoreSource [] ../.gitignore;
+    src = nix-gitignore.gitignoreSource [] ../.;
 
     cmakeFlags =
       [
@@ -61,7 +61,7 @@ in
       changelog = "https://oss.noelware.org/libraries/cxx/violet#${version}";
       homepage = "https://docs.noelware.org/library/violet/${version}";
       license = with lib.licenses; [mit];
-      platforms = with lib.platforms; [all];
+      platforms = ["x86_64-linux" "x86_64-darwin" "aarch64-darwin"];
       maintainers = with lib.maintainers; [auguwu];
     };
   })
