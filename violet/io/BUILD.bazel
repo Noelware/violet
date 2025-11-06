@@ -19,21 +19,33 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
----
-Language: Cpp
-BasedOnStyle: WebKit
-Standard: Latest
-ColumnLimit: 120
-SpaceBeforeInheritanceColon: false
-SpaceInEmptyBlock: false
-SpaceBeforeCaseColon: false
-SpaceBeforeCpp11BracedList: false
-SpaceBeforeCtorInitializerColon: false
-SpaceBeforeRangeBasedForLoopColon: false
-BreakTemplateDeclarations: Yes
-FixNamespaceComments: true
-RequiresClausePosition: OwnLine
-SpaceAfterTemplateKeyword: false
-AllowShortFunctionsOnASingleLine: Empty
-PPIndentWidth: 4
-...
+load("//buildsystem/bazel:cc.bzl", "cc_library")
+
+cc_library(
+    name = "error",
+    srcs = ["//src/io:error.cc"] + select({
+        "@platforms//os:linux": ["//src/io/platform/error:unix.cc"],
+        "@platforms//os:macos": ["//src/io/platform/error:unix.cc"],
+        "@platforms//os:windows": ["//src/io/platform/error:windows.cc"],
+        "//conditions:default": ["//src/io/platform/error:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/IO:Error.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container:optional",
+        "//violet/container:result",
+    ],
+)
+
+cc_library(
+    name = "descriptor",
+    srcs = select({
+        "@platforms//os:linux": ["//src/io/platform/descriptor:unix.cc"],
+        "@platforms//os:macos": ["//src/io/platform/descriptor:unix.cc"],
+        "@platforms//os:windows": ["//src/io/platform/descriptor:windows.cc"],
+        "//conditions:default": ["//src/io/platform/descriptor:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/IO:Descriptor.h"],
+    deps = ["//violet"],
+)

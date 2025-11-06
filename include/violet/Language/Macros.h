@@ -207,3 +207,24 @@
 #if defined(_CPPUNWIND) || defined(__EXCEPTIONS) || defined(__cpp_exceptions)
 #    define VIOLET_HAS_EXCEPTIONS
 #endif
+
+#define __stringify_helper(x) #x
+#define __stringify(x) __stringify_helper(x)
+
+#if defined(VIOLET_CLANG)
+#    define VIOLET_DIAGNOSTIC_PUSH _Pragma("clang diagnostic push")
+#    define VIOLET_DIAGNOSTIC_POP _Pragma("clang diagnostic pop")
+#    define VIOLET_DIAGNOSTIC_IGNORE(x) _Pragma(__stringify(clang diagnostic ignored x))
+#elif defined(VIOLET_GCC)
+#    define VIOLET_DIAGNOSTIC_PUSH _Pragma("GCC diagnostic push")
+#    define VIOLET_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
+#    define VIOLET_DIAGNOSTIC_IGNORE(x) _Pragma(__stringify(GCC diagnostic ignored x))
+#elif defined(VIOLET_MSVC)
+#    define VIOLET_DIAGNOSTIC_PUSH __pragma(warning(push))
+#    define VIOLET_DIAGNOSTIC_POP __pragma(warning(pop))
+#    define VIOLET_DIAGNOSTIC_IGNORE(x) __pragma(warning(disable : x))
+#else
+#    define VIOLET_DIAGNOSTIC_PUSH
+#    define VIOLET_DIAGNOSTIC_POP
+#    define VIOLET_DIAGNOSTIC_IGNORE(x)
+#endif
