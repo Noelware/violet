@@ -360,13 +360,13 @@ struct [[nodiscard("always check the error state before discard")]] VIOLET_API R
 
     constexpr VIOLET_IMPLICIT operator std::expected<void, E>() noexcept
     {
-        return Ok() ? std::expected<void, E>({}) : violet::Err(Error());
+        return Ok() ? std::expected<void, E>() : violet::Err(Error());
     }
 
     constexpr VIOLET_IMPLICIT operator std::unexpected<E>() noexcept
     {
         assert(Err());
-        return Err(Error());
+        return violet::Err(Error());
     }
 
     constexpr auto operator<<(std::ostream& os) noexcept -> std::ostream&

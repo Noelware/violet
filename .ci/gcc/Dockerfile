@@ -86,7 +86,7 @@ RUN apt install -y \
     cmake \
     git \
     gh \
-    googletest
+    pkg-config
 
 ## 3. Create user that acts like they own this server.
 RUN groupadd -g 1001 noelware && \

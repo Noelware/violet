@@ -110,9 +110,9 @@ RUN apt install -y \
     cmake \
     git \
     gh \
-    googletest
+    pkg-config
 
-## 6. Create user that acts like they own this server.
+## 5. Create user that acts like they own this server.
 RUN groupadd -g 1001 noelware && \
     useradd -rm -s /bin/bash -g noelware -u 1001 noelware && \
     passwd -d noelware && \

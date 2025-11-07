@@ -100,7 +100,7 @@ jobs:
                     - {compiler: gcc-14, cc: "gcc", cxx: "g++", flags: ""}
                     - {compiler: gcc-13, cc: "gcc", cxx: "g++", flags: ""}
         env:
-            CMAKE_FLAGS: "-DCMAKE_CXX_STANDARD=${{matrix.cxx-standard}} -DVIOLET_ENABLE_TESTS=ON -DVIOLET_USE_SYSTEM_GOOGLETEST=ON -B /tmp/cmake-build -DFORCE_COLORED_OUTPUT=1 -G Ninja"
+            CMAKE_FLAGS: "-DCMAKE_CXX_STANDARD=${{matrix.cxx-standard}} -DVIOLET_ENABLE_TESTS=ON -B /tmp/cmake-build -DFORCE_COLORED_OUTPUT=1 -G Ninja"
         steps:
             - uses: actions/checkout@v5
             - run: mkdir -p /tmp/cmake-build

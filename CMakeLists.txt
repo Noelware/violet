@@ -106,7 +106,6 @@ if (VIOLET_ENABLE_TESTS)
 
         # Disable install rules to avoid polluting system
         set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-
         FetchContent_MakeAvailable(googletest)
     endif()
 
