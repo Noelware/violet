@@ -56,6 +56,7 @@ TEST(Result, IntoOpt)
     ASSERT_FALSE(opt_err.HasValue());
 }
 
+#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
 TEST(Result, ToStdExpected)
 {
     auto ok = Ok<String, UInt32>("hello");
@@ -68,6 +69,7 @@ TEST(Result, ToStdExpected)
     ASSERT_FALSE(errStd.has_value());
     EXPECT_EQ(errStd.error(), 404);
 }
+#endif
 
 TEST(Result, VoidOk)
 {

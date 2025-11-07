@@ -22,13 +22,14 @@
 #pragma once
 
 #include "violet/Violet.h"
-#include <type_traits>
 
 #if VIOLET_USE_RTTI
 #include "violet/Support/Demangle.h"
 #endif
 
 #include <expected>
+#include <initializer_list>
+#include <type_traits>
 
 namespace violet {
 
@@ -38,9 +39,123 @@ struct Optional;
 template<typename T, typename E>
 struct Result;
 
-/// Newtype for [`std::unexpected`]
+/// Backport of C++23's `std::unexpected`.
+// -+- TODO(@auguwu): alias this as `std::unexpected` once we drop C++20 support -+-
 template<typename E>
-using Err = std::unexpected<E>;
+struct Err final {
+    static_assert(!std::is_void_v<E>, "`E` cannot be used with `void`");
+
+    constexpr VIOLET_IMPLICIT Err() = delete;
+    constexpr VIOLET_EXPLICIT Err(E err)
+        : n_error(err)
+    {
+    }
+
+    constexpr VIOLET_EXPLICIT Err(const E& err)
+        : n_error(err)
+    {
+    }
+
+    constexpr VIOLET_IMPLICIT Err(E&& err)
+        : n_error(VIOLET_MOVE(err))
+    {
+    }
+
+    template<typename... Args>
+        requires std::is_constructible_v<E, Args...>
+    constexpr VIOLET_IMPLICIT Err(Args&&... args)
+        : n_error(VIOLET_FWD(Args, args)...)
+    {
+    }
+
+    template<typename U, typename... Args>
+        requires std::is_constructible_v<E, std::initializer_list<U>&, Args&&...>
+    constexpr VIOLET_EXPLICIT Err(std::initializer_list<U> list, Args&&... args)
+        : n_error(list, VIOLET_FWD(Args, args)...)
+    {
+    }
+
+    constexpr auto Error() & noexcept -> E&
+    {
+        return n_error;
+    }
+
+    constexpr auto Error() const& noexcept -> const E&
+    {
+        return n_error;
+    }
+
+    constexpr auto Error() && noexcept -> E&&
+    {
+        return VIOLET_MOVE(n_error);
+    }
+
+    constexpr auto Error() const&& noexcept -> const E&&
+    {
+        return VIOLET_MOVE(n_error);
+    }
+
+    constexpr auto operator==(const Err& other)
+    {
+        return this->Error() == other.Error();
+    }
+
+    constexpr auto operator!=(const Err& other)
+    {
+        return this->Error() != other.Error();
+    }
+
+    constexpr auto operator<(const Err& other)
+    {
+        return this->Error() < other.Error();
+    }
+
+    constexpr auto operator<=(const Err& other)
+    {
+        return this->Error() <= other.Error();
+    }
+
+    constexpr auto operator>(const Err& other)
+    {
+        return this->Error() > other.Error();
+    }
+
+    constexpr auto operator>=(const Err& other)
+    {
+        return this->Error() != other.Error();
+    }
+
+    template<typename T>
+    constexpr VIOLET_EXPLICIT operator violet::Result<T, E>() noexcept
+    {
+        return violet::Result<T, E>(std::in_place_index<1L>, Error());
+    }
+
+#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
+    template<typename T>
+    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() & noexcept
+    {
+        return std::expected<T, E>(std::unexpect, VIOLET_MOVE(Error()));
+    }
+
+    template<typename T>
+    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() && noexcept
+    {
+        return std::expected<T, E>(std::unexpect, VIOLET_MOVE(Error()));
+    }
+
+    constexpr VIOLET_EXPLICIT operator std::unexpected<E>() noexcept
+    {
+        return std::unexpected<E>(Error());
+    }
+#endif
+
+private:
+    E n_error;
+};
+
+template<typename E>
+Err(E) -> Err<E>;
 
 /// Creates a new `Result<T, E>` that contains a successful value.
 ///
@@ -81,10 +196,20 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
 
     /// @internal
     template<typename... Args>
+        requires std::is_constructible_v<T, Args...>
     constexpr VIOLET_EXPLICIT Result(std::in_place_index_t<0L>, Args&&... args)
         : n_ok(true)
     {
         ::new (&this->n_storage.ok) T(VIOLET_FWD(Args, args)...);
+    }
+
+    /// @internal
+    template<typename... Args>
+        requires std::is_constructible_v<E, Args&&...>
+    constexpr VIOLET_EXPLICIT Result(std::in_place_index_t<1L>, Args&&... args)
+        : n_ok(true)
+    {
+        ::new (&this->n_storage.ok) violet::Err<E>(VIOLET_FWD(Args, args)...);
     }
 
     constexpr VIOLET_IMPLICIT Result(const violet::Err<E>& err)
@@ -193,13 +318,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     constexpr auto Error() noexcept -> E&
     {
         VIOLET_DEBUG_ASSERT(Err());
-        return this->n_storage.err.error();
-    }
-
-    constexpr auto Error() const noexcept -> const E&
-    {
-        VIOLET_DEBUG_ASSERT(Err());
-        return this->n_storage.err.error();
+        return this->n_storage.err.Error();
     }
 
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
@@ -207,14 +326,26 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return this->Ok();
     }
 
-    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() const noexcept
+#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
+    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() noexcept
     {
-        return Ok() ? std::expected<T, E>(Value()) : violet::Err<E>(Error());
+        if (this->Ok()) {
+            return std::expected<T, E>(Value());
+        }
+
+        return std::unexpected<E>(Error());
     }
+
+    constexpr VIOLET_EXPLICIT operator std::unexpected<E>() noexcept
+    {
+        assert(this->Err());
+        return std::unexpected<E>(Error());
+    }
+#endif
 
     constexpr auto operator<<(std::ostream& os) const noexcept -> std::ostream&
     {
-        if (Ok()) {
+        if (this->Ok()) {
             if constexpr (Stringify<T>) {
                 return os << violet::ToString(Value());
             }
@@ -302,7 +433,7 @@ struct [[nodiscard("always check the error state before discard")]] VIOLET_API R
     }
 
     constexpr VIOLET_IMPLICIT Result(const Result& other)
-        : n_err(other.n_err ? new violet::Err<E>(*other.n_err->error()) : nullptr)
+        : n_err(other.n_err ? new violet::Err<E>(*other.n_err) : nullptr)
     {
     }
 
@@ -344,13 +475,13 @@ struct [[nodiscard("always check the error state before discard")]] VIOLET_API R
     [[nodiscard]] constexpr auto Error() const -> const E&
     {
         assert(Err());
-        return this->n_err->error();
+        return this->n_err->Error();
     }
 
     [[nodiscard]] constexpr auto Error() -> E&
     {
         assert(Err());
-        return this->n_err->error();
+        return this->n_err->Error();
     }
 
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
@@ -358,16 +489,22 @@ struct [[nodiscard("always check the error state before discard")]] VIOLET_API R
         return this->n_err == nullptr;
     }
 
-    constexpr VIOLET_IMPLICIT operator std::expected<void, E>() noexcept
+#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
+    constexpr VIOLET_EXPLICIT operator std::expected<void, E>() const noexcept
     {
-        return Ok() ? std::expected<void, E>() : violet::Err(Error());
+        if (this->Ok()) {
+            return std::expected<void, E>();
+        }
+
+        return std::unexpected<E>(Error());
     }
 
-    constexpr VIOLET_IMPLICIT operator std::unexpected<E>() noexcept
+    constexpr VIOLET_EXPLICIT operator std::unexpected<E>() const noexcept
     {
-        assert(Err());
-        return violet::Err(Error());
+        assert(this->Err());
+        return std::unexpected<E>(Error());
     }
+#endif
 
     constexpr auto operator<<(std::ostream& os) noexcept -> std::ostream&
     {
