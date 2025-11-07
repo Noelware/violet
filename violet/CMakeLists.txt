@@ -40,6 +40,8 @@ violet_cc_library(
     DEPS
         macros
         policy_checks
+        absl::int128
+        absl::container
 )
 
 add_subdirectory(support)

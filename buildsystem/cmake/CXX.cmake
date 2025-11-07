@@ -148,7 +148,7 @@ function(violet_cc_library TARGET_NAME)
 
         target_link_libraries(${TARGET_NAME} PUBLIC ${VCC_DEPS})
 
-        set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 26)
+        set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD ${CMAKE_CXX_STANDARD})
         target_sources(${TARGET_NAME} PRIVATE ${VCC_HDRS})
     endif()
 

@@ -112,8 +112,11 @@ if (VIOLET_ENABLE_TESTS)
     include(GoogleTest)
 endif()
 
-# Set the minimum CXX Standard to C++26
-set(CMAKE_CXX_STANDARD 26)
+# Set the minimum CXX Standard to C++26 if not defined
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 23)
+    message(STATUS "CMAKE_CXX_STANDARD was not set, using C++23 as the default")
+endif()
 
 add_subdirectory(violet)
 
