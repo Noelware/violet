@@ -1,0 +1,24 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "default:timezone(America/Los_Angeles)",
+        "docker:disableMajor"
+    ],
+    "automerge": true,
+    "assignees": ["auguwu"],
+    "addLabels": ["deps"],
+    "vulnerabilityAlerts": {
+        "labels": ["security"]
+    },
+    "customManagers": [
+        {
+            "customType": "regex",
+            "description": "Update Docker images in `build-ci-images.sh`",
+            "fileMatch": ["hack/build-ci-images.sh$"],
+            "matchStrings": [
+                "#\\srenovate: ref=(?<depName>.*)\\s+gccimages[\"gcc-\\d+\"]=\"?(?<currentValue>.+?)\""
+            ]
+        }
+    ]
+}

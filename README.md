@@ -23,6 +23,8 @@ The goal of **Violet** is to provide a enriched version of C++'s standard librar
 * CMake 3.25 or higher
 * Meson 1.1 or higher
 
+**Violet** also supports C++ 20 or higher.
+
 ### Bazel
 Using **Violet** in Bazel is the most trivial and most supported build system as we use Bazel extensively at Noelware. We only support Bzlmod and not the legacy WORKSPACE system.
 

@@ -85,7 +85,8 @@ RUN apt install -y \
     meson \
     cmake \
     git \
-    gh
+    gh \
+    googletest
 
 ## 3. Create user that acts like they own this server.
 RUN groupadd -g 1001 noelware && \

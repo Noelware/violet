@@ -64,8 +64,17 @@ if (VIOLET_USE_SYSTEM_ABSEIL)
     message(STATUS "Using system Abseil C++ libraries")
     find_package(absl REQUIRED)
 else()
+    message(STATUS "Using vendored version of Abseil C++ libraries")
 
-    # TODO(@auguwu): use `FetchContent_Declare` probably?
+    FetchContent_Declare(
+        absl
+        GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
+        GIT_TAG "20250814.1"
+    )
+
+    # Disable install rules to avoid polluting system
+    set(ABSL_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(absl)
 endif()
 
 if (VIOLET_ENABLE_TESTS)
