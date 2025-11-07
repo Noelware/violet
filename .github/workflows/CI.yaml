@@ -60,7 +60,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20, clang-19]
+                compiler: [gcc-15, gcc-14, clang-21, clang-20]
                 bazel-version: ["7.6.0", "8.4.2"]
                 cxx-standard: ["26", "23", "20"]
                 include:
@@ -68,7 +68,6 @@ jobs:
                     - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: ""}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
                     - {compiler: gcc-14, cc: "gcc", cxx: "g++", flags: ""}
-                    - {compiler: gcc-13, cc: "gcc", cxx: "g++", flags: ""}
         env:
             USE_BAZEL_VERSION: ${{matrix.bazel-version}}
             BAZELFLAGS: "--config=ci --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}} --client_env=BAZEL_CXXOPTS=-std=c++${{matrix.cxx-standard}} --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
@@ -92,7 +91,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20, clang-19]
+                compiler: [gcc-15, gcc-14, clang-21, clang-20]
                 cxx-standard: ["26", "23", "20"]
                 include:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: ""}

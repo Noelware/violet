@@ -23,6 +23,11 @@ The goal of **Violet** is to provide a enriched version of C++'s standard librar
 * CMake 3.25 or higher
 * Meson 1.1 or higher
 
+and the following compilers:
+
+* Clang 20 or higher
+* GCC 14 or higher
+
 **Violet** also supports C++ 20 or higher.
 
 ### Bazel
