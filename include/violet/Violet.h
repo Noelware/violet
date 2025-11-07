@@ -258,7 +258,16 @@ inline auto ToString(bool val) -> String
     return val ? "true" : "false";
 }
 
-constexpr auto ToString(Int128 val) -> String
+// C++23 allows `std::stringstream` to be constexpr. Due to us supporting C++20,
+// we have to provide this for any library in Violet that supports constexpr
+// for `std::stringstream`.
+#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
+#define VIOLET_CONSTEXPR_FOR_SSTREAM constexpr
+#else
+#define VIOLET_CONSTEXPR_FOR_SSTREAM inline
+#endif
+
+VIOLET_CONSTEXPR_FOR_SSTREAM auto ToString(Int128 val) -> String
 {
     std::stringstream buf;
     buf << val;
@@ -266,7 +275,7 @@ constexpr auto ToString(Int128 val) -> String
     return buf.str();
 }
 
-constexpr auto ToString(UInt128 val) -> String
+VIOLET_CONSTEXPR_FOR_SSTREAM auto ToString(UInt128 val) -> String
 {
     std::stringstream buf;
     buf << val;

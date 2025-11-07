@@ -25,7 +25,7 @@
 #include <type_traits>
 
 #if VIOLET_USE_RTTI
-#    include "violet/Support/Demangle.h"
+#include "violet/Support/Demangle.h"
 #endif
 
 #include <expected>

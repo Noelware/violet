@@ -24,7 +24,7 @@
 #include "violet/Violet.h"
 
 #ifdef VIOLET_WINDOWS
-#    include <windows.h>
+#include <windows.h>
 #endif
 
 namespace violet::io {

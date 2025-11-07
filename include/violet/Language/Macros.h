@@ -27,33 +27,33 @@
 //! while the supported build systems Noelware maintains provide them:
 //!
 //! * Bazel: `buildsystem/bazel/cc.bzl`
-//! * CMake: ...?
+//! * CMake: `buildsystem/cmake/CXX.cmake`
 //! * Meson: ...?
 
 #pragma once
 
 #if !defined(VIOLET_HAS_ATTRIBUTE) && defined(__has_attribute)
-#    define VIOLET_HAS_ATTRIBUTE(x) __has_attribute(x)
+#define VIOLET_HAS_ATTRIBUTE(x) __has_attribute(x)
 #else
-#    define VIOLET_HAS_ATTRIBUTE(x) 0
+#define VIOLET_HAS_ATTRIBUTE(x) 0
 #endif
 
 #if !defined(VIOLET_HAS_CPP_ATTRIBUTE) && defined(__has_cpp_attribute)
-#    define VIOLET_HAS_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
+#define VIOLET_HAS_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
 #else
-#    define VIOLET_HAS_CPP_ATTRIBUTE(x) 0
+#define VIOLET_HAS_CPP_ATTRIBUTE(x) 0
 #endif
 
 #if !defined(VIOLET_HAS_INCLUDE) && defined(__has_include)
-#    define VIOLET_HAS_INCLUDE(x) __has_include(x)
+#define VIOLET_HAS_INCLUDE(x) __has_include(x)
 #else
-#    define VIOLET_HAS_INCLUDE(x) 0
+#define VIOLET_HAS_INCLUDE(x) 0
 #endif
 
 #if !defined(VIOLET_HAS_FEATURE) && defined(__has_feature)
-#    define VIOLET_HAS_FEATURE(x) __has_feature(x)
+#define VIOLET_HAS_FEATURE(x) __has_feature(x)
 #else
-#    define VIOLET_HAS_FEATURE(x) 0
+#define VIOLET_HAS_FEATURE(x) 0
 #endif
 
 // We need to fill in the following defines if they weren't defined before
@@ -64,9 +64,9 @@
 // * VIOLET_{CLANG|MSVC|GCC}
 
 #ifndef VIOLET_LINUX
-#    if defined(__linux__) && !defined(__ANDROID__)
-#        define VIOLET_LINUX
-#    endif
+#if defined(__linux__) && !defined(__ANDROID__)
+#define VIOLET_LINUX
+#endif
 #endif
 
 // If we ever have plans on adding iOS/tvOS/watchOS/visionOS support for this library,
@@ -89,63 +89,63 @@
 // | +-----+ +------------------------------------------------------------+ +-----------+ |
 // +--------------------------------------------------------------------------------------+
 #if !defined(VIOLET_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
-#    include <TargetConditionals.h>
-#    if TARGET_OS_MAC && TARGET_OS_OSX
-#        define VIOLET_APPLE_MACOS
-#    endif
+#include <TargetConditionals.h>
+#if TARGET_OS_MAC && TARGET_OS_OSX
+#define VIOLET_APPLE_MACOS
+#endif
 #endif
 
 #if !defined(VIOLET_WINDOWS) && defined(_WIN32)
-#    define VIOLET_WINDOWS
+#define VIOLET_WINDOWS
 #endif
 
 #if !defined(VIOLET_X86_64)                                                                                            \
     && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) || defined(__x86_64) || defined(_M_AMD64))
-#    define VIOLET_X86_64
+#define VIOLET_X86_64
 #endif
 
 #if !defined(VIOLET_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
-#    define VIOLET_AARCH64
+#define VIOLET_AARCH64
 #endif
 
 #if !defined(VIOLET_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
-#    define VIOLET_CLANG
+#define VIOLET_CLANG
 #endif
 
 #if !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
-#    define VIOLET_GCC
+#define VIOLET_GCC
 #endif
 
 #if !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
-#    define VIOLET_MSVC
+#define VIOLET_MSVC
 #endif
 
 #if defined(VIOLET_CLANG) && VIOLET_HAS_FEATURE(memory_sanitizer)
-#    define VIOLET_MSAN
+#define VIOLET_MSAN
 #endif
 
 #if VIOLET_HAS_FEATURE(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
-#    define VIOLET_ASAN
+#define VIOLET_ASAN
 #endif
 
 #if VIOLET_HAS_FEATURE(thread_sanitizer) || defined(__SANITIZE_THREAD__)
-#    define VIOLET_TSAN
+#define VIOLET_TSAN
 #endif
 
 #if VIOLET_HAS_FEATURE(undefined_behavior_sanitizer)
-#    define VIOLET_UBSAN
+#define VIOLET_UBSAN
 #endif
 
 #ifdef VIOLET_USE_RTTI
-#    error "`VIOLET_USE_RTTI` cannot be directly set"
+#error "`VIOLET_USE_RTTI` cannot be directly set"
 #elif VIOLET_HAS_FEATURE(cxx_rtti)
-#    define VIOLET_USE_RTTI 1
+#define VIOLET_USE_RTTI 1
 #elif defined(__GNUC__) && defined(__GXX_RTTI)
-#    define VIOLET_USE_RTTI 1
+#define VIOLET_USE_RTTI 1
 #elif defined(_MSC_VER) && defined(_CPPRTTI)
-#    define VIOLET_USE_RTTI 1
+#define VIOLET_USE_RTTI 1
 #else
-#    define VIOLET_USE_RTTI 0
+#define VIOLET_USE_RTTI 0
 #endif
 
 #define VIOLET_FWD(TYPE, VALUE) ::std::forward<TYPE>(VALUE)
@@ -160,35 +160,35 @@
 #define VIOLET_EXPLICIT explicit
 
 #if VIOLET_WINDOWS
-#    ifdef VIOLET_DLL_EXPORT
-#        define VIOLET_API __declspec(dllexport)
-#    else
-#        define VIOLET_API __declspec(dllimport)
-#    endif
+#ifdef VIOLET_DLL_EXPORT
+#define VIOLET_API __declspec(dllexport)
 #else
-#    if VIOLET_HAS_ATTRIBUTE(visibility)
-#        define VIOLET_API __attribute__((visibility("default")))
-#    else
-#        define VIOLET_API
-#    endif
+#define VIOLET_API __declspec(dllimport)
+#endif
+#else
+#if VIOLET_HAS_ATTRIBUTE(visibility)
+#define VIOLET_API __attribute__((visibility("default")))
+#else
+#define VIOLET_API
+#endif
 #endif
 
 #ifndef NDEBUG
-#    define VIOLET_DEBUG_ASSERT(expr) assert(expr)
+#define VIOLET_DEBUG_ASSERT(expr) assert(expr)
 #else
-#    define VIOLET_DEBUG_ASSERT(expr)
+#define VIOLET_DEBUG_ASSERT(expr)
 #endif
 
 #if VIOLET_HAS_CPP_ATTRIBUTE(likely)
-#    define VIOLET_LIKELY [[likely]]
+#define VIOLET_LIKELY [[likely]]
 #else
-#    define VIOLET_LIKELY
+#define VIOLET_LIKELY
 #endif
 
 #if VIOLET_HAS_CPP_ATTRIBUTE(unlikely)
-#    define VIOLET_UNLIKELY(expr) [[unlikely]]
+#define VIOLET_UNLIKELY(expr) [[unlikely]]
 #else
-#    define VIOLET_UNLIKELY(expr)
+#define VIOLET_UNLIKELY(expr)
 #endif
 
 // clang-format off
@@ -197,34 +197,34 @@
 // clang-format on
 
 #if VIOLET_HAS_CPP_ATTRIBUTE(gnu::cold)
-#    define VIOLET_COLD [[gnu::cold]]
+#define VIOLET_COLD [[gnu::cold]]
 #elif VIOLET_WINDOWS
-#    define VIOLET_COLD __declspec(noinline)
+#define VIOLET_COLD __declspec(noinline)
 #else
-#    define VIOLET_COLD
+#define VIOLET_COLD
 #endif
 
 #if defined(_CPPUNWIND) || defined(__EXCEPTIONS) || defined(__cpp_exceptions)
-#    define VIOLET_HAS_EXCEPTIONS
+#define VIOLET_HAS_EXCEPTIONS
 #endif
 
 #define __stringify_helper(x) #x
 #define __stringify(x) __stringify_helper(x)
 
 #if defined(VIOLET_CLANG)
-#    define VIOLET_DIAGNOSTIC_PUSH _Pragma("clang diagnostic push")
-#    define VIOLET_DIAGNOSTIC_POP _Pragma("clang diagnostic pop")
-#    define VIOLET_DIAGNOSTIC_IGNORE(x) _Pragma(__stringify(clang diagnostic ignored x))
+#define VIOLET_DIAGNOSTIC_PUSH _Pragma("clang diagnostic push")
+#define VIOLET_DIAGNOSTIC_POP _Pragma("clang diagnostic pop")
+#define VIOLET_DIAGNOSTIC_IGNORE(x) _Pragma(__stringify(clang diagnostic ignored x))
 #elif defined(VIOLET_GCC)
-#    define VIOLET_DIAGNOSTIC_PUSH _Pragma("GCC diagnostic push")
-#    define VIOLET_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
-#    define VIOLET_DIAGNOSTIC_IGNORE(x) _Pragma(__stringify(GCC diagnostic ignored x))
+#define VIOLET_DIAGNOSTIC_PUSH _Pragma("GCC diagnostic push")
+#define VIOLET_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
+#define VIOLET_DIAGNOSTIC_IGNORE(x) _Pragma(__stringify(GCC diagnostic ignored x))
 #elif defined(VIOLET_MSVC)
-#    define VIOLET_DIAGNOSTIC_PUSH __pragma(warning(push))
-#    define VIOLET_DIAGNOSTIC_POP __pragma(warning(pop))
-#    define VIOLET_DIAGNOSTIC_IGNORE(x) __pragma(warning(disable : x))
+#define VIOLET_DIAGNOSTIC_PUSH __pragma(warning(push))
+#define VIOLET_DIAGNOSTIC_POP __pragma(warning(pop))
+#define VIOLET_DIAGNOSTIC_IGNORE(x) __pragma(warning(disable : x))
 #else
-#    define VIOLET_DIAGNOSTIC_PUSH
-#    define VIOLET_DIAGNOSTIC_POP
-#    define VIOLET_DIAGNOSTIC_IGNORE(x)
+#define VIOLET_DIAGNOSTIC_PUSH
+#define VIOLET_DIAGNOSTIC_POP
+#define VIOLET_DIAGNOSTIC_IGNORE(x)
 #endif

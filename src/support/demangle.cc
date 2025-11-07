@@ -23,10 +23,10 @@
 #include <violet/Violet.h>
 
 #if VIOLET_HAS_INCLUDE(<cxxabi.h>)
-#    include <cxxabi.h>
-#    define VIOLET_HAS_CXXABI_HDR 1
+#include <cxxabi.h>
+#define VIOLET_HAS_CXXABI_HDR 1
 #else
-#    define VIOLET_HAS_CXXABI_HDR 0
+#define VIOLET_HAS_CXXABI_HDR 0
 #endif
 
 using violet::CStr;
@@ -35,7 +35,7 @@ using violet::UniquePtr;
 
 auto violet::util::DemangleCXXName(CStr name) -> String
 {
-#ifndef VIOLET_HAS_CXXABI_HDR
+#if VIOLET_HAS_CXXABI_HDR == 0
     return name;
 #else
     Int32 status = -1;

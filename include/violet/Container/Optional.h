@@ -24,7 +24,7 @@
 #include "violet/Violet.h"
 
 #if VIOLET_USE_RTTI
-#    include "violet/Support/Demangle.h"
+#include "violet/Support/Demangle.h"
 #endif
 
 #include <memory>
@@ -32,8 +32,8 @@
 #include <type_traits>
 
 #ifndef VIOLET_HAS_EXCEPTIONS
-#    include <iostream>
-#    include <source_location>
+#include <iostream>
+#include <source_location>
 #endif
 
 namespace violet {

@@ -40,7 +40,7 @@
  *
  * This macro defines the minimum Clang version that Violet supports
  */
-#define VIOLET_MIN_CLANG_MAJOR_SUPPORTED 19
+#define VIOLET_MIN_CLANG_MAJOR_SUPPORTED 20
 
 /**
  * @macro VIOLET_MIN_GCC_MAJOR_SUPPORTED
@@ -57,21 +57,21 @@
 #define VIOLET_MIN_MSVC_VERSION 1920
 
 #if defined(__clang__) && __clang_major__ < VIOLET_MIN_CLANG_MAJOR_SUPPORTED
-#    error "Violet aims to only support Clang 19 or higher"
+#error "Violet aims to only support Clang 20 or higher"
 #endif
 
 #if (defined(__GNUC__) && !defined(__clang__)) && __GNUC__ < VIOLET_MIN_GCC_MAJOR_SUPPORTED
-#    error "Violet aims to only support GCC 13 or higher"
+#error "Violet aims to only support GCC 13 or higher"
 #endif
 
 #if (defined(_MSC_VER) && !defined(__clang__)) && _MSC_VER < VIOLET_MIN_MSVC_VERSION
-#    error "Violet aims to only support Visual Studio 2019 or higher"
+#error "Violet aims to only support Visual Studio 2019 or higher"
 #endif
 
-#ifdef _MSC_LANG
-#    if _MSC_LANG < VIOLET_MIN_CPP_VERSION
-#        error "Violet aims to only support C++ 20 or higher"
-#    endif
+#ifdef _MSVC_LANG
+#if _MSVC_LANG < VIOLET_MIN_CPP_VERSION
+#error "Violet aims to only support C++ 20 or higher"
+#endif
 #elif defined(__cplusplus) && __cplusplus < VIOLET_MIN_CPP_VERSION
-#    error "Violet aims to only support C++ 20 or higher"
+#error "Violet aims to only support C++ 20 or higher"
 #endif
