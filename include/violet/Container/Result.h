@@ -87,12 +87,12 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         ::new (&this->n_storage.ok) T(VIOLET_FWD(Args, args)...);
     }
 
-    constexpr VIOLET_IMPLICIT Result(const Err<E>& err)
+    constexpr VIOLET_IMPLICIT Result(const violet::Err<E>& err)
     {
         ::new (&this->n_storage.err) violet::Err<E>(err);
     }
 
-    constexpr VIOLET_IMPLICIT Result(Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
+    constexpr VIOLET_IMPLICIT Result(violet::Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
     {
         ::new (&this->n_storage.err) violet::Err<E>(VIOLET_MOVE(err));
     }
@@ -272,12 +272,12 @@ struct [[nodiscard("always check the error state before discard")]] VIOLET_API R
     using error_type = E;
 
     constexpr Result() noexcept = default;
-    constexpr VIOLET_IMPLICIT Result(const Err<E>& err)
+    constexpr VIOLET_IMPLICIT Result(const violet::Err<E>& err)
         : n_err(new violet::Err<E>(err))
     {
     }
 
-    constexpr VIOLET_IMPLICIT Result(Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
+    constexpr VIOLET_IMPLICIT Result(violet::Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
         : n_err(new violet::Err<E>(VIOLET_MOVE(err)))
     {
     }

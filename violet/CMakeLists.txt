@@ -38,10 +38,14 @@ violet_cc_library(
     HDRS
         ../include/violet/Violet.h
     DEPS
-        macros
-        policy_checks
+        violet::macros
+        violet::policy_checks
         absl::int128
-        absl::container
+        absl::flat_hash_map
+        absl::flat_hash_set
+        absl::node_hash_map
+        absl::node_hash_set
+        absl::btree
 )
 
 add_subdirectory(support)

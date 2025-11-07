@@ -27,6 +27,7 @@ violet_cc_library(
         ../../include/violet/Container/Optional.h
     DEPS
         violet::violet
+    PRIVATE_DEPS
         violet::cxx_demangle
 )
 
@@ -44,7 +45,8 @@ violet_cc_library(
         ../../include/violet/Container/Result.h
     DEPS
         violet::violet
-        violet:cxx_demangle
+    PRIVATE_DEPS
+        violet::cxx_demangle
 )
 
 violet_cc_test(

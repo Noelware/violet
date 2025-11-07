@@ -84,18 +84,18 @@ function(violet_cc_library TARGET_NAME)
         VCC
         "SHARED"
         ""
-        "SRCS;HDRS;DEPS;COPTS;LINKOPTS"
+        "SRCS;HDRS;DEPS;COPTS;LINKOPTS;PRIVATE_DEPS"
         ${ARGN}
     )
 
     if(NOT VCC_SRCS AND VCC_HDRS)
-        add_library(${TARGET_NAME} INTERFACE)
+        add_library(viol_${TARGET_NAME} INTERFACE)
 
-        target_include_directories(${TARGET_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
+        target_include_directories(viol_${TARGET_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
 
         # Add compiler options to library
         target_compile_options(
-            ${TARGET_NAME} INTERFACE
+            viol_${TARGET_NAME} INTERFACE
             ${VCC_COPTS}
             ${VIOLET_SANITIZER_OPTS}
             ${VIOLET_COMPILER_COPTS}
@@ -103,26 +103,29 @@ function(violet_cc_library TARGET_NAME)
 
         # Add linker options
         target_link_options(
-            ${TARGET_NAME} INTERFACE
+            viol_${TARGET_NAME} INTERFACE
             ${VCC_LINKOPTS}
             ${VIOLET_SANITIZER_OPTS}
         )
 
         # Add definitions
         target_compile_definitions(
-            ${TARGET_NAME} INTERFACE
+            viol_${TARGET_NAME} INTERFACE
             ${VIOLET_DEFINES}
         )
+
+        # Add dependencies, if any were given
+        target_link_libraries(viol_${TARGET_NAME} INTERFACE ${VCC_DEPS})
     else()
         set(VCC_SRCS_AND_HDRS ${VCC_SRCS} ${VCC_HDRS})
 
         # Create the library itself
-        add_library(${TARGET_NAME} "")
-        target_sources(${TARGET_NAME} PRIVATE ${VCC_SRCS} ${VCC_HDRS})
+        add_library(viol_${TARGET_NAME} "")
+        target_sources(viol_${TARGET_NAME} PRIVATE ${VCC_SRCS} ${VCC_HDRS})
 
         # Add compiler options to library
         target_compile_options(
-            ${TARGET_NAME} PRIVATE
+            viol_${TARGET_NAME} PRIVATE
             ${VCC_COPTS}
             ${VIOLET_SANITIZER_OPTS}
             ${VIOLET_COMPILER_COPTS}
@@ -130,30 +133,34 @@ function(violet_cc_library TARGET_NAME)
 
         # Add linker options
         target_link_options(
-            ${TARGET_NAME} PRIVATE
+            viol_${TARGET_NAME} PRIVATE
             ${VCC_LINKOPTS}
             ${VIOLET_SANITIZER_OPTS}
         )
 
         # Add definitions
         target_compile_definitions(
-            ${TARGET_NAME} PRIVATE
+            viol_${TARGET_NAME} PRIVATE
             ${VIOLET_DEFINES}
         )
 
-        target_include_directories(${TARGET_NAME} PUBLIC
+        target_include_directories(viol_${TARGET_NAME} PUBLIC
             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
         )
 
-        target_link_libraries(${TARGET_NAME} PUBLIC ${VCC_DEPS})
+        target_link_libraries(viol_${TARGET_NAME} PUBLIC ${VCC_DEPS})
 
-        set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD ${CMAKE_CXX_STANDARD})
-        target_sources(${TARGET_NAME} PRIVATE ${VCC_HDRS})
+        if(VCC_PRIVATE_DEPS)
+            target_link_libraries(viol_${TARGET_NAME} PUBLIC ${VCC_PRIVATE_DEPS})
+        endif()
+
+        set_property(TARGET viol_${TARGET_NAME} PROPERTY CXX_STANDARD ${CMAKE_CXX_STANDARD})
+        target_sources(viol_${TARGET_NAME} PRIVATE ${VCC_HDRS})
     endif()
 
     if (VIOLET_INSTALL)
-        install(TARGETS ${TARGET_NAME} EXPORT VioletTargets
+        install(TARGETS viol_${TARGET_NAME} EXPORT VioletTargets
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -161,7 +168,7 @@ function(violet_cc_library TARGET_NAME)
         )
     endif()
 
-    add_library(violet::${TARGET_NAME} ALIAS ${TARGET_NAME})
+    add_library(violet::${TARGET_NAME} ALIAS viol_${TARGET_NAME})
 endfunction()
 
 # --- Custom cc_test mimic ---

@@ -72,8 +72,8 @@ else()
         GIT_TAG "20250814.1"
     )
 
-    # Disable install rules to avoid polluting system
-    set(ABSL_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+    # We have to enable Abseil's install policies so that we get `absl::`
+    set(ABSL_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(absl)
 endif()
 
@@ -121,7 +121,6 @@ endif()
 add_subdirectory(violet)
 
 if(VIOLET_INSTALL)
-    install(TARGETS violet EXPORT violet FILE_SET HEADERS)
     install(EXPORT VioletTargets NAMESPACE violet:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/violet")
     configure_package_config_file(
         buildsystem/cmake/VioletConfig.cmake.in
