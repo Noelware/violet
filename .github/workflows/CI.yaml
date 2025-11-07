@@ -53,7 +53,7 @@ concurrency:
     cancel-in-progress: true
 jobs:
     bazel-linux:
-        name: "Bazel / Linux [${{matrix.compiler}} / Bazel ${{matrix.bazel-version}}]"
+        name: "Bazel / Linux [${{matrix.compiler}} / Bazel ${{matrix.bazel-version}} (C++${{matrix.cxx-standard}})]"
         runs-on: ubuntu-latest
         container:
             image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
@@ -62,6 +62,7 @@ jobs:
             matrix:
                 compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20, clang-19]
                 bazel-version: ["7.6.0", "8.4.2"]
+                cxx-standard: ["26", "23", "20"]
                 include:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: ""}
                     - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: ""}
@@ -70,7 +71,7 @@ jobs:
                     - {compiler: gcc-13, cc: "gcc", cxx: "g++", flags: ""}
         env:
             USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-            BAZELFLAGS: "--config=ci --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
+            BAZELFLAGS: "--config=ci --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}} --client_env=BAZEL_CXXOPTS=-std=c++${{matrix.cxx-standard}} --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v5
             - uses: actions/cache@v4
@@ -84,7 +85,7 @@ jobs:
             - run: bazel build ${{env.BAZELFLAGS}} //...
             - run: bazel test ${{env.BAZELFLAGS}} //...
     cmake-linux:
-        name: "CMake / Linux [${{matrix.compiler}}]"
+        name: "CMake / Linux [${{matrix.compiler}}, C++${{matrix.cxx-standard}}]"
         runs-on: ubuntu-latest
         container:
             image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
@@ -92,6 +93,7 @@ jobs:
             fail-fast: false
             matrix:
                 compiler: [gcc-15, gcc-14, gcc-13, clang-21, clang-20, clang-19]
+                cxx-standard: ["26", "23", "20"]
                 include:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: ""}
                     - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: ""}
@@ -100,19 +102,19 @@ jobs:
                     - {compiler: gcc-14, cc: "gcc", cxx: "g++", flags: ""}
                     - {compiler: gcc-13, cc: "gcc", cxx: "g++", flags: ""}
         env:
-            CMAKE_FLAGS: "-DVIOLET_ENABLE_TESTS=ON -DVIOLET_USE_SYSTEM_GOOGLETEST=ON -B ${{github.workspace}}/build -DFORCE_COLORED_OUTPUT=1 -G Ninja"
+            CMAKE_FLAGS: "-DCMAKE_CXX_STANDARD=${{matrix.cxx-standard}} -DVIOLET_ENABLE_TESTS=ON -DVIOLET_USE_SYSTEM_GOOGLETEST=ON -B ${{github.workspace}}/build -DFORCE_COLORED_OUTPUT=1 -G Ninja"
         steps:
             - uses: actions/checkout@v5
-            - run: mkdir -p "${{github.workspace}}/build"
+            - run: mkdir -p /tmp/cmake-build
             - uses: actions/cache@v4
               with:
                 key: cmake-cache-linux-${{matrix.compiler}}-${{hashFiles('CMakeLists.txt')}}
                 restore-keys: cmake-cache-linux-${{matrix.compiler}}-
                 path: |
-                    ${{github.workspace}}/build
+                    /tmp/cmake-build
 
             - run: cmake ${{env.CMAKE_FLAGS}} ${{matrix.flags}}
-            - run: cmake --build "${{github.workspace}}/build"
+            - run: cmake --build /tmp/cmake-build
     asan-linux:
         name: "Bazel / Linux [${{matrix.compiler}} (ASan)]"
         runs-on: ubuntu-latest
@@ -132,7 +134,7 @@ jobs:
             - uses: actions/checkout@v5
             - uses: actions/cache@v4
               with:
-                key: bazel-cache-linux-${{matrix.compiler}}-asan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                key: bazel-cache-linux-${{matrix.compiler}}-asan-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
                 restore-keys: bazel-cache-linux-${{matrix.compiler}}-asan-
                 path: |
                     ~/.cache/bazel
@@ -159,7 +161,7 @@ jobs:
             - uses: actions/checkout@v5
             - uses: actions/cache@v4
               with:
-                key: bazel-cache-linux-${{matrix.compiler}}-ubsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                key: bazel-cache-linux-${{matrix.compiler}}-ubsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
                 restore-keys: bazel-cache-linux-${{matrix.compiler}}-ubsan-
                 path: |
                     ~/.cache/bazel
@@ -186,7 +188,7 @@ jobs:
             - uses: actions/checkout@v5
             - uses: actions/cache@v4
               with:
-                key: bazel-cache-linux-${{matrix.compiler}}-tsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel')}}
+                key: bazel-cache-linux-${{matrix.compiler}}-tsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
                 restore-keys: bazel-cache-linux-${{matrix.compiler}}-tsan-
                 path: |
                     ~/.cache/bazel
