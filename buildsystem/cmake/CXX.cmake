@@ -198,10 +198,20 @@ function(violet_cc_test TARGET_NAME)
         ${VIOLET_SANITIZER_OPTS}
     )
 
-    set(TEST_DEPS ${VCT_DEPS} GTest::gtest GTest::gtest_main)
-    target_link_libraries(${TARGET_NAME} PRIVATE ${TEST_DEPS})
+    set(TEST_DEPS ${VCT_DEPS})
+
+    # GTEST_{CFLAGS|LDFLAGS} is only set if GoogleTest was found via pkg-config when
+    # using the system's version of GoogleTest. Yes, it is cursed. No, I don't like it.
+    # And no, there is no better way of doing this.
+    if(DEFINED GTEST_CFLAGS AND DEFINED GTEST_LDFLAGS)
+        target_link_libraries(${TARGET_NAME} PRIVATE ${VCT_DEPS} ${GTEST_LDFLAGS})
+        target_compile_options(${TARGET_NAME} PRIVATE ${GTEST_CFLAGS})
+    else()
+        target_link_libraries(${TARGET_NAME} PRIVATE ${VCT_DEPS} GTest::gtest GTest::gtest_main)
+    endif()
 
     add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})
+    gtest_discover_tests(${TARGET_NAME})
 
     if (VIOLET_SANITIZER_ENV)
         list(APPEND TEST_ENVIRONMENT_VARS ${VIOLET_SANITIZER_ENV})

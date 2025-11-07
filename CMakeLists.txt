@@ -109,6 +109,8 @@ if (VIOLET_ENABLE_TESTS)
 
         FetchContent_MakeAvailable(googletest)
     endif()
+
+    include(GoogleTest)
 endif()
 
 # Set the minimum CXX Standard to C++26
