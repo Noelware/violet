@@ -82,7 +82,17 @@ if (VIOLET_ENABLE_TESTS)
 
     if(VIOLET_USE_SYSTEM_GOOGLETEST)
         message(STATUS "Using system GoogleTest libraries")
-        find_package(GTest REQUIRED)
+        find_package(GTest)
+        if (NOT ${GTest_FOUND})
+            message(AUTHOR_WARNING "Couldn't find GoogleTest by normal CMake standards, using `pkg-config` as last resort")
+
+            find_package(PkgConfig)
+            if (NOT ${PkgConfig_FOUND})
+                message(FATAL_ERROR "Couldn't find `pkg-config` as last resort to find GoogleTest")
+            endif()
+
+            pkg_search_module(GTEST REQUIRED gtest_main)
+        endif()
     else()
         message(STATUS "Using a vendored version of GoogleTest")
 

@@ -112,7 +112,9 @@ jobs:
                     /tmp/cmake-build
 
             - run: cmake ${{env.CMAKE_FLAGS}} ${{matrix.flags}}
-            - run: cmake --build /tmp/cmake-build
+            - run: cmake --build /tmp/cmake-build --config Debug --target all
+            - run: ctest -C Debug -T test --output-on-failure
+              working-directory: /tmp/cmake-build
     asan-linux:
         name: "Bazel / Linux [${{matrix.compiler}} (ASan)]"
         runs-on: ubuntu-latest
