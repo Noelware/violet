@@ -86,6 +86,7 @@ TEST(Result, VoidErr)
     EXPECT_EQ(result.Error(), 500);
 }
 
+#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
 TEST(Result, VoidToStdExpected)
 {
     Result<void, UInt32> ok;
@@ -97,6 +98,7 @@ TEST(Result, VoidToStdExpected)
     ASSERT_FALSE(errStd.has_value());
     EXPECT_EQ(errStd.error(), 500);
 }
+#endif
 
 TEST(Result, CopyConstructOk)
 {
