@@ -23,6 +23,7 @@ load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
     name = "optional",
+    srcs = ["//src/container:OptionalUnwrapFail.cc"],
     hdrs = ["//include/violet/Container:Optional.h"],
     visibility = ["//visibility:public"],
     deps = [
@@ -39,6 +40,7 @@ cc_test(
 
 cc_library(
     name = "result",
+    srcs = ["//src/container:ResultUnwrapFail.cc"],
     hdrs = ["//include/violet/Container:Result.h"],
     visibility = ["//visibility:public"],
     deps = [

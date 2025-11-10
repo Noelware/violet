@@ -186,3 +186,29 @@ TEST(Result, MoveAssignErr)
     ASSERT_TRUE(r2.Err());
     EXPECT_EQ(r2.Error(), 123);
 }
+
+#ifdef VIOLET_HAS_EXCEPTIONS
+TEST(Result, UnwrapShouldThrow)
+{
+    Result<String, UInt32> r1 = Err<UInt32>(123);
+    EXPECT_THROW(r1.Unwrap(), std::logic_error);
+}
+
+TEST(Result, ExpectShouldThrow)
+{
+    Result<String, UInt32> r1 = Err<UInt32>(123);
+    EXPECT_THROW(r1.Expect("my message here :3"), std::logic_error);
+}
+#else
+TEST(Result, UnwrapShouldAbort)
+{
+    Result<String, UInt32> r1 = Err<UInt32>(123);
+    EXPECT_DEATH(r1.Unwrap(), ".*");
+}
+
+TEST(Result, ExpectShouldAbort)
+{
+    Result<String, UInt32> r1 = Err<UInt32>(123);
+    EXPECT_DEATH(r1.Expect("my message here :3"), ".*");
+}
+#endif

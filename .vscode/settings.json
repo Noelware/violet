@@ -38,6 +38,9 @@
         }
     },
 
+    "[cmake]": {
+        "editor.defaultFormatter": "ms-vscode.cmake-tools"
+    },
     "[cpp]": {
         "editor.defaultFormatter": "xaver.clang-format"
     },

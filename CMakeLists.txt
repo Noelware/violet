@@ -41,12 +41,23 @@ message(STATUS "violet ${violet_VERSION}: using compiler ${CMAKE_CXX_COMPILER_ID
 
 # Add options to configure this build. This should be similar to the Bazel flags we have.
 option(VIOLET_WIN32_DLLEXPORT "Marks all Violet APIs as `__declspec(dllexport)` instead of `__declspec(dllimport)` (Windows only)" OFF)
+option(VIOLET_EXCEPTIONS "Whether if exceptions should be enabled for this build" ON)
 option(VIOLET_UBSAN "Enables Undefined Behaviour Sanitizers for this build" OFF)
 option(VIOLET_TSAN "Enables Thread Sanitizer for this build" OFF)
 option(VIOLET_ASAN "Enables Address Sanitizer for this build" OFF)
 option(VIOLET_MSAN "Enables Memory Sanitizer for this build" OFF)
 
+# dependencies
+option(VIOLET_USE_SYSTEM_OPENSSL "Uses the system's OpenSSL instead of vendoring" OFF)
 option(VIOLET_USE_SYSTEM_ABSEIL "Uses the system's Abseil instead of vendoring" OFF)
+option(VIOLET_USE_SYSTEM_CURL "Uses the system's cURL instead of vendoring (useful for Noelware.Violet.Networking)" OFF)
+
+# libraries (this will avoid building most libraries except the core libs: Noelware.Violet.(Container|Iterator|Language|Numeric|Support|System})
+option(VIOLET_ENABLE_SUBPROCESS "Enables the Noelware.Violet.Subprocess library" OFF)
+option(VIOLET_ENABLE_BACKTRACE "Enables the Noelware.Violet.Backtrace library" OFF)
+option(VIOLET_ENABLE_NET "Enables the Noelware.Violet.Networking library (requires OpenSSL)" OFF)
+option(VIOLET_ENABLE_FS "Enables the Noelware.Violet.Filesystem library" OFF)
+option(VIOLET_ENABLE_IO "Enables the Noelware.Violet.IO library" OFF)
 
 # Options relating to tests
 option(VIOLET_ENABLE_TESTS "Enables the test suite" OFF)
@@ -75,6 +86,39 @@ else()
     # We have to enable Abseil's install policies so that we get `absl::`
     set(ABSL_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(absl)
+endif()
+
+if(VIOLET_ENABLE_NET)
+    if(VIOLET_USE_SYSTEM_OPENSSL)
+    else()
+    endif()
+
+    if(VIOLET_USE_SYSTEM_CURL)
+        message(STATUS "Using system cURL for Noelware.Violet.Networking")
+        find_package(CURL "8.0.0")
+        if (NOT CURL_FOUND)
+            message(FATAL_ERROR "Unable to find cURL on system or is too old (requires >=8.x)")
+        endif()
+    else()
+        message(STATUS "Using vendoring version of cURL")
+
+        FetchContent_Declare(
+            curl
+            GIT_REPOSITORY "https://github.com/curl/curl.git"
+            GIT_TAG curl-8_17_0
+        )
+
+        # Set options for cURL
+        set(BUILD_CURL_EXE OFF CACHE BOOL "Disable curl executable" FORCE)
+        set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
+        set(HTTP_ONLY ON CACHE BOOL "Disables most cURL features and only builds HTTP only support" FORCE)
+
+        FetchContent_MakeAvailable(curl)
+
+        if(NOT TARGET CURL::libcurl)
+            add_library(CURL::libcurl ALIAS curl)
+        endif()
+    endif()
 endif()
 
 if (VIOLET_ENABLE_TESTS)
@@ -155,9 +199,11 @@ if(VIOLET_INSTALL)
     # INCLUDE EXPORT +-+ libviolet_networking
     file(GLOB_RECURSE NETWORKING_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/*.h")
     file(GLOB_RECURSE NETWORKING_IP_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/IP/*.h")
+    file(GLOB_RECURSE NETWORKING_HTTP_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/HTTP/*.h")
     file(GLOB_RECURSE NETWORKING_SOCKET_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/*.h")
     install(FILES ${NETWORKING_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking)
     install(FILES ${NETWORKING_IP_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking/IO)
+    install(FILES ${NETWORKING_HTTP_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking/HTTP)
     install(FILES ${NETWORKING_SOCKET_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking/Socket)
 
     # INCLUDE EXPORT +-+ libviolet_numeric

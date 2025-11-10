@@ -19,15 +19,41 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <violet/Container/Optional.h>
+#include <violet/Violet.h>
 
-// #include "V4.h"
-// #include "V6.h"
+#ifndef VIOLET_HAS_EXCEPTIONS
+#include <source_location>
+#endif
 
-// #include <variant>
+#ifdef VIOLET_HAS_EXCEPTIONS
 
-namespace violet::networking {
+void violet::optionalUnwrapFail()
+{
+    throw std::logic_error("`Optional<T>::Unwrap()` failed due to nothing present");
+}
 
-struct IPAddr final {};
+void violet::optionalUnwrapFail(CStr message)
+{
+    throw std::logic_error(std::format("`Optional<T>::Expect()`: {}", message));
+}
 
-} // namespace violet::networking
+#else
+
+void violet::optionalUnwrapFail(const std::source_location& loc)
+{
+    std::cerr << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
+              << "]: `Optional<T>::Unwrap()`failed due to nothing present\n";
+
+    std::abort();
+}
+
+void violet::optionalUnwrapFail(CStr message, const std::source_location& loc)
+{
+    std::cerr << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
+              << "]: `Optional<T>::Expect()`: " << message << '\n';
+
+    std::abort();
+}
+
+#endif

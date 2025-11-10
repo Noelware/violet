@@ -19,14 +19,41 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <violet/Container/Result.h>
+#include <violet/Violet.h>
 
-namespace violet::networking::socketaddr {
+#ifndef VIOLET_HAS_EXCEPTIONS
+#include <source_location>
+#endif
 
-/// A minimal and probably fast parser for parsing socket address strings like
-/// `localhost:9090`, `127.0.0.1:25`, `[::1]:4000`.
-struct Parser final {
-private:
-};
+#ifdef VIOLET_HAS_EXCEPTIONS
 
-} // namespace violet::networking::socketaddr
+void violet::resultUnwrapFail()
+{
+    throw std::logic_error("`Result<T, E>::Unwrap()` failed due to error variant");
+}
+
+void violet::resultUnwrapFail(CStr message)
+{
+    throw std::logic_error(std::format("`Result<T, E>::Expect()`: {}", message));
+}
+
+#else
+
+void violet::resultUnwrapFail(const std::source_location& loc)
+{
+    std::cerr << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
+              << "]: `Optional<T>::Unwrap()` failed due to error variant\n";
+
+    std::abort();
+}
+
+void violet::resultUnwrapFail(CStr message, const std::source_location& loc)
+{
+    std::cerr << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
+              << "]: `Result<T, E>::Expect()`: " << message << '\n';
+
+    std::abort();
+}
+
+#endif

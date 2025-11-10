@@ -27,11 +27,33 @@
 #include "violet/Support/Demangle.h"
 #endif
 
+#ifndef VIOLET_HAS_EXCEPTIONS
+#include <source_location>
+#endif
+
 #include <expected>
 #include <initializer_list>
 #include <type_traits>
 
 namespace violet {
+
+/* --=-- START :: internals --=--*/
+
+#ifndef VIOLET_HAS_EXCEPTIONS
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void resultUnwrapFail(const std::source_location& loc);
+
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void resultUnwrapFail(CStr message, const std::source_location& loc);
+#else
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void resultUnwrapFail();
+
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void resultUnwrapFail(CStr message);
+#endif
+
+/* --=--  END :: internals  --=-- */
 
 template<typename T>
 struct Optional;
@@ -320,6 +342,416 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         VIOLET_DEBUG_ASSERT(Err());
         return this->n_storage.err.Error();
     }
+
+#ifdef VIOLET_HAS_EXCEPTIONS
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    ///
+    /// @throws std::logic_error If the error variant was present in this `Result`.
+    constexpr auto Unwrap() && -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapFail();
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    ///
+    /// @throws std::logic_error If the error variant was present in this `Result`.
+    constexpr auto Unwrap() & -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapFail();
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    ///
+    /// @throws std::logic_error If the error variant was present in this `Result`.
+    constexpr auto Unwrap() const& -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return Value();
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapFail();
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+#else
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
+    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    constexpr auto Unwrap(const std::source_location& loc = std::source_location::current()) && -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapFail(loc);
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
+    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    constexpr auto Unwrap(const std::source_location& loc = std::source_location::current()) & -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapFail(loc);
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
+    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    constexpr auto Unwrap(const std::source_location& loc = std::source_location::current()) const& -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return Value();
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapFail(loc);
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+#endif
+
+    /// Returns the contained value, consuming the `Result`, or a default value.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res1 = violet::Ok<int, String>(42);
+    /// int val1 = std::move(res1).UnwrapOr(0); // val1 == 42
+    ///
+    /// Result<int, String> res2 = violet::Err<String>("hello world");
+    /// int val2 = std::move(res2).UnwrapOr(0); // val2 == 0
+    /// ```
+    ///
+    /// @param def The default value to return if the `Optional` is empty.
+    /// @return The contained value or the default value.
+    constexpr auto UnwrapOr(T&& def) && -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+        else
+        {
+            return VIOLET_MOVE(def);
+        }
+    }
+
+    /// Returns the contained value, consuming the `Result`, or computes it from a closure.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res1 = violet::Ok<int, String>(42);
+    /// int val1 = std::move(res1).UnwrapOrElse([]() { return 0; }); // val1 == 42
+    ///
+    /// Result<int, String> res2 = violet::Err<String>("hello world");
+    /// int val2 = std::move(res2).UnwrapOr([]() { return 0; }); // val2 == 0
+    /// ```
+    ///
+    /// @param fun The closure to call to compute the default value.
+    /// @return The contained value or the computed default value.
+    template<typename Fun>
+        requires callable<Fun> && std::convertible_to<std::invoke_result_t<Fun>, T>
+    constexpr auto UnwrapOrElse(Fun&& fun) &&
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+        else
+        {
+            return std::invoke(VIOLET_FWD(Fun, fun));
+        }
+    }
+
+    /// Returns the contained value, consuming the `Result`, without checking if it has a value.
+    ///
+    /// ## Safety
+    /// This function is unsafe because it does not check if the `Result` has a value. If the `Result` is
+    /// empty, this will result in undefined behavior.
+    ///
+    /// @return The contained value.
+    constexpr auto UnwrapUnchecked(Unsafe) && -> T
+    {
+        return VIOLET_MOVE(this->n_storage.ok);
+    }
+
+#ifndef VIOLET_HAS_EXCEPTIONS
+    /// Returns the contained value, consuming the `Optional`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<int, String>("hello world");
+    /// int val = std::move(res).Expect("value was not present"); // terminates
+    /// ```
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Result` is empty, with a custom message.
+    ///
+    /// @param message The message to print on termination.
+    /// @param loc The source location of the call, which is used for the termination message.
+    /// @return The contained value.
+    constexpr auto Expect(Str message, const std::source_location& loc = std::source_location::current()) && -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+
+        resultUnwrapFail(message.data(), loc);
+    }
+
+    /// Returns the contained value, consuming the `Optional`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<int, String>("hello world");
+    /// int val = std::move(res).Expect("value was not present"); // terminates
+    /// ```
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Result` is empty, with a custom message.
+    ///
+    /// @param message The message to print on termination.
+    /// @param loc The source location of the call, which is used for the termination message.
+    /// @return The contained value.
+    constexpr auto Expect(Str message, const std::source_location& loc = std::source_location::current()) & -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+
+        resultUnwrapFail(message.data(), loc);
+    }
+
+    /// Returns the contained value, consuming the `Optional`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<int, String>("hello world");
+    /// int val = std::move(res).Expect("value was not present"); // terminates
+    /// ```
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Result` is empty, with a custom message.
+    ///
+    /// @param message The message to print on termination.
+    /// @param loc The source location of the call, which is used for the termination message.
+    /// @return The contained value.
+    constexpr auto Expect(Str message, const std::source_location& loc = std::source_location::current()) const& -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+
+        resultUnwrapFail(message.data(), loc);
+    }
+#else
+    /// Returns the contained value, consuming the `Result`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<int, String>("hello world");
+    /// int val = std::move(res).Expect("value was not present"); // throws
+    /// ```
+    ///
+    /// @throws [std::logic_error] if the `Result` is empty, with a custom message.
+    /// @param message The message to use for the exception.
+    /// @return The contained value.
+    ///
+    constexpr auto Expect(Str message) && -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapFail(message.data());
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming the `Result`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<int, String>("hello world");
+    /// int val = std::move(res).Expect("value was not present"); // throws
+    /// ```
+    ///
+    /// @throws [std::logic_error] if the `Result` is empty, with a custom message.
+    /// @param message The message to use for the exception.
+    /// @return The contained value.
+    ///
+    constexpr auto Expect(Str message) & -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapFail(message.data());
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming the `Result`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<int, String>("hello world");
+    /// int val = std::move(res).Expect("value was not present"); // throws
+    /// ```
+    ///
+    /// @throws [std::logic_error] if the `Result` is empty, with a custom message.
+    /// @param message The message to use for the exception.
+    /// @return The contained value.
+    ///
+    constexpr auto Expect(Str message) const& -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return Value();
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapFail(message.data());
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+#endif
 
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
     {

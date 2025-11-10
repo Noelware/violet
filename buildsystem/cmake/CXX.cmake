@@ -36,7 +36,6 @@ elseif(WIN32)
     endif()
 endif()
 
-
 # Architecture Defines
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     list(APPEND VIOLET_DEFINES "VIOLET_AARCH64")

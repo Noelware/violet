@@ -72,6 +72,11 @@ COMPILER_DEFINES = select({
     "//conditions:default": [],
 })
 
+FEATURE_DEFINES = select({
+    "//buildsystem/bazel/configs:curl_enabled": ["VIOLET_NET_HAS_CURL_BACKEND"],
+    "//conditions:default": [],
+})
+
 COMPILER_COPTS = select({
     "@rules_cc//cc/compiler:clang": ["-DNOMINMAX"],
     "@rules_cc//cc/compiler:clang-cl": ["-DNOMINMAX"],
@@ -99,7 +104,7 @@ def cc_library(name, hdrs = [], **kwargs):
         copts = copts + SANITIZER_OPTS + COMPILER_COPTS,
         linkopts = linkopts + SANITIZER_OPTS,
         includes = ["include"],
-        defines = ["BAZEL"] + OS_DEFINES + ARCH_DEFINES + COMPILER_DEFINES,
+        defines = ["BAZEL"] + OS_DEFINES + ARCH_DEFINES + COMPILER_DEFINES + FEATURE_DEFINES,
         deps = deps,
         **kwargs
     )

@@ -19,30 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-include(CXX)
-
-violet_cc_library(
-    net_ipaddr
-    HDRS
-        "../../../include/violet/Networking/IP/Addr.h"
-    DEPS
-        violet::violet
-        violet::net_ipaddrv4
-        violet::net_ipaddrv6
-)
-
-violet_cc_library(
-    net_ip_addrv4
-    HDRS
-        "../../../include/violet/Networking/IP/V4.h"
-    DEPS
-        violet::violet
-)
-
-violet_cc_library(
-    net_ip_addrv6
-    HDRS
-        "../../../include/violet/Networking/IP/V6.h"
-    DEPS
-        violet::violet
-)
+exports_files(glob(["*.cc"]))

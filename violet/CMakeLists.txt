@@ -51,4 +51,26 @@ violet_cc_library(
 add_subdirectory(support)
 add_subdirectory(container)
 add_subdirectory(numeric)
-add_subdirectory(networking)
+# add_subdirectory(iterator)
+# add_subdirectory(system)
+# add_subdirectory(support)
+
+# if(VIOLET_ENABLE_SUBPROCESS)
+#     add_subdirectory(subprocess)
+# endif()
+
+# if(VIOLET_ENABLE_BACKTRACE)
+#     add_subdirectory(backtrace)
+# endif()
+
+# if(VIOLET_ENABLE_NET)
+#     add_subdirectory(networking)
+# endif()
+
+# if(VIOLET_ENABLE_IO)
+#     add_subdirectory(io)
+# endif()
+
+# if(VIOLET_ENABLE_FS)
+#     add_subdirectory(filesystem)
+# endif()

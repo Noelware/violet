@@ -23,8 +23,10 @@ include(CXX)
 
 violet_cc_library(
     optional
+    SRCS
+        ${CMAKE_SOURCE_DIR}/src/container/OptionalUnwrapFail.cc
     HDRS
-        ../../include/violet/Container/Optional.h
+        ${CMAKE_SOURCE_DIR}/include/violet/Container/Optional.h
     DEPS
         violet::violet
     PRIVATE_DEPS
@@ -34,15 +36,17 @@ violet_cc_library(
 violet_cc_test(
     optional_test
     SRCS
-        ../../tests/container/Optional.test.cc
+        ${CMAKE_SOURCE_DIR}/tests/container/Optional.test.cc
     DEPS
         violet::optional
 )
 
 violet_cc_library(
     result
+    SRCS
+        ${CMAKE_SOURCE_DIR}/src/container/ResultUnwrapFail.cc
     HDRS
-        ../../include/violet/Container/Result.h
+        ${CMAKE_SOURCE_DIR}/include/violet/Container/Result.h
     DEPS
         violet::violet
     PRIVATE_DEPS
@@ -52,7 +56,7 @@ violet_cc_library(
 violet_cc_test(
     result_test
     SRCS
-        ../../tests/container/Result.test.cc
+        ${CMAKE_SOURCE_DIR}/tests/container/Result.test.cc
     DEPS
         violet::result
 )

@@ -50,3 +50,10 @@ alias(
     "t",
     "ub",
 ]]
+
+# Alias `--@violet//:curl` -> `--@violet//buildsystem/bazel/configs:curl`
+alias(
+    name = "curl",
+    actual = "//buildsystem/bazel/configs:curl",
+    visibility = ["//visibility:public"],
+)

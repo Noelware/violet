@@ -27,47 +27,30 @@
 #include "violet/Support/Demangle.h"
 #endif
 
+#ifndef VIOLET_HAS_EXCEPTIONS
+#include <source_location>
+#endif
+
 #include <memory>
 #include <optional>
 #include <type_traits>
-
-#ifndef VIOLET_HAS_EXCEPTIONS
-#include <iostream>
-#include <source_location>
-#endif
 
 namespace violet {
 
 /* --=-- START :: internals --=--*/
 
 #ifndef VIOLET_HAS_EXCEPTIONS
-/// @internal
-///
-/// This is an internal function that is called when `Optional<T>::Unwrap()` fails. This will
-/// print a message to `stdout` and aborts the current process.
-VIOLET_COLD
-[[noreturn, deprecated("this is an internal function for `Optional<T>::Unwrap()`; do not use")]] void unwrap_fail(
-    const std::source_location& loc)
-{
-    std::cout << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
-              << "]: `violet::Optional<T>::Unwrap()` failed: tried to unwrap nothing.\n";
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void optionalUnwrapFail(const std::source_location& loc);
 
-    std::abort();
-}
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void optionalUnwrapFail(CStr message, const std::source_location& loc);
+#else
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void optionalUnwrapFail();
 
-/// @internal
-///
-/// This is an internal function that is called when `Optional<T>::Expect()` fails. This will
-/// print a message to `stdout` and aborts the current process.
-VIOLET_COLD
-[[noreturn, deprecated("this is an internal function for `Optional<T>::Except()`; do not use")]] void unwrap_fail(
-    CStr msg, const std::source_location& loc)
-{
-    std::cout << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
-              << "]: `violet::Optional<T>::Expect()` failed: " << msg << '\n';
-
-    std::abort();
-}
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void optionalUnwrapFail(CStr message);
 #endif
 
 /* --=--  END :: internals  --=-- */
@@ -387,7 +370,7 @@ struct VIOLET_API Optional final {
             return VIOLET_MOVE(*ptr());
         }
 
-        unwrap_fail(loc);
+        optionalUnwrapFail(loc);
     }
 #else
     /// Returns the contained value, consuming the `Optional`.
@@ -407,7 +390,16 @@ struct VIOLET_API Optional final {
             return VIOLET_MOVE(*ptr());
         }
 
-        throw std::logic_error("`unwrap()` failed: this optional contained nothing.");
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        optionalUnwrapFail();
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
     }
 #endif
 
@@ -496,7 +488,7 @@ struct VIOLET_API Optional final {
             return VIOLET_MOVE(*ptr());
         }
 
-        unwrap_fail(message, loc);
+        optionalUnwrapFail(message.data(), loc);
     }
 #else
     /// Returns the contained value, consuming the `Optional`.
@@ -518,8 +510,18 @@ struct VIOLET_API Optional final {
             return VIOLET_MOVE(*ptr());
         }
 
-        throw std::logic_error(std::format("`expect()` failed: {}", message));
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        optionalUnwrapFail(message.data());
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
     }
+
 #endif
 
     /// Calls a function with the contained value if it exists, and returns the result.

@@ -77,3 +77,14 @@ config_setting(
     name = "ubsan_enabled",
     flag_values = {"//buildsystem/bazel/configs:ubsan": "True"},
 )
+
+feature(
+    name = "curl",
+    build_setting_default = True,
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "curl_enabled",
+    flag_values = {"//buildsystem/bazel/configs:curl": "True"},
+)
