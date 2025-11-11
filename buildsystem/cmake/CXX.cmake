@@ -216,7 +216,7 @@ function(violet_cc_test TARGET_NAME)
         target_link_libraries(viol_${TARGET_NAME} PRIVATE ${VCT_DEPS} GTest::gtest GTest::gtest_main)
     endif()
 
-    add_test(NAME viol_${TARGET_NAME} COMMAND ${TARGET_NAME})
+    add_test(NAME viol_${TARGET_NAME} COMMAND viol_${TARGET_NAME})
     gtest_discover_tests(viol_${TARGET_NAME})
 
     if (VIOLET_SANITIZER_ENV)

@@ -1,0 +1,12 @@
+prefix=/var/empty/local
+exec_prefix=${prefix}
+libdir=/var/empty/local/lib64
+includedir=/var/empty/local/include
+
+Name: absl_statusor
+Description: Abseil statusor library
+URL: https://abseil.io/
+Version: 20250814
+Requires: absl_base = 20250814, absl_config = 20250814, absl_core_headers = 20250814, absl_has_ostream_operator = 20250814, absl_nullability = 20250814, absl_raw_logging_internal = 20250814, absl_status = 20250814, absl_str_format = 20250814, absl_strings = 20250814, absl_type_traits = 20250814, absl_utility = 20250814, absl_variant = 20250814
+Libs: -L${libdir}  -labsl_statusor 
+Cflags: -I${includedir} -Wno-float-conversion -Wno-implicit-float-conversion -Wno-implicit-int-float-conversion -Wno-unknown-warning-option -Wno-unused-command-line-argument -DNOMINMAX

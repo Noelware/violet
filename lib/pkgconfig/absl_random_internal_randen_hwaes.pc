@@ -1,0 +1,12 @@
+prefix=/var/empty/local
+exec_prefix=${prefix}
+libdir=/var/empty/local/lib64
+includedir=/var/empty/local/include
+
+Name: absl_random_internal_randen_hwaes
+Description: Abseil random_internal_randen_hwaes library
+URL: https://abseil.io/
+Version: 20250814
+Requires: absl_random_internal_platform = 20250814, absl_random_internal_randen_hwaes_impl = 20250814, absl_config = 20250814, absl_optional = 20250814
+Libs: -L${libdir}  -labsl_random_internal_randen_hwaes 
+Cflags: -I${includedir} -Wno-float-conversion -Wno-implicit-float-conversion -Wno-implicit-int-float-conversion -Wno-unknown-warning-option -Wno-unused-command-line-argument -DNOMINMAX

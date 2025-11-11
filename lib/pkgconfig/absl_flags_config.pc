@@ -1,0 +1,12 @@
+prefix=/var/empty/local
+exec_prefix=${prefix}
+libdir=/var/empty/local/lib64
+includedir=/var/empty/local/include
+
+Name: absl_flags_config
+Description: Abseil flags_config library
+URL: https://abseil.io/
+Version: 20250814
+Requires: absl_config = 20250814, absl_flags_path_util = 20250814, absl_flags_program_name = 20250814, absl_core_headers = 20250814, absl_no_destructor = 20250814, absl_strings = 20250814, absl_synchronization = 20250814
+Libs: -L${libdir}  -labsl_flags_config 
+Cflags: -I${includedir} -Wno-float-conversion -Wno-implicit-float-conversion -Wno-implicit-int-float-conversion -Wno-unknown-warning-option -Wno-unused-command-line-argument -DNOMINMAX

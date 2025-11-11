@@ -1,0 +1,12 @@
+prefix=/var/empty/local
+exec_prefix=${prefix}
+libdir=/var/empty/local/lib64
+includedir=/var/empty/local/include
+
+Name: absl_raw_hash_set
+Description: Abseil raw_hash_set library
+URL: https://abseil.io/
+Version: 20250814
+Requires: absl_base = 20250814, absl_bits = 20250814, absl_common_policy_traits = 20250814, absl_compressed_tuple = 20250814, absl_config = 20250814, absl_container_common = 20250814, absl_container_memory = 20250814, absl_core_headers = 20250814, absl_dynamic_annotations = 20250814, absl_endian = 20250814, absl_function_ref = 20250814, absl_hash = 20250814, absl_hash_function_defaults = 20250814, absl_hash_policy_traits = 20250814, absl_hashtable_control_bytes = 20250814, absl_hashtable_debug_hooks = 20250814, absl_hashtablez_sampler = 20250814, absl_iterator_traits_internal = 20250814, absl_memory = 20250814, absl_meta = 20250814, absl_optional = 20250814, absl_prefetch = 20250814, absl_raw_logging_internal = 20250814, absl_utility = 20250814, absl_weakly_mixed_integer = 20250814
+Libs: -L${libdir}  -labsl_raw_hash_set 
+Cflags: -I${includedir} -Wno-float-conversion -Wno-implicit-float-conversion -Wno-implicit-int-float-conversion -Wno-unknown-warning-option -Wno-unused-command-line-argument -DNOMINMAX

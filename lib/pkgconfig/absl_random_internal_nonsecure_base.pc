@@ -1,0 +1,12 @@
+prefix=/var/empty/local
+exec_prefix=${prefix}
+libdir=/var/empty/local/lib64
+includedir=/var/empty/local/include
+
+Name: absl_random_internal_nonsecure_base
+Description: Abseil random_internal_nonsecure_base library
+URL: https://abseil.io/
+Version: 20250814
+Requires: absl_config = 20250814, absl_inlined_vector = 20250814, absl_random_internal_entropy_pool = 20250814, absl_random_internal_salted_seed_seq = 20250814, absl_random_internal_seed_material = 20250814, absl_type_traits = 20250814
+Libs: -L${libdir}  
+Cflags: -I${includedir} -Wno-float-conversion -Wno-implicit-float-conversion -Wno-implicit-int-float-conversion -Wno-unknown-warning-option -Wno-unused-command-line-argument -DNOMINMAX

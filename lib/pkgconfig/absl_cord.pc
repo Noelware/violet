@@ -1,0 +1,12 @@
+prefix=/var/empty/local
+exec_prefix=${prefix}
+libdir=/var/empty/local/lib64
+includedir=/var/empty/local/include
+
+Name: absl_cord
+Description: Abseil cord library
+URL: https://abseil.io/
+Version: 20250814
+Requires: absl_base = 20250814, absl_config = 20250814, absl_cord_internal = 20250814, absl_cordz_functions = 20250814, absl_cordz_info = 20250814, absl_cordz_update_scope = 20250814, absl_cordz_update_tracker = 20250814, absl_core_headers = 20250814, absl_crc32c = 20250814, absl_crc_cord_state = 20250814, absl_endian = 20250814, absl_function_ref = 20250814, absl_inlined_vector = 20250814, absl_nullability = 20250814, absl_optional = 20250814, absl_raw_logging_internal = 20250814, absl_span = 20250814, absl_strings = 20250814, absl_type_traits = 20250814, absl_weakly_mixed_integer = 20250814
+Libs: -L${libdir}  -labsl_cord 
+Cflags: -I${includedir} -Wno-float-conversion -Wno-implicit-float-conversion -Wno-implicit-int-float-conversion -Wno-unknown-warning-option -Wno-unused-command-line-argument -DNOMINMAX

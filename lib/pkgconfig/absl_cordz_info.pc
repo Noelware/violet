@@ -1,0 +1,12 @@
+prefix=/var/empty/local
+exec_prefix=${prefix}
+libdir=/var/empty/local/lib64
+includedir=/var/empty/local/include
+
+Name: absl_cordz_info
+Description: Abseil cordz_info library
+URL: https://abseil.io/
+Version: 20250814
+Requires: absl_base = 20250814, absl_config = 20250814, absl_cord_internal = 20250814, absl_cordz_functions = 20250814, absl_cordz_handle = 20250814, absl_cordz_statistics = 20250814, absl_cordz_update_tracker = 20250814, absl_core_headers = 20250814, absl_inlined_vector = 20250814, absl_span = 20250814, absl_raw_logging_internal = 20250814, absl_stacktrace = 20250814, absl_synchronization = 20250814, absl_time = 20250814
+Libs: -L${libdir}  -labsl_cordz_info 
+Cflags: -I${includedir} -Wno-float-conversion -Wno-implicit-float-conversion -Wno-implicit-int-float-conversion -Wno-unknown-warning-option -Wno-unused-command-line-argument -DNOMINMAX
