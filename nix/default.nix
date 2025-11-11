@@ -28,6 +28,12 @@
   static ? stdenv.hostPlatform.isStatic,
   cxxStandard ? null,
   llvmPackages_21,
+  ## custom flags
+  withNetworking ? false,
+  withFilesystem ? false,
+  withSubprocess ? false,
+  withIO ? false,
+  all ? false,
 }: let
   version = builtins.readFile ../.violet-version;
 in
@@ -50,6 +56,23 @@ in
       ]
       ++ lib.optionals (cxxStandard != null) [
         "-DCMAKE_CXX_STANDARD=${cxxStandard}"
+      ]
+      ++ lib.optionals all [
+        "-DVIOLET_ENABLE_ALL=ON"
+      ]
+      ++ lib.optionals withNetworking [
+        "-DVIOLET_ENABLE_NET=ON"
+      ]
+      ++ lib.optionals withFilesystem [
+        # withFilesystem implies that IO is enabled
+        "-DVIOLET_ENABLE_IO=ON"
+        "-DVIOLET_ENABLE_FS=ON"
+      ]
+      ++ lib.optionals withIO [
+        "-DVIOLET_ENABLE_IO=ON"
+      ]
+      ++ lib.optionals withSubprocess [
+        "-DVIOLET_ENABLE_SUBPROCESS=ON"
       ];
 
     strictDeps = true;
