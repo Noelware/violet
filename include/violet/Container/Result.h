@@ -68,11 +68,6 @@ struct Err final {
     static_assert(!std::is_void_v<E>, "`E` cannot be used with `void`");
 
     constexpr VIOLET_IMPLICIT Err() = delete;
-    constexpr VIOLET_EXPLICIT Err(E err)
-        : n_error(err)
-    {
-    }
-
     constexpr VIOLET_EXPLICIT Err(const E& err)
         : n_error(err)
     {
@@ -84,7 +79,7 @@ struct Err final {
     }
 
     template<typename... Args>
-        requires std::is_constructible_v<E, Args...>
+        requires(!std::is_same_v<std::decay_t<Args>..., E> && std::is_constructible_v<E, Args...>)
     constexpr VIOLET_IMPLICIT Err(Args&&... args)
         : n_error(VIOLET_FWD(Args, args)...)
     {

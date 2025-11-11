@@ -19,58 +19,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-include(CXX)
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
-violet_cc_library(
-    macros
-    HDRS
-        ../include/violet/Language/Macros.h
+cc_library(
+    name = "path",
+    srcs = select({
+        "@platforms//os:linux": ["//src/filesystem/platform/path:linux.cc"],
+        "@platforms//os:macos": ["//src/filesystem/platform/path:macos.cc"],
+        "@platforms//os:windows": ["//src/filesystem/platform/path:windows.cc"],
+        "//conditions:default": ["//src/filesystem/platform/path:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Filesystem:Path.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container:optional",
+        "//violet/io:descriptor",
+        "//violet/io:error",
+    ],
 )
 
-violet_cc_library(
-    policy_checks
-    HDRS
-        ../include/violet/Language/Policy.h
+cc_test(
+    name = "path_test",
+    srcs = ["//tests/filesystem:Path.test.cc"],
+    deps = [":path"],
 )
-
-violet_cc_library(
-    violet
-    HDRS
-        ../include/violet/Violet.h
-    DEPS
-        violet::macros
-        violet::policy_checks
-        absl::int128
-        absl::flat_hash_map
-        absl::flat_hash_set
-        absl::node_hash_map
-        absl::node_hash_set
-        absl::btree
-)
-
-add_subdirectory(support)
-add_subdirectory(container)
-add_subdirectory(numeric)
-# add_subdirectory(iterator)
-# add_subdirectory(system)
-# add_subdirectory(support)
-
-# if(VIOLET_ENABLE_SUBPROCESS)
-#     add_subdirectory(subprocess)
-# endif()
-
-# if(VIOLET_ENABLE_BACKTRACE)
-#     add_subdirectory(backtrace)
-# endif()
-
-# if(VIOLET_ENABLE_NET)
-#     add_subdirectory(networking)
-# endif()
-
-if(VIOLET_ENABLE_IO)
-    add_subdirectory(io)
-endif()
-
-if(VIOLET_ENABLE_FS)
-    add_subdirectory(filesystem)
-endif()

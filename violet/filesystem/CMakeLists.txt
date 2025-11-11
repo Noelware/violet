@@ -22,55 +22,28 @@
 include(CXX)
 
 violet_cc_library(
-    macros
+    filesystem_path
     HDRS
-        ../include/violet/Language/Macros.h
-)
-
-violet_cc_library(
-    policy_checks
-    HDRS
-        ../include/violet/Language/Policy.h
-)
-
-violet_cc_library(
-    violet
-    HDRS
-        ../include/violet/Violet.h
+        ${CMAKE_SOURCE_DIR}/include/violet/Filesystem/Path.h
     DEPS
-        violet::macros
-        violet::policy_checks
-        absl::int128
-        absl::flat_hash_map
-        absl::flat_hash_set
-        absl::node_hash_map
-        absl::node_hash_set
-        absl::btree
+        violet::violet
+        violet::optional
+        violet::io_descriptor
+        violet::io_error
 )
 
-add_subdirectory(support)
-add_subdirectory(container)
-add_subdirectory(numeric)
-# add_subdirectory(iterator)
-# add_subdirectory(system)
-# add_subdirectory(support)
+violet_platform_sources(
+    viol_filesystem_path
+    ${CMAKE_SOURCE_DIR}/src/filesystem/platform/path
 
-# if(VIOLET_ENABLE_SUBPROCESS)
-#     add_subdirectory(subprocess)
-# endif()
+    LINUX "linux.cc"
+    APPLE "macos.cc"
+)
 
-# if(VIOLET_ENABLE_BACKTRACE)
-#     add_subdirectory(backtrace)
-# endif()
-
-# if(VIOLET_ENABLE_NET)
-#     add_subdirectory(networking)
-# endif()
-
-if(VIOLET_ENABLE_IO)
-    add_subdirectory(io)
-endif()
-
-if(VIOLET_ENABLE_FS)
-    add_subdirectory(filesystem)
-endif()
+violet_cc_test(
+    filesystem_path_test
+    SRCS
+        ${CMAKE_SOURCE_DIR}/tests/filesystem/Path.test.cc
+    DEPS
+        violet::filesystem_path
+)
