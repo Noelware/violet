@@ -22,55 +22,65 @@
 include(CXX)
 
 violet_cc_library(
-    macros
+    io_error
+    SRCS
+        ${CMAKE_SOURCE_DIR}/src/io/error.cc
     HDRS
-        ../include/violet/Language/Macros.h
-)
-
-violet_cc_library(
-    policy_checks
-    HDRS
-        ../include/violet/Language/Policy.h
-)
-
-violet_cc_library(
-    violet
-    HDRS
-        ../include/violet/Violet.h
+        ${CMAKE_SOURCE_DIR}/include/violet/IO/Error.h
     DEPS
-        violet::macros
-        violet::policy_checks
-        absl::int128
-        absl::flat_hash_map
-        absl::flat_hash_set
-        absl::node_hash_map
-        absl::node_hash_set
-        absl::btree
+        violet::violet
+        violet::optional
+        violet::result
 )
 
-add_subdirectory(support)
-add_subdirectory(container)
-add_subdirectory(numeric)
-# add_subdirectory(iterator)
-# add_subdirectory(system)
-# add_subdirectory(support)
+violet_platform_sources(viol_io_error "${CMAKE_SOURCE_DIR}/src/io/platform/error")
 
-# if(VIOLET_ENABLE_SUBPROCESS)
-#     add_subdirectory(subprocess)
-# endif()
+violet_cc_library(
+    io_read
+    SRCS
+        ${CMAKE_SOURCE_DIR}/src/io/read.cc
+    HDRS
+        ${CMAKE_SOURCE_DIR}/include/violet/IO/Read.h
+    DEPS
+        violet::violet
+        violet::io_error
+)
 
-# if(VIOLET_ENABLE_BACKTRACE)
-#     add_subdirectory(backtrace)
-# endif()
+violet_cc_test(
+    io_read_test
+    SRCS
+        ${CMAKE_SOURCE_DIR}/tests/io/Read.test.cc
+    DEPS
+        violet::io_read
+)
 
-# if(VIOLET_ENABLE_NET)
-#     add_subdirectory(networking)
-# endif()
+violet_cc_library(
+    io_write
+    SRCS
+        ${CMAKE_SOURCE_DIR}/src/io/write.cc
+    HDRS
+        ${CMAKE_SOURCE_DIR}/include/violet/IO/Write.h
+    DEPS
+        violet::violet
+        violet::io_error
+)
 
-if(VIOLET_ENABLE_IO)
-    add_subdirectory(io)
-endif()
+violet_cc_test(
+    io_write_test
+    SRCS
+        ${CMAKE_SOURCE_DIR}/tests/io/Write.test.cc
+    DEPS
+        violet::io_write
+)
 
-# if(VIOLET_ENABLE_FS)
-#     add_subdirectory(filesystem)
-# endif()
+violet_cc_library(
+    io_descriptor
+    HDRS
+        ${CMAKE_SOURCE_DIR}/include/violet/IO/Descriptor.h
+    DEPS
+        violet::violet
+        violet::io_read
+        violet::io_write
+)
+
+violet_platform_sources(viol_io_descriptor "${CMAKE_SOURCE_DIR}/src/io/platform/descriptor")

@@ -54,8 +54,8 @@ option(VIOLET_USE_SYSTEM_CURL "Uses the system's cURL instead of vendoring (usef
 
 # libraries (this will avoid building most libraries except the core libs: Noelware.Violet.(Container|Iterator|Language|Numeric|Support|System})
 option(VIOLET_ENABLE_SUBPROCESS "Enables the Noelware.Violet.Subprocess library" OFF)
-option(VIOLET_ENABLE_BACKTRACE "Enables the Noelware.Violet.Backtrace library" OFF)
 option(VIOLET_ENABLE_NET "Enables the Noelware.Violet.Networking library (requires OpenSSL)" OFF)
+option(VIOLET_ENABLE_ALL "Enables all Noelware.Violet libraries" OFF)
 option(VIOLET_ENABLE_FS "Enables the Noelware.Violet.Filesystem library" OFF)
 option(VIOLET_ENABLE_IO "Enables the Noelware.Violet.IO library" OFF)
 
@@ -67,6 +67,15 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     option(VIOLET_INSTALL "Enables the install rule" OFF)
 else()
     option(VIOLET_INSTALL "Enables the install rule" ON)
+endif()
+
+if(VIOLET_ENABLE_ALL)
+    message(STATUS "Enabling all Noelware.Violet libraries!")
+
+    set(VIOLET_ENABLE_SUBPROCESS ON)
+    set(VIOLET_ENABLE_NET ON)
+    set(VIOLET_ENABLE_FS ON)
+    set(VIOLET_ENABLE_IO ON)
 endif()
 
 include(FetchContent)
@@ -88,38 +97,38 @@ else()
     FetchContent_MakeAvailable(absl)
 endif()
 
-if(VIOLET_ENABLE_NET)
-    if(VIOLET_USE_SYSTEM_OPENSSL)
-    else()
-    endif()
+# if(VIOLET_ENABLE_NET)
+#     if(VIOLET_USE_SYSTEM_OPENSSL)
+#     else()
+#     endif()
 
-    if(VIOLET_USE_SYSTEM_CURL)
-        message(STATUS "Using system cURL for Noelware.Violet.Networking")
-        find_package(CURL "8.0.0")
-        if (NOT CURL_FOUND)
-            message(FATAL_ERROR "Unable to find cURL on system or is too old (requires >=8.x)")
-        endif()
-    else()
-        message(STATUS "Using vendoring version of cURL")
+#     if(VIOLET_USE_SYSTEM_CURL)
+#         message(STATUS "Using system cURL for Noelware.Violet.Networking")
+#         find_package(CURL "8.0.0")
+#         if (NOT CURL_FOUND)
+#             message(FATAL_ERROR "Unable to find cURL on system or is too old (requires >=8.x)")
+#         endif()
+#     else()
+#         message(STATUS "Using vendoring version of cURL")
 
-        FetchContent_Declare(
-            curl
-            GIT_REPOSITORY "https://github.com/curl/curl.git"
-            GIT_TAG curl-8_17_0
-        )
+#         FetchContent_Declare(
+#             curl
+#             GIT_REPOSITORY "https://github.com/curl/curl.git"
+#             GIT_TAG curl-8_17_0
+#         )
 
-        # Set options for cURL
-        set(BUILD_CURL_EXE OFF CACHE BOOL "Disable curl executable" FORCE)
-        set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
-        set(HTTP_ONLY ON CACHE BOOL "Disables most cURL features and only builds HTTP only support" FORCE)
+#         # Set options for cURL
+#         set(BUILD_CURL_EXE OFF CACHE BOOL "Disable curl executable" FORCE)
+#         set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
+#         set(HTTP_ONLY ON CACHE BOOL "Disables most cURL features and only builds HTTP only support" FORCE)
 
-        FetchContent_MakeAvailable(curl)
+#         FetchContent_MakeAvailable(curl)
 
-        if(NOT TARGET CURL::libcurl)
-            add_library(CURL::libcurl ALIAS curl)
-        endif()
-    endif()
-endif()
+#         if(NOT TARGET CURL::libcurl)
+#             add_library(CURL::libcurl ALIAS curl)
+#         endif()
+#     endif()
+# endif()
 
 if (VIOLET_ENABLE_TESTS)
     enable_testing()

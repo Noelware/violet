@@ -84,7 +84,7 @@ enum struct ErrorKind : UInt8 {
 
 VIOLET_TO_STRING(const io::ErrorKind&, self, {
 #if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-    VIOLET_DIAGNOSTIC_POP
+    VIOLET_DIAGNOSTIC_PUSH
     VIOLET_DIAGNOSTIC_IGNORE("-Wswitch")
 #endif
     switch (self) {

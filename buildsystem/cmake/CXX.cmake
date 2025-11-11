@@ -190,16 +190,16 @@ function(violet_cc_test TARGET_NAME)
         set(VCT_SIZE "small")
     endif()
 
-    add_executable(${TARGET_NAME} ${VCT_SRCS})
+    add_executable(viol_${TARGET_NAME} ${VCT_SRCS})
 
     target_compile_options(
-        ${TARGET_NAME} PRIVATE
+        viol_${TARGET_NAME} PRIVATE
         ${VCT_COPTS}
         ${VIOLET_SANITIZER_OPTS}
     )
 
     target_link_options(
-        ${TARGET_NAME} PRIVATE
+        viol_${TARGET_NAME} PRIVATE
         ${VCT_LINKOPTS}
         ${VIOLET_SANITIZER_OPTS}
     )
@@ -210,14 +210,14 @@ function(violet_cc_test TARGET_NAME)
     # using the system's version of GoogleTest. Yes, it is cursed. No, I don't like it.
     # And no, there is no better way of doing this.
     if(DEFINED GTEST_CFLAGS AND DEFINED GTEST_LDFLAGS)
-        target_link_libraries(${TARGET_NAME} PRIVATE ${VCT_DEPS} ${GTEST_LDFLAGS})
-        target_compile_options(${TARGET_NAME} PRIVATE ${GTEST_CFLAGS})
+        target_link_libraries(viol_${TARGET_NAME} PRIVATE ${VCT_DEPS} ${GTEST_LDFLAGS})
+        target_compile_options(viol_${TARGET_NAME} PRIVATE ${GTEST_CFLAGS})
     else()
-        target_link_libraries(${TARGET_NAME} PRIVATE ${VCT_DEPS} GTest::gtest GTest::gtest_main)
+        target_link_libraries(viol_${TARGET_NAME} PRIVATE ${VCT_DEPS} GTest::gtest GTest::gtest_main)
     endif()
 
-    add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})
-    gtest_discover_tests(${TARGET_NAME})
+    add_test(NAME viol_${TARGET_NAME} COMMAND ${TARGET_NAME})
+    gtest_discover_tests(viol_${TARGET_NAME})
 
     if (VIOLET_SANITIZER_ENV)
         list(APPEND TEST_ENVIRONMENT_VARS ${VIOLET_SANITIZER_ENV})
@@ -228,8 +228,43 @@ function(violet_cc_test TARGET_NAME)
     endforeach()
 
     if (TEST_ENVIRONMENT_VARS)
-        set_tests_properties(${TARGET_NAME} PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_VARS}")
+        set_tests_properties(viol_${TARGET_NAME} PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_VARS}")
     endif()
 
-    set_tests_properties(${TARGET_NAME} PROPERTIES LABELS "size=${VCT_SIZE}")
+    set_tests_properties(viol_${TARGET_NAME} PROPERTIES LABELS "size=${VCT_SIZE}")
+endfunction()
+
+function(violet_platform_sources target base)
+    if(NOT TARGET ${target})
+        message(FATAL_ERROR "Target '${target}' does not exist yet!")
+    endif()
+
+    cmake_parse_arguments(
+        PF
+        ""
+        ""
+        "APPLE;LINUX;WINDOWS"
+        ${ARGN}
+    )
+
+    set(selected "${base}/unsupported.cc")
+    if(WIN32)
+        if(NOT PF_WINDOWS)
+            set(PF_WINDOWS "windows.cc")
+        endif()
+
+        set(selected "${base}/${PF_WINDOWS}")
+    elseif(UNIX)
+        if(APPLE AND PF_APPLE)
+            set(selected "${base}/${PF_APPLE}")
+        elseif(LINUX AND PF_LINUX)
+            set(selected "${base}/${PF_LINUX}")
+        endif()
+
+        if(${selected} STREQUAL "${base}/unsupported.cc")
+            set(selected "${base}/unix.cc")
+        endif()
+    endif()
+
+    target_sources(${target} PRIVATE ${selected})
 endfunction()
