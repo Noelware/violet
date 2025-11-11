@@ -567,7 +567,7 @@ template<typename Derived, typename StringType>
 auto BasePath<Derived, StringType>::Filename() const noexcept -> String
 {
     if (Empty()) {
-        return "";
+        return {};
     }
 
     auto [pos, val] = detail::computeTrailingSlashPosition(getThisObject().storage());
@@ -585,7 +585,7 @@ auto BasePath<Derived, StringType>::Extension() const noexcept -> Optional<Strin
         return Nothing;
     }
 
-    StringType filename = this->Filename();
+    String filename = this->Filename();
     if (filename.empty()) {
         return Nothing;
     }
@@ -604,7 +604,7 @@ auto BasePath<Derived, StringType>::Extension() const noexcept -> Optional<Strin
 template<typename Derived, typename StringType>
 auto BasePath<Derived, StringType>::Stem() const noexcept -> String
 {
-    StringType filename = this->Filename();
+    String filename = this->Filename();
     if (filename.empty()) {
         return String(filename);
     }
