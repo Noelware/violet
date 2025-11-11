@@ -80,6 +80,57 @@ void FileDescriptor::Close()
     }
 }
 
+auto FileDescriptor::Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
+{
+    if (buf.empty()) {
+        return 0;
+    }
+
+    ssize_t bytes = 0;
+    do { // NOLINT(cppcoreguidelines-avoid-do-while)
+        bytes = ::read(this->Get(), buf.data(), buf.size());
+    } while (bytes == -1 && errno == EINTR);
+
+    if (bytes == -1) {
+        return Err(Error::OSError());
+    }
+
+    return bytes;
+}
+
+auto FileDescriptor::Write(Span<const UInt8> buf) const noexcept -> Result<UInt>
+{
+    UInt total = 0;
+    const UInt8* ptr = buf.data();
+    UInt remaining = buf.size();
+
+    while (remaining > 0) {
+        ssize_t bytes = ::write(this->Get(), ptr, remaining);
+        if (bytes == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
+
+            return Err(Error::OSError());
+        }
+
+        total += bytes;
+        ptr += bytes;
+        remaining -= bytes;
+    }
+
+    return total;
+}
+
+auto FileDescriptor::Flush() const noexcept -> io::Result<void>
+{
+    if (::fsync(this->Get()) == -1) {
+        return Err(Error::OSError());
+    }
+
+    return {};
+}
+
 FileDescriptor::operator bool() const noexcept
 {
     return this->Valid();

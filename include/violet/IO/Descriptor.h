@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include "violet/IO/Read.h"
+#include "violet/IO/Write.h"
 #include "violet/Violet.h"
 
 #ifdef VIOLET_WINDOWS
@@ -84,6 +86,10 @@ struct FileDescriptor final {
     /// Conversion operator: `violet::io::FileDescriptor` -> `bool`.
     VIOLET_EXPLICIT operator bool() const noexcept;
 
+    [[nodiscard]] auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>;
+    [[nodiscard]] auto Write(Span<const UInt8> buf) const noexcept -> io::Result<UInt>;
+    [[nodiscard]] auto Flush() const noexcept -> io::Result<void>;
+
 #if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)
     /// Conversion operator: `violet::io::FileDescriptor` -> `value_type`.
     VIOLET_EXPLICIT operator value_type() const noexcept;
@@ -100,5 +106,8 @@ private:
     value_type n_value = INVALID;
 #endif
 };
+
+static_assert(Readable<FileDescriptor>, "`FileDescriptor` doesn't conform to the `Readable` concept");
+static_assert(Writable<FileDescriptor>, "`FileDescriptor` doesn't conform to the `Writable` concept");
 
 } // namespace violet::io
