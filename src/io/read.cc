@@ -19,4 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <violet/IO/Read.h>
+#include <violet/Violet.h>
+
+auto violet::io::Read(Vec<UInt8>& data, Span<UInt8> buf) -> Result<UInt>
+{
+    UInt minToCopy = std::min(buf.size(), data.size());
+    std::copy_n(data.begin(), minToCopy, buf.begin());
+
+    return minToCopy;
+}

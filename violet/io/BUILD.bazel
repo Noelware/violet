@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library")
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
     name = "error",
@@ -39,6 +39,40 @@ cc_library(
 )
 
 cc_library(
+    name = "read",
+    srcs = ["//src/io:read.cc"],
+    hdrs = ["//include/violet/IO:Read.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":error",
+        "//violet",
+    ],
+)
+
+cc_test(
+    name = "read_test",
+    srcs = ["//tests/io:Read.test.cc"],
+    deps = [":read"],
+)
+
+cc_library(
+    name = "write",
+    srcs = ["//src/io:write.cc"],
+    hdrs = ["//include/violet/IO:Write.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":error",
+        "//violet",
+    ],
+)
+
+cc_test(
+    name = "write_test",
+    srcs = ["//tests/io:Write.test.cc"],
+    deps = [":write"],
+)
+
+cc_library(
     name = "descriptor",
     srcs = select({
         "@platforms//os:linux": ["//src/io/platform/descriptor:unix.cc"],
@@ -47,5 +81,10 @@ cc_library(
         "//conditions:default": ["//src/io/platform/descriptor:unsupported.cc"],
     }),
     hdrs = ["//include/violet/IO:Descriptor.h"],
-    deps = ["//violet"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":read",
+        ":write",
+        "//violet",
+    ],
 )

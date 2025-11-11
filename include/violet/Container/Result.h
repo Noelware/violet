@@ -546,6 +546,56 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         }
     }
 
+    /// Returns the contained value, consuming the `Result`, or a default value.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res1 = violet::Ok<int, String>(42);
+    /// int val1 = std::move(res1).UnwrapOr(0); // val1 == 42
+    ///
+    /// Result<int, String> res2 = violet::Err<String>("hello world");
+    /// int val2 = std::move(res2).UnwrapOr(0); // val2 == 0
+    /// ```
+    ///
+    /// @param def The default value to return if the `Optional` is empty.
+    /// @return The contained value or the default value.
+    constexpr auto UnwrapOr(T&& def) & -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+        else
+        {
+            return VIOLET_MOVE(def);
+        }
+    }
+
+    /// Returns the contained value, consuming the `Result`, or a default value.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res1 = violet::Ok<int, String>(42);
+    /// int val1 = std::move(res1).UnwrapOr(0); // val1 == 42
+    ///
+    /// Result<int, String> res2 = violet::Err<String>("hello world");
+    /// int val2 = std::move(res2).UnwrapOr(0); // val2 == 0
+    /// ```
+    ///
+    /// @param def The default value to return if the `Optional` is empty.
+    /// @return The contained value or the default value.
+    constexpr auto UnwrapOr(T&& def) const& -> T
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return Value();
+        }
+        else
+        {
+            return VIOLET_MOVE(def);
+        }
+    }
+
     /// Returns the contained value, consuming the `Result`, or computes it from a closure.
     ///
     /// ## Example
@@ -573,6 +623,60 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         }
     }
 
+    /// Returns the contained value, consuming the `Result`, or computes it from a closure.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res1 = violet::Ok<int, String>(42);
+    /// int val1 = std::move(res1).UnwrapOrElse([]() { return 0; }); // val1 == 42
+    ///
+    /// Result<int, String> res2 = violet::Err<String>("hello world");
+    /// int val2 = std::move(res2).UnwrapOr([]() { return 0; }); // val2 == 0
+    /// ```
+    ///
+    /// @param fun The closure to call to compute the default value.
+    /// @return The contained value or the computed default value.
+    template<typename Fun>
+        requires callable<Fun> && std::convertible_to<std::invoke_result_t<Fun>, T>
+    constexpr auto UnwrapOrElse(Fun&& fun) &
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(Value());
+        }
+        else
+        {
+            return std::invoke(VIOLET_FWD(Fun, fun));
+        }
+    }
+
+    /// Returns the contained value, consuming the `Result`, or computes it from a closure.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res1 = violet::Ok<int, String>(42);
+    /// int val1 = std::move(res1).UnwrapOrElse([]() { return 0; }); // val1 == 42
+    ///
+    /// Result<int, String> res2 = violet::Err<String>("hello world");
+    /// int val2 = std::move(res2).UnwrapOr([]() { return 0; }); // val2 == 0
+    /// ```
+    ///
+    /// @param fun The closure to call to compute the default value.
+    /// @return The contained value or the computed default value.
+    template<typename Fun>
+        requires callable<Fun> && std::convertible_to<std::invoke_result_t<Fun>, T>
+    constexpr auto UnwrapOrElse(Fun&& fun) const&
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return Value();
+        }
+        else
+        {
+            return std::invoke(VIOLET_FWD(Fun, fun));
+        }
+    }
+
     /// Returns the contained value, consuming the `Result`, without checking if it has a value.
     ///
     /// ## Safety
@@ -581,6 +685,30 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// @return The contained value.
     constexpr auto UnwrapUnchecked(Unsafe) && -> T
+    {
+        return VIOLET_MOVE(this->n_storage.ok);
+    }
+
+    /// Returns the contained value, consuming the `Result`, without checking if it has a value.
+    ///
+    /// ## Safety
+    /// This function is unsafe because it does not check if the `Result` has a value. If the `Result` is
+    /// empty, this will result in undefined behavior.
+    ///
+    /// @return The contained value.
+    constexpr auto UnwrapUnchecked(Unsafe) & -> T
+    {
+        return VIOLET_MOVE(this->n_storage.ok);
+    }
+
+    /// Returns the contained value, consuming the `Result`, without checking if it has a value.
+    ///
+    /// ## Safety
+    /// This function is unsafe because it does not check if the `Result` has a value. If the `Result` is
+    /// empty, this will result in undefined behavior.
+    ///
+    /// @return The contained value.
+    constexpr auto UnwrapUnchecked(Unsafe) const& -> T
     {
         return VIOLET_MOVE(this->n_storage.ok);
     }
