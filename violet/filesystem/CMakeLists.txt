@@ -47,3 +47,21 @@ violet_cc_test(
     DEPS
         violet::filesystem_path
 )
+
+violet_cc_library(
+    filesystem_permissions
+    HDRS
+        ${CMAKE_SOURCE_DIR}/include/violet/Filesystem/Permissions.h
+    DEPS
+        violet::violet
+)
+
+violet_platform_sources(viol_filesystem_permissions ${CMAKE_SOURCE_DIR}/src/filesystem/platform/permissions)
+
+violet_cc_test(
+    filesystem_permissions_test
+    SRCS
+        ${CMAKE_SOURCE_DIR}/tests/filesystem/Permissions.test.cc
+    DEPS
+        violet::io_read
+)
