@@ -44,3 +44,22 @@ cc_test(
     srcs = ["//tests/filesystem:Path.test.cc"],
     deps = [":path"],
 )
+
+cc_library(
+    name = "permissions",
+    srcs = select({
+        "@platforms//os:linux": ["//src/filesystem/platform/permissions:unix.cc"],
+        "@platforms//os:macos": ["//src/filesystem/platform/permissions:unix.cc"],
+        "@platforms//os:windows": ["//src/filesystem/platform/permissions:windows.cc"],
+        "//conditions:default": ["//src/filesystem/platform/permissions:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Filesystem:Permissions.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//violet"],
+)
+
+cc_test(
+    name = "permissions_test",
+    srcs = ["//tests/filesystem:Permissions.test.cc"],
+    deps = [":permissions"],
+)

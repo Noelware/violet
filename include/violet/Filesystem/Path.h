@@ -138,7 +138,7 @@ struct PathRef;
 /// @tparam Derived The derived class
 /// @tparam StringType The underling string type to use
 template<typename Derived, typename StringType>
-struct BasePath {
+struct VIOLET_API BasePath {
     /// Returns **true** if this path is considered empty.
     [[nodiscard]] constexpr auto Empty() const noexcept -> bool
     {
@@ -396,7 +396,7 @@ private:
 };
 
 /// A non-owning, immutable view of a filesystem path.
-struct PathRef final: public BasePath<PathRef, Str> {
+struct VIOLET_API PathRef final: public BasePath<PathRef, Str> {
     constexpr VIOLET_IMPLICIT PathRef() = delete;
 
     /// Constructs a path from a C-style string.
@@ -469,7 +469,7 @@ private:
 };
 
 /// A owning, mutable filesystem path.
-struct Path final: public BasePath<Path, String> {
+struct VIOLET_API Path final: public BasePath<Path, String> {
     constexpr VIOLET_IMPLICIT Path() = default;
 
     /// Constructs a path from a C-style string.

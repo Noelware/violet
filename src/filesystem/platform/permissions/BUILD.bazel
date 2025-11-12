@@ -19,19 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library")
-
-cc_library(
-    name = "demangle",
-    srcs = ["//src/support:demangle.cc"],
-    hdrs = ["//include/violet/Support:Demangle.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
-cc_library(
-    name = "bitflags",
-    hdrs = ["//include/violet/Support:Bitflags.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
+exports_files(glob(["*.cc"]))

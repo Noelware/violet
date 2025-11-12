@@ -32,7 +32,7 @@
 namespace violet::io {
 
 /// Abstraction around a POSIX file descriptor or a Windows `HANDLE`.
-struct FileDescriptor final {
+struct VIOLET_API FileDescriptor final {
 #ifdef VIOLET_WINDOWS
     /// Value type on Windows that wraps a file descriptor.
     using value_type = HANDLE;

@@ -33,7 +33,7 @@
 namespace violet::io {
 
 /// A list of general categories of I/O errors.
-enum struct ErrorKind : UInt8 {
+enum struct VIOLET_API ErrorKind : UInt8 {
     NotFound,
     PermissionDenied,
     ConnectionRefused,
@@ -223,7 +223,7 @@ namespace violet::io {
 
 struct Error;
 
-struct PlatformError final {
+struct VIOLET_API PlatformError final {
 #ifdef VIOLET_WINDOWS
     /// The type that is represented of `GetLastError()` for Windows
     using error_type = UInt64;
@@ -252,7 +252,7 @@ private:
 #endif
 };
 
-struct Error final {
+struct VIOLET_API Error final {
     constexpr VIOLET_IMPLICIT Error(ErrorKind kind)
         : n_repr(kind)
     {

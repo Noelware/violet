@@ -19,8 +19,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <violet/Filesystem/Permissions.h>
 #include <violet/Violet.h>
 
-#ifdef VIOLET_APPLE_MACOS
+using violet::filesystem::Permissions;
 
-#endif
+auto Permissions::Readonly() const noexcept -> bool
+{
+    return false;
+}
+
+void Permissions::SetReadonly(bool) noexcept {}
+
+auto Permissions::ToString() const noexcept -> String
+{
+    return "Permissions(unsupported system)";
+}
+
+auto Permissions::operator<<(std::ostream& os) const noexcept -> std::ostream&
+{
+    return os << this->ToString();
+}

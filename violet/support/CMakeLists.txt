@@ -30,3 +30,11 @@ violet_cc_library(
     DEPS
         violet::violet
 )
+
+violet_cc_library(
+    bitflags
+    HDRS
+        "${CMAKE_SOURCE_DIR}/include/violet/Support/Bitflags.h"
+    DEPS
+        violet::violet
+)
