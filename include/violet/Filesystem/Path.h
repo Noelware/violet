@@ -197,6 +197,12 @@ struct VIOLET_API BasePath {
 #endif
     }
 
+    /// Returns the path as a string.
+    [[nodiscard]] constexpr auto ToString() const noexcept -> String
+    {
+        return String(getThisObject().storage());
+    }
+
     /// Returns the extension of the path's filename, if any.
     ///
     /// The extension is the portion of the filename after the last `.`. Leading dots
@@ -460,7 +466,7 @@ private:
     friend struct BasePath<PathRef, Str>;
     friend struct Path;
 
-    String n_path;
+    Str n_path;
 
     [[nodiscard]] auto storage() const noexcept -> Str
     {

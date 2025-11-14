@@ -22,34 +22,28 @@
 load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
-    name = "demangle",
-    srcs = ["//src/support:demangle.cc"],
-    hdrs = ["//include/violet/Support:Demangle.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
-cc_library(
-    name = "bitflags",
-    hdrs = ["//include/violet/Support:Bitflags.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
-cc_library(
-    name = "resource_quantity",
-    srcs = ["//src/support:resource.cc"],
-    hdrs = ["//include/violet/Support:Quantity.h"],
+    name = "xattr",
+    srcs = select({
+        "@platforms//os:linux": ["//src/filesystem/platform/extensions/xattr:unix.cc"],
+        "@platforms//os:macos": ["//src/filesystem/platform/extensions/xattr:unix.cc"],
+        "@platforms//os:windows": ["//src/filesystem/platform/extensions/xattr:unsupported.cc"],
+        "//conditions:default": ["//src/filesystem/platform/extensions/xattr:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Filesystem/Extensions:XAttr.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//violet",
-        "//violet/container:result",
-        "//violet/numeric:int128",
+        "//violet/io:descriptor",
+        "//violet/io:error",
     ],
 )
 
 cc_test(
-    name = "resource_quantity_test",
-    srcs = ["//tests/support:Quantity.test.cc"],
-    deps = [":resource_quantity"],
+    name = "xattr_test",
+    srcs = ["//tests/filesystem/extensions:XAttr.test.cc"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//os:macos",
+    ],
+    deps = [":xattr"],
 )

@@ -19,37 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
-
-cc_library(
-    name = "demangle",
-    srcs = ["//src/support:demangle.cc"],
-    hdrs = ["//include/violet/Support:Demangle.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
-cc_library(
-    name = "bitflags",
-    hdrs = ["//include/violet/Support:Bitflags.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
-cc_library(
-    name = "resource_quantity",
-    srcs = ["//src/support:resource.cc"],
-    hdrs = ["//include/violet/Support:Quantity.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container:result",
-        "//violet/numeric:int128",
-    ],
-)
-
-cc_test(
-    name = "resource_quantity_test",
-    srcs = ["//tests/support:Quantity.test.cc"],
-    deps = [":resource_quantity"],
-)
+exports_files(glob(["*.test.cc"]))

@@ -20,3 +20,126 @@
 // SOFTWARE.
 
 #pragma once
+
+#include "violet/Filesystem/File.h"
+#include "violet/Filesystem/Path.h"
+#include "violet/Filesystem/Permissions.h"
+#include "violet/IO/Error.h"
+#include "violet/Violet.h"
+
+namespace violet::filesystem {
+
+struct Dirs;
+struct WalkDirs;
+struct OpenOptions;
+struct Metadata;
+struct FileType;
+
+/// Creates a single directory at the specified `path`. Fails otherwise if the parent directories don't exist.
+/// @param path the directory to create
+auto CreateDirectory(PathRef path) -> io::Result<void>;
+
+/// Recursively creates all directories along the specified `path`. This is equivalent to `mkdir -p`.
+/// @param path the directory to create
+auto CreateDirectories(PathRef path) -> io::Result<void>;
+
+/// Removes an empty directory at `path`.
+/// @param path the directory to remove.
+auto RemoveDirectory(PathRef path) -> io::Result<void>;
+
+/// Recursively removes a directory and all of its content, including subdirectories and files.
+/// @param path the directory to remove.
+auto RemoveAllDirs(PathRef path) -> io::Result<void>;
+
+/// Returns a Violet-style iterator over the entries of the directory in `path`.
+/// @param path the path to iterate over.
+auto ReadDir(PathRef path) -> io::Result<Dirs>;
+
+/// Returns a recursive Violet-style iterator over the entries of the directory in `path`.
+/// @param path the path to iterate over.
+auto WalkDir(PathRef path) -> io::Result<WalkDirs>;
+
+/// Creates a new, empty file at `path`. This can overwrite if the file already exists
+/// depending on platform semantics.
+///
+/// @param path the file to create
+auto CreateFile(PathRef path) -> io::Result<File>;
+
+/// Returns the canonical, absolute path of `path` while resolving symbolic links and relative components.
+/// @param path the file to canonicalize
+auto Canonicalize(PathRef path) -> io::Result<Path>;
+
+/// Copies the contents of `srcs` into `dest`.
+/// @param src source file
+/// @param dest destination file
+/// @returns the number of bytes, or an error if any occurs.
+auto Copy(PathRef src, PathRef dest) -> io::Result<UInt64>;
+
+/// Returns metadata in the specified `path`, which includes the file size, permissions,
+/// and timestamps.
+///
+/// @param path the path to retrieve metadata from
+/// @param followSymlinks if true, this will follow the symlink tree.
+/// @returns the metadata about this file, directory, etc. or an error if any occurs.
+auto Metadata(PathRef path, bool followSymlinks = true) -> io::Result<Metadata>;
+auto Exists(PathRef path) -> io::Result<void>;
+auto RemoveFile(PathRef path) -> io::Result<void>;
+auto Rename(PathRef old, PathRef path) -> io::Result<void>;
+auto SetPermissions(PathRef path, Permissions perms) -> io::Result<void>;
+
+/// A entry from walking through a directory.
+struct VIOLET_API DirEntry final {
+    /// The path of this entry.
+    struct Path Path;
+
+    /// File type of this entry.
+    FileType Type = {};
+};
+
+/// A [`Iterator`] implementation that walks through a filesystem directory non-recursively.
+struct VIOLET_API Dirs final {
+    /// The item that is returned from the iterator.
+    using Item = io::Result<DirEntry>;
+
+    Dirs() = delete;
+
+    /// Returns the next entry in the filesystem directory.
+    auto Next() noexcept -> Optional<Item>;
+
+private:
+    friend auto violet::filesystem::ReadDir(PathRef) -> io::Result<Dirs>;
+
+    /// the implementation of the iteration itself.
+    struct Impl;
+
+    template<typename... Args>
+        requires(std::is_constructible_v<Impl, Args...>)
+    VIOLET_EXPLICIT Dirs(Args&&... args);
+
+    Impl* n_impl; ///< pointer to the implementation itself.
+};
+
+/// A [`Iterator`] implementation that walks through a filesystem directory recursively.
+struct VIOLET_API WalkDirs final {
+    /// The item that is returned from the iterator.
+    using Item = io::Result<DirEntry>;
+
+    WalkDirs() = delete;
+
+    /// Returns the next entry in the filesystem directory.
+    auto Next() noexcept -> Optional<Item>;
+
+private:
+    friend auto violet::filesystem::WalkDir(PathRef) -> io::Result<WalkDirs>;
+
+    /// the implementation of the iteration itself.
+    struct Impl;
+
+    template<typename... Args>
+        requires(std::is_constructible_v<Impl, Args...>)
+    VIOLET_EXPLICIT WalkDirs(Args&&... args);
+
+    Impl* n_impl; ///< pointer to the implementation itself.
+};
+
+} // namespace violet::filesystem

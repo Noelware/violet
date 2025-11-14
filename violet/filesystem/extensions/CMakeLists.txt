@@ -19,37 +19,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+include(CXX)
 
-cc_library(
-    name = "demangle",
-    srcs = ["//src/support:demangle.cc"],
-    hdrs = ["//include/violet/Support:Demangle.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
+if(UNIX)
+    violet_cc_library(
+        filesystem_ext_xattr
+        HDRS
+            ${CMAKE_SOURCE_DIR}/include/violet/Filesystem/Extensions/XAttr.h
+        DEPS
+            violet::violet
+            violet::io_descriptor
+            violet::io_error
+    )
 
-cc_library(
-    name = "bitflags",
-    hdrs = ["//include/violet/Support:Bitflags.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
+    violet_cc_test(
+        filesystem_ext_xattr_test
+        SRCS
+            ${CMAKE_SOURCE_DIR}/test/filesystem/extensions/XAttr.test.cc
+        DEPS
+            violet::filesystem_ext_xattr
+    )
+endif()
 
-cc_library(
-    name = "resource_quantity",
-    srcs = ["//src/support:resource.cc"],
-    hdrs = ["//include/violet/Support:Quantity.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container:result",
-        "//violet/numeric:int128",
-    ],
-)
 
-cc_test(
-    name = "resource_quantity_test",
-    srcs = ["//tests/support:Quantity.test.cc"],
-    deps = [":resource_quantity"],
-)
+# cc_library(
+#     name = "xattr",
+#     srcs = select({
+#         "@platforms//os:linux": ["//src/filesystem/platform/extensions/xattr:unix.cc"],
+#         "@platforms//os:macos": ["//src/filesystem/platform/extensions/xattr:unix.cc"],
+#         "@platforms//os:windows": ["//src/filesystem/platform/extensions/xattr:unsupported.cc"],
+#         "//conditions:default": ["//src/filesystem/platform/extensions/xattr:unsupported.cc"],
+#     }),
+#     hdrs = ["//include/violet/Filesystem/Extensions:XAttr.h"],
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         "//violet",
+#         "//violet/io:descriptor",
+#         "//violet/io:error",
+#     ],
+# )

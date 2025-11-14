@@ -54,6 +54,8 @@ violet_cc_library(
         ${CMAKE_SOURCE_DIR}/include/violet/Filesystem/Permissions.h
     DEPS
         violet::violet
+    COPTS
+        -Wno-changes-meaning
 )
 
 violet_platform_sources(viol_filesystem_permissions ${CMAKE_SOURCE_DIR}/src/filesystem/platform/permissions)
@@ -63,5 +65,7 @@ violet_cc_test(
     SRCS
         ${CMAKE_SOURCE_DIR}/tests/filesystem/Permissions.test.cc
     DEPS
-        violet::io_read
+        violet::filesystem_permissions
 )
+
+add_subdirectory(extensions)

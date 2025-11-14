@@ -242,29 +242,41 @@ function(violet_platform_sources target base)
     cmake_parse_arguments(
         PF
         ""
-        ""
         "APPLE;LINUX;WINDOWS"
+        ""
         ${ARGN}
     )
 
-    set(selected "${base}/unsupported.cc")
+    set(sources "")
     if(WIN32)
-        if(NOT PF_WINDOWS)
-            set(PF_WINDOWS "windows.cc")
+        if (PF_WINDOWS)
+            list(APPEND sources "${base}/${PF_WINDOWS}")
+        else()
+            list(APPEND sources "${base}/windows.cc")
         endif()
-
-        set(selected "${base}/${PF_WINDOWS}")
     elseif(UNIX)
         if(APPLE AND PF_APPLE)
-            set(selected "${base}/${PF_APPLE}")
+            if (EXISTS PF_APPLE)
+                list(APPEND sources "${base}/${PF_APPLE}")
+            else()
+                message(FATAL_ERROR "Unable to find file [${base}/${PF_LINUX}]")
+            endif()
         elseif(LINUX AND PF_LINUX)
-            set(selected "${base}/${PF_LINUX}")
+            if(EXISTS "${base}/${PF_LINUX}")
+                list(APPEND sources "${base}/${PF_LINUX}")
+            else()
+                message(FATAL_ERROR "Unable to find file [${base}/${PF_LINUX}]")
+            endif()
         endif()
 
-        if(${selected} STREQUAL "${base}/unsupported.cc")
-            set(selected "${base}/unix.cc")
+        if (EXISTS "${base}/unix.cc")
+            list(APPEND sources "${base}/unix.cc")
         endif()
     endif()
 
-    target_sources(${target} PRIVATE ${selected})
+    if(${sources} STREQUAL "")
+        list(APPEND sources "${base}/unsupported.cc")
+    endif()
+
+    target_sources(${target} PRIVATE ${sources})
 endfunction()

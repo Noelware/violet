@@ -167,7 +167,7 @@ struct VIOLET_API Permissions final {
     {
     }
 #elif defined(VIOLET_UNIX)
-    constexpr VIOLET_EXPLICIT Permissions(Mode mode) noexcept
+    constexpr VIOLET_EXPLICIT Permissions(struct Mode mode) noexcept
         : n_mode(mode)
     {
     }
@@ -179,7 +179,7 @@ struct VIOLET_API Permissions final {
 #ifdef VIOLET_WINDOWS
     auto Attributes() const noexcept -> DWORD;
 #elif defined(VIOLET_UNIX)
-    [[nodiscard]] auto Mode() const noexcept -> violet::filesystem::Mode;
+    [[nodiscard]] auto Mode() const noexcept -> struct Mode;
 #endif
 
     [[nodiscard]] auto ToString() const noexcept -> String;

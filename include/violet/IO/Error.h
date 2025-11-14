@@ -77,7 +77,7 @@ enum struct VIOLET_API ErrorKind : UInt8 {
     Other,
 
     /// @internal
-    __other,
+    __other
 };
 
 } // namespace violet::io

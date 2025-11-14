@@ -36,4 +36,6 @@ RequiresClausePosition: OwnLine
 SpaceAfterTemplateKeyword: false
 AllowShortFunctionsOnASingleLine: Empty
 PPIndentWidth: 4
+AllowShortEnumsOnASingleLine: false
+EnumTrailingComma: Remove
 ...

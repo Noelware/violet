@@ -82,7 +82,7 @@ void FileDescriptor::Close()
 
 auto FileDescriptor::Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
 {
-    if (buf.empty()) {
+    if (!this->Valid() || buf.empty()) {
         return 0;
     }
 
@@ -100,6 +100,10 @@ auto FileDescriptor::Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
 
 auto FileDescriptor::Write(Span<const UInt8> buf) const noexcept -> Result<UInt>
 {
+    if (!this->Valid()) {
+        return 0;
+    }
+
     UInt total = 0;
     const UInt8* ptr = buf.data();
     UInt remaining = buf.size();
@@ -124,7 +128,7 @@ auto FileDescriptor::Write(Span<const UInt8> buf) const noexcept -> Result<UInt>
 
 auto FileDescriptor::Flush() const noexcept -> io::Result<void>
 {
-    if (::fsync(this->Get()) == -1) {
+    if (this->Valid() && ::fsync(this->Get()) == -1) {
         return Err(Error::OSError());
     }
 

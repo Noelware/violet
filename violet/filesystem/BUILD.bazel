@@ -22,6 +22,25 @@
 load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
+    name = "filesystem",
+    srcs = select({
+        "@platforms//os:linux": ["//src/filesystem/platform:unix.cc"],
+        "@platforms//os:macos": ["//src/filesystem/platform:unix.cc"],
+        "@platforms//os:windows": ["//src/filesystem/platform:windows.cc"],
+        "//conditions:default": ["//src/filesystem/platform:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Filesystem:Path.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":file",
+        ":path",
+        ":permissions",
+        "//violet",
+        "//violet/io:error",
+    ],
+)
+
+cc_library(
     name = "path",
     srcs = select({
         "@platforms//os:linux": ["//src/filesystem/platform/path:linux.cc"],
@@ -62,4 +81,29 @@ cc_test(
     name = "permissions_test",
     srcs = ["//tests/filesystem:Permissions.test.cc"],
     deps = [":permissions"],
+)
+
+cc_library(
+    name = "file",
+    srcs = select({
+        "@platforms//os:linux": [
+            "//src/filesystem/platform/file:linux.cc",
+            "//src/filesystem/platform/file:unix.cc",
+        ],
+        "@platforms//os:macos": [
+            "//src/filesystem/platform/file:macos.cc",
+            "//src/filesystem/platform/file:unix.cc",
+        ],
+        "@platforms//os:windows": ["//src/filesystem/platform/file:windows.cc"],
+        "//conditions:default": ["//src/filesystem/platform/file:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Filesystem:File.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":path",
+        ":permissions",
+        "//violet",
+        "//violet/io:descriptor",
+        "//violet/support:bitflags",
+    ],
 )
