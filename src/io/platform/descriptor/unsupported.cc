@@ -24,6 +24,7 @@
 
 using violet::io::FileDescriptor;
 
+FileDescriptor::FileDescriptor(void*) {}
 FileDescriptor::FileDescriptor(FileDescriptor&& other) noexcept = default;
 FileDescriptor::~FileDescriptor() {} // NOLINT(modernize-use-equals-default)
 

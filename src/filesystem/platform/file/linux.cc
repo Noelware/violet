@@ -19,13 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <cerrno>
 #include <violet/Violet.h>
 
 #ifdef VIOLET_LINUX
 
 #include <violet/Filesystem/File.h>
 
+#include <cerrno>
 #include <sys/file.h>
 #include <sys/stat.h>
 

@@ -23,6 +23,7 @@
 
 #ifdef VIOLET_UNIX
 
+#include <violet/Filesystem/Extensions/XAttr.h>
 #include <violet/Filesystem/File.h>
 #include <violet/Filesystem/Path.h>
 #include <violet/IO/Descriptor.h>
@@ -190,6 +191,21 @@ auto File::Clone(bool shareFlags) const noexcept -> io::Result<File>
     }
 
     return File(newFD);
+}
+
+auto File::GetAttribute(Str key) const noexcept -> io::Result<Optional<Vec<UInt8>>>
+{
+    return xattr::Get(this->n_fd.Get(), key);
+}
+
+auto File::SetAttribute(Str key, Span<const UInt8> value) const noexcept -> io::Result<void>
+{
+    return xattr::Set(this->n_fd.Get(), key, value);
+}
+
+auto File::RemoveAttribute(Str key) const noexcept -> io::Result<void>
+{
+    return xattr::Remove(this->n_fd.Get(), key);
 }
 
 File::operator bool() const noexcept

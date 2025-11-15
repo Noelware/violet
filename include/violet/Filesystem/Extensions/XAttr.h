@@ -45,6 +45,7 @@
 
 #pragma once
 
+#include "violet/Container/Optional.h"
 #include "violet/IO/Descriptor.h"
 #include "violet/IO/Error.h"
 #include "violet/Violet.h"
@@ -53,7 +54,7 @@
 
 namespace violet::filesystem::xattr {
 
-struct Iter;
+// struct Iter;
 
 /// Sets an extended attribute for the file. This will overwrite the attribute if it exists
 /// depending on platform semantics.
@@ -68,7 +69,12 @@ auto Set(io::FileDescriptor::value_type fd, Str key, Span<const UInt8> value) no
 ///
 /// @param fd the raw file descriptor
 /// @param key the key to append
-auto Get(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<Vec<UInt8>>;
+auto Get(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<Optional<Vec<UInt8>>>;
+
+/// Removes an extended attribute for the file.
+/// @param fd the raw file descriptor
+/// @param key the key to remove
+auto Remove(io::FileDescriptor::value_type fd, Str key) -> io::Result<void>;
 
 // /// Returns a iterator that lists all extended attributes present on this file.
 // /// @param fd the raw file descriptor

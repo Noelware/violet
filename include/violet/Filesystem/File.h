@@ -538,6 +538,15 @@ struct File final {
     /// as this file.
     [[nodiscard]] auto Clone(bool shareFlags = false) const noexcept -> io::Result<File>;
 
+    /// Returns an extended attribute by `key`.
+    /// @param key the attribute to fetch
+    [[nodiscard]] auto GetAttribute(Str key) const noexcept -> io::Result<Optional<Vec<UInt8>>>;
+
+    /// Sets an extended attribute by `key` with the given `value`.
+    [[nodiscard]] auto SetAttribute(Str key, Span<const UInt8> value) const noexcept -> io::Result<void>;
+
+    auto RemoveAttribute(Str key) const noexcept -> io::Result<void>;
+
     VIOLET_EXPLICIT operator bool() const noexcept;
     VIOLET_EXPLICIT operator io::FileDescriptor::value_type() const noexcept;
 

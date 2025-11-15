@@ -19,27 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
-
-cc_library(
-    name = "xattr",
-    srcs = select({
-        "@platforms//os:linux": ["//src/filesystem/platform/extensions/xattr:unix.cc"],
-        "@platforms//os:macos": ["//src/filesystem/platform/extensions/xattr:unix.cc"],
-        "@platforms//os:windows": ["//src/filesystem/platform/extensions/xattr:windows.cc"],
-        "//conditions:default": ["//src/filesystem/platform/extensions/xattr:unsupported.cc"],
-    }),
-    hdrs = ["//include/violet/Filesystem/Extensions:XAttr.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/io:descriptor",
-        "//violet/io:error",
-    ],
-)
-
-cc_test(
-    name = "xattr_test",
-    srcs = ["//tests/filesystem/extensions:XAttr.test.cc"],
-    deps = [":xattr"],
-)
+exports_files(glob(["*.h"]))

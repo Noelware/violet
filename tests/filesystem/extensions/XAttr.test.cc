@@ -19,4 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <gtest/gtest.h>
 #include <violet/Violet.h>
+
+#ifndef VIOLET_UNIX
+#error "Extended Attributes are only supported on Unix"
+#endif

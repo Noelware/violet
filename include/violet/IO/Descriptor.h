@@ -39,16 +39,17 @@ struct VIOLET_API FileDescriptor final {
 #elif defined(VIOLET_UNIX)
     /// Value type on POSIX (macOS, Linux) that wraps a file descriptor.
     using value_type = Int32;
+#else
+    /// On a unsupported platform, this will be `void*` (which will always be `nullptr`).
+    using value_type = void*;
 #endif
 
     /// Produce a new, dummy file descriptor.
     VIOLET_IMPLICIT FileDescriptor() = default;
 
-#if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)
     /// Creates a new file descriptor from the OS value type.
     /// @param value the value.
     VIOLET_IMPLICIT FileDescriptor(value_type value);
-#endif
 
     /// This will clean up the resource that this file descriptor owns.
     ///
@@ -100,11 +101,11 @@ private:
     constexpr static const HANDLE INVALID = INVALID_HANDLE_VALUE;
 #elif defined(VIOLET_UNIX)
     constexpr static const Int32 INVALID = -1;
+#else
+    constexpr static const void* INVALID = nullptr;
 #endif
 
-#if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)
     value_type n_value = INVALID;
-#endif
 };
 
 static_assert(Readable<FileDescriptor>, "`FileDescriptor` doesn't conform to the `Readable` concept");
