@@ -197,3 +197,9 @@ private:
 };
 
 } // namespace violet::filesystem
+
+VIOLET_FORMATTER(violet::filesystem::Permissions);
+
+#ifdef VIOLET_UNIX
+VIOLET_FORMATTER(violet::filesystem::Mode);
+#endif

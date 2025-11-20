@@ -92,7 +92,7 @@ auto File::Open(PathRef path, OpenOptions opts) -> io::Result<File>
         mode = static_cast<mode_t>(opts.n_mode);
     }
 
-    Int32 fd = ::open(path.ToString().c_str(), flags, mode);
+    Int32 fd = ::open(static_cast<CStr>(path), flags, mode);
     if (fd < 0) {
         return Err(io::Error::OSError());
     }

@@ -16,6 +16,12 @@
         "**/external": true
     },
 
+    "clangd.arguments": [
+        "--header-insertion=never",
+        "--compile-commands-dir=${workspaceFolder}/",
+        "--query-driver=**"
+    ],
+
     "evenBetterToml.taplo.configFile.path": "taplo.toml",
     "bazel.lsp.command": "starpls",
     "bazel.lsp.args": ["server", "--experimental_infer_ctx_attributes", "--experimental_enable_label_completions"],

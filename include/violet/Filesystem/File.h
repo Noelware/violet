@@ -27,9 +27,14 @@
 #include "violet/Support/Bitflags.h"
 #include "violet/Violet.h"
 
+#ifdef VIOLET_UNIX
+#include <sys/stat.h>
+#endif
+
 namespace violet::filesystem {
 
 struct File;
+struct Metadata;
 
 /// Configures options for opening a file.
 ///
@@ -219,6 +224,41 @@ struct VIOLET_API FileType final {
         return this->n_tag.Contains(tag::kSymlink);
     }
 
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        std::ostringstream os;
+        FileType::operator<<(os);
+
+        return os.str();
+    }
+
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    {
+        os << "FileType(type=";
+
+        if (this->n_tag.Contains(tag::kFile)) {
+            os << "file";
+        } else if (this->n_tag.Contains(tag::kDir)) {
+            os << "directory";
+        } else if (this->n_tag.Contains(tag::kSymlink)) {
+            os << "symbolic link";
+#ifdef VIOLET_UNIX
+        } else if (this->n_tag.Contains(tag::kBlkDev)) {
+            os << "block device";
+        } else if (this->n_tag.Contains(tag::kCharDev)) {
+            os << "char device";
+        } else if (this->n_tag.Contains(tag::kFIFO)) {
+            os << "fifo";
+        } else if (this->n_tag.Contains(tag::kSocket)) {
+            os << "unix socket";
+        }
+#else
+        }
+#endif
+
+        return os << ')';
+    }
+
 #ifdef VIOLET_UNIX
     /// Returns **true** if this represents a block device.
     [[nodiscard]] constexpr auto BlockDevice() const noexcept -> bool
@@ -247,6 +287,7 @@ struct VIOLET_API FileType final {
 
 private:
     friend struct violet::filesystem::File;
+    friend struct violet::filesystem::Metadata;
 
     enum struct tag : UInt8 {
         kFile = 1 << 0, ///< this is a file
@@ -271,75 +312,51 @@ private:
         return ft;
     }
 
-    static constexpr auto mkfile(bool symlink = false) noexcept -> FileType
+    static constexpr auto mkfile() noexcept -> FileType
     {
         FileType ft = {};
         ft.n_tag.Add(tag::kFile);
 
-        if (symlink) {
-            ft.n_tag.Add(tag::kSymlink);
-        }
-
         return ft;
     }
 
-    static constexpr auto mkdir(bool symlink = false) noexcept -> FileType
+    static constexpr auto mkdir() noexcept -> FileType
     {
         FileType ft = {};
         ft.n_tag.Add(tag::kDir);
-
-        if (symlink) {
-            ft.n_tag.Add(tag::kSymlink);
-        }
 
         return ft;
     }
 
 #ifdef VIOLET_UNIX
-    static constexpr auto mkblkdev(bool symlink = false) noexcept -> FileType
+    static constexpr auto mkblkdev() noexcept -> FileType
     {
         FileType ft = {};
         ft.n_tag.Add(tag::kBlkDev);
 
-        if (symlink) {
-            ft.n_tag.Add(tag::kSymlink);
-        }
-
         return ft;
     }
 
-    static constexpr auto mkchardev(bool symlink = false) noexcept -> FileType
+    static constexpr auto mkchardev() noexcept -> FileType
     {
         FileType ft = {};
         ft.n_tag.Add(tag::kCharDev);
 
-        if (symlink) {
-            ft.n_tag.Add(tag::kSymlink);
-        }
-
         return ft;
     }
 
-    static constexpr auto mkfifo(bool symlink = false) noexcept -> FileType
+    static constexpr auto mkfifo() noexcept -> FileType
     {
         FileType ft = {};
         ft.n_tag.Add(tag::kFIFO);
 
-        if (symlink) {
-            ft.n_tag.Add(tag::kSymlink);
-        }
-
         return ft;
     }
 
-    static constexpr auto mksocket(bool symlink = false) noexcept -> FileType
+    static constexpr auto mksocket() noexcept -> FileType
     {
         FileType ft = {};
         ft.n_tag.Add(tag::kSocket);
-
-        if (symlink) {
-            ft.n_tag.Add(tag::kSymlink);
-        }
 
         return ft;
     }
@@ -392,6 +409,11 @@ struct VIOLET_API Metadata final {
 
     /// The accessed timestamp, if avaliable.
     Optional<UInt64> AccessedAt;
+
+#ifdef VIOLET_UNIX
+    /// Translates a POSIX [`stat`] call into this [`Metadata`] struct.
+    static auto FromPosix(struct stat st) noexcept -> Metadata;
+#endif
 };
 
 /// A handle to an open file on the filesystem.
@@ -545,7 +567,7 @@ struct File final {
     /// Sets an extended attribute by `key` with the given `value`.
     [[nodiscard]] auto SetAttribute(Str key, Span<const UInt8> value) const noexcept -> io::Result<void>;
 
-    auto RemoveAttribute(Str key) const noexcept -> io::Result<void>;
+    [[nodiscard]] auto RemoveAttribute(Str key) const noexcept -> io::Result<void>;
 
     VIOLET_EXPLICIT operator bool() const noexcept;
     VIOLET_EXPLICIT operator io::FileDescriptor::value_type() const noexcept;
@@ -555,3 +577,5 @@ private:
 };
 
 } // namespace violet::filesystem
+
+VIOLET_FORMATTER(violet::filesystem::File);

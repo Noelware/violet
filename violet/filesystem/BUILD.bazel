@@ -24,12 +24,18 @@ load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 cc_library(
     name = "filesystem",
     srcs = select({
-        "@platforms//os:linux": ["//src/filesystem/platform:unix.cc"],
-        "@platforms//os:macos": ["//src/filesystem/platform:unix.cc"],
+        "@platforms//os:linux": [
+            "//src/filesystem/platform:linux.cc",
+            "//src/filesystem/platform:unix.cc",
+        ],
+        "@platforms//os:macos": [
+            "//src/filesystem/platform:macos.cc",
+            "//src/filesystem/platform:unix.cc",
+        ],
         "@platforms//os:windows": ["//src/filesystem/platform:windows.cc"],
         "//conditions:default": ["//src/filesystem/platform:unsupported.cc"],
     }),
-    hdrs = ["//include/violet/Filesystem:Path.h"],
+    hdrs = ["//include/violet:Filesystem.h"],
     visibility = ["//visibility:public"],
     deps = [
         ":file",
@@ -103,6 +109,7 @@ cc_library(
         ":path",
         ":permissions",
         "//violet",
+        "//violet/filesystem/extensions:xattr",
         "//violet/io:descriptor",
         "//violet/support:bitflags",
     ],

@@ -112,3 +112,5 @@ static_assert(Readable<FileDescriptor>, "`FileDescriptor` doesn't conform to the
 static_assert(Writable<FileDescriptor>, "`FileDescriptor` doesn't conform to the `Writable` concept");
 
 } // namespace violet::io
+
+VIOLET_FORMATTER(violet::io::FileDescriptor);

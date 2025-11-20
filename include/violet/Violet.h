@@ -85,6 +85,13 @@ concept callable = std::invocable<Fun, Args...>;
 template<typename Fun, typename Return, typename... Args>
 concept callable_returns = std::convertible_to<std::invoke_result_t<Fun, Args...>, Return>;
 
+template<typename T, typename Item>
+concept collectable = requires(T& ty, Item value) {
+    { ty.insert(ty.end(), value) } -> std::same_as<typename T::iterator>;
+} || requires(T& cnt, Item value) {
+    { cnt.push_back(value) } -> std::same_as<void>;
+};
+
 /// Newtype for [`std::int8_t`].
 using Int8 = std::int8_t;
 
@@ -293,6 +300,25 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 struct Unsafe final {
     constexpr VIOLET_IMPLICIT Unsafe() = delete;
     constexpr VIOLET_EXPLICIT Unsafe(const char*) {}
+};
+
+template<Stringify S>
+struct StringifyFormatter {
+    constexpr StringifyFormatter() = default;
+
+    constexpr auto parse(std::format_parse_context& cx)
+    {
+        return this->n_base.parse(cx);
+    }
+
+    template<class FC>
+    auto format(const S& value, FC& cx) const
+    {
+        return this->n_base.format(::violet::ToString(value), cx);
+    }
+
+private:
+    std::formatter<String> n_base;
 };
 
 } // namespace violet

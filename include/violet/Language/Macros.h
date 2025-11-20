@@ -154,7 +154,18 @@
 #define VIOLET_TO_STRING(TYPE, NAME, BLOCK)                                                                            \
     namespace violet {                                                                                                 \
     inline auto ToString(TYPE NAME) -> ::violet::String BLOCK                                                          \
-    }
+    }                                                                                                                  \
+                                                                                                                       \
+    template<>                                                                                                         \
+    struct ::std::formatter<TYPE>: public violet::StringifyFormatter<TYPE> {};
+
+#define VIOLET_FORMATTER(TYPE)                                                                                         \
+    template<>                                                                                                         \
+    struct ::std::formatter<TYPE>: public violet::StringifyFormatter<TYPE> {};
+
+#define VIOLET_FORMATTER_TEMPLATE(TYPE, ...)                                                                           \
+    template<__VA_ARGS__>                                                                                              \
+    struct ::std::formatter<TYPE>: public violet::StringifyFormatter<TYPE> {};
 
 #define VIOLET_IMPLICIT
 #define VIOLET_EXPLICIT explicit

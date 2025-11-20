@@ -44,10 +44,16 @@ VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
 void resultUnwrapFail(const std::source_location& loc);
 
 VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void resultUnwrapErrFail(const std::source_location& loc);
+
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
 void resultUnwrapFail(CStr message, const std::source_location& loc);
 #else
 VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
 void resultUnwrapFail();
+
+VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
+void resultUnwrapErrFail();
 
 VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
 void resultUnwrapFail(CStr message);
@@ -508,6 +514,184 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
 #endif
 
         resultUnwrapFail(loc);
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+#endif
+
+#ifdef VIOLET_HAS_EXCEPTIONS
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    ///
+    /// @throws std::logic_error If the error variant was present in this `Result`.
+    constexpr auto UnwrapErr() && -> E
+    {
+        VIOLET_LIKELY_IF(this->Err())
+        {
+            return Error();
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapErrFail();
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    ///
+    /// @throws std::logic_error If the error variant was present in this `Result`.
+    constexpr auto UnwrapErr() & -> E
+    {
+        VIOLET_LIKELY_IF(this->Err())
+        {
+            return Error();
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapErrFail();
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    ///
+    /// @throws std::logic_error If the error variant was present in this `Result`.
+    constexpr auto UnwrapErr() const& -> E
+    {
+        VIOLET_LIKELY_IF(this->Err())
+        {
+            return Error();
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapErrFail();
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+#else
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
+    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    constexpr auto UnwrapErr(const std::source_location& loc = std::source_location::current()) && -> E
+    {
+        VIOLET_LIKELY_IF(this->Err())
+        {
+            return Error();
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapErrFail(loc);
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
+    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    constexpr auto UnwrapErr(const std::source_location& loc = std::source_location::current()) & -> E
+    {
+        VIOLET_LIKELY_IF(this->Err())
+        {
+            return Error();
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapErrFail(loc);
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_POP
+#endif
+    }
+
+    /// Returns the contained value, consuming this `Result`.
+    ///
+    /// ## Process Termination
+    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
+    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto res = violet::Ok<String, UInt32>("hello world");
+    /// String str = res.Unwrap();
+    /// ```
+    constexpr auto UnwrapErr(const std::source_location& loc = std::source_location::current()) const& -> E
+    {
+        VIOLET_LIKELY_IF(this->Err())
+        {
+            return Error();
+        }
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+        VIOLET_DIAGNOSTIC_PUSH
+        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
+#endif
+
+        resultUnwrapErrFail(loc);
 
 #if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
         VIOLET_DIAGNOSTIC_POP
@@ -1085,3 +1269,6 @@ private:
 };
 
 } // namespace violet
+
+template<typename T, typename E>
+struct std::formatter<violet::Result<T, E>>: public violet::StringifyFormatter<violet::Result<T, E>> {};

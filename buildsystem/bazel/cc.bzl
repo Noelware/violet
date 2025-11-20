@@ -49,7 +49,7 @@ SANITIZER_ENV = select({
 })
 
 OS_DEFINES = select({
-    "@platforms//os:linux": ["VIOLET_UNIX", "VIOLET_LINUX"],
+    "@platforms//os:linux": ["VIOLET_UNIX", "VIOLET_LINUX", "_GNU_SOURCE"],
     "@platforms//os:macos": ["VIOLET_UNIX", "VIOLET_APPLE_MACOS"],
     "@platforms//os:windows": ["VIOLET_WINDOWS"],
     "//conditions:default": [],

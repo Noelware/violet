@@ -835,3 +835,5 @@ private:
  * C macro that resembles the `if let Some(val) = opt` expression from Rust.
  */
 #define LET_IF_SOME(opt, val) if (auto val = opt)
+
+VIOLET_FORMATTER_TEMPLATE(violet::Optional<T>, typename T);

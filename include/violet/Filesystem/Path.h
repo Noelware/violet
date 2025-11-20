@@ -139,10 +139,15 @@ struct PathRef;
 /// @tparam StringType The underling string type to use
 template<typename Derived, typename StringType>
 struct VIOLET_API BasePath {
+    [[nodiscard]] constexpr auto Data() const noexcept -> StringType
+    {
+        return getThisObject().storage();
+    }
+
     /// Returns **true** if this path is considered empty.
     [[nodiscard]] constexpr auto Empty() const noexcept -> bool
     {
-        return getThisObject().storage().empty();
+        return Data().empty();
     }
 
     /// Returns **true** if this path is an absolute path.
@@ -157,7 +162,7 @@ struct VIOLET_API BasePath {
             return false;
         }
 
-        StringType storage = getThisObject().storage();
+        StringType storage = Data();
 #ifdef VIOLET_WINDOWS
         // drive letter (i.e, `C:\`)
         if (storage.size() >= 2 && std::isalpha(static_cast<UInt8>(storage[0])) && storage[0] == ':') {
@@ -462,13 +467,23 @@ struct VIOLET_API PathRef final: public BasePath<PathRef, Str> {
     /// * If the path is empty, it remains empty.
     [[nodiscard]] auto Canonicalize() const noexcept -> Path;
 
+    constexpr VIOLET_EXPLICIT operator Str()
+    {
+        return this->storage();
+    }
+
+    constexpr VIOLET_EXPLICIT operator CStr()
+    {
+        return this->storage().data();
+    }
+
 private:
     friend struct BasePath<PathRef, Str>;
     friend struct Path;
 
     Str n_path;
 
-    [[nodiscard]] auto storage() const noexcept -> Str
+    [[nodiscard]] constexpr auto storage() const noexcept -> Str
     {
         return this->n_path;
     }
@@ -542,6 +557,13 @@ struct VIOLET_API Path final: public BasePath<Path, String> {
         this->n_path = detail::canonicalizeImpl(this->n_path);
     }
 
+    constexpr VIOLET_EXPLICIT operator String() const noexcept
+    {
+        return this->storage();
+    }
+
+    VIOLET_EXPLICIT operator violet::filesystem::PathRef() const noexcept;
+
 private:
     friend struct BasePath<Path, String>;
     friend struct PathRef;
@@ -612,12 +634,12 @@ auto BasePath<Derived, StringType>::Stem() const noexcept -> String
 {
     String filename = this->Filename();
     if (filename.empty()) {
-        return String(filename);
+        return { filename };
     }
 
     UInt dotpos = filename.rfind('.');
     if (dotpos == String::npos) {
-        return String(filename);
+        return { filename };
     }
 
     // edge case: '.gitignore', .bazelignore, etc.
@@ -625,7 +647,7 @@ auto BasePath<Derived, StringType>::Stem() const noexcept -> String
     // if pos == 0 (only finds one `.`) and the first character
     // in `filename` == `.`
     if (dotpos == 0 && filename[0] == '.') {
-        return String(filename);
+        return { filename };
     }
 
     return String(filename.substr(0, dotpos));
@@ -726,4 +748,12 @@ inline auto PathRef::Canonicalize() const noexcept -> Path
     return { detail::canonicalizeImpl(this->n_path) };
 }
 
+inline Path::operator PathRef() const noexcept
+{
+    return { Str(this->n_path) };
+}
+
 } // namespace violet::filesystem
+
+VIOLET_FORMATTER(violet::filesystem::Path);
+VIOLET_FORMATTER(violet::filesystem::PathRef);

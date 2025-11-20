@@ -21,5 +21,5 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_WINDOWS
+#ifdef VIOLET_APPLE_MACOS
 #endif

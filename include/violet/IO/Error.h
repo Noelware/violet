@@ -82,7 +82,7 @@ enum struct VIOLET_API ErrorKind : UInt8 {
 
 } // namespace violet::io
 
-VIOLET_TO_STRING(const io::ErrorKind&, self, {
+VIOLET_TO_STRING(const violet::io::ErrorKind&, self, {
 #if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
     VIOLET_DIAGNOSTIC_PUSH
     VIOLET_DIAGNOSTIC_IGNORE("-Wswitch")
@@ -329,4 +329,29 @@ private:
 template<typename T>
 using Result = violet::Result<T, Error>;
 
+/// @internal
+namespace __detail {
+
+#if VIOLET_USE_RTTI
+    template<typename T, typename... Args>
+    auto __mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
+    {
+        return io::Error(kind, VIOLET_FWD(Args, args)...);
+    }
+#else
+    template<typename T, typename... Args>
+    auto __mk_io_error(ErrorKind kind) -> io::Error
+    {
+        return { kind };
+    }
+#endif
+
+} // namespace __detail
+
 } // namespace violet::io
+
+#define VIOLET_IO_ERROR(KIND, T, ...)                                                                                  \
+    ::violet::io::__detail::__mk_io_error<T>(::violet::io::ErrorKind::KIND, ##__VA_ARGS__)
+
+VIOLET_FORMATTER(violet::io::Error);
+VIOLET_FORMATTER(violet::io::ErrorKind);

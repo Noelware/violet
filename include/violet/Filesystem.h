@@ -82,7 +82,21 @@ auto Copy(PathRef src, PathRef dest) -> io::Result<UInt64>;
 /// @param followSymlinks if true, this will follow the symlink tree.
 /// @returns the metadata about this file, directory, etc. or an error if any occurs.
 auto Metadata(PathRef path, bool followSymlinks = true) -> io::Result<Metadata>;
-auto Exists(PathRef path) -> io::Result<void>;
+
+/// Returns **true** if the given path exists.
+///
+/// ## Remarks
+/// This function may suffer from TOCTOU (Time of Check to Time of Use) race conditions
+/// in multi-threaded or security contexts. Use the [`filesystem::TryExists`] method
+/// instead.
+///
+/// @param path the path to check the existence of.
+auto Exists(PathRef path) -> bool;
+
+/// Returns **true** if the given path exists.
+/// @param path the path to check the existence of.
+auto TryExists(PathRef path) -> io::Result<bool>;
+
 auto RemoveFile(PathRef path) -> io::Result<void>;
 auto Rename(PathRef old, PathRef path) -> io::Result<void>;
 auto SetPermissions(PathRef path, Permissions perms) -> io::Result<void>;
@@ -92,8 +106,8 @@ struct VIOLET_API DirEntry final {
     /// The path of this entry.
     struct Path Path;
 
-    /// File type of this entry.
-    FileType Type = {};
+    /// Metadata about this entry.
+    struct Metadata Metadata;
 };
 
 /// A [`Iterator`] implementation that walks through a filesystem directory non-recursively.
@@ -102,6 +116,13 @@ struct VIOLET_API Dirs final {
     using Item = io::Result<DirEntry>;
 
     Dirs() = delete;
+    ~Dirs() = default;
+
+    Dirs(const Dirs&) = delete;
+    auto operator=(const Dirs&) -> Dirs& = delete;
+
+    Dirs(Dirs&&) = default;
+    auto operator=(Dirs&&) -> Dirs& = delete;
 
     /// Returns the next entry in the filesystem directory.
     auto Next() noexcept -> Optional<Item>;

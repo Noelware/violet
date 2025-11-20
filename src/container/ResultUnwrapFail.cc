@@ -33,6 +33,11 @@ void violet::resultUnwrapFail()
     throw std::logic_error("`Result<T, E>::Unwrap()` failed due to error variant");
 }
 
+void violet::resultUnwrapErrFail()
+{
+    throw std::logic_error("`Result<T, E>::UnwrapErr()` failed due to ok variant");
+}
+
 void violet::resultUnwrapFail(CStr message)
 {
     throw std::logic_error(std::format("`Result<T, E>::Expect()`: {}", message));
@@ -44,6 +49,14 @@ void violet::resultUnwrapFail(const std::source_location& loc)
 {
     std::cerr << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
               << "]: `Optional<T>::Unwrap()` failed due to error variant\n";
+
+    std::abort();
+}
+
+void violet::resultUnwrapErrFail(const std::source_location& loc)
+{
+    std::cerr << "[" << loc.file_name() << ":" << loc.line() << ":" << loc.column() << "; in " << loc.function_name()
+              << "]: `Optional<T>::UnwrapErr()` failed due to ok variant\n";
 
     std::abort();
 }
