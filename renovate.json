@@ -14,11 +14,12 @@
     "customManagers": [
         {
             "customType": "regex",
-            "description": "Update Docker images in `build-ci-images.sh`",
+            "description": "Updates `gcc` images in `build-ci-images.sh`",
             "fileMatch": ["hack/build-ci-images.sh$"],
             "datasourceTemplate": "docker",
+            "versioningTemplate": "digest",
             "matchStrings": [
-                "#\\srenovate: ref=(?<depName>.*)\\s+gccimages[\"gcc-\\d+\"]=\"?(?<currentValue>.+?)\""
+                "#\\srenovate: ref=(?<depName>[^\\s]+)\\s+gccimages[\"gcc-\\d+\"]=\"gcc@sha256:(?<currentValue>[a-f0-9]{64})\""
             ]
         }
     ]
