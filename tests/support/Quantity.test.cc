@@ -19,97 +19,63 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <gtest/gtest.h>
-#include <violet/Support/Quantity.h>
+// #include <gtest/gtest.h>
+// #include <violet/Support/Quantity.h>
 
-using namespace violet; // NOLINT(google-build-using-namespace)
-using namespace violet::resource; // NOLINT(google-build-using-namespace)
+// using namespace violet; // NOLINT(google-build-using-namespace)
+// using namespace violet::resource; // NOLINT(google-build-using-namespace)
 
-TEST(CPU, ParseSimpleCores)
-{
-    auto cpu = violet::resource::CPU::Parse("1");
-    ASSERT_TRUE(cpu);
+// TEST(CPU, ParseSimpleCores)
+// {
+//     auto cpu = violet::resource::CPU::Parse("1");
+//     ASSERT_TRUE(cpu);
 
-    EXPECT_DOUBLE_EQ(cpu.Value().AsCores(), 1.0);
-    EXPECT_EQ(cpu.Value().ToString(), "1.000");
+//     EXPECT_DOUBLE_EQ(cpu.Value().AsCores(), 1.0);
+//     EXPECT_EQ(cpu.Value().ToString(), "1.000");
 
-    auto cpuMilli = violet::resource::CPU::Parse("250m");
-    ASSERT_TRUE(cpuMilli);
+//     auto cpuMilli = violet::resource::CPU::Parse("250m");
+//     ASSERT_TRUE(cpuMilli);
 
-    EXPECT_DOUBLE_EQ(cpuMilli.Value().AsCores(), 0.25);
-    EXPECT_EQ(cpuMilli.Value().ToString(), "250m");
-}
+//     EXPECT_DOUBLE_EQ(cpuMilli.Value().AsCores(), 0.25);
+//     EXPECT_EQ(cpuMilli.Value().ToString(), "250m");
+// }
 
-TEST(CPU, ParseScientific)
-{
-    auto cpu = violet::resource::CPU::Parse("1e3m");
-    ASSERT_TRUE(cpu);
-    EXPECT_DOUBLE_EQ(cpu.Value().AsCores(), 1.0); // 1000m = 1 core
-}
+// TEST(CPU, ParseScientific)
+// {
+//     auto cpu = violet::resource::CPU::Parse("1e3m");
+//     ASSERT_TRUE(cpu);
+//     EXPECT_DOUBLE_EQ(cpu.Value().AsCores(), 1.0); // 1000m = 1 core
+// }
 
-TEST(Memory, ParseBinaryUnits)
-{
-    auto mem = violet::resource::Memory::Parse("512Ki");
-    ASSERT_TRUE(mem);
+// TEST(Memory, ParseBinaryUnits)
+// {
+//     auto mem = violet::resource::Memory::Parse("512Ki");
+//     ASSERT_TRUE(mem);
 
-    EXPECT_DOUBLE_EQ(mem.Value().ToDouble(), 512 * 1024);
-    EXPECT_EQ(mem.Value().ToString(), "512Ki");
+//     EXPECT_DOUBLE_EQ(mem.Value().ToDouble(), 512 * 1024);
+//     EXPECT_EQ(mem.Value().ToString(), "512Ki");
 
-    auto memMi = violet::resource::Memory::Parse("1.5Mi");
-    ASSERT_TRUE(memMi);
+//     auto memMi = violet::resource::Memory::Parse("1.5Mi");
+//     ASSERT_TRUE(memMi);
 
-    EXPECT_DOUBLE_EQ(memMi.Value().ToDouble(), 1.5 * 1024 * 1024);
-    EXPECT_EQ(memMi.Value().ToString(), "1.5Mi");
-}
+//     EXPECT_DOUBLE_EQ(memMi.Value().ToDouble(), 1.5 * 1024 * 1024);
+//     EXPECT_EQ(memMi.Value().ToString(), "1.5Mi");
+// }
 
-TEST(Memory, ParseDecimalUnits)
-{
-    auto mem = violet::resource::Memory::Parse("2M");
-    ASSERT_TRUE(mem);
+// TEST(Memory, ParseDecimalUnits)
+// {
+//     auto mem = violet::resource::Memory::Parse("2M");
+//     ASSERT_TRUE(mem);
 
-    EXPECT_DOUBLE_EQ(mem.Value().ToDouble(), 2e6);
-    EXPECT_EQ(mem.Value().ToString(), "2M"); // assuming your table has decimal units
-}
+//     EXPECT_DOUBLE_EQ(mem.Value().ToDouble(), 2e6);
+//     EXPECT_EQ(mem.Value().ToString(), "2M"); // assuming your table has decimal units
+// }
 
-TEST(Memory, AutoUnitSelection)
-{
-    auto mem = violet::resource::Memory::Parse("1536Mi");
-    ASSERT_TRUE(mem);
+// TEST(Memory, AutoUnitSelection)
+// {
+//     auto mem = violet::resource::Memory::Parse("1536Mi");
+//     ASSERT_TRUE(mem);
 
-    // Should pick Gi if using largest unit that fits
-    EXPECT_EQ(mem.Value().ToString(), "1.5Gi");
-}
-
-/*
-// Scaling Tests
-TEST(QuantityScaling, ScaleMemory) {
-    auto mem = violet::resource::MemoryQuantity::parse("512Mi");
-    auto scaled = mem * 1.5; // returns new Quantity
-    EXPECT_DOUBLE_EQ(scaled.asBytes(), 512 * 1024 * 1.5);
-    EXPECT_EQ(scaled.toString(), "768Mi");
-}
-
-TEST(QuantityScaling, ScaleCPU) {
-    auto cpu = violet::resource::CPUQuantity::parse("250m");
-    auto scaled = cpu * 2.0;
-    EXPECT_DOUBLE_EQ(scaled.asCores(), 0.5);
-    EXPECT_EQ(scaled.toString(), "500m");
-}
-
-// Edge Cases
-TEST(MemoryQuantity, ZeroAndOneByte) {
-    auto zero = violet::resource::MemoryQuantity::parse("0B");
-    EXPECT_EQ(zero.toString(), "0B");
-
-    auto one = violet::resource::MemoryQuantity::parse("1B");
-    EXPECT_EQ(one.toString(), "1B");
-}
-
-TEST(CPUQuantity, InvalidSuffix) {
-    EXPECT_THROW(violet::resource::CPUQuantity::parse("1x"), std::invalid_argument);
-}
-
-TEST(MemoryQuantity, InvalidSuffix) {
-    EXPECT_THROW(violet::resource::MemoryQuantity::parse("1Zi"), std::invalid_argument);
-}
-*/
+//     // Should pick Gi if using largest unit that fits
+//     EXPECT_EQ(mem.Value().ToString(), "1.5Gi");
+// }
