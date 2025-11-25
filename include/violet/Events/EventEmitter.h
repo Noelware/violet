@@ -207,7 +207,7 @@ private:
         std::lock_guard lock(this->n_mu);
 
         auto id = this->getNextId();
-        this->n_listeners.push_back(entry{ .ID = id, .Once = once, .Callback = fun });
+        this->n_listeners.push_back(entry{ .ID = id, .Callback = fun, .Once = once });
 
         return id;
     }
