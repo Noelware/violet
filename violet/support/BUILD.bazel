@@ -53,3 +53,26 @@ cc_test(
     srcs = ["//tests/support:Quantity.test.cc"],
     deps = [":resource_quantity"],
 )
+
+cc_library(
+    name = "terminal",
+    srcs = ["//src/support:terminal.cc"] + select({
+        "@platforms//os:linux": ["//src/support/platform/terminal:unix.cc"],
+        "@platforms//os:macos": ["//src/support/platform/terminal:unix.cc"],
+        "@platforms//os:windows": ["//src/support/platform/terminal:windows.cc"],
+        "//conditions:default": ["//src/support/platform/terminal:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Support:Terminal.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":bitflags",
+        "//violet",
+        "//violet/io:error",
+    ],
+)
+
+cc_test(
+    name = "terminal_test",
+    srcs = ["//tests/support:Terminal.test.cc"],
+    deps = [":terminal"],
+)

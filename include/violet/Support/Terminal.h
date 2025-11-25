@@ -18,204 +18,285 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+//
+//! # 🌺💜 `violet/Support/Terminal.h`
+//! This header file provides abstractions and utilities for working with
+//! terminal colours, ANSI colour level and styled text output.
 
 #pragma once
 
+#include "violet/IO/Error.h"
+#include "violet/Support/Bitflags.h"
 #include "violet/Violet.h"
 
 namespace violet::terminal {
 
-/// For CLI programs, this enumeration allows to configure colours for users. This is
-/// similar to Rust-like CLI programs that have the `--color` CLI flag, like `ripgrep` and `cargo`.
+/// Controls whether color output should be emitted by CLI programs.
+///
+/// This mirrors conventions used by tools such as `cargo`, `ripgrep`,
+/// and `git`, including their `--color` flag and `*_COLOR` environment
+/// variables.
+///
+/// * `Always` will always emit ANSI color sequences.
+/// * `Never` will never emit ANSI color sequences.
+/// * `Auto` will emit ANSI sequences only when the output stream
+///   appears to be a terminal supporting them.
 enum struct ColorChoice : UInt8 {
     Always = 0, ///< `--color=always`, `{CLI}_COLOR=always`
     Never = 1, ///< `--color=never`, `{CLI}_COLOR=never`
     Auto = 2 ///< `--color=auto`, auto detection
 };
 
-/// Possible stream source to retrieve information about the terminal.
+/// Identifies which output stream should be inspected when determining
+/// terminal capabilities such as color support or window size.
 enum struct StreamSource : UInt8 {
-    Stdout = 0, ///< uses stdout's file descriptor.
-    Stderr = 1 ///< uses stderr's file descriptor.
+    Stdout = 0, ///< inspect the file descriptor for stdout.
+    Stderr = 1 ///< inspect the file descriptor for stderr.
 };
 
-/// Represents the terminal's color level
+/// Describes the set of ANSI color capabilities supported by a terminal.
+///
+/// This is typically inferred via:
+/// * Environment variables (e.g., `COLORTERM`)
+/// * `$TERM` values
+/// * Terminfo entries
 struct ColorLevel final {
-    bool SupportsBasic = false; ///< provides basic support for ANSI colours
+    bool SupportsBasic = false; ///< provides support for 4-bit (16-color) SGR codes
     bool Supports256Bit = false; ///< provides support for 256-bit ANSI colours
     bool Supports16M = false; ///< provides support for 16-million (RGB) ANSI colours
 };
 
-} // namespace violet::terminal
-
-namespace violet {
-
-struct Terminal final {};
-
-} // namespace violet
-
-/*
-/// Possible stream source to retrieve information about the terminal.
-enum struct StreamSource : uint8 {
-    Stdout = 0, ///< uses stdout's file descriptor.
-    Stderr = 1 ///< uses stderr's file descriptor.
+/// Terminal window dimensions, measured in character cells.
+///
+/// * `Columns` — width of the terminal in columns
+/// * `Rows` — height of the terminal in rows
+struct Window final {
+    UInt16 Columns = 0; ///< width of the terminal in columns
+    UInt16 Rows = 0; ///< height of the terminal in rows
 };
 
-struct ColorLevel final {
-    bool SupportsBasic = false; ///< provides basic support for ANSI colours
-    bool Supports256Bit = false; ///< provides support for 256-bit ANSI colours
-    bool Supports16M = false; ///< provides support for 16-million (RGB) ANSI colours
-};
-
-/// Instance of a RGB-based colour that is supported on truecolor terminals.
+/// Represents a 24-bit terminal color expressed as normalized floats.
+///
+/// Each component must lie in the range `[0.0, 1.0]`. The constructor
+/// accepting floats asserts this range in debug builds.
 struct RGB final {
-    /// red variant
-    uint8 Red;
+    float Red = 0.0F; ///< Red channel in a `[0.0, 1.0]` range
+    float Green = 0.0F; ///< Green channel in a `[0.0, 1.0]` range
+    float Blue = 0.0F; ///< Blue channel in a `[0.0, 1.0]` range
+    bool Foreground = true; ///< whether if the color is for the foreground or background
 
-    /// green variant
-    uint8 Green;
+    constexpr VIOLET_IMPLICIT RGB() noexcept = default;
 
-    /// blue variant
-    uint8 Blue;
+    constexpr VIOLET_IMPLICIT RGB(float red, float green, float blue, bool foreground = true) noexcept
+        : Foreground(foreground)
+    {
+        VIOLET_DEBUG_ASSERT(red >= 0.0F || red <= 1.0F);
+        VIOLET_DEBUG_ASSERT(blue >= 0.0F || blue <= 1.0F);
+        VIOLET_DEBUG_ASSERT(green >= 0.0F || green <= 1.0F);
 
-    /// whether if the color is for the foreground or background
-    bool Foreground;
+        this->Red = red;
+        this->Green = green;
+        this->Blue = blue;
+    }
 
-    constexpr RGB() noexcept = default;
-    constexpr RGB(uint8, uint8, uint8, bool foreground = true) noexcept;
+    template<typename T>
+        requires(std::is_same_v<T, UInt8>)
+    constexpr VIOLET_IMPLICIT RGB(T red, T green, T blue, bool foreground = true) noexcept
+        : Foreground(foreground)
+    {
+        constexpr const float INV = 1.0F / 255.0F;
 
-    constexpr auto Paint() const noexcept -> String;
-    auto ToString() const noexcept -> String;
+        this->Red = static_cast<float>(red) * INV;
+        this->Green = static_cast<float>(green) * INV;
+        this->Blue = static_cast<float>(blue) * INV;
+    }
 
-    // clang-format off
-    VIOLET_IMPL_EQUALITY_SINGLE(
-        RGB,
-        lhs,
-        rhs,
-        {
-            return lhs.Red == rhs.Red && lhs.Green == rhs.Green && lhs.Blue == rhs.Blue;
-        }
-    );
-    // clang-format on
+    [[nodiscard]] auto Paint() const noexcept -> String;
+    [[nodiscard]] auto ToString() const noexcept -> String;
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&;
+
+    auto operator==(const RGB& rhs) const noexcept -> bool
+    {
+        return this->Red == rhs.Red && this->Green == rhs.Green && this->Blue == rhs.Blue;
+    }
 };
 
-/// Represents a style that can appear in a terminal.
 struct Style final {
-    constexpr Style() = default;
+    constexpr VIOLET_IMPLICIT Style() noexcept = default;
 
-    static constexpr auto Black(bool foreground = true) noexcept -> Style;
-    static constexpr auto Red(bool foreground = true) noexcept -> Style;
-    static constexpr auto Green(bool foreground = true) noexcept -> Style;
-    static constexpr auto Yellow(bool foreground = true) noexcept -> Style;
-    static constexpr auto Blue(bool foreground = true) noexcept -> Style;
-    static constexpr auto Magenta(bool foreground = true) noexcept -> Style;
-    static constexpr auto Cyan(bool foreground = true) noexcept -> Style;
-    static constexpr auto White(bool foreground = true) noexcept -> Style;
-    static constexpr auto BrightBlack(bool foreground = true) noexcept -> Style;
-    static constexpr auto BrightRed(bool foreground = true) noexcept -> Style;
-    static constexpr auto BrightGreen(bool foreground = true) noexcept -> Style;
-    static constexpr auto BrightYellow(bool foreground = true) noexcept -> Style;
-    static constexpr auto BrightBlue(bool foreground = true) noexcept -> Style;
-    static constexpr auto BrightMagenta(bool foreground = true) noexcept -> Style;
-    static constexpr auto BrightCyan(bool foreground = true) noexcept -> Style;
-    static constexpr auto BrightWhite(bool foreground = true) noexcept -> Style;
+#define MK_STYLE_FN(NAME, BG, FG)                                                                                      \
+    constexpr static auto NAME(bool foreground = true) noexcept -> Style                                               \
+    {                                                                                                                  \
+        Style style;                                                                                                   \
+        if (foreground) {                                                                                              \
+            style.n_style = Style::fg{ .Value = FG };                                                                  \
+        } else {                                                                                                       \
+            style.n_style = Style::bg{ .Value = BG };                                                                  \
+        }                                                                                                              \
+        return style;                                                                                                  \
+    }
 
-    template<uint8 R, uint8 G, uint8 B>
-    static constexpr auto RGB(bool foreground = true) noexcept -> Style;
+    MK_STYLE_FN(Black, 30, 40);
+    MK_STYLE_FN(Red, 31, 41);
+    MK_STYLE_FN(Green, 32, 42);
+    MK_STYLE_FN(Yellow, 33, 43);
+    MK_STYLE_FN(Blue, 34, 44);
+    MK_STYLE_FN(Magenta, 35, 45);
+    MK_STYLE_FN(Cyan, 36, 46);
+    MK_STYLE_FN(White, 37, 47);
 
-    template<usize N>
-    static constexpr auto HexRGB(const char (&str)[N], bool foreground = true) -> Style;
-    static constexpr auto HexRGB(StringRef, bool foreground = true) noexcept -> Style;
+    MK_STYLE_FN(BrightBlack, 90, 100);
+    MK_STYLE_FN(BrightRed, 91, 101);
+    MK_STYLE_FN(BrightGreen, 92, 102);
+    MK_STYLE_FN(BrightYellow, 93, 103);
+    MK_STYLE_FN(BrightBlue, 94, 104);
+    MK_STYLE_FN(BrightMagenta, 95, 105);
+    MK_STYLE_FN(BrightCyan, 96, 106);
+    MK_STYLE_FN(BrightWhite, 97, 107);
 
-    constexpr auto Bold() noexcept -> Style&;
-    constexpr auto Italic() noexcept -> Style&;
-    constexpr auto Dim() noexcept -> Style&;
-    constexpr auto Underline() noexcept -> Style&;
-    constexpr auto Inverse() noexcept -> Style&;
-    constexpr auto Strikethrough() noexcept -> Style&;
+#undef MK_STYLE_FN
 
-    constexpr auto Paint() const noexcept -> String;
-    auto ToString() const noexcept -> String;
+    template<float Red, float Green, float Blue>
+    consteval static auto RGB(bool foreground = true) noexcept -> Style
+    {
+        static_assert(Red >= 0.0F || Red <= 1.0F, "`Red` must fit in a `[0.0, 0.1]` range space");
+        static_assert(Green >= 0.0F || Green <= 1.0F, "`Green` must fit in a `[0.0, 0.1]` range space");
+        static_assert(Blue >= 0.0F || Blue <= 1.0F, "`Blue` must fit in a `[0.0, 0.1]` range space");
 
-    auto operator<<(std::ostream&) const noexcept -> std::ostream&;
+        terminal::RGB rgb;
+        rgb.Red = Red;
+        rgb.Green = Green;
+        rgb.Blue = Blue;
+        rgb.Foreground = foreground;
+
+        Style style;
+        style.n_style = rgb;
+
+        return style;
+    }
+
+    template<UInt8 Red, UInt8 Green, UInt8 Blue>
+    consteval static auto RGB(bool foreground = true) noexcept -> Style
+    {
+        Style style;
+        style.n_style = terminal::RGB(Red, Green, Blue, foreground);
+
+        return style;
+    }
+
+    constexpr static auto RGB(UInt8 red, UInt8 blue, UInt8 green, bool foreground = true) noexcept -> Style
+    {
+        Style style;
+        style.n_style = terminal::RGB(red, green, blue, foreground);
+
+        return style;
+    }
+
+    constexpr static auto RGB(float red, float blue, float green, bool foreground = true) noexcept -> Style
+    {
+        Style style;
+        style.n_style = terminal::RGB(red, green, blue, foreground);
+
+        return style;
+    }
+
+    constexpr auto Bold() noexcept -> Style&
+    {
+        this->populate(tag::kBold);
+        return *this;
+    }
+
+    constexpr auto Italic() noexcept -> Style&
+    {
+        this->populate(tag::kItalic);
+        return *this;
+    }
+
+    constexpr auto Dim() noexcept -> Style&
+    {
+        this->populate(tag::kDim);
+        return *this;
+    }
+
+    constexpr auto Underline() noexcept -> Style&
+    {
+        this->populate(tag::kUnderline);
+        return *this;
+    }
+
+    constexpr auto Inverse() noexcept -> Style&
+    {
+        this->populate(tag::kInverse);
+        return *this;
+    }
+
+    constexpr auto Strikethrough() noexcept -> Style&
+    {
+        this->populate(tag::kStrikethrough);
+        return *this;
+    }
+
+    [[nodiscard]] auto Paint() const noexcept -> String;
+    [[nodiscard]] auto ToString() const noexcept -> String;
+
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&;
 
 private:
-    friend struct Color;
-
-    enum struct style : uint8 {
+    enum struct tag : UInt8 {
         kBold = 1 << 0,
         kItalic = 1 << 1,
         kDim = 1 << 2,
         kUnderline = 1 << 3,
         kInverse = 1 << 4,
-        kStrikethrough = 1 << 5,
+        kStrikethrough = 1 << 5
     };
 
-    struct bg {
-        uint8 value;
-    };
+    // clang-format off
+    struct bg { UInt8 Value; };
+    struct fg { UInt8 Value; };
+    // clang-format on
 
-    struct fg {
-        uint8 value;
-    };
+    std::variant<std::monostate, bg, fg, struct RGB> n_style;
+    Bitflags<tag> n_tag{};
 
-    std::variant<std::monostate, bg, fg, struct RGB> n_variant;
-    Bitflags<style> n_style{};
-
-    auto getStringStream() const noexcept -> std::ostringstream
+    /// Adds or removes a tag based on the boolean `yes`.
+    constexpr void populate(tag tag, bool yes = true) noexcept
     {
-        std::ostringstream os;
-        if (this->n_style.Contains(style::kBold)) {
-            os << "\x1b[1m";
+        if (yes && !this->n_tag.Contains(tag)) {
+            this->n_tag.Add(tag);
+        } else if (!yes && this->n_tag.Contains(tag)) {
+            this->n_tag.Remove(tag);
         }
-
-        if (this->n_style.Contains(style::kDim)) {
-            os << "\x1b[2m";
-        }
-
-        if (this->n_style.Contains(style::kItalic)) {
-            os << "\x1b[3m";
-        }
-
-        if (this->n_style.Contains(style::kUnderline)) {
-            os << "\x1b[4m";
-        }
-
-        if (this->n_style.Contains(style::kInverse)) {
-            os << "\x1b[7m";
-        }
-
-        if (this->n_style.Contains(style::kStrikethrough)) {
-            os << "\x1b[9m";
-        }
-
-        return os;
     }
+
+    [[nodiscard]] auto createStream() const noexcept -> std::ostringstream;
 };
 
 template<typename T>
 struct Styled final {
-    Styled() = delete;
+    T Target;
+    struct Style Style;
 
-    VIOLET_EXPLICIT Styled(T target, Style style);
+    VIOLET_IMPLICIT Styled(T target, struct Style style) noexcept
+        : Target(target)
+        , Style(style)
+    {
+    }
 
-    auto Paint() const noexcept -> String;
-    auto ToString() const noexcept -> String;
+    [[nodiscard]] auto Paint() const noexcept -> String
+    {
+        return std::format("{}{}\x1b[0m", this->Style.Paint(), this->Target);
+    }
 
-    auto operator<<(std::ostream&) const noexcept -> std::ostream&;
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        return std::format("Styled(Target={}, {})", this->Target, this->Style);
+    }
 
-private:
-    T n_target;
-    Style n_style;
-};
-
-/// Information about a terminal's window.
-struct Window final {
-    /// Number specifying the number of columns this TTY has.
-    uint16 Columns = 0;
-
-    /// Number specifying the number of rows this TTY has.
-    uint16 Rows = 0;
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    {
+        return os << this->ToString();
+    }
 };
 
 #ifdef VIOLET_WINDOWS
@@ -235,42 +316,38 @@ struct Window final {
     -> IO::Result<void>;
 #endif
 
-} // namespace Noelware::Violet::Term
+/// Returns **true** if we are in a terminal process instead of a pipe or child process.
+///
+/// @param source source to check, by default, stdout.
+auto IsTTY(StreamSource source = StreamSource::Stdout) noexcept -> bool;
 
-namespace Noelware::Violet {
+auto QueryWindowInfo(StreamSource source = StreamSource::Stdout) noexcept -> io::Result<Window>;
+auto ColourLevel(StreamSource source = StreamSource::Stdout) noexcept -> ColorLevel;
 
-struct Terminal final {
-    Terminal() = delete;
+} // namespace violet::terminal
 
-    /// Returns **true** if we are in a terminal process instead of pipe or a child process.
-    /// @param source the source to check if we are a TTY.
-    /// @returns a boolean to indicate if we are a TTY process.
-    static auto TTY(Term::StreamSource source = Term::StreamSource::Stdout) noexcept -> bool;
-
-    /// Returns information about the terminal's window if we are in a TTY.
-    /// @param source the source to check about the terminal's window.
-    /// @returns a I/o result about the window descriptor.
-    static auto Window(Term::StreamSource source = Term::StreamSource::Stdout) noexcept -> IO::Result<Term::Window>;
-
-    /// Returns the information about the current stream source's color level.
-    static auto ColorLevel(Term::StreamSource source = Term::StreamSource::Stdout) noexcept -> Term::ColorLevel;
-};
-
-} // namespace Noelware::Violet
-
-VIOLET_TO_STRING(const Term::ColorChoice&, choice, {
+VIOLET_TO_STRING(const violet::terminal::ColorChoice&, choice, {
     switch (choice) {
-    case Noelware::Violet::Term::ColorChoice::Always:
+    case violet::terminal::ColorChoice::Always:
         return "always";
 
-    case Noelware::Violet::Term::ColorChoice::Never:
+    case violet::terminal::ColorChoice::Never:
         return "never";
 
-    case Noelware::Violet::Term::ColorChoice::Auto:
+    case violet::terminal::ColorChoice::Auto:
         return "auto";
     }
 });
 
-// } // namespace Noelware::Violet
+VIOLET_TO_STRING(const violet::terminal::StreamSource&, src, {
+    switch (src) {
+    case violet::terminal::StreamSource::Stdout:
+        return "standard output";
+    case violet::terminal::StreamSource::Stderr:
+        return "standard error";
+    }
+});
 
-*/
+VIOLET_FORMATTER_TEMPLATE(violet::terminal::Styled<T>, typename T);
+VIOLET_FORMATTER(violet::terminal::Style);
+VIOLET_FORMATTER(violet::terminal::RGB);
