@@ -31,12 +31,14 @@ on:
         paths-ignore:
             - '.github/**'
             - '.vscode/**'
+            - '.ci/**'
             - 'nix/**'
 
+            - renovate.json
+            - flake.lock
             - .*ignore
             - .clangd
             - .envrc
-            - flake.lock
     pull_request:
         types: [opened, synchronize]
         branches:
