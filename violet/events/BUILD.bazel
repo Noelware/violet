@@ -19,24 +19,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-include(CXX)
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
-if(UNIX)
-    violet_cc_library(
-        filesystem_ext_xattr
-        HDRS
-            ${CMAKE_SOURCE_DIR}/include/violet/Filesystem/Extensions/XAttr.h
-        DEPS
-            violet::violet
-            violet::io_descriptor
-            violet::io_error
-    )
+cc_library(
+    name = "events",
+    visibility = ["//visibility:public"],
+    deps = [":emitter"],
+)
 
-    violet_cc_test(
-        filesystem_ext_xattr_test
-        SRCS
-            ${CMAKE_SOURCE_DIR}/tests/filesystem/extensions/XAttr.test.cc
-        DEPS
-            violet::filesystem_ext_xattr
-    )
-endif()
+cc_library(
+    name = "emitter",
+    srcs = ["//src/events:emitter.cc"],
+    hdrs = ["//include/violet/Events:EventEmitter.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//violet"],
+)
+
+cc_test(
+    name = "emitter_test",
+    srcs = ["//tests/events:Emitter.test.cc"],
+    deps = [":emitter"],
+)

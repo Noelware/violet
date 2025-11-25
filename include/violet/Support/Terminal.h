@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include <violet/Violet.h>
+#include "violet/Violet.h"
 
 namespace violet::terminal {
 
