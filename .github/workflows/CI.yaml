@@ -74,7 +74,7 @@ jobs:
             USE_BAZEL_VERSION: ${{matrix.bazel-version}}
             BAZELFLAGS: "--config=ci --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}} --client_env=BAZEL_CXXOPTS=-std=c++${{matrix.cxx-standard}} --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - uses: actions/cache@v4
               with:
                 key: bazel-cache-linux-${{matrix.compiler}}-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
@@ -103,7 +103,7 @@ jobs:
         env:
             CMAKE_FLAGS: "-DCMAKE_CXX_STANDARD=${{matrix.cxx-standard}} -DVIOLET_ENABLE_ALL=ON -DVIOLET_ENABLE_TESTS=ON -B /tmp/cmake-build -DFORCE_COLORED_OUTPUT=1 -G Ninja"
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - run: mkdir -p /tmp/cmake-build
             - uses: actions/cache@v4
               with:
@@ -132,7 +132,7 @@ jobs:
             USE_BAZEL_VERSION: "8.4.2"
             BAZELFLAGS: "--config=ci --config=asan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - uses: actions/cache@v4
               with:
                 key: bazel-cache-linux-${{matrix.compiler}}-asan-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
@@ -159,7 +159,7 @@ jobs:
             USE_BAZEL_VERSION: "8.4.2"
             BAZELFLAGS: "--config=ci --config=ubsan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - uses: actions/cache@v4
               with:
                 key: bazel-cache-linux-${{matrix.compiler}}-ubsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
@@ -186,7 +186,7 @@ jobs:
             USE_BAZEL_VERSION: "8.4.2"
             BAZELFLAGS: "--config=ci --config=tsan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - uses: actions/cache@v4
               with:
                 key: bazel-cache-linux-${{matrix.compiler}}-tsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
