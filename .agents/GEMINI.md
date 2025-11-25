@@ -51,3 +51,6 @@ Using `@param`, `@tparam`, `@throws`, and `@return` is the only things you shoul
 
 ### Building
 When building Violet, we provide support for **CMake**, **Meson**, and **Bazel**. Please use Bazel as the primary build system for this library before introducting CMake and Meson targets.
+
+### Finding source files and tests when requested [Bazel only]
+Violet uses a different structure than most Bazel projects. DO NOT LOOK IN `src`, `tests`, or `include/violet` FOR TARGETS AS THEY ONLY EXPOSE FILES, NOT `cc_library`/`cc_test` DEFINITIONS; NEVER SUGGEST `cc_library`/`cc_test` IN `src`, `tests`, OR `include/violet`.

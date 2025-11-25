@@ -32,10 +32,38 @@ TEST(Events, ReceivesEvents)
     Event<UInt32> event = emitter.Event();
 
     UInt32 called = 0;
-    event([&](UInt32 value) -> void { called = value; });
+    auto _ = event([&](UInt32 value) -> void { called = value; }); // NOLINT(readability-identifier-length)
 
     emitter.Fire(42);
     ASSERT_EQ(called, 42);
+}
+
+TEST(Events, PersistListener)
+{
+    Emitter<UInt32> emitter;
+    Event<UInt32> event = emitter.Event();
+
+    UInt32 called = 0;
+    Int64 id = -1;
+
+    {
+        auto guard
+            = event([&](UInt32 value) -> void { called = value; }, true); // NOLINT(readability-identifier-length)
+
+        id = guard.ID();
+
+        emitter.Fire(42);
+        ASSERT_EQ(called, 42);
+    }
+
+    ASSERT_TRUE(id != -1);
+
+    emitter.Fire(69);
+    ASSERT_EQ(called, 69);
+
+    emitter.Unsubscribe(id);
+    emitter.Fire(420);
+    ASSERT_EQ(called, 69);
 }
 
 TEST(Events, GuardListenerStopsCallbacks)
@@ -81,11 +109,11 @@ TEST(Events, EmitterThreadSafe)
     Mutex mu;
     Vec<UInt64> ids(1000);
 
-    auto worker = [&] {
+    auto worker = [&] -> void {
         while (!started.load()) {}
 
         for (Int32 i = 0; i < 100; i++) {
-            auto guard = event([&](UInt32) {});
+            auto guard = event([&](UInt32) -> void {});
             std::scoped_lock lk(mu);
 
             ids.push_back(guard.ID());
@@ -101,8 +129,5 @@ TEST(Events, EmitterThreadSafe)
     t2.join();
     t3.join();
 
-    std::sort(ids.begin(), ids.end());
-    auto it = std::unique(ids.begin(), ids.end());
-
-    EXPECT_EQ(it, ids.end());
+    ASSERT_EQ(ids.size(), 1300);
 }

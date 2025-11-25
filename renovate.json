@@ -10,17 +10,5 @@
     "addLabels": ["deps"],
     "vulnerabilityAlerts": {
         "labels": ["security"]
-    },
-    "customManagers": [
-        {
-            "customType": "regex",
-            "description": "Updates `gcc` images in `build-ci-images.sh`",
-            "fileMatch": ["hack/build-ci-images.sh$"],
-            "datasourceTemplate": "docker",
-            "versioningTemplate": "digest",
-            "matchStrings": [
-                "#\\srenovate: ref=(?<depName>[^\\s]+)\\s+gccimages\\[\"gcc-\\d+\"\\]=\"gcc@sha256:(?<currentValue>[a-f0-9]{64})\""
-            ]
-        }
-    ]
+    }
 }
