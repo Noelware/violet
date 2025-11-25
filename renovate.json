@@ -19,7 +19,7 @@
             "datasourceTemplate": "docker",
             "versioningTemplate": "digest",
             "matchStrings": [
-                "#\\srenovate: ref=(?<depName>[^\\s]+)\\s+gccimages[\"gcc-\\d+\"]=\"gcc@sha256:(?<currentValue>[a-f0-9]{64})\""
+                "#\\srenovate: ref=(?<depName>[^\\s]+)\\s+gccimages\\[\"gcc-\\d+\"\\]=\"gcc@sha256:(?<currentValue>[a-f0-9]{64})\""
             ]
         }
     ]
