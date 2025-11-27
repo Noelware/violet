@@ -29,7 +29,7 @@ bool_flag(
 
 config_setting(
     name = "win32_dllexport_enabled",
-    flag_values = {"//bazel/flags:win32_dllexport": "True"},
+    flag_values = {"//buildsystem/bazel/flags:win32_dllexport": "True"},
 )
 
 [bool_flag(
@@ -45,7 +45,7 @@ config_setting(
 
 [config_setting(
     name = "%s_enabled" % san,
-    flag_values = {"//bazel/flags:%s" % san: "True"},
+    flag_values = {"//buildsystem/bazel/flags:%s" % san: "True"},
 ) for san in [
     "asan",
     "msan",

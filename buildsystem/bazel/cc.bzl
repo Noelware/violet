@@ -22,10 +22,10 @@
 load("@rules_cc//cc:defs.bzl", cc_library_ = "cc_library", cc_test_ = "cc_test")
 
 SANITIZER_OPTS = select({
-    "//buildsystem/bazel/configs:asan_enabled": ["-fsanitize=address"],
-    "//buildsystem/bazel/configs:msan_enabled": ["-fsanitize=memory"],
-    "//buildsystem/bazel/configs:tsan_enabled": ["-fsanitize=thread"],
-    "//buildsystem/bazel/configs:ubsan_enabled": ["-fsanitize=undefined"],
+    "//buildsystem/bazel/flags:asan_enabled": ["-fsanitize=address"],
+    "//buildsystem/bazel/flags:msan_enabled": ["-fsanitize=memory"],
+    "//buildsystem/bazel/flags:tsan_enabled": ["-fsanitize=thread"],
+    "//buildsystem/bazel/flags:ubsan_enabled": ["-fsanitize=undefined"],
     "//conditions:default": [],
 })
 
@@ -35,16 +35,16 @@ ASAN_OPTS = ["print_summary=1"]
 TSAN_OPTS = ["print_summary=1"]
 
 SANITIZER_ENV = select({
-    "//buildsystem/bazel/configs:ubsan_enabled": {"UBSAN_OPTIONS": ":".join(UBSAN_OPTS)},
+    "//buildsystem/bazel/flags:ubsan_enabled": {"UBSAN_OPTIONS": ":".join(UBSAN_OPTS)},
     "//conditions:default": {},
 }) | select({
-    "//buildsystem/bazel/configs:asan_enabled": {"ASAN_OPTIONS": ":".join(ASAN_OPTS)},
+    "//buildsystem/bazel/flags:asan_enabled": {"ASAN_OPTIONS": ":".join(ASAN_OPTS)},
     "//conditions:default": {},
 }) | select({
-    "//buildsystem/bazel/configs:tsan_enabled": {"TSAN_OPTIONS": ":".join(TSAN_OPTS)},
+    "//buildsystem/bazel/flags:tsan_enabled": {"TSAN_OPTIONS": ":".join(TSAN_OPTS)},
     "//conditions:default": {},
 }) | select({
-    "//buildsystem/bazel/configs:tsan_enabled": {"MSAN_OPTIONS": ":".join(MSAN_OPTS)},
+    "//buildsystem/bazel/flags:tsan_enabled": {"MSAN_OPTIONS": ":".join(MSAN_OPTS)},
     "//conditions:default": {},
 })
 
@@ -68,7 +68,7 @@ COMPILER_DEFINES = select({
     "@rules_cc//cc/compiler:msvc-cl": ["VIOLET_MSVC"],
     "//conditions:default": [],
 }) + select({
-    "//buildsystem/bazel/configs:win32_dllexport_enabled": ["VIOLET_DLL_EXPORT"],
+    "//buildsystem/bazel/flags:win32_dllexport_enabled": ["VIOLET_DLL_EXPORT"],
     "//conditions:default": [],
 })
 
