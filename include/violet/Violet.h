@@ -302,6 +302,13 @@ struct Unsafe final {
     constexpr VIOLET_EXPLICIT Unsafe(const char*) {}
 };
 
+/// A marker type that represents an infallible state, analogous to Rust's [`std::convert::Infallible`].
+///
+/// [`std::convert::Infallible`]: https://doc.rust-lang.org/1.91.1/std/convert/enum.Infallible.html
+struct Infallible final {
+    constexpr VIOLET_IMPLICIT Infallible() = default;
+};
+
 template<Stringify S>
 struct StringifyFormatter {
     constexpr StringifyFormatter() = default;

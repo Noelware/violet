@@ -190,5 +190,6 @@ build.ninja
 .ninja_logs
 
 **/.usr.bazelrc
+.cache/
 .direnv/
 build/
