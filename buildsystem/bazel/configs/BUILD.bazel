@@ -19,11 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load(":configs.bzl", "feature", "sanitizer")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 
-# If the `@violet//buildsystem/bazel/configs:win32_dllexport` is defined, it'll mark
-# any APIs as `__declspec(dllexport)` instead of `__declspec(dllimport)`.
-feature(
+bool_flag(
     name = "win32_dllexport",
     build_setting_default = False,
     visibility = ["//visibility:public"],
@@ -31,60 +29,26 @@ feature(
 
 config_setting(
     name = "win32_dllexport_enabled",
-    flag_values = {"//buildsystem/bazel/configs:win32_dllexport": "True"},
+    flag_values = {"//bazel/flags:win32_dllexport": "True"},
 )
 
-sanitizer(
-    name = "asan",
+[bool_flag(
+    name = san,
     build_setting_default = False,
     visibility = ["//visibility:public"],
-)
+) for san in [
+    "asan",
+    "msan",
+    "tsan",
+    "ubsan",
+]]
 
-config_setting(
-    name = "asan_enabled",
-    flag_values = {"//buildsystem/bazel/configs:asan": "True"},
-)
-
-sanitizer(
-    name = "msan",
-    build_setting_default = False,
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "msan_enabled",
-    flag_values = {"//buildsystem/bazel/configs:msan": "True"},
-)
-
-sanitizer(
-    name = "tsan",
-    build_setting_default = False,
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "tsan_enabled",
-    flag_values = {"//buildsystem/bazel/configs:tsan": "True"},
-)
-
-sanitizer(
-    name = "ubsan",
-    build_setting_default = False,
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "ubsan_enabled",
-    flag_values = {"//buildsystem/bazel/configs:ubsan": "True"},
-)
-
-feature(
-    name = "curl",
-    build_setting_default = True,
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "curl_enabled",
-    flag_values = {"//buildsystem/bazel/configs:curl": "True"},
-)
+[config_setting(
+    name = "%s_enabled" % san,
+    flag_values = {"//bazel/flags:%s" % san: "True"},
+) for san in [
+    "asan",
+    "msan",
+    "tsan",
+    "ubsan",
+]]
