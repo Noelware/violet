@@ -32,17 +32,17 @@ cc_library(
     visibility = ["//:__subpackages__"],
 )
 
-# Alias `--@violet//:win32_dllexport` -> `--@violet//buildsystem/bazel/configs:win32_dllexport`
+# Alias `--@violet//:win32_dllexport` -> `--@violet//buildsystem/bazel/flags:win32_dllexport`
 alias(
     name = "win32_dllexport",
-    actual = "//buildsystem/bazel/configs:win32_dllexport",
+    actual = "//buildsystem/bazel/flags:win32_dllexport",
     visibility = ["//visibility:public"],
 )
 
-# Alias `--@violet//:[a|s|t|ub]san` -> `--@violet//buildsystem/bazel/configs:[a|s|t|ub]`
+# Alias `--@violet//:[a|s|t|ub]san` -> `--@violet//buildsystem/bazel/flags:[a|s|t|ub]san`
 [alias(
     name = "%ssan" % san,
-    actual = "//buildsystem/bazel/configs:%ssan" % san,
+    actual = "//buildsystem/bazel/flags:%ssan" % san,
     visibility = ["//visibility:public"],
 ) for san in [
     "a",
@@ -50,10 +50,3 @@ alias(
     "t",
     "ub",
 ]]
-
-# Alias `--@violet//:curl` -> `--@violet//buildsystem/bazel/configs:curl`
-alias(
-    name = "curl",
-    actual = "//buildsystem/bazel/configs:curl",
-    visibility = ["//visibility:public"],
-)
