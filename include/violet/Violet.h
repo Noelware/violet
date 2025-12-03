@@ -87,9 +87,9 @@ concept callable_returns = std::convertible_to<std::invoke_result_t<Fun, Args...
 
 template<typename T, typename Item>
 concept collectable = requires(T& ty, Item value) {
-    { ty.insert(ty.end(), value) } -> std::same_as<typename T::iterator>;
+    { ty.insert(ty.end(), value) };
 } || requires(T& cnt, Item value) {
-    { cnt.push_back(value) } -> std::same_as<void>;
+    { cnt.push_back(value) };
 };
 
 /// Newtype for [`std::int8_t`].

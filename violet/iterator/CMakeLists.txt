@@ -19,15 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library")
-
-cc_library(
-    name = "iter",
-    srcs = ["//src/iter:Iterator.cc"],
-    hdrs = ["//include/violet:Iterator.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container",
-    ],
-)
+include(CXX)

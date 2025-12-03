@@ -19,51 +19,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <gtest/gtest.h>
+#include <violet/Iterator.h>
+#include <violet/Iterator/Skip.h>
+#include <violet/Violet.h>
 
-#include "violet/Container/Optional.h"
-#include "violet/Iterator.h"
-#include "violet/Violet.h"
+using namespace violet; // NOLINT(google-build-using-namespace)
 
-namespace violet::iter {
-
-template<Iterable Impl>
-struct Enumerate final: public Iterator<Enumerate<Impl>> {
-    using Item = Pair<UInt, TypeOf<Impl>>;
-
-    Enumerate(Impl iter)
-        : n_iter(iter)
-    {
-    }
-
-    auto Next() noexcept -> Optional<Item>
-    {
-        if (auto elem = this->n_iter.Next()) {
-            return Some<Item>(Pair<UInt, TypeOf<Impl>>(this->n_index++, *elem));
-        }
-
-        return Nothing;
-    }
-
-private:
-    Impl n_iter;
-    UInt n_index = 0;
-};
-
-} // namespace violet::iter
-
-namespace violet {
-
-template<class Impl>
-inline auto Iterator<Impl>::Enumerate() & noexcept
+TEST(Iterators, SkipNoneReturnsAll)
 {
-    return iter::Enumerate<Impl>(getThisObject());
+    Vec<UInt32> vi({ 1, 2, 3, 4 });
+    auto it = MkIterable(vi).Skip(0);
+
+    ASSERT_EQ(it.Collect<Vec<UInt32>>(), vi);
 }
 
-template<class Impl>
-inline auto Iterator<Impl>::Enumerate() && noexcept
+TEST(Iterators, SkipSome)
 {
-    return iter::Enumerate<Impl>(VIOLET_MOVE(getThisObject()));
+    Vec<UInt32> vi({ 10, 20, 30, 40, 50 });
+    auto it = MkIterable(vi).Skip(2);
+
+    Vec<UInt32> expected({ 30, 40, 50 });
+    ASSERT_EQ(it.Collect<Vec<UInt32>>(), expected);
 }
 
-} // namespace violet
+TEST(Iterators, SkipPastEndYieldsEmpty)
+{
+    Vec<UInt32> vi({ 10, 20 });
+    auto it = MkIterable(vi).Skip(10);
+
+    ASSERT_TRUE(it.Collect<Vec<UInt32>>().empty());
+}

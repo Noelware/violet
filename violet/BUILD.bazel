@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library")
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
     name = "macros",
@@ -47,4 +47,20 @@ cc_library(
         "@absl//absl/container:node_hash_set",
         "@absl//absl/numeric:int128",
     ],
+)
+
+cc_library(
+    name = "iterator",
+    hdrs = ["//include/violet:Iterator.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container",
+    ],
+)
+
+cc_test(
+    name = "iterator_test",
+    srcs = ["//tests:Iterator.test.cc"],
+    deps = [":iterator"],
 )

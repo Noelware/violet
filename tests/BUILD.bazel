@@ -19,4 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-exports_files(glob(["*.cc"]))
+exports_files(glob(["*.test.cc"]))

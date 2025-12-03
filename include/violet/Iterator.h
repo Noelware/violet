@@ -141,23 +141,6 @@ namespace iter::detail {
         requires detail::is_optional_v<std::remove_cvref_t<decltype(ty.NextBack())>>;
     };
 
-    /// Iterator adapter that wraps standard-library iterators (`std::begin`/`std::end`)
-    /// and exposes them as Violet iterators.
-    ///
-    /// @tparam It any valid STL input iterator.
-    template<typename It>
-    struct STLCompatibleIterator final: public Iterator<STLCompatibleIterator<It>> {
-        using Item = std::remove_cv_t<std::remove_reference_t<typename std::iter_value_t<It>>>;
-
-        STLCompatibleIterator(It begin, It end);
-
-        auto Next() noexcept -> Optional<Item>;
-
-    private:
-        It n_current;
-        It n_end;
-    };
-
 } // namespace iter::detail
 
 /// Concept that identifies types implementing the Violet iteration protocol.
@@ -212,15 +195,61 @@ namespace iter {
         template<class Impl>
         struct STLRangeIterator final {
             STLRangeIterator() = delete;
-            STLRangeIterator(Impl impl);
+            STLRangeIterator(Impl impl)
+                : n_iter(VIOLET_MOVE(impl))
+            {
+            }
 
-            auto operator!=(detail::sentinel) -> bool;
-            auto operator++();
-            auto operator*();
+            auto operator!=(detail::sentinel) -> bool
+            {
+                if (!this->n_current) {
+                    this->n_current = this->n_iter.Next();
+                }
+
+                return this->n_current.HasValue();
+            }
+
+            void operator++()
+            {
+                this->n_current = this->n_iter.Next();
+            }
+
+            auto operator*()
+            {
+                return *this->n_current;
+            }
 
         private:
             Impl n_iter;
             Optional<violet::iter::TypeOf<Impl>> n_current;
+        };
+
+        /// Iterator adapter that wraps standard-library iterators (`std::begin`/`std::end`)
+        /// and exposes them as Violet iterators.
+        ///
+        /// @tparam It any valid STL input iterator.
+        template<typename It>
+        struct STLCompatibleIterator final: public Iterator<STLCompatibleIterator<It>> {
+            using Item = std::remove_cv_t<std::remove_reference_t<typename std::iter_value_t<It>>>;
+
+            STLCompatibleIterator(It begin, It end)
+                : n_current(begin)
+                , n_end(end)
+            {
+            }
+
+            auto Next() noexcept -> Optional<Item>
+            {
+                if (this->n_current != this->n_end) {
+                    return Some<Item>(*n_current++);
+                }
+
+                return Nothing;
+            }
+
+        private:
+            It n_current;
+            It n_end;
         };
     } // namespace detail
 
@@ -349,36 +378,18 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::filter()`].
     ///
     /// [`Iterator::filter()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter
-    auto Filter() & noexcept;
+    template<typename Pred>
+        requires callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>
+    auto Filter(Pred&& pred) & noexcept;
 
     /// Adapter that yields only items for which the predicate returns `true`.
     ///
     /// Equivalent to Rust's [`Iterator::filter()`].
     ///
     /// [`Iterator::filter()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter
-    auto Filter() && noexcept;
-
-    /// Adapter combining mapping and filtering.
-    ///
-    /// The provided function returns an `Optional<U>`.
-    /// - `Nothing` ~> item skipped
-    /// - `Some(u)` ~> item yielded
-    ///
-    /// Equivalent to Rust's [`Iterator::filter_map()`].
-    ///
-    /// [`Iterator::filter_map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter_map
-    auto FilterMap() & noexcept;
-
-    /// Adapter combining mapping and filtering.
-    ///
-    /// The provided function returns an `Optional<U>`.
-    /// - `Nothing` ~> item skipped
-    /// - `Some(u)` ~> item yielded
-    ///
-    /// Equivalent to Rust's [`Iterator::filter_map()`].
-    ///
-    /// [`Iterator::filter_map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter_map
-    auto FilterMap() && noexcept;
+    template<typename Pred>
+        requires callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>
+    auto Filter(Pred&& pred) && noexcept;
 
     /// Skips the first `skip` items.
     ///
@@ -413,10 +424,18 @@ struct Iterator {
     /// @param fun callable that combines the accumulator with each iterator item
     /// @returns the final accumulated value.
     template<typename Acc, typename Fun>
-        requires(callable<Fun, Acc, iter::TypeOf<Impl>>
-            && std::convertible_to<std::invoke_result_t<Fun, Acc, iter::TypeOf<Impl>>, Acc>)
+        requires(callable<Fun, const Acc&, iter::TypeOf<Impl>>
+            && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
     auto Fold(Acc init, Fun&& fun) & noexcept(
-        std::invoke(VIOLET_FWD(Fun, fun), init, *std::declval<iter::TypeOf<Impl>>()));
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+    {
+        auto acc = VIOLET_MOVE(init);
+        while (auto elem = getThisObject().Next()) {
+            acc = std::invoke(VIOLET_FWD(Fun, fun), acc, *elem);
+        }
+
+        return acc;
+    }
 
     /// Reduces the iterator to a single accumulated value.
     ///
@@ -427,30 +446,54 @@ struct Iterator {
     /// @param fun callable that combines the accumulator with each iterator item
     /// @returns the final accumulated value.
     template<typename Acc, typename Fun>
-        requires(callable<Fun, Acc, iter::TypeOf<Impl>>
-            && std::convertible_to<std::invoke_result_t<Fun, Acc, iter::TypeOf<Impl>>, Acc>)
+        requires(callable<Fun, const Acc&, iter::TypeOf<Impl>>
+            && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
     auto Fold(Acc init, Fun&& fun) && noexcept(
-        std::invoke(VIOLET_FWD(Fun, fun), init, *std::declval<iter::TypeOf<Impl>>()));
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+    {
+        auto acc = VIOLET_MOVE(init);
+        while (auto elem = getThisObject().Next()) {
+            acc = std::invoke(VIOLET_FWD(Fun, fun), acc, *elem);
+        }
+
+        return acc;
+    }
 
     /// Reduces a double-ended iterator from the back.
     ///
     /// Equivalent to Rust's [`Iterator::rfold()`].
     /// [`Iterator::rfold()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.rfold
     template<typename Acc, typename Fun>
-        requires(DoubleEndedIterable<Impl> && callable<Fun, Acc, iter::TypeOf<Impl>>
-            && std::convertible_to<std::invoke_result_t<Fun, Acc, iter::TypeOf<Impl>>, Acc>)
+        requires(DoubleEndedIterable<Impl> && callable<Fun, const Acc&, iter::TypeOf<Impl>>
+            && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
     auto RFold(Acc init, Fun&& fun) & noexcept(
-        std::invoke(VIOLET_FWD(Fun, fun), init, *std::declval<iter::TypeOf<Impl>>()));
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+    {
+        auto acc = VIOLET_MOVE(init);
+        while (auto elem = getThisObject().NextBack()) {
+            acc = std::invoke(VIOLET_FWD(Fun, fun), acc, *elem);
+        }
+
+        return acc;
+    }
 
     /// Reduces a double-ended iterator from the back.
     ///
     /// Equivalent to Rust's [`Iterator::rfold()`].
     /// [`Iterator::rfold()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.rfold
     template<typename Acc, typename Fun>
-        requires(DoubleEndedIterable<Impl> && callable<Fun, Acc, iter::TypeOf<Impl>>
-            && std::convertible_to<std::invoke_result_t<Fun, Acc, iter::TypeOf<Impl>>, Acc>)
+        requires(DoubleEndedIterable<Impl> && callable<Fun, const Acc&, iter::TypeOf<Impl>>
+            && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
     auto RFold(Acc init, Fun&& fun) && noexcept(
-        std::invoke(VIOLET_FWD(Fun, fun), init, *std::declval<iter::TypeOf<Impl>>()));
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+    {
+        auto acc = VIOLET_MOVE(init);
+        while (auto elem = getThisObject().NextBack()) {
+            acc = std::invoke(VIOLET_FWD(Fun, fun), acc, *elem);
+        }
+
+        return acc;
+    }
 
     /// Returns the position of the first item satisfying a predicate.
     ///
@@ -459,8 +502,20 @@ struct Iterator {
     ///
     /// @returns Optional index of the item, or `Nothing` if no item matches.
     template<typename Pred>
-    auto Position(Pred&& pred) & noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()))
-        -> Optional<UInt>;
+    auto Position(Pred&& pred) & noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()))) -> Optional<UInt>
+    {
+        UInt pos = 0;
+        while (auto value = getThisObject().Next()) {
+            if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
+                return Some<UInt>(pos);
+            }
+
+            pos++;
+        }
+
+        return Nothing;
+    }
 
     /// Returns the position of the first item satisfying a predicate.
     ///
@@ -469,8 +524,20 @@ struct Iterator {
     ///
     /// @returns Optional index of the item, or `Nothing` if no item matches.
     template<typename Pred>
-    auto Position(Pred&& pred) && noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()))
-        -> Optional<UInt>;
+    auto Position(Pred&& pred) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()))) -> Optional<UInt>
+    {
+        UInt pos = 0;
+        while (auto value = getThisObject().Next()) {
+            if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
+                return Some<UInt>(pos);
+            }
+
+            pos++;
+        }
+
+        return Nothing;
+    }
 
     /// Finds the first item that satisfies the given predicate.
     ///
@@ -478,7 +545,16 @@ struct Iterator {
     /// [`Iterator::find()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.find
     template<typename Pred>
         requires(callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>)
-    auto Find(Pred&& pred) & noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()));
+    auto Find(Pred&& pred) & noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+    {
+        while (auto value = getThisObject().Next()) {
+            if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
+                return value;
+            }
+        }
+
+        return decltype(Optional<iter::TypeOf<Impl>>{})(Nothing);
+    }
 
     /// Finds the first item that satisfies the given predicate.
     ///
@@ -486,7 +562,17 @@ struct Iterator {
     /// [`Iterator::find()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.find
     template<typename Pred>
         requires(callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>)
-    auto Find(Pred&& pred) && noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()));
+    auto Find(Pred&& pred) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+    {
+        while (auto value = getThisObject().Next()) {
+            if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
+                return value;
+            }
+        }
+
+        return decltype(Optional<iter::TypeOf<Impl>>{})(Nothing);
+    }
 
     /// Applies a function that returns an `Optional` and returns the first `Some` value.
     ///
@@ -495,7 +581,19 @@ struct Iterator {
     template<typename Fun>
         requires(callable<Fun, iter::TypeOf<Impl>>
             && iter::detail::is_optional_v<std::invoke_result_t<Fun, iter::TypeOf<Impl>>>)
-    auto FindMap(Fun&& fun) & noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>()));
+    auto FindMap(Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
+    {
+        using Ret = std::invoke_result_t<Fun, iter::TypeOf<Impl>>;
+        using U = iter::detail::optional_type_t<Ret>;
+
+        while (auto value = getThisObject().Next()) {
+            if (Optional<U> mapped = std::invoke(VIOLET_FWD(Fun, fun), *value)) {
+                return Some<U>(*mapped);
+            }
+        }
+
+        return decltype(Optional<U>())(Nothing);
+    }
 
     /// Applies a function that returns an `Optional` and returns the first `Some` value.
     ///
@@ -504,7 +602,19 @@ struct Iterator {
     template<typename Fun>
         requires(callable<Fun, iter::TypeOf<Impl>>
             && iter::detail::is_optional_v<std::invoke_result_t<Fun, iter::TypeOf<Impl>>>)
-    auto FindMap(Fun&& fun) && noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>()));
+    auto FindMap(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
+    {
+        using Ret = std::invoke_result_t<Fun, iter::TypeOf<Impl>>;
+        using U = iter::detail::optional_type_t<Ret>;
+
+        while (auto value = getThisObject().Next()) {
+            if (Optional<U> mapped = std::invoke(VIOLET_FWD(Fun, fun), *value)) {
+                return Some<U>(*mapped);
+            }
+        }
+
+        return decltype(Optional<U>())(Nothing);
+    }
 
     /// Returns true if any element matches the predicate.
     ///
@@ -512,7 +622,15 @@ struct Iterator {
     /// [`Iterator::any()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.any
     template<typename Pred>
         requires(callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>)
-    auto Any(Pred&& pred) & noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()));
+    auto Any(Pred&& pred) & noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+    {
+        while (auto value = getThisObject().Next()) {
+            if (std::invoke(VIOLET_FWD(Pred, pred), *value))
+                return true;
+        }
+
+        return false;
+    }
 
     /// Returns true if any element matches the predicate.
     ///
@@ -520,7 +638,15 @@ struct Iterator {
     /// [`Iterator::any()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.any
     template<typename Pred>
         requires(callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>)
-    auto Any(Pred&& pred) && noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()));
+    auto Any(Pred&& pred) && noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+    {
+        while (auto value = getThisObject().Next()) {
+            if (std::invoke(VIOLET_FWD(Pred, pred), *value))
+                return true;
+        }
+
+        return false;
+    }
 
     /// Inspects each item of the iterator by calling a function with a side effect.
     ///
@@ -528,7 +654,14 @@ struct Iterator {
     /// [`Iterator::inspect()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.inspect
     template<typename Fun>
         requires(callable<Fun, iter::TypeOf<Impl>> && callable_returns<Fun, void, iter::TypeOf<Impl>>)
-    auto Inspect(Fun&& fun) & noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>()));
+    auto Inspect(Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
+    {
+        while (auto value = getThisObject().Next()) {
+            std::invoke(VIOLET_FWD(Fun, fun), *value);
+        }
+
+        return *this;
+    }
 
     /// Inspects each item of the iterator by calling a function with a side effect.
     ///
@@ -536,57 +669,158 @@ struct Iterator {
     /// [`Iterator::inspect()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.inspect
     template<typename Fun>
         requires(callable<Fun, iter::TypeOf<Impl>> && callable_returns<Fun, void, iter::TypeOf<Impl>>)
-    auto Inspect(Fun&& fun) && noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>()));
+    auto Inspect(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
+    {
+        while (auto value = getThisObject().Next()) {
+            std::invoke(VIOLET_FWD(Fun, fun), *value);
+        }
+
+        return *this;
+    }
 
     /// Counts the number of remaining elements.
     ///
     /// Equivalent to Rust's [`Iterator::count()`].
+    ///
     /// [`Iterator::count()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.count
-    auto Count() & noexcept -> UInt;
+    auto Count() & noexcept -> UInt
+    {
+        UInt counter = 0;
+        while (auto _ = getThisObject().Next()) { // NOLINT(readability-identifier-length)
+            counter++;
+        }
+
+        return counter;
+    }
 
     /// Counts the number of remaining elements.
     ///
     /// Equivalent to Rust's [`Iterator::count()`].
+    ///
     /// [`Iterator::count()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.count
-    auto Count() && noexcept -> UInt;
+    auto Count() && noexcept -> UInt
+    {
+        UInt counter = 0;
+        while (auto _ = getThisObject().Next()) { // NOLINT(readability-identifier-length)
+            counter++;
+        }
+
+        return counter;
+    }
 
     /// Advances the iterator by `nth` elements.
     ///
     /// Equivalent to Rust's [`Iterator::advance_by()`].
     ///
     /// [`Iterator::advance_by()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.advance_by
-    auto AdvanceBy(UInt nth) & noexcept -> Result<void, UInt>;
+    auto AdvanceBy(UInt nth) & noexcept -> Result<void, UInt>
+    {
+        for (UInt i = 0; i < nth; i++) {
+            if (!getThisObject().Next()) {
+                return Err(i);
+            }
+        }
+
+        return {};
+    }
 
     /// Advances the iterator by `nth` elements.
     ///
     /// Equivalent to Rust's [`Iterator::advance_by()`].
     ///
     /// [`Iterator::advance_by()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.advance_by
-    auto AdvanceBy(UInt nth) && noexcept -> Result<void, UInt>;
+    auto AdvanceBy(UInt nth) && noexcept -> Result<void, UInt>
+    {
+        for (UInt i = 0; i < nth; i++) {
+            if (!getThisObject().Next()) {
+                return Err(i);
+            }
+        }
+
+        return {};
+    }
 
     /// Returns the `nth` element of the iterator.
     ///
     /// Equivalent to Rust's [`Iterator::nth()`].
     ///
     /// [`Iterator::nth()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.nth
-    auto Nth(UInt nth) & noexcept -> Optional<iter::TypeOf<Impl>>;
+    auto Nth(UInt nth) & noexcept
+    {
+        if (this->AdvanceBy(nth)) {
+            return getThisObject().Next();
+        }
+
+        return decltype(getThisObject().Next())(Nothing);
+    }
 
     /// Returns the `nth` element of the iterator.
     ///
     /// Equivalent to Rust's [`Iterator::nth()`].
     ///
     /// [`Iterator::nth()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.nth
-    auto Nth(UInt nth) && noexcept -> Optional<iter::TypeOf<Impl>>;
+    auto Nth(UInt nth) && noexcept
+    {
+        if (this->AdvanceBy(nth)) {
+            return getThisObject().Next();
+        }
+
+        return decltype(getThisObject().Next())(Nothing);
+    }
 
     /// Collects the iterator elements into a container.
     template<typename Container>
-    auto Collect();
+    auto Collect()
+    {
+        if constexpr (collectable<Container, iter::TypeOf<Impl>>) {
+            Container out;
+            while (auto value = getThisObject().Next()) {
+                if constexpr (requires { out.push_back(VIOLET_MOVE(*value)); }) {
+                    out.push_back(VIOLET_MOVE(*value));
+                } else {
+                    out.insert(out.end(), VIOLET_MOVE(*value));
+                }
+            }
+
+            return out;
+        } else if constexpr (requires { typename Container::value_type{}; } && (std::tuple_size_v<Container>) > 0) {
+            constexpr UInt N = std::tuple_size_v<Container>; // NOLINT(readability-identifier-length)
+
+            Container out{};
+            UInt idx = 0;
+            while (auto value = getThisObject().Next()) {
+                if (idx >= N) {
+                    break;
+                }
+
+                out[idx++] = VIOLET_MOVE(*value);
+            }
+
+            return out;
+        } else {
+            static_assert([] -> auto { return false; }(), "unsupported container type");
+        }
+    }
 
     /// Returns the lower and upper bound size hints for the iterator.
-    [[nodiscard]] auto SizeHint() const noexcept -> violet::SizeHint;
+    [[nodiscard]] auto SizeHint() const noexcept -> violet::SizeHint
+    {
+        if constexpr (requires { getThisObject().SizeHint(); }) {
+            return getThisObject().SizeHint();
+        }
 
-    auto begin();
-    auto end();
+        return {};
+    }
+
+    auto begin()
+    {
+        return iter::detail::STLRangeIterator(getThisObject());
+    }
+
+    auto end()
+    {
+        return iter::detail::sentinel{};
+    }
 
 private:
     constexpr auto getThisObject() & noexcept -> Impl&
@@ -603,7 +837,7 @@ private:
 /// Adapts a container into a Violet iterator.
 ///
 /// Backed by a `STLCompatibleIterator`, this allows bridging existing STL
-/// containers into Violet’s iterator API.
+/// containers into Violet's iterator API.
 ///
 /// # Examples
 ///
@@ -614,12 +848,15 @@ private:
 /// for (auto x : it) { /* ... */ }
 /// ```
 template<typename Container>
-auto MkIterable(Container& cnt);
+auto MkIterable(const Container& cnt)
+{
+    return iter::detail::STLCompatibleIterator(std::begin(cnt), std::end(cnt));
+}
 
 /// Adapts a container into a Violet iterator.
 ///
 /// Backed by a `STLCompatibleIterator`, this allows bridging existing STL
-/// containers into Violet’s iterator API.
+/// containers into Violet's iterator API.
 ///
 /// # Examples
 ///
@@ -630,6 +867,9 @@ auto MkIterable(Container& cnt);
 /// for (auto x : it) { /* ... */ }
 /// ```
 template<typename Container>
-auto MkIterable(Container&& cnt);
+auto MkIterable(Container&& cnt) // NOLINT
+{
+    return iter::detail::STLCompatibleIterator(std::begin(cnt), std::end(cnt));
+}
 
 } // namespace violet

@@ -1,0 +1,124 @@
+# 🌺💜 Violet: Extended standard library for C++26
+# Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "enumerate",
+    hdrs = ["//include/violet/Iterator:Enumerate.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet:iterator",
+        "//violet/container",
+    ],
+)
+
+cc_test(
+    name = "enumerate_test",
+    srcs = ["//tests/iterator:Enumerate.test.cc"],
+    deps = [":enumerate"],
+)
+
+cc_library(
+    name = "filter",
+    hdrs = ["//include/violet/Iterator:Filter.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet:iterator",
+        "//violet/container",
+    ],
+)
+
+cc_test(
+    name = "filter_test",
+    srcs = ["//tests/iterator:Filter.test.cc"],
+    deps = [":filter"],
+)
+
+cc_library(
+    name = "map",
+    hdrs = ["//include/violet/Iterator:Map.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet:iterator",
+        "//violet/container",
+    ],
+)
+
+cc_test(
+    name = "map_test",
+    srcs = ["//tests/iterator:Map.test.cc"],
+    deps = [":filter"],
+)
+
+cc_library(
+    name = "peekable",
+    hdrs = ["//include/violet/Iterator:Peekable.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet:iterator",
+        "//violet/container",
+    ],
+)
+
+cc_test(
+    name = "peekable_test",
+    srcs = ["//tests/iterator:Peekable.test.cc"],
+    deps = [":filter"],
+)
+
+cc_library(
+    name = "skip",
+    hdrs = ["//include/violet/Iterator:Skip.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet:iterator",
+        "//violet/container",
+    ],
+)
+
+cc_test(
+    name = "skip_test",
+    srcs = ["//tests/iterator:Skip.test.cc"],
+    deps = [":skip"],
+)
+
+cc_library(
+    name = "take",
+    hdrs = ["//include/violet/Iterator:Take.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet:iterator",
+        "//violet/container",
+    ],
+)
+
+cc_test(
+    name = "take_test",
+    srcs = ["//tests/iterator:Take.test.cc"],
+    deps = [":take"],
+)
