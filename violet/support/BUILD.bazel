@@ -37,24 +37,6 @@ cc_library(
 )
 
 cc_library(
-    name = "resource_quantity",
-    srcs = ["//src/support:resource.cc"],
-    hdrs = ["//include/violet/Support:Quantity.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container:result",
-        "//violet/numeric:int128",
-    ],
-)
-
-cc_test(
-    name = "resource_quantity_test",
-    srcs = ["//tests/support:Quantity.test.cc"],
-    deps = [":resource_quantity"],
-)
-
-cc_library(
     name = "terminal",
     srcs = ["//src/support:terminal.cc"] + select({
         "@platforms//os:linux": ["//src/support/platform/terminal:unix.cc"],

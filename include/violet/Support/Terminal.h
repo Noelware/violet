@@ -80,35 +80,19 @@ struct Window final {
 /// Each component must lie in the range `[0.0, 1.0]`. The constructor
 /// accepting floats asserts this range in debug builds.
 struct RGB final {
-    float Red = 0.0F; ///< Red channel in a `[0.0, 1.0]` range
-    float Green = 0.0F; ///< Green channel in a `[0.0, 1.0]` range
-    float Blue = 0.0F; ///< Blue channel in a `[0.0, 1.0]` range
+    UInt8 Red = 0; ///< Red channel in a `[0.0, 1.0]` range
+    UInt8 Green = 0; ///< Green channel in a `[0.0, 1.0]` range
+    UInt8 Blue = 0; ///< Blue channel in a `[0.0, 1.0]` range
     bool Foreground = true; ///< whether if the color is for the foreground or background
 
     constexpr VIOLET_IMPLICIT RGB() noexcept = default;
 
-    constexpr VIOLET_IMPLICIT RGB(float red, float green, float blue, bool foreground = true) noexcept
-        : Foreground(foreground)
+    constexpr VIOLET_IMPLICIT RGB(UInt8 red, UInt8 green, UInt8 blue, bool foreground = true) noexcept
+        : Red(red)
+        , Green(green)
+        , Blue(blue)
+        , Foreground(foreground)
     {
-        VIOLET_DEBUG_ASSERT(red >= 0.0F || red <= 1.0F);
-        VIOLET_DEBUG_ASSERT(blue >= 0.0F || blue <= 1.0F);
-        VIOLET_DEBUG_ASSERT(green >= 0.0F || green <= 1.0F);
-
-        this->Red = red;
-        this->Green = green;
-        this->Blue = blue;
-    }
-
-    template<typename T>
-        requires(std::is_same_v<T, UInt8>)
-    constexpr VIOLET_IMPLICIT RGB(T red, T green, T blue, bool foreground = true) noexcept
-        : Foreground(foreground)
-    {
-        constexpr const float INV = 1.0F / 255.0F;
-
-        this->Red = static_cast<float>(red) * INV;
-        this->Green = static_cast<float>(green) * INV;
-        this->Blue = static_cast<float>(blue) * INV;
     }
 
     [[nodiscard]] auto Paint() const noexcept -> String;
@@ -124,7 +108,7 @@ struct RGB final {
 struct Style final {
     constexpr VIOLET_IMPLICIT Style() noexcept = default;
 
-#define MK_STYLE_FN(NAME, BG, FG)                                                                                      \
+#define MK_STYLE_FN(NAME, FG, BG)                                                                                      \
     constexpr static auto NAME(bool foreground = true) noexcept -> Style                                               \
     {                                                                                                                  \
         Style style;                                                                                                   \
@@ -156,25 +140,6 @@ struct Style final {
 
 #undef MK_STYLE_FN
 
-    template<float Red, float Green, float Blue>
-    consteval static auto RGB(bool foreground = true) noexcept -> Style
-    {
-        static_assert(Red >= 0.0F || Red <= 1.0F, "`Red` must fit in a `[0.0, 0.1]` range space");
-        static_assert(Green >= 0.0F || Green <= 1.0F, "`Green` must fit in a `[0.0, 0.1]` range space");
-        static_assert(Blue >= 0.0F || Blue <= 1.0F, "`Blue` must fit in a `[0.0, 0.1]` range space");
-
-        terminal::RGB rgb;
-        rgb.Red = Red;
-        rgb.Green = Green;
-        rgb.Blue = Blue;
-        rgb.Foreground = foreground;
-
-        Style style;
-        style.n_style = rgb;
-
-        return style;
-    }
-
     template<UInt8 Red, UInt8 Green, UInt8 Blue>
     consteval static auto RGB(bool foreground = true) noexcept -> Style
     {
@@ -185,14 +150,6 @@ struct Style final {
     }
 
     constexpr static auto RGB(UInt8 red, UInt8 blue, UInt8 green, bool foreground = true) noexcept -> Style
-    {
-        Style style;
-        style.n_style = terminal::RGB(red, green, blue, foreground);
-
-        return style;
-    }
-
-    constexpr static auto RGB(float red, float blue, float green, bool foreground = true) noexcept -> Style
     {
         Style style;
         style.n_style = terminal::RGB(red, green, blue, foreground);

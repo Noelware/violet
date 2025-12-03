@@ -29,9 +29,9 @@ TEST(RGB, UInt8)
 {
     constexpr RGB rgb(255, 128, 0);
 
-    ASSERT_EQ(rgb.Red, 1.0F);
-    ASSERT_EQ(rgb.Green, 128.0F / 255.0F);
-    ASSERT_EQ(rgb.Blue, 0.0F);
+    ASSERT_EQ(rgb.Red, 255);
+    ASSERT_EQ(rgb.Green, 128);
+    ASSERT_EQ(rgb.Blue, 0);
 }
 
 TEST(RGB, Paint)
@@ -55,24 +55,15 @@ TEST(Style, NamedColorForeground)
 
 TEST(Style, NamedColorBackground)
 {
-    constexpr Style red = Style::Blue(/*foreground=*/false);
+    constexpr Style blue = Style::Blue(/*foreground=*/false);
 
-    auto painted = red.Paint();
+    auto painted = blue.Paint();
     ASSERT_FALSE(painted.empty());
     ASSERT_TRUE(painted.find("\x1b[") != String::npos);
     ASSERT_TRUE(painted.find("44m") != String::npos); // ANSI background blue
 }
 
-TEST(Style, RGBFloat)
-{
-    constexpr Style rgb = Style::RGB<1.0F, 0.0F, 0.0F>();
-
-    auto painted = rgb.Paint();
-    ASSERT_FALSE(painted.empty());
-    ASSERT_TRUE(painted.find("38;2;255;0;0") != String::npos);
-}
-
-TEST(Style, RGBWithUInt8)
+TEST(Style, RGBPaint)
 {
     constexpr Style rgb = Style::RGB<0, 255, 0>();
 

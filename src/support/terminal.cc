@@ -26,9 +26,7 @@ using violet::terminal::Style;
 
 auto RGB::Paint() const noexcept -> String
 {
-    return std::format("\x1b[{};2;{};{};{}m", this->Foreground ? 38 : 48,
-        static_cast<UInt8>(std::round(this->Red * 255.0F)), static_cast<UInt8>(std::round(this->Green * 255.0F)),
-        static_cast<UInt8>(std::round(this->Blue * 255.0F)));
+    return std::format("\x1b[{};2;{};{};{}m", this->Foreground ? 38 : 48, this->Red, this->Green, this->Blue);
 }
 
 auto RGB::ToString() const noexcept -> String
@@ -84,12 +82,12 @@ auto Style::Paint() const noexcept -> String
     }
 
     if (const auto* fg = std::get_if<Style::fg>(&this->n_style)) {
-        os << "\x1b[" << fg->Value << 'm';
+        os << "\x1b[" << static_cast<Int32>(fg->Value) << 'm';
         return os.str();
     }
 
     if (const auto* bg = std::get_if<Style::bg>(&this->n_style)) {
-        os << "\x1b[" << bg->Value << 'm';
+        os << "\x1b[" << static_cast<Int32>(bg->Value) << 'm';
         return os.str();
     }
 
