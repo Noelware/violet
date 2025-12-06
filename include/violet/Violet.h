@@ -341,8 +341,6 @@ inline void PrintDebugVariable(CStr name, const T& value,
     os << '[' << loc.file_name() << ':' << loc.line() << ':' << loc.column() << "] ";
     os << name << " = " << violet::ToString(value);
     os << '\n';
-
-    std::abort();
 }
 
 /// @internal
