@@ -184,12 +184,6 @@
 #endif
 #endif
 
-#ifndef NDEBUG
-#define VIOLET_DEBUG_ASSERT(expr) assert(expr)
-#else
-#define VIOLET_DEBUG_ASSERT(expr)
-#endif
-
 #if VIOLET_HAS_CPP_ATTRIBUTE(likely)
 #define VIOLET_LIKELY [[likely]]
 #else
@@ -197,9 +191,9 @@
 #endif
 
 #if VIOLET_HAS_CPP_ATTRIBUTE(unlikely)
-#define VIOLET_UNLIKELY(expr) [[unlikely]]
+#define VIOLET_UNLIKELY [[unlikely]]
 #else
-#define VIOLET_UNLIKELY(expr)
+#define VIOLET_UNLIKELY
 #endif
 
 // clang-format off

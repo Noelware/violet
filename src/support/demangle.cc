@@ -19,27 +19,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <violet/Language/Macros.h>
 #include <violet/Support/Demangle.h>
-#include <violet/Violet.h>
 
 #if VIOLET_HAS_INCLUDE(<cxxabi.h>)
 #include <cxxabi.h>
-#define VIOLET_HAS_CXXABI_HDR 1
-#else
-#define VIOLET_HAS_CXXABI_HDR 0
+#include <memory>
+
+#define VIOLET_HAS_CXXABI_HDR
 #endif
 
-using violet::CStr;
-using violet::Int32;
-using violet::UniquePtr;
-
-auto violet::util::DemangleCXXName(CStr name) -> String
+auto violet::util::DemangleCXXName(const char* name) -> std::string
 {
-#if VIOLET_HAS_CXXABI_HDR == 0
+#ifndef VIOLET_HAS_CXXABI_HDR
     return name;
 #else
-    Int32 status = -1;
-    UniquePtr<char, void (*)(void*)> result(abi::__cxa_demangle(name, nullptr, nullptr, &status), std::free);
+    int status = -1;
+    std::unique_ptr<char, void (*)(void*)> result(abi::__cxa_demangle(name, nullptr, nullptr, &status), std::free);
 
     return status == 0 ? result.get() : name;
 #endif

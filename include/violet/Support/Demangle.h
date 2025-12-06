@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "violet/Violet.h"
+#include <string>
 
 namespace violet::util {
 
@@ -32,6 +32,6 @@ namespace violet::util {
 ///
 /// @param name The mangled C++ type to demangle
 /// @return the demangled name, or the name itself if unsupported
-auto DemangleCXXName(CStr name) -> String;
+auto DemangleCXXName(const char* name) -> std::string;
 
 } // namespace violet::util

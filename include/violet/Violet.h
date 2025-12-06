@@ -36,6 +36,7 @@
 #include <any>
 #include <condition_variable>
 #include <cstddef>
+#include <source_location>
 #include <span>
 #include <string>
 #include <string_view>
@@ -329,3 +330,44 @@ private:
 };
 
 } // namespace violet
+
+namespace violet::detail {
+
+/// @internal
+template<typename T>
+inline void PrintDebugVariable(CStr name, const T& value,
+    const std::source_location& loc = std::source_location::current(), std::ostream& os = std::cerr)
+{
+    os << '[' << loc.file_name() << ':' << loc.line() << ':' << loc.column() << "] ";
+    os << name << " = " << violet::ToString(value);
+    os << '\n';
+
+    std::abort();
+}
+
+/// @internal
+inline void DoAssertion(bool condition, CStr condStr, CStr message,
+    const std::source_location& loc = std::source_location::current(), std::ostream& os = std::cerr)
+{
+    VIOLET_UNLIKELY_IF(!condition)
+    {
+        os << "[violet::assertion@" << loc.file_name() << ':' << loc.line() << ':' << loc.column() << "]: ";
+        os << "condition '" << condStr << "' failed: " << message << '\n';
+
+        std::abort();
+    }
+}
+
+} // namespace violet::detail
+
+#define VIOLET_DBG(var) ::violet::detail::PrintDebugVariable(var, #var)
+#define VIOLET_ASSERT(cond, message) ::violet::detail::DoAssertion(cond, #cond, message)
+
+#define VIOLET_TODO ::violet::detail::DoAssertion(false, "todo!()", "prototype is not implemented")
+#define VIOLET_UNREACHABLE ::violet::detail::DoAssertion(false, "unreachable!()", "unreachable code detected")
+
+#ifndef NDEBUG
+#define VIOLET_DEBUG_ASSERT(expr, message) ::violet::detail::DoAssertion(expr, #expr, message)
+#else
+#define VIOLET_DEBUG_ASSERT(expr, message)
+#endif

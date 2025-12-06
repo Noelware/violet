@@ -151,12 +151,16 @@ if(VIOLET_INSTALL)
     install(FILES ${CONTAINER_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Container)
 
     # INCLUDE EXPORT +-+ libviolet_filesystem
-    file(GLOB_RECURSE FILESYSTEM_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Filesystem/*.h")
-    install(FILES ${FILESYSTEM_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Filesystem)
+    if(VIOLET_ENABLE_FS)
+        file(GLOB_RECURSE FILESYSTEM_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Filesystem/*.h")
+        install(FILES ${FILESYSTEM_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Filesystem)
+    endif()
 
     # INCLUDE EXPORT +-+ libviolet_io
-    file(GLOB_RECURSE IO_HDRS "${PROJECT_SOURCE_DIR}/include/violet/IO/*.h")
-    install(FILES ${IO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/IO)
+    if(VIOLET_ENABLE_IO)
+        file(GLOB_RECURSE IO_HDRS "${PROJECT_SOURCE_DIR}/include/violet/IO/*.h")
+        install(FILES ${IO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/IO)
+    endif()
 
     # INCLUDE EXPORT +-+ libviolet_iterator
     file(GLOB_RECURSE ITERATOR_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Iterator/*.h")
@@ -166,23 +170,9 @@ if(VIOLET_INSTALL)
     file(GLOB_RECURSE LANG_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Language/*.h")
     install(FILES ${LANG_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Language)
 
-    # INCLUDE EXPORT +-+ libviolet_networking
-    file(GLOB_RECURSE NETWORKING_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/*.h")
-    file(GLOB_RECURSE NETWORKING_IP_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/IP/*.h")
-    file(GLOB_RECURSE NETWORKING_HTTP_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/HTTP/*.h")
-    file(GLOB_RECURSE NETWORKING_SOCKET_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Networking/*.h")
-    install(FILES ${NETWORKING_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking)
-    install(FILES ${NETWORKING_IP_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking/IO)
-    install(FILES ${NETWORKING_HTTP_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking/HTTP)
-    install(FILES ${NETWORKING_SOCKET_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Networking/Socket)
-
     # INCLUDE EXPORT +-+ libviolet_numeric
     file(GLOB_RECURSE NUMERIC_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Numeric/*.h")
     install(FILES ${NUMERIC_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Numeric)
-
-    # INCLUDE EXPORT +-+ libviolet_subprocess
-    file(GLOB_RECURSE SUBPROCESS_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Subprocess/*.h")
-    install(FILES ${SUBPROCESS_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Subprocess)
 
     # INCLUDE EXPORT +-+ libviolet_support
     file(GLOB_RECURSE SUPPORT_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Support/*.h")

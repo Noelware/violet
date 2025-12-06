@@ -328,19 +328,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
 
     constexpr auto Value() noexcept -> T&
     {
-        VIOLET_DEBUG_ASSERT(Ok());
+        VIOLET_DEBUG_ASSERT(Ok(), "`Result<T, E>` doesn't contain any value");
         return this->n_storage.ok;
     }
 
     constexpr auto Value() const noexcept -> const T&
     {
-        VIOLET_DEBUG_ASSERT(Ok());
+        VIOLET_DEBUG_ASSERT(Ok(), "`Result<T, E>` doesn't contain any value");
         return this->n_storage.ok;
     }
 
     constexpr auto Error() noexcept -> E&
     {
-        VIOLET_DEBUG_ASSERT(Err());
+        VIOLET_DEBUG_ASSERT(Err(), "`Result<T, E>` contains a error");
         return this->n_storage.err.Error();
     }
 

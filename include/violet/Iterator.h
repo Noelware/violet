@@ -356,7 +356,9 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::map()`].
     ///
     /// [`Iterator::map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.map
-    auto Map() & noexcept;
+    template<typename Fun>
+        requires callable<Fun, iter::TypeOf<Impl>>
+    auto Map(Fun&&) & noexcept;
 
     /// Adapter that transforms items using a mapping function.
     ///
@@ -371,7 +373,9 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::map()`].
     ///
     /// [`Iterator::map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.map
-    auto Map() && noexcept;
+    template<typename Fun>
+        requires callable<Fun, iter::TypeOf<Impl>>
+    auto Map(Fun&& fun) && noexcept;
 
     /// Adapter that yields only items for which the predicate returns `true`.
     ///

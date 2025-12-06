@@ -25,3 +25,13 @@
 #include <violet/Violet.h>
 
 using namespace violet; // NOLINT(google-build-using-namespace)
+
+TEST(Iterators, Map)
+{
+    Vec<UInt32> vi({ 1, 2, 3, 4 });
+
+    auto pow2 = MkIterable(vi).Map([](UInt32 value) -> UInt32 { return value * 2; });
+
+    Vec<UInt32> expected({ 2, 4, 6, 8 });
+    ASSERT_EQ(pow2.Collect<Vec<UInt32>>(), expected);
+}

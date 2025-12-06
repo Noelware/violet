@@ -24,3 +24,60 @@
 #include "violet/Container/Optional.h"
 #include "violet/Iterator.h"
 #include "violet/Violet.h"
+
+namespace violet::iter {
+
+template<Iterable Impl>
+struct Peekable final: public Iterator<Peekable<Impl>> {
+    using Item = TypeOf<Impl>;
+
+    VIOLET_IMPLICIT Peekable() = delete;
+
+    VIOLET_IMPLICIT Peekable(Impl iter)
+        : n_iter(iter)
+    {
+    }
+
+    auto Peek() noexcept -> Optional<const Item>
+    {
+        if (!this->n_peeked.HasValue()) {
+            this->n_peeked = this->n_iter.Next();
+        }
+
+        if (auto peeked = this->n_peeked) {
+            return Some<const Item>(*peeked);
+        }
+
+        return Nothing;
+    }
+
+    auto Next() noexcept -> Optional<Item>
+    {
+        if (this->n_peeked.HasValue()) {
+            auto out = VIOLET_MOVE(*this->n_peeked);
+            this->n_peeked.Reset();
+
+            return Some<Item>(out);
+        }
+
+        return this->n_iter.Next();
+    }
+
+private:
+    Impl n_iter;
+    Optional<Item> n_peeked;
+};
+
+} // namespace violet::iter
+
+template<typename Impl>
+inline auto violet::Iterator<Impl>::Peekable() & noexcept
+{
+    return iter::Peekable(getThisObject());
+}
+
+template<typename Impl>
+inline auto violet::Iterator<Impl>::Peekable() && noexcept
+{
+    return iter::Peekable(VIOLET_MOVE(getThisObject()));
+}

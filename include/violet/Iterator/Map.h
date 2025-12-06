@@ -24,3 +24,50 @@
 #include "violet/Container/Optional.h"
 #include "violet/Iterator.h"
 #include "violet/Violet.h"
+
+namespace violet::iter {
+
+template<Iterable Impl, typename Fun>
+    requires callable<Fun, TypeOf<Impl>>
+struct Map final: public Iterator<Map<Impl, Fun>> {
+    using Item = std::invoke_result_t<Fun, TypeOf<Impl>>;
+
+    Map() = delete;
+
+    VIOLET_IMPLICIT Map(Impl iter, Fun fun)
+        : n_iter(iter)
+        , n_fun(fun)
+    {
+    }
+
+    auto Next() noexcept -> Optional<Item>
+    {
+        if (auto elem = this->n_iter.Next()) {
+            return Some<Item>(std::invoke(this->n_fun, *elem));
+        }
+
+        return Nothing;
+    }
+
+private:
+    Impl n_iter;
+    Fun n_fun;
+};
+
+} // namespace violet::iter
+
+template<typename Impl>
+template<typename Fun>
+    requires violet::callable<Fun, violet::iter::TypeOf<Impl>>
+inline auto violet::Iterator<Impl>::Map(Fun&& fun) & noexcept
+{
+    return iter::Map(getThisObject(), VIOLET_FWD(Fun, fun));
+}
+
+template<typename Impl>
+template<typename Fun>
+    requires violet::callable<Fun, violet::iter::TypeOf<Impl>>
+inline auto violet::Iterator<Impl>::Map(Fun&& fun) && noexcept
+{
+    return iter::Map(VIOLET_MOVE(getThisObject()), VIOLET_FWD(Fun, fun));
+}

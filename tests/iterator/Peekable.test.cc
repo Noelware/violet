@@ -25,3 +25,56 @@
 #include <violet/Violet.h>
 
 using namespace violet; // NOLINT(google-build-using-namespace)
+
+TEST(Iterators, PeekOnEmptyReturnsNull)
+{
+    Vec<UInt32> vi{};
+    auto it = MkIterable(vi).Peekable();
+
+    ASSERT_EQ(it.Peek(), Nothing);
+    ASSERT_EQ(it.Next(), Nothing);
+}
+
+TEST(Iterators, PeekDoesntConsume)
+{
+    Vec<UInt32> vi({ 1, 2, 3 });
+    auto it = MkIterable(vi).Peekable();
+
+    auto peeked = it.Peek();
+    ASSERT_NE(peeked, Nothing);
+    ASSERT_EQ(*peeked.Value(), 1);
+
+    auto value = it.Next();
+    ASSERT_TRUE(value);
+    ASSERT_EQ(*value.Value(), 1);
+}
+
+TEST(Iterators, StableMultiplePeek)
+{
+    Vec<UInt32> vi({ 10, 20 });
+    auto it = MkIterable(vi).Peekable();
+
+    auto p1 = it.Peek();
+    auto p2 = it.Peek();
+    ASSERT_NE(p1, Nothing);
+    ASSERT_NE(p2, Nothing);
+    EXPECT_EQ(p1, p2);
+    EXPECT_EQ(*p1.Value(), 10);
+}
+
+TEST(Iterators, PeekableNextAfterPeekAdvance)
+{
+    Vec<UInt32> vi({ 10, 20 });
+    auto it = MkIterable(vi).Peekable();
+
+    it.Peek();
+    auto vi1 = it.Next();
+    auto vi2 = it.Next();
+
+    ASSERT_TRUE(vi1);
+    EXPECT_EQ(*vi1.Value(), 10);
+
+    ASSERT_TRUE(vi2);
+    EXPECT_EQ(*vi2.Value(), 20);
+    EXPECT_EQ(it.Next(), Nothing);
+}

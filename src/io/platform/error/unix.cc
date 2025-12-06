@@ -34,7 +34,7 @@ using violet::io::PlatformError;
 PlatformError::PlatformError()
     : n_value(errno)
 {
-    VIOLET_DEBUG_ASSERT(errno > 0);
+    VIOLET_DEBUG_ASSERT(errno > 0, "assumption of `errno` being set");
 }
 
 auto PlatformError::AsErrorKind() const noexcept -> ErrorKind

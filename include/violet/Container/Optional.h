@@ -325,7 +325,7 @@ struct VIOLET_API Optional final {
     /// @return A pointer to the contained value.
     constexpr auto Value() noexcept -> T*
     {
-        VIOLET_DEBUG_ASSERT(this->n_containsValue);
+        VIOLET_DEBUG_ASSERT(this->n_containsValue, "`Optional<T>` contains no value");
         return this->ptr();
     }
 
@@ -337,7 +337,7 @@ struct VIOLET_API Optional final {
     /// @return A pointer to the contained value.
     constexpr auto Value() const noexcept -> const T*
     {
-        VIOLET_DEBUG_ASSERT(this->n_containsValue);
+        VIOLET_DEBUG_ASSERT(this->n_containsValue, "`Optional<T>` contains no value");
         return this->ptr();
     }
 
@@ -697,25 +697,25 @@ struct VIOLET_API Optional final {
 
     constexpr auto operator->() noexcept -> T*
     {
-        VIOLET_DEBUG_ASSERT(HasValue());
+        VIOLET_DEBUG_ASSERT(HasValue(), "cannot dereference invalid data");
         return ptr();
     }
 
     constexpr auto operator->() const noexcept -> const T*
     {
-        VIOLET_DEBUG_ASSERT(HasValue());
+        VIOLET_DEBUG_ASSERT(HasValue(), "cannot access invalid data");
         return ptr();
     }
 
     constexpr auto operator*() noexcept -> T&
     {
-        VIOLET_DEBUG_ASSERT(HasValue());
+        VIOLET_DEBUG_ASSERT(HasValue(), "cannot dereference invalid data");
         return *ptr();
     }
 
     constexpr auto operator*() const noexcept -> const T&
     {
-        VIOLET_DEBUG_ASSERT(HasValue());
+        VIOLET_DEBUG_ASSERT(HasValue(), "cannot dereference invalid data");
         return *ptr();
     }
 
@@ -727,6 +727,16 @@ struct VIOLET_API Optional final {
     constexpr VIOLET_EXPLICIT operator std::optional<T>() const noexcept
     {
         return this->n_containsValue ? std::optional<T>(*ptr()) : Nothing;
+    }
+
+    constexpr auto operator==(const std::nullopt_t&) const noexcept -> bool
+    {
+        return !this->HasValue();
+    }
+
+    constexpr auto operator!=(const std::nullopt_t&) const noexcept -> bool
+    {
+        return this->HasValue();
     }
 
     /// Checks if two `Optional`s are equal.
