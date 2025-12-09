@@ -37,7 +37,7 @@
 #
 #   $ docker pull debian:trixie-slim
 #   $ docker image inspect debian:trixie-slim | jq '.[0].RepoDigests[0]' | tr -d '"'
-FROM debian@sha256:8f6a88feef3ed01a300dafb87f208977f39dccda1fd120e878129463f7fa3b8f
+FROM debian@sha256:f54909a654375e6d74d4986255ed9d3e0b7176461799195855030bc5826b5e4b
 
 LABEL org.opencontainers.image.source="https://git.noelware.org/libraries/violet"
 LABEL org.opencontainers.image.licenses="MIT"
