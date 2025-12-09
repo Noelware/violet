@@ -38,14 +38,14 @@ struct Peekable final: public Iterator<Peekable<Impl>> {
     {
     }
 
-    auto Peek() noexcept -> Optional<const Item>
+    auto Peek() noexcept -> Optional<Item>
     {
         if (!this->n_peeked.HasValue()) {
             this->n_peeked = this->n_iter.Next();
         }
 
         if (auto peeked = this->n_peeked) {
-            return Some<const Item>(*peeked);
+            return Some<Item>(*peeked);
         }
 
         return Nothing;
