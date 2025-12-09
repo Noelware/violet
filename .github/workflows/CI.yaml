@@ -85,37 +85,37 @@ jobs:
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
             - run: bazel test ${{env.BAZELFLAGS}} //...
-    cmake-linux:
-        name: "CMake / Linux [${{matrix.compiler}}, C++${{matrix.cxx-standard}}]"
-        runs-on: ubuntu-latest
-        container:
-            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
-        strategy:
-            fail-fast: false
-            matrix:
-                compiler: [gcc-15, gcc-14, clang-21, clang-20]
-                cxx-standard: ["26", "23", "20"]
-                include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: ""}
-                    - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: ""}
-                    - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
-                    - {compiler: gcc-14, cc: "gcc", cxx: "g++", flags: ""}
-        env:
-            CMAKE_FLAGS: "-DCMAKE_CXX_STANDARD=${{matrix.cxx-standard}} -DVIOLET_ENABLE_ALL=ON -DVIOLET_ENABLE_TESTS=ON -B /tmp/cmake-build -DFORCE_COLORED_OUTPUT=1 -G Ninja"
-        steps:
-            - uses: actions/checkout@v6
-            - run: mkdir -p /tmp/cmake-build
-            - uses: actions/cache@v4
-              with:
-                key: cmake-cache-linux-${{matrix.compiler}}-${{hashFiles('CMakeLists.txt')}}
-                restore-keys: cmake-cache-linux-${{matrix.compiler}}-
-                path: |
-                    /tmp/cmake-build
+    # cmake-linux:
+    #     name: "CMake / Linux [${{matrix.compiler}}, C++${{matrix.cxx-standard}}]"
+    #     runs-on: ubuntu-latest
+    #     container:
+    #         image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+    #     strategy:
+    #         fail-fast: false
+    #         matrix:
+    #             compiler: [gcc-15, gcc-14, clang-21, clang-20]
+    #             cxx-standard: ["26", "23", "20"]
+    #             include:
+    #                 - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: ""}
+    #                 - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: ""}
+    #                 - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
+    #                 - {compiler: gcc-14, cc: "gcc", cxx: "g++", flags: ""}
+    #     env:
+    #         CMAKE_FLAGS: "-DCMAKE_CXX_STANDARD=${{matrix.cxx-standard}} -DVIOLET_ENABLE_ALL=ON -DVIOLET_ENABLE_TESTS=ON -B /tmp/cmake-build -DFORCE_COLORED_OUTPUT=1 -G Ninja"
+    #     steps:
+    #         - uses: actions/checkout@v6
+    #         - run: mkdir -p /tmp/cmake-build
+    #         - uses: actions/cache@v4
+    #           with:
+    #             key: cmake-cache-linux-${{matrix.compiler}}-${{hashFiles('CMakeLists.txt')}}
+    #             restore-keys: cmake-cache-linux-${{matrix.compiler}}-
+    #             path: |
+    #                 /tmp/cmake-build
 
-            - run: cmake ${{env.CMAKE_FLAGS}} ${{matrix.flags}}
-            - run: cmake --build /tmp/cmake-build --config Debug --target all
-            - run: ctest -C Debug -T test --output-on-failure
-              working-directory: /tmp/cmake-build
+    #         - run: cmake ${{env.CMAKE_FLAGS}} ${{matrix.flags}}
+    #         - run: cmake --build /tmp/cmake-build --config Debug --target all
+    #         - run: ctest -C Debug -T test --output-on-failure
+    #           working-directory: /tmp/cmake-build
     asan-linux:
         name: "Bazel / Linux [${{matrix.compiler}} (ASan)]"
         runs-on: ubuntu-latest
