@@ -310,6 +310,28 @@ struct Infallible final {
     constexpr VIOLET_IMPLICIT Infallible() = default;
 };
 
+template<typename Fun>
+    requires(callable<Fun> && callable_returns<Fun, void>)
+struct Defer final { // NOLINT(cppcoreguidelines-special-member-functions)
+    Defer(Fun&& fun)
+        : n_fun(VIOLET_MOVE(fun))
+    {
+    }
+
+    Defer(Defer&) = delete;
+    Defer(Defer&& other) noexcept
+        : n_fun(VIOLET_MOVE(other.n_fun))
+    {
+        other.n_moved = true;
+    }
+
+    ~Defer() noexcept(false);
+
+private:
+    Fun n_fun;
+    bool n_moved = false;
+};
+
 template<Stringify S>
 struct StringifyFormatter {
     constexpr StringifyFormatter() = default;
@@ -361,11 +383,35 @@ inline void DoAssertion(bool condition, CStr condStr, CStr message,
 #define VIOLET_DBG(var) ::violet::detail::PrintDebugVariable(var, #var)
 #define VIOLET_ASSERT(cond, message) ::violet::detail::DoAssertion(cond, #cond, message)
 
-#define VIOLET_TODO ::violet::detail::DoAssertion(false, "todo!()", "prototype is not implemented")
-#define VIOLET_UNREACHABLE ::violet::detail::DoAssertion(false, "unreachable!()", "unreachable code detected")
+#define VIOLET_TODO_WITH(msg) ::violet::detail::DoAssertion(false, "todo!()", msg)
+#define VIOLET_TODO VIOLET_TODO_WITH("prototype not implemented")
+
+#define VIOLET_UNREACHABLE_WITH(msg) ::violet::detail::DoAssertion(false, "unreachable!()", msg)
+#define VIOLET_UNREACHABLE VIOLET_UNREACHABLE_WITH("unreachable code detected")
 
 #ifndef NDEBUG
 #define VIOLET_DEBUG_ASSERT(expr, message) ::violet::detail::DoAssertion(expr, #expr, message)
 #else
 #define VIOLET_DEBUG_ASSERT(expr, message)
 #endif
+
+namespace violet {
+
+template<typename Fun>
+    requires(callable<Fun> && callable_returns<Fun, void>)
+Defer<Fun>::~Defer<Fun>() noexcept(false)
+{
+    try {
+        if (!this->n_moved) {
+            std::invoke(this->n_fun);
+        }
+    } catch (...) {
+        if (std::uncaught_exceptions() > 0) {
+            VIOLET_UNREACHABLE_WITH("defer function threw an exception during exception handling");
+        }
+
+        throw;
+    }
+}
+
+} // namespace violet

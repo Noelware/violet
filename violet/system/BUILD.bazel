@@ -19,44 +19,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "cc_library")
 
 cc_library(
-    name = "demangle",
-    srcs = ["//src/support:demangle.cc"],
-    hdrs = ["//include/violet/Support:Demangle.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet:macros"],
-)
-
-cc_library(
-    name = "bitflags",
-    hdrs = ["//include/violet/Support:Bitflags.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
-cc_library(
-    name = "terminal",
-    srcs = ["//src/support:terminal.cc"] + select({
-        "@platforms//os:linux": ["//src/support/platform/terminal:unix.cc"],
-        "@platforms//os:macos": ["//src/support/platform/terminal:unix.cc"],
-        "@platforms//os:windows": ["//src/support/platform/terminal:windows.cc"],
-        "//conditions:default": ["//src/support/platform/terminal:unsupported.cc"],
+    name = "system",
+    srcs = select({
+        "@platforms//os:linux": ["//src/system/platform:unix.cc"],
+        "@platforms//os:macos": ["//src/system/platform:unix.cc"],
+        "@platforms//os:windows": ["//src/system/platform:windows.cc"],
+        "//conditions:default": ["//src/system/platform:unsupported.cc"],
     }),
-    hdrs = ["//include/violet/Support:Terminal.h"],
+    hdrs = ["//include/violet:System.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":bitflags",
         "//violet",
+        "//violet/container",
+        "//violet/filesystem:path",
         "//violet/io:error",
-        "//violet/system",
-        "//violet/system:ci",
     ],
 )
 
-cc_test(
-    name = "terminal_test",
-    srcs = ["//tests/support:Terminal.test.cc"],
-    deps = [":terminal"],
+cc_library(
+    name = "ci",
+    srcs = ["//src/system:ci.cc"],
+    hdrs = ["//include/violet/System:CI.h"],
+    visibility = ["//visibility:public"],
+    deps = [":system"],
 )

@@ -23,43 +23,45 @@
 
 #ifdef VIOLET_UNIX
 
-#include <violet/IO/Error.h>
-#include <violet/Support/Terminal.h>
+#include <violet/System.h>
 
-#include <sys/ioctl.h>
-#include <unistd.h>
-
-using violet::terminal::StreamSource;
-
-auto violet::terminal::IsTTY(StreamSource src) noexcept -> bool
+auto violet::sys::GetEnv(Str key) noexcept -> Optional<String>
 {
-    switch (src) {
-    case StreamSource::Stdout:
-        return static_cast<bool>(isatty(fileno(stdout)));
-
-    case StreamSource::Stderr:
-        return static_cast<bool>(isatty(fileno(stderr)));
+    const auto* var = ::getenv(key.data());
+    if (var != nullptr) {
+        return Some<String>(var);
     }
+
+    return Nothing;
 }
 
-auto violet::terminal::QueryWindowInfo(StreamSource src) noexcept -> io::Result<Window>
+void violet::sys::SetEnv(Unsafe, Str key, Str value, bool replace)
 {
-    struct winsize win{};
-    switch (src) {
-    case StreamSource::Stdout:
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &win);
-        break;
+    VIOLET_ASSERT(::setenv(key.data(), value.data(), replace) == 0, "setenv");
+}
 
-    case StreamSource::Stderr:
-        ioctl(STDERR_FILENO, TIOCGWINSZ, &win);
-        break;
-    }
+void violet::sys::RemoveEnv(Unsafe, Str key)
+{
+    VIOLET_ASSERT(::unsetenv(key.data()) == 0, "unsetenv");
+}
 
-    if (errno != 0) {
+auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
+{
+    Array<char, PATH_MAX> buf;
+    if (::getcwd(buf.data(), buf.size()) == nullptr) {
         return Err(io::Error::OSError());
     }
 
-    return Window{ .Columns = win.ws_col, .Rows = win.ws_row };
+    return filesystem::Path(buf.data(), buf.size());
+}
+
+auto violet::sys::SetWorkingDir(filesystem::PathRef path) -> io::Result<void>
+{
+    if (::chdir(static_cast<CStr>(path)) != 0) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
 }
 
 #endif

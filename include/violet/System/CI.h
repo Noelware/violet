@@ -19,47 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Violet.h>
+#pragma once
 
-#ifdef VIOLET_UNIX
+namespace violet::sys {
 
-#include <violet/IO/Error.h>
-#include <violet/Support/Terminal.h>
+/// Returns **true** if we are running in a CI system.
+auto ContinuousIntegration() noexcept -> bool;
 
-#include <sys/ioctl.h>
-#include <unistd.h>
-
-using violet::terminal::StreamSource;
-
-auto violet::terminal::IsTTY(StreamSource src) noexcept -> bool
-{
-    switch (src) {
-    case StreamSource::Stdout:
-        return static_cast<bool>(isatty(fileno(stdout)));
-
-    case StreamSource::Stderr:
-        return static_cast<bool>(isatty(fileno(stderr)));
-    }
-}
-
-auto violet::terminal::QueryWindowInfo(StreamSource src) noexcept -> io::Result<Window>
-{
-    struct winsize win{};
-    switch (src) {
-    case StreamSource::Stdout:
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &win);
-        break;
-
-    case StreamSource::Stderr:
-        ioctl(STDERR_FILENO, TIOCGWINSZ, &win);
-        break;
-    }
-
-    if (errno != 0) {
-        return Err(io::Error::OSError());
-    }
-
-    return Window{ .Columns = win.ws_col, .Rows = win.ws_row };
-}
-
-#endif
+} // namespace violet::sys

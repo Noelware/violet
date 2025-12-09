@@ -19,47 +19,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Violet.h>
+#include <violet/System.h>
 
-#ifdef VIOLET_UNIX
-
-#include <violet/IO/Error.h>
-#include <violet/Support/Terminal.h>
-
-#include <sys/ioctl.h>
-#include <unistd.h>
-
-using violet::terminal::StreamSource;
-
-auto violet::terminal::IsTTY(StreamSource src) noexcept -> bool
+auto violet::sys::GetEnv(Str) noexcept -> Optional<CStr>
 {
-    switch (src) {
-    case StreamSource::Stdout:
-        return static_cast<bool>(isatty(fileno(stdout)));
-
-    case StreamSource::Stderr:
-        return static_cast<bool>(isatty(fileno(stderr)));
-    }
+    return Nothing;
 }
 
-auto violet::terminal::QueryWindowInfo(StreamSource src) noexcept -> io::Result<Window>
+void violet::sys::SetEnv(Unsafe, Str, Str, bool) {}
+void violet::sys::RemoveEnv(Unsafe, Str) {}
+
+auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
 {
-    struct winsize win{};
-    switch (src) {
-    case StreamSource::Stdout:
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &win);
-        break;
-
-    case StreamSource::Stderr:
-        ioctl(STDERR_FILENO, TIOCGWINSZ, &win);
-        break;
-    }
-
-    if (errno != 0) {
-        return Err(io::Error::OSError());
-    }
-
-    return Window{ .Columns = win.ws_col, .Rows = win.ws_row };
+    return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
 }
 
-#endif
+auto violet::sys::SetWorkingDir(filesystem::PathRef) -> io::Result<void>
+{
+    return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
+}

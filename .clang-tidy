@@ -50,7 +50,8 @@ Checks: >
   -readability-function-cognitive-complexity,
   -misc-use-anonymous-namespace,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
-  -cppcoreguidelines-avoid-do-while
+  -cppcoreguidelines-avoid-do-while,
+  -readability-use-anyofallof
 
 CheckOptions:
   - {key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor, value: true}

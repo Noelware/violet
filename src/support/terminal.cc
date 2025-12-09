@@ -20,7 +20,11 @@
 // SOFTWARE.
 
 #include <violet/Support/Terminal.h>
+#include <violet/System.h>
+#include <violet/System/CI.h>
 
+using violet::String;
+using violet::UInt;
 using violet::terminal::RGB;
 using violet::terminal::Style;
 
@@ -126,4 +130,103 @@ auto Style::ToString() const noexcept -> String
 auto Style::operator<<(std::ostream& os) const noexcept -> std::ostream&
 {
     return os << this->ToString();
+}
+
+namespace {
+
+auto getForceColorLevel() noexcept -> UInt
+{
+    if (auto level = violet::sys::GetEnv("FORCE_COLOR")) {
+        if (level->empty() || *level == "") {
+            return 1;
+        }
+
+        if (*level == "false") {
+            return 0;
+        }
+
+        UInt lvl = 1;
+        try {
+            lvl = static_cast<UInt>(std::stoi(*level));
+        } catch (const std::invalid_argument&) {
+            // ...
+        } catch (const std::out_of_range&) {
+            // ...
+        }
+
+        return std::min(lvl, static_cast<UInt>(3));
+    }
+
+    if (auto force = violet::sys::GetEnv("CLICOLOR_FORCE")) {
+        return *force != "0" ? 1 : 0;
+    }
+
+    return 0;
+}
+
+auto isNoColour() noexcept -> bool
+{
+    auto env = violet::sys::GetEnv("NO_COLOR");
+    return !(env == violet::Nothing || *env == "0");
+}
+
+constexpr const violet::CStr kTerm = "TERM";
+constexpr const violet::CStr kTermProgram = "TERM_PROGRAM";
+constexpr const violet::CStr kColorTerm = "COLORTERM";
+
+auto checkColorterm16m(const String& value) -> bool
+{
+    return value == "truecolor" || value == "24bit";
+}
+
+auto checkTerm16m(const String& value) -> bool
+{
+    return value.ends_with("direct") || value.ends_with("truecolor");
+}
+
+auto check256BitColor(const String& value)
+{
+    return value.ends_with("256") || value.ends_with("256color");
+}
+
+inline auto checkPlatformANSIColor(const String& value) -> bool
+{
+#ifdef VIOLET_WINDOWS
+    return value != "dumb";
+#else
+    return value != "dumb";
+#endif
+}
+
+} // namespace
+
+auto violet::terminal::ColourLevel(StreamSource source) noexcept -> ColorLevel
+{
+    UInt level = 0;
+    if (auto forced = getForceColorLevel(); forced > 0) {
+        return { .SupportsBasic = level >= 1, .Supports256Bit = level >= 2, .Supports16M = level >= 3 };
+    }
+
+    if (isNoColour() || violet::sys::GetEnv(kTerm) == Some<String>("dumb") || !terminal::IsTTY(source)) {
+        return {};
+    }
+
+    if (violet::sys::GetEnv(kColorTerm).HasValueAnd(checkColorterm16m)
+        || violet::sys::GetEnv(kTerm).HasValueAnd(checkTerm16m)
+        || violet::sys::GetEnv(kTermProgram) == Some<String>("iTerm.app")) {
+        level = 3;
+    }
+
+    if (violet::sys::GetEnv(kTermProgram) == Some<String>("Apple_Terminal")
+        || violet::sys::GetEnv(kTerm).HasValueAnd(check256BitColor)) {
+        level = 2;
+    }
+
+    if (violet::sys::GetEnv(kTerm).HasValueAnd(checkPlatformANSIColor)
+        || violet::sys::GetEnv("CLICOLOR").MapOr(false, [](const String& val) { return val != "0"; })
+        || violet::sys::ContinuousIntegration()) {
+        level = 1;
+    }
+
+    return { .SupportsBasic = level >= 1, .Supports256Bit = level >= 2, .Supports16M = level >= 3 };
 }
