@@ -21,7 +21,7 @@
 
 module(
     name = "violet",
-    version = "25.11",
+    version = "25.12",
     compatibility_level = 0,
     repo_name = "org_noelware_violet",
 )
