@@ -75,7 +75,7 @@ jobs:
             BAZELFLAGS: "--config=ci --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}} --client_env=BAZEL_CXXOPTS=-std=c++${{matrix.cxx-standard}} --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
-            - uses: actions/cache@v4
+            - uses: actions/cache@v5
               with:
                 key: bazel-cache-linux-${{matrix.compiler}}-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
                 restore-keys: bazel-cache-linux-${{matrix.compiler}}-
@@ -133,7 +133,7 @@ jobs:
             BAZELFLAGS: "--config=ci --config=asan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
-            - uses: actions/cache@v4
+            - uses: actions/cache@v5
               with:
                 key: bazel-cache-linux-${{matrix.compiler}}-asan-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
                 restore-keys: bazel-cache-linux-${{matrix.compiler}}-asan-
@@ -160,7 +160,7 @@ jobs:
             BAZELFLAGS: "--config=ci --config=ubsan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
-            - uses: actions/cache@v4
+            - uses: actions/cache@v5
               with:
                 key: bazel-cache-linux-${{matrix.compiler}}-ubsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
                 restore-keys: bazel-cache-linux-${{matrix.compiler}}-ubsan-
@@ -187,7 +187,7 @@ jobs:
             BAZELFLAGS: "--config=ci --config=tsan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
-            - uses: actions/cache@v4
+            - uses: actions/cache@v5
               with:
                 key: bazel-cache-linux-${{matrix.compiler}}-tsan-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
                 restore-keys: bazel-cache-linux-${{matrix.compiler}}-tsan-
