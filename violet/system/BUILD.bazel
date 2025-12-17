@@ -21,6 +21,11 @@
 
 load("//buildsystem/bazel:cc.bzl", "cc_library")
 
+exports_files(
+    ["BUILD.bazel"],
+    visibility = ["//:__subpackages__"],
+)
+
 cc_library(
     name = "system",
     srcs = select({

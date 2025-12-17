@@ -20,3 +20,20 @@
 # SOFTWARE.
 
 exports_files(glob(["*.h"]))
+
+filegroup(
+    name = "files",
+    srcs = glob(["*.h"]) + [
+        "//include/violet/Container:srcs",
+        "//include/violet/Events:srcs",
+        "//include/violet/Filesystem:srcs",
+        "//include/violet/Filesystem/Extensions:srcs",
+        "//include/violet/IO:srcs",
+        "//include/violet/Iterator:srcs",
+        "//include/violet/Language:srcs",
+        "//include/violet/Numeric:srcs",
+        "//include/violet/Support:srcs",
+        "//include/violet/System:srcs",
+    ],
+    visibility = ["//:__subpackages__"],
+)

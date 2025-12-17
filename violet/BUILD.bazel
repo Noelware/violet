@@ -21,6 +21,26 @@
 
 load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
+exports_files(
+    ["BUILD.bazel"],
+    visibility = ["//:__subpackages__"],
+)
+
+filegroup(
+    name = "files",
+    srcs = [
+        ":BUILD.bazel",
+        "//violet/container:BUILD.bazel",
+        "//violet/events:BUILD.bazel",
+        "//violet/filesystem:BUILD.bazel",
+        "//violet/filesystem/extensions:BUILD.bazel",
+        "//violet/io:BUILD.bazel",
+        "//violet/numeric:BUILD.bazel",
+        "//violet/system:BUILD.bazel",
+    ],
+    visibility = ["//:__subpackages__"],
+)
+
 cc_library(
     name = "macros",
     hdrs = ["//include/violet/Language:Macros.h"],

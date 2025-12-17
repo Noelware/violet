@@ -19,37 +19,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-module(
-    name = "violet",
-    version = "25.12",
-    compatibility_level = 0,
-    repo_name = "org_noelware_violet",
-)
+load("@rules_python//python:defs.bzl", "py_binary")
 
-bazel_dep(name = "bazel_skylib", version = "1.9.0")
-bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
-bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "rules_cc", version = "0.2.15")
-
-# external deps with `violet/Violet.h`
-bazel_dep(name = "abseil-cpp", version = "20250814.1", repo_name = "absl")
-
-## :- START ~ DEVELOPMENT DEPENDENCIES -: ##
-
-# Used for various scripts in `hack/`
-bazel_dep(name = "rules_python", version = "1.7.0")
-
-# Hedron's Compile Commands Extractor for Bazel
-# https://github.com/hedronvision/bazel-compile-commands-extractor
-bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
-git_override(
-    module_name = "hedron_compile_commands",
-    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
-    commit = "abb61a688167623088f8768cc9264798df6a9d10",
-    patches = [
-        "patches/000_hedron_compile_commands__fix_assertion.patch",
+py_binary(
+    name = "bazeldist",
+    srcs = ["bazeldist.py"],
+    data = [
+        "//:distfiles",
+        "//buildsystem/bazel:files",
+        "//buildsystem/bazel/flags:files",
+        "//include/violet:files",
+        "//src:files",
+        "//tests:files",
+        "//violet:files",
     ],
-    patch_strip = 1,
+    visibility = ["//visibility:public"],
+    deps = ["@rules_python//python/runfiles"],
 )
-
-## :- END ~ DEVELOPMENT DEPENDENCIES -: ##

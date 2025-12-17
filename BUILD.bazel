@@ -22,6 +22,49 @@
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
+filegroup(
+    name = "distfiles",
+    srcs = glob(
+        ["**"],
+        exclude = [
+            ".agents/**",
+            ".ci/**",
+            ".github/**",
+            ".idea/**",
+            ".vscode/**",
+            ".git/**",
+            ".cache/**",
+            ".direnv/**",
+            ".dist/**",
+            "bazel-*/**",
+            "build/**",
+            "hack/**",
+            "nix/**",
+            "patches/**",
+            ".bazel*",
+            ".clang*",
+            "**/CMakeLists.txt",
+            "**/meson.build",
+            "**/meson_options.txt",
+            "**/*.cmake",
+            "**/*.cmake.in",
+            ".buildifier.json",
+            ".envrc",
+            "AGENTS.md",
+            "*.nix",
+            "flake.lock",
+            "MODULE.bazel.lock",
+            "renovate.json",
+            ".usr.bazelrc",
+            ".gitignore",
+            "compile_commands.json",
+            "*.tgz",  # don't include any tarballs inside of root
+            "*.tar.gz",
+        ],
+    ),
+    visibility = ["//visibility:public"],
+)
+
 refresh_compile_commands(
     name = "rcc",
 )

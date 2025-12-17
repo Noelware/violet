@@ -20,3 +20,9 @@
 # SOFTWARE.
 
 exports_files(glob(["*.test.cc"]))
+
+filegroup(
+    name = "srcs",
+    srcs = glob(["*.test.cc"]),
+    visibility = ["//:__subpackages__"],
+)
