@@ -270,7 +270,7 @@ struct VIOLET_API Error final {
     static auto New(ErrorKind kind, Args&&... args) noexcept -> Error
     {
         Error error;
-        error.n_repr = std::make_pair(kind, std::make_any(VIOLET_FWD(Args, args)...));
+        error.n_repr = Pair<ErrorKind, Any>(kind, std::make_any<T>(VIOLET_FWD(Args, args)...));
 
         return error;
     }
