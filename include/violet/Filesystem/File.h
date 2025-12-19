@@ -567,6 +567,8 @@ struct File final {
     /// Sets an extended attribute by `key` with the given `value`.
     [[nodiscard]] auto SetAttribute(Str key, Span<const UInt8> value) const noexcept -> io::Result<void>;
 
+    /// Removes an extended attribute.
+    /// @param key the attribute to remove
     [[nodiscard]] auto RemoveAttribute(Str key) const noexcept -> io::Result<void>;
 
     VIOLET_EXPLICIT operator bool() const noexcept;
@@ -575,6 +577,11 @@ struct File final {
 private:
     io::FileDescriptor n_fd;
 };
+
+inline auto OpenOptions::Open(PathRef path) -> io::Result<File>
+{
+    return File::Open(path, *this);
+}
 
 } // namespace violet::filesystem
 
