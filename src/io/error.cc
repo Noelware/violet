@@ -32,17 +32,6 @@ auto Error::OSError() -> Error
     return error;
 }
 
-#if VIOLET_USE_RTTI
-template<typename T, typename... Args>
-auto Error::New(ErrorKind kind, Args&&... args) -> Error
-{
-    Error error;
-    error.n_repr = std::make_pair(kind, std::make_any(VIOLET_FWD(Args, args)...));
-
-    return error;
-}
-#endif
-
 auto Error::RawOSError() const noexcept -> Optional<PlatformError::error_type>
 {
     if (const auto* pat = std::get_if<PlatformError>(&this->n_repr)) {

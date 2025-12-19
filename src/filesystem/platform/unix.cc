@@ -95,6 +95,13 @@ private:
     struct dirent* n_entry = nullptr;
 };
 
+template<typename... Args>
+    requires(std::is_constructible_v<Dirs::Impl, Args...>)
+Dirs::Dirs(Args&&... args)
+    : n_impl(new Impl(VIOLET_FWD(Args, args)...))
+{
+}
+
 auto Dirs::Next() noexcept -> Optional<Dirs::Item>
 {
     return this->n_impl->Next();
@@ -116,6 +123,13 @@ struct WalkDirs::Impl final {
         return Nothing;
     }
 };
+
+template<typename... Args>
+    requires(std::is_constructible_v<WalkDirs::Impl, Args...>)
+WalkDirs::WalkDirs(Args&&... args)
+    : n_impl(new Impl(VIOLET_FWD(Args, args)...))
+{
+}
 
 auto WalkDirs::Next() noexcept -> Optional<WalkDirs::Item>
 {

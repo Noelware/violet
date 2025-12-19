@@ -267,7 +267,13 @@ struct VIOLET_API Error final {
 
 #if VIOLET_USE_RTTI
     template<typename T, typename... Args>
-    static auto New(ErrorKind kind, Args&&... args) -> Error;
+    auto New(ErrorKind kind, Args&&... args) noexcept -> Error
+    {
+        Error error;
+        error.n_repr = std::make_pair(kind, std::make_any(VIOLET_FWD(Args, args)...));
+
+        return error;
+    }
 #endif
 
     [[nodiscard]] auto RawOSError() const noexcept -> Optional<PlatformError::error_type>;
