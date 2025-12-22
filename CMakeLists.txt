@@ -1,4 +1,4 @@
-# 🌺💜 Violet: Extended standard library for C++26
+# 🌺💜 Violet: Extended C++ standard library
 # Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,8 +28,8 @@ get_violet_version(violet_VERSION)
 
 project(violet
     VERSION ${violet_VERSION}
-    DESCRIPTION "🌺💜 Extended standard library for C++26"
-    HOMEPAGE_URL "https://docs.noelware.org/libraries/cxx/violet"
+    DESCRIPTION "🌺💜 Extended C++ standard library"
+    HOMEPAGE_URL "https://docs.noelware.org/libraries/cpp/violet"
     LANGUAGES CXX
 )
 
@@ -52,6 +52,9 @@ option(VIOLET_USE_SYSTEM_ABSEIL "Uses the system's Abseil instead of vendoring" 
 
 # libraries (this will avoid building most libraries except the core libs: Noelware.Violet.(Container|Iterator|Language|Numeric|Support|System})
 option(VIOLET_ENABLE_ALL "Enables all Noelware.Violet libraries" OFF)
+
+option(VIOLET_ENABLE_SUBPROCESS "Enables the Noelware.Violet.Subprocess library" OFF)
+option(VIOLET_ENABLE_BACKTRACE "Enables the Noelware.Violet.Backtrace library" OFF)
 option(VIOLET_ENABLE_FS "Enables the Noelware.Violet.Filesystem library" OFF)
 option(VIOLET_ENABLE_IO "Enables the Noelware.Violet.IO library" OFF)
 
@@ -70,6 +73,8 @@ if(VIOLET_ENABLE_ALL)
 
     set(VIOLET_ENABLE_FS ON)
     set(VIOLET_ENABLE_IO ON)
+    set(VIOLET_ENABLE_BACKTRACE ON)
+    set(VIOLET_ENABLE_SUBPROCESS ON)
 endif()
 
 include(FetchContent)
@@ -160,6 +165,11 @@ if(VIOLET_INSTALL)
     if(VIOLET_ENABLE_IO)
         file(GLOB_RECURSE IO_HDRS "${PROJECT_SOURCE_DIR}/include/violet/IO/*.h")
         install(FILES ${IO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/IO)
+    endif()
+
+    # INCLUDE EXPORT +-+ libviolet_subprocess
+    if(VIOLET_ENABLE_SUBPROCESS)
+        install(FILES "${PROJECT_SOURCE_DIR}/include/violet/Subprocess.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet)
     endif()
 
     # INCLUDE EXPORT +-+ libviolet_iterator

@@ -1,10 +1,12 @@
 ### 🌺💜 Violet
-### *Extended standard library for C++26*
+### *Extended C++ standard library*
 
-**Violet** is a C++26 library that extends C++'s standard library with better enriching types and provide a common framework for building C++ applications from the ground up without much effort. **Violet** was made to help develop our projects to bridge common code between our products and services using C++ a lot easier.
+**Violet** is a C++20 and higher library that extends the current C++ standard library with enriching types coming from a Rust developer and cross-platform libraries that are readily avaliable.
+
+<!-- **Violet** is a C++26 library that extends C++'s standard library with better enriching types and provide a common framework for building C++ applications from the ground up without much effort. **Violet** was made to help develop our projects to bridge common code between our products and services using C++ a lot easier. -->
 
 > [!IMPORTANT]
-> **Violet** is 100% experimental software and may not work as intended! Please report bugs via [GitHub Issues](https://github.com/Noelware/Violet/issues/new)!
+> **Violet** is 100% experimental software and may not work as intended! Please report bugs via [GitHub Issues](https://github.com/Noelware/Violet/issues/new)! **Violet** is also NOT production ready either! things will break!!!
 >
 > ---
 >
@@ -13,9 +15,6 @@
 > We decided on this because it is very easy to see when a version of the library was released and doesn't
 > enforce "breaking/change" semantics like [SemVer](https://semver.org), we depend on release timing for
 > the scope of the library.
-
-## Goals
-The goal of **Violet** is to provide a enriched version of C++'s standard library by enhancing types that are pretty finicky (`std::expected`, `std::optional`) and providing new types and libraries (because let's face it, C++ iterators and ranges suck).
 
 ## Building
 **Violet** aims to be buildable on most popular C++ build systems, which include:
@@ -37,7 +36,7 @@ Using **Violet** in Bazel is the most trivial and most supported build system as
 We also aim to have Violet avaliable on BCR soon.
 
 ```python
-bazel_dep(name = "violet", version = "25.11") # you can pin `version` to what .violet-version says
+bazel_dep(name = "violet", version = "26.01") # you can pin `version` to what .violet-version says
 git_override(
     module_name = "violet",
     remote = "https://github.com/Noelware/violet.git",

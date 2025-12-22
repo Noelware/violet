@@ -10,7 +10,7 @@ This document provides guidelines for Google Gemini when interacting with the No
 When introducing new files into the project (excluding third-party code), ensure that the license header is included in all generated files. Here's the standard license header:
 
 ````
-🌺💜 Violet: Extended standard library for C++26
+🌺💜 Violet: Extended C++ standard library
 Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

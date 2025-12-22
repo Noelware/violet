@@ -1,4 +1,4 @@
-# 🌺💜 Violet: Extended standard library for C++26
+# 🌺💜 Violet: Extended C++ standard library
 # Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -50,4 +50,15 @@ cc_library(
     hdrs = ["//include/violet/System:CI.h"],
     visibility = ["//visibility:public"],
     deps = [":system"],
+)
+
+cc_library(
+    name = "which",
+    srcs = ["//src/system:which.cc"],
+    hdrs = ["//include/violet/System:Which.h"],
+    deps = [
+        "//violet",
+        "//violet/filesystem:path",
+        "//violet/io:error",
+    ],
 )

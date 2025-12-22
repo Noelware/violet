@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------------
-# 🌺💜 Violet: Extended standard library for C++26
+# 🌺💜 Violet: Extended C++ standard library
 # Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy

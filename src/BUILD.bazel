@@ -1,4 +1,4 @@
-# 🌺💜 Violet: Extended standard library for C++26
+# 🌺💜 Violet: Extended C++ standard library
 # Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,17 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-exports_files(glob(
-    ["*.cc"],
-    allow_empty = True,
-))
+_files = glob(["*.cc"])
+
+exports_files(_files)
 
 filegroup(
     name = "files",
-    srcs = glob(
-        ["*.cc"],
-        allow_empty = True,
-    ) + [
+    srcs = _files + [
         "//src/container:srcs",
         "//src/filesystem/platform:srcs",
         "//src/filesystem/platform/extensions/xattr:srcs",
@@ -37,6 +33,7 @@ filegroup(
         "//src/filesystem/platform/path:srcs",
         "//src/filesystem/platform/permissions:srcs",
         "//src/io:srcs",
+        "//src/subprocess:srcs",
         "//src/support:srcs",
         "//src/system:srcs",
     ],

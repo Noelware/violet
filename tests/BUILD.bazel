@@ -1,4 +1,4 @@
-# 🌺💜 Violet: Extended standard library for C++26
+# 🌺💜 Violet: Extended C++ standard library
 # Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,17 +19,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-exports_files(glob(["*.test.cc"]))
+_files = glob(["*.test.cc"])
+
+exports_files(_files)
 
 filegroup(
     name = "files",
-    srcs = glob(["*.test.cc"]) + [
+    srcs = _files + [
         "//tests/container:srcs",
         "//tests/events:srcs",
         "//tests/filesystem:srcs",
+        "//tests/helper:srcs",
+        "//tests/helper/runfiles:srcs",
         "//tests/io:srcs",
         "//tests/iterator:srcs",
         "//tests/numeric:srcs",
+        "//tests/subprocess:srcs",
+        "//tests/subprocess/platform:srcs",
         "//tests/support:srcs",
     ],
     visibility = ["//:__subpackages__"],

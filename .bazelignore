@@ -4,5 +4,6 @@
 .github/
 .vscode/
 build/
+external/
 
 compile_commands.json

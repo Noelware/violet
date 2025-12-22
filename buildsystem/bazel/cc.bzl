@@ -1,4 +1,4 @@
-# 🌺💜 Violet: Extended standard library for C++26
+# 🌺💜 Violet: Extended C++ standard library
 # Copyright (c) 2025 Noelware, LLC. <team@noelware.org> & other contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -104,9 +104,12 @@ def cc_library(name, hdrs = [], **kwargs):
         **kwargs
     )
 
-def cc_test(name, **kwargs):
+def cc_test(name, with_gtest_main = True, **kwargs):
     deps = kwargs.pop("deps", [])
-    deps += ["@googletest//:gtest", "@googletest//:gtest_main"]
+    deps.append("@googletest//:gtest")
+
+    if with_gtest_main:
+        deps.append("@googletest//:gtest_main")
 
     # remove `visibility` in `cc_test` and make them private
     kwargs.pop("visibility", [])
