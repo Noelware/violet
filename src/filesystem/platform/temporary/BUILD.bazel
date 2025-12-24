@@ -24,19 +24,7 @@ _files = glob(["*.cc"])
 exports_files(_files)
 
 filegroup(
-    name = "files",
-    srcs = _files + [
-        "//src/container:srcs",
-        "//src/filesystem/platform:srcs",
-        "//src/filesystem/platform/extensions/xattr:srcs",
-        "//src/filesystem/platform/file:srcs",
-        "//src/filesystem/platform/path:srcs",
-        "//src/filesystem/platform/permissions:srcs",
-        "//src/filesystem/platform/temporary:srcs",
-        "//src/io:srcs",
-        "//src/subprocess:srcs",
-        "//src/support:srcs",
-        "//src/system:srcs",
-    ],
+    name = "srcs",
+    srcs = _files,
     visibility = ["//:__subpackages__"],
 )

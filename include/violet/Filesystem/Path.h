@@ -408,7 +408,7 @@ private:
 
 /// A non-owning, immutable view of a filesystem path.
 struct VIOLET_API PathRef final: public BasePath<PathRef, Str> {
-    constexpr VIOLET_IMPLICIT PathRef() = delete;
+    VIOLET_DISALLOW_CONSTRUCTOR(PathRef);
 
     /// Constructs a path from a C-style string.
     /// @param data the path to register
@@ -437,6 +437,8 @@ struct VIOLET_API PathRef final: public BasePath<PathRef, Str> {
         : n_path(data, length)
     {
     }
+
+    VIOLET_IMPLICIT PathRef(const Path& path) noexcept;
 
     /// Constructs a [`Path`] from a file descriptor.
     /// @param descriptor file descriptor from a file that was passed down from the OS.
@@ -467,12 +469,12 @@ struct VIOLET_API PathRef final: public BasePath<PathRef, Str> {
     /// * If the path is empty, it remains empty.
     [[nodiscard]] auto Canonicalize() const noexcept -> Path;
 
-    constexpr VIOLET_EXPLICIT operator Str()
+    constexpr VIOLET_EXPLICIT operator Str() const noexcept
     {
         return this->storage();
     }
 
-    constexpr VIOLET_EXPLICIT operator CStr()
+    constexpr VIOLET_EXPLICIT operator CStr() const noexcept
     {
         return this->storage().data();
     }
@@ -521,6 +523,8 @@ struct VIOLET_API Path final: public BasePath<Path, String> {
         : n_path(data, length)
     {
     }
+
+    VIOLET_IMPLICIT Path(PathRef path) noexcept;
 
     /// Constructs a [`Path`] from a file descriptor.
     /// @param descriptor file descriptor from a file that was passed down from the OS.
@@ -590,6 +594,16 @@ private:
         return this->n_path;
     }
 };
+
+inline PathRef::PathRef(const Path& path) noexcept
+    : n_path(path.n_path)
+{
+}
+
+inline Path::Path(PathRef path) noexcept
+    : n_path(path.n_path)
+{
+}
 
 template<typename Derived, typename StringType>
 auto BasePath<Derived, StringType>::Filename() const noexcept -> String

@@ -677,7 +677,7 @@ struct VIOLET_API Optional final {
         reset();
     }
 
-    constexpr auto operator<<(std::ostream& os) const -> std::ostream&
+    constexpr auto operator<<(std::ostream& os) const noexcept -> std::ostream&
     {
         if (!this->HasValue()) {
             return os << "«no value»";

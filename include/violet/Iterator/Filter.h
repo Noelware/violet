@@ -32,7 +32,10 @@ template<Iterable Impl, typename Pred>
 struct Filter final: public Iterator<Filter<Impl, Pred>> {
     using Item = TypeOf<Impl>;
 
-    Filter() = delete;
+    VIOLET_DISALLOW_CONSTRUCTOR(Filter);
+    VIOLET_DISALLOW_COPY_AND_MOVE(Filter);
+
+    ~Filter() = default;
 
     VIOLET_IMPLICIT Filter(Impl iter, Pred predicate)
         : n_iter(iter)

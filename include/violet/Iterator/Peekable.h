@@ -31,7 +31,7 @@ template<Iterable Impl>
 struct Peekable final: public Iterator<Peekable<Impl>> {
     using Item = TypeOf<Impl>;
 
-    VIOLET_IMPLICIT Peekable() = delete;
+    VIOLET_DISALLOW_CONSTRUCTOR(Peekable);
 
     VIOLET_IMPLICIT Peekable(Impl iter)
         : n_iter(iter)

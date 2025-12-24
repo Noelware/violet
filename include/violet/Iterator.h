@@ -194,7 +194,8 @@ namespace iter {
         /// This enables idiomatic C++ `for` loops over Violet iterators.
         template<class Impl>
         struct STLRangeIterator final {
-            STLRangeIterator() = delete;
+            VIOLET_DISALLOW_CONSTRUCTOR(STLRangeIterator);
+
             STLRangeIterator(Impl impl)
                 : n_iter(VIOLET_MOVE(impl))
             {

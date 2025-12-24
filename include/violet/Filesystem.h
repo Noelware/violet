@@ -112,17 +112,12 @@ struct VIOLET_API DirEntry final {
 
 /// A [`Iterator`] implementation that walks through a filesystem directory non-recursively.
 struct VIOLET_API Dirs final {
+    VIOLET_DISALLOW_CONSTRUCTOR(Dirs);
+
     /// The item that is returned from the iterator.
     using Item = io::Result<DirEntry>;
 
-    Dirs() = delete;
     ~Dirs() = default;
-
-    Dirs(const Dirs&) = delete;
-    auto operator=(const Dirs&) -> Dirs& = delete;
-
-    Dirs(Dirs&&) = default;
-    auto operator=(Dirs&&) -> Dirs& = delete;
 
     /// Returns the next entry in the filesystem directory.
     auto Next() noexcept -> Optional<Item>;
@@ -142,10 +137,12 @@ private:
 
 /// A [`Iterator`] implementation that walks through a filesystem directory recursively.
 struct VIOLET_API WalkDirs final {
+    VIOLET_DISALLOW_CONSTRUCTOR(WalkDirs);
+
     /// The item that is returned from the iterator.
     using Item = io::Result<DirEntry>;
 
-    WalkDirs() = delete;
+    ~WalkDirs() = default;
 
     /// Returns the next entry in the filesystem directory.
     auto Next() noexcept -> Optional<Item>;

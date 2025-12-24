@@ -51,7 +51,8 @@ Checks: >
   -misc-use-anonymous-namespace,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-avoid-do-while,
-  -readability-use-anyofallof
+  -readability-use-anyofallof,
+  -cppcoreguidelines-pro-type-reinterpret-cast
 
 CheckOptions:
   - {key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor, value: true}

@@ -44,6 +44,8 @@ struct VIOLET_API FileDescriptor final {
     using value_type = void*;
 #endif
 
+    VIOLET_DISALLOW_COPY(FileDescriptor);
+
     /// Produce a new, dummy file descriptor.
     VIOLET_IMPLICIT FileDescriptor() = default;
 
@@ -57,14 +59,10 @@ struct VIOLET_API FileDescriptor final {
     /// - POSIX: Calls `close(fd)`.
     ~FileDescriptor();
 
-    /// Cannot *safely* copy file descriptors.
-    VIOLET_IMPLICIT FileDescriptor(const FileDescriptor& other) noexcept = delete;
-
     /// Moves the file descriptor into a new structure. This will close `other`'s
     /// descriptor and moves `other` into `this`, producing a new file descriptor.
     VIOLET_IMPLICIT FileDescriptor(FileDescriptor&& other) noexcept;
 
-    auto operator=(const FileDescriptor& other) noexcept -> FileDescriptor& = delete;
     auto operator=(FileDescriptor&& other) noexcept -> FileDescriptor&;
 
 #if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)

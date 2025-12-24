@@ -84,7 +84,7 @@ auto File::Open(PathRef path, OpenOptions opts) -> io::Result<File>
     }
 
     if (opts.n_bits.Contains(OpenOptions::flag::kCreateNew)) {
-        flags |= O_EXCL;
+        flags |= O_CREAT | O_EXCL | O_RDWR;
     }
 
     mode_t mode = 0666;

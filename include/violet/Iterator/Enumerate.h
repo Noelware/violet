@@ -31,6 +31,11 @@ template<Iterable Impl>
 struct Enumerate final: public Iterator<Enumerate<Impl>> {
     using Item = Pair<UInt, TypeOf<Impl>>;
 
+    VIOLET_DISALLOW_CONSTRUCTOR(Enumerate);
+    VIOLET_DISALLOW_COPY_AND_MOVE(Enumerate);
+
+    ~Enumerate() = default;
+
     Enumerate(Impl iter)
         : n_iter(iter)
     {

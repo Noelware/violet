@@ -55,14 +55,14 @@ public:
     /// the event from a [`Emitter<Args...>`] after the guard being destroyed or manually
     /// via [`Guard::Dispose`].
     struct Guard final {
-        Guard() = delete;
+        VIOLET_DISALLOW_CONSTRUCTOR(Guard);
+        VIOLET_DISALLOW_COPY(Guard);
 
         ~Guard()
         {
             this->Dispose();
         }
 
-        Guard(const Guard&) = delete;
         Guard(Guard&& other) noexcept
             : n_emitter(VIOLET_MOVE(other.n_emitter))
             , n_id(other.n_id)
@@ -73,7 +73,6 @@ public:
             other.n_persist = false;
         }
 
-        auto operator=(const Guard&) -> Guard& = delete;
         auto operator=(Guard&& other) noexcept -> Guard&
         {
             if (this != &other) {
@@ -241,7 +240,7 @@ private:
 template<typename... Args>
 struct Event final {
     /// Deleted default constructor to enforce association with an `Emitter`.
-    constexpr VIOLET_IMPLICIT Event() = delete;
+    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Event);
 
     /// Returns a [`Guard`][Emitter<Args...>::Guard] RAII object managing the listener's
     /// lifetime.

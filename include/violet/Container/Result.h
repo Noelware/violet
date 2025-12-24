@@ -72,8 +72,8 @@ struct Result;
 template<typename E>
 struct Err final {
     static_assert(!std::is_void_v<E>, "`E` cannot be used with `void`");
+    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Err);
 
-    constexpr VIOLET_IMPLICIT Err() = delete;
     constexpr VIOLET_EXPLICIT Err(const E& err)
         : n_error(err)
     {
@@ -200,10 +200,10 @@ constexpr static auto Ok(Args&&... args) -> Result<T, E>
 /// [`std::result::Result`]: https://doc.rust-lang.org/1.90.0/std/result/enum.Result.html
 template<typename T, typename E>
 struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
+    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Result);
+
     using value_type = T;
     using error_type = E;
-
-    constexpr VIOLET_IMPLICIT Result() = delete;
 
     constexpr VIOLET_IMPLICIT Result(const T& ok)
         : n_ok(true)
@@ -1059,6 +1059,26 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     }
 
 #endif
+
+    constexpr auto operator*() noexcept -> T&
+    {
+        return this->UnwrapUnchecked(Unsafe("required by caller"));
+    }
+
+    constexpr auto operator*() const noexcept -> const T&
+    {
+        return this->UnwrapUnchecked(Unsafe("required by caller"));
+    }
+
+    constexpr auto operator->() noexcept -> T*
+    {
+        return std::addressof(this->n_storage.ok);
+    }
+
+    constexpr auto operator->() const noexcept -> const T*
+    {
+        return std::addressof(this->n_storage.ok);
+    }
 
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
     {

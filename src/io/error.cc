@@ -66,7 +66,9 @@ auto Error::Kind() const noexcept -> ErrorKind
 
 auto Error::ToString() const noexcept -> String
 {
-    std::ostringstream os("I/o error");
+    std::ostringstream os;
+    os << "I/o error";
+
     if (const auto* pat = std::get_if<PlatformError>(&this->n_repr)) {
         os << " (system error «" << pat->Get() << "»): " << pat->ToString();
         return os.str();

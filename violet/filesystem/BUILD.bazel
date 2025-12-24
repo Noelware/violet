@@ -119,3 +119,26 @@ cc_library(
         "//violet/support:bitflags",
     ],
 )
+
+cc_library(
+    name = "temporary",
+    srcs = select({
+        "@platforms//os:linux": ["//src/filesystem/platform/temporary:unix.cc"],
+        "@platforms//os:macos": ["//src/filesystem/platform/temporary:unix.cc"],
+        "@platforms//os:windows": ["//src/filesystem/platform/temporary:windows.cc"],
+        "//conditions:default": ["//src/filesystem/platform/temporary:unix.cc"],
+    }),
+    hdrs = ["//include/violet/Filesystem:Temporary.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":filesystem",
+        "//violet",
+        "//violet/system",
+    ],
+)
+
+cc_test(
+    name = "temporary_test",
+    srcs = ["//tests/filesystem:Temporary.test.cc"],
+    deps = [":temporary"],
+)

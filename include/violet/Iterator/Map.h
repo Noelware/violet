@@ -32,7 +32,10 @@ template<Iterable Impl, typename Fun>
 struct Map final: public Iterator<Map<Impl, Fun>> {
     using Item = std::invoke_result_t<Fun, TypeOf<Impl>>;
 
-    Map() = delete;
+    VIOLET_DISALLOW_CONSTRUCTOR(Map);
+    VIOLET_DISALLOW_COPY_AND_MOVE(Map);
+
+    ~Map() = default;
 
     VIOLET_IMPLICIT Map(Impl iter, Fun fun)
         : n_iter(iter)

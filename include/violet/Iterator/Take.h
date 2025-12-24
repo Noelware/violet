@@ -31,7 +31,10 @@ template<Iterable Impl>
 struct Take final: public Iterator<Take<Impl>> {
     using Item = TypeOf<Impl>;
 
-    Take() = delete;
+    VIOLET_DISALLOW_CONSTRUCTOR(Take);
+    VIOLET_DISALLOW_COPY_AND_MOVE(Take);
+
+    ~Take() = default;
 
     VIOLET_IMPLICIT Take(Impl iter, UInt take)
         : n_iter(iter)

@@ -31,7 +31,10 @@ template<Iterable Impl>
 struct Skip final: public Iterator<Skip<Impl>> {
     using Item = TypeOf<Impl>;
 
-    Skip() = delete;
+    VIOLET_DISALLOW_CONSTRUCTOR(Skip);
+    VIOLET_DISALLOW_COPY_AND_MOVE(Skip);
+
+    ~Skip() = default;
 
     VIOLET_IMPLICIT Skip(Impl iter, UInt take)
         : n_iter(iter)

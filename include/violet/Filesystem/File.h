@@ -444,10 +444,8 @@ struct File final {
     /// Constructed via [`MkScopedLock`] or [`MkSharedScopedLock`] methods.
     /// Automatically releases the lock when the object is destroyed.
     struct ScopeLock final {
-        ScopeLock() = delete;
-
-        VIOLET_IMPLICIT ScopeLock(const ScopeLock&) = delete;
-        auto operator=(const ScopeLock&) -> ScopeLock& = delete;
+        VIOLET_DISALLOW_CONSTRUCTOR(ScopeLock);
+        VIOLET_DISALLOW_COPY(ScopeLock);
 
         VIOLET_IMPLICIT ScopeLock(ScopeLock&&) noexcept;
         auto operator=(ScopeLock&&) noexcept -> ScopeLock&;
@@ -465,6 +463,8 @@ struct File final {
         File* n_file;
     };
 
+    VIOLET_DISALLOW_COPY(File);
+
     /// Creates a invalid, empty file.
     VIOLET_IMPLICIT File() = default;
 
@@ -474,12 +474,6 @@ struct File final {
         : n_fd(VIOLET_MOVE(descriptor))
     {
     }
-
-    /// Disallow copying [`File`] objects.
-    VIOLET_IMPLICIT File(const File&) = delete;
-
-    /// Disallow replacing files with a copied version of itself.
-    auto operator=(const File&) -> File& = delete;
 
     /// Permit moving [`File`] objects.
     VIOLET_IMPLICIT File(File&&) noexcept = default;

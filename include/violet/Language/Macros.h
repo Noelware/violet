@@ -233,3 +233,29 @@
 #define VIOLET_DIAGNOSTIC_POP
 #define VIOLET_DIAGNOSTIC_IGNORE(x)
 #endif
+
+#define VIOLET_DISALLOW_CONSTRUCTOR(Type) VIOLET_IMPLICIT Type() noexcept = delete;
+#define VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Type) constexpr VIOLET_IMPLICIT Type() noexcept = delete;
+#define VIOLET_DISALLOW_COPY(Type)                                                                                     \
+    VIOLET_IMPLICIT Type(const Type&) noexcept = delete;                                                               \
+    auto operator=(const Type&) noexcept -> Type& = delete;
+
+#define VIOLET_DISALLOW_MOVE(Type)                                                                                     \
+    VIOLET_IMPLICIT Type(Type&&) noexcept = delete;                                                                    \
+    auto operator=(Type&&) noexcept -> Type& = delete;
+
+#define VIOLET_DISALLOW_COPY_AND_MOVE(Type)                                                                            \
+    VIOLET_DISALLOW_COPY(Type)                                                                                         \
+    VIOLET_DISALLOW_MOVE(Type)
+
+#define VIOLET_DISALLOW_CONSTEXPR_COPY(Type)                                                                           \
+    constexpr VIOLET_IMPLICIT Type(const Type&) noexcept = delete;                                                     \
+    constexpr auto operator=(const Type&) noexcept -> Type& = delete;
+
+#define VIOLET_DISALLOW_CONSTEXPR_MOVE(Type)                                                                           \
+    constexpr VIOLET_IMPLICIT Type(Type&&) noexcept = delete;                                                          \
+    constexpr auto operator=(Type&&) noexcept -> Type& = delete;
+
+#define VIOLET_DISALLOW_CONSTEXPR_COPY_AND_MOVE(Type)                                                                  \
+    VIOLET_DISALLOW_CONSTEXPR_COPY(Type)                                                                               \
+    VIOLET_DISALLOW_CONSTEXPR_MOVE(Type)

@@ -299,7 +299,7 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
 
 /// A marker type that determines a function is unsafe for a specific reason.
 struct Unsafe final {
-    constexpr VIOLET_IMPLICIT Unsafe() = delete;
+    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Unsafe);
     constexpr VIOLET_EXPLICIT Unsafe(const char*) {}
 };
 

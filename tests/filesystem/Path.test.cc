@@ -85,7 +85,7 @@ TEST(Paths, Parent)
     ASSERT_TRUE(parent);
 
 #ifndef VIOLET_WINDOWS
-    EXPECT_EQ(*parent.Value(), Path{ "/home/noeltowa" });
+    EXPECT_EQ(parent->Data(), "/home/noeltowa");
 #endif
 }
 
@@ -97,7 +97,7 @@ TEST(Paths, Join)
 
     Path absolute("/etc/passwd");
     joined = base.Join("/etc/passwd"); // absolute overrides base
-    EXPECT_EQ(joined, absolute);
+    EXPECT_EQ(joined.Data(), absolute.Data());
 }
 
 TEST(Paths, WithFilename)
@@ -126,7 +126,7 @@ TEST(Paths, Canonicalize)
     Path canon = clang.Canonicalize();
 
 #ifndef VIOLET_WINDOWS
-    EXPECT_EQ(canon, Path("/usr/bin/clang"));
+    EXPECT_EQ(canon.Data(), "/usr/bin/clang");
 #endif
 }
 
@@ -138,7 +138,7 @@ TEST(Paths, JoinAndParent)
 
     auto parent = joined.Parent();
     ASSERT_TRUE(parent);
-    EXPECT_EQ(*parent, Path("/usr/local/bin"));
+    EXPECT_EQ(parent->Data(), "/usr/local/bin");
 }
 
 TEST(Paths, Operators)
