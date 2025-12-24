@@ -68,7 +68,7 @@ auto genRandomBytes(UInt32 bits) -> Result<String>
     constexpr static char hex[] = "0123456789abcdef";
     for (const UInt8 byte: out) {
         name.push_back(hex[byte >> 4]);
-        name.push_back(hex[byte & 0xFF]);
+        name.push_back(hex[byte & 0xF]);
     }
 
     return name;
