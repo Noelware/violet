@@ -72,6 +72,10 @@ auto violet::testing::runfiles::Get(violet::Str path) -> violet::Optional<violet
     }
 
     if (!result.Value()) {
+#ifndef NDEBUG
+        std::cout << "runfile '" << logical << "' didn't exist (from {" << path << "})\n";
+#endif
+
         return Nothing;
     }
 

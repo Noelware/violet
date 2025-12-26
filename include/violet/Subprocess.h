@@ -105,95 +105,92 @@ private:
 };
 
 struct ChildStdin final {
+    io::FileDescriptor Descriptor;
+
     constexpr VIOLET_IMPLICIT ChildStdin() noexcept = delete;
     constexpr VIOLET_EXPLICIT ChildStdin(io::FileDescriptor::value_type fd)
-        : n_descriptor(fd)
+        : Descriptor(fd)
     {
     }
 
     [[nodiscard]] auto Write(Span<const UInt8> buf) const noexcept -> io::Result<UInt>
     {
-        return this->n_descriptor.Write(buf);
+        return this->Descriptor.Write(buf);
     }
 
     [[nodiscard]] auto Flush() const noexcept -> io::Result<void>
     {
-        return this->n_descriptor.Flush();
+        return this->Descriptor.Flush();
     }
 
     void Close()
     {
-        this->n_descriptor.Close();
+        this->Descriptor.Close();
     }
 
     [[nodiscard]] auto ToString() const noexcept -> String
     {
-        return std::format("ChildStdin(fd={})", this->n_descriptor);
+        return std::format("ChildStdin(fd={})", this->Descriptor);
     }
 
     auto operator<<(std::ostream& os) const noexcept -> std::ostream&
     {
         return os << this->ToString();
     }
-
-private:
-    io::FileDescriptor n_descriptor;
 };
 
 static_assert(io::Writable<ChildStdin>, "`ChildStdin` doesn't conform to io::Writable concept");
 
 struct ChildStdout final {
+    io::FileDescriptor Descriptor;
+
     constexpr VIOLET_IMPLICIT ChildStdout() noexcept = delete;
     constexpr VIOLET_EXPLICIT ChildStdout(io::FileDescriptor::value_type fd)
-        : n_descriptor(fd)
+        : Descriptor(fd)
     {
     }
 
     [[nodiscard]] auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
     {
-        return this->n_descriptor.Read(buf);
+        return this->Descriptor.Read(buf);
     }
 
     [[nodiscard]] auto ToString() const noexcept -> String
     {
-        return std::format("ChildStdout(fd={})", this->n_descriptor);
+        return std::format("ChildStdout(fd={})", this->Descriptor);
     }
 
     auto operator<<(std::ostream& os) const noexcept -> std::ostream&
     {
         return os << this->ToString();
     }
-
-private:
-    io::FileDescriptor n_descriptor;
 };
 
 static_assert(io::Readable<ChildStdout>, "`ChildStdout` doesn't conform to io::Readable concept");
 
 struct ChildStderr final {
+    io::FileDescriptor Descriptor;
+
     constexpr VIOLET_IMPLICIT ChildStderr() noexcept = delete;
     constexpr VIOLET_EXPLICIT ChildStderr(io::FileDescriptor::value_type fd)
-        : n_descriptor(fd)
+        : Descriptor(fd)
     {
     }
 
     [[nodiscard]] auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
     {
-        return this->n_descriptor.Read(buf);
+        return this->Descriptor.Read(buf);
     }
 
     [[nodiscard]] auto ToString() const noexcept -> String
     {
-        return std::format("ChildStderr(fd={})", this->n_descriptor);
+        return std::format("ChildStderr(fd={})", this->Descriptor);
     }
 
     auto operator<<(std::ostream& os) const noexcept -> std::ostream&
     {
         return os << this->ToString();
     }
-
-private:
-    io::FileDescriptor n_descriptor;
 };
 
 static_assert(io::Readable<ChildStderr>, "`ChildStderr` doesn't conform to io::Readable concept");
@@ -254,16 +251,30 @@ struct ExitStatus final {
     }
 
     [[nodiscard]] auto Success() const noexcept -> bool;
-    [[nodiscard]] auto Code() const noexcept -> Optional<value_type>;
+    [[nodiscard]] auto Code() const noexcept -> Optional<value_type>
+    {
+        return this->Success() ? Nothing : Some<value_type>(this->n_value);
+    }
 
 #ifdef VIOLET_UNIX
-    [[nodiscard]] auto Signal() const noexcept -> Optional<value_type>;
+    [[nodiscard]] auto Signal() const noexcept -> Optional<value_type>
+    {
+        if (WIFSIGNALED(this->n_value)) {
+            return Nothing;
+        }
+
+        return WTERMSIG(this->n_value);
+    }
 #endif
 
     /// Returns a debuggable, stringified representation of this object.
     [[nodiscard]] auto ToString() const noexcept -> String
     {
+#ifdef VIOLET_UNIX
+        return std::format("ExitStatus(code={}, fromSignal={})", this->n_value, static_cast<bool>(this->Signal()));
+#else
         return std::format("ExitStatus(code={})", this->n_value);
+#endif
     }
 
     auto operator<<(std::ostream& os) const noexcept -> std::ostream&

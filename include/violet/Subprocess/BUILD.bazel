@@ -24,19 +24,7 @@ _files = glob(["*.h"])
 exports_files(_files)
 
 filegroup(
-    name = "files",
-    srcs = _files + [
-        "//include/violet/Container:srcs",
-        "//include/violet/Events:srcs",
-        "//include/violet/Filesystem:srcs",
-        "//include/violet/Filesystem/Extensions:srcs",
-        "//include/violet/IO:srcs",
-        "//include/violet/Iterator:srcs",
-        "//include/violet/Language:srcs",
-        "//include/violet/Numeric:srcs",
-        "//include/violet/Subprocess:srcs",
-        "//include/violet/Support:srcs",
-        "//include/violet/System:srcs",
-    ],
+    name = "srcs",
+    srcs = _files,
     visibility = ["//:__subpackages__"],
 )

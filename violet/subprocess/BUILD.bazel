@@ -27,8 +27,20 @@ exports_files(
 )
 
 cc_library(
+    name = "unix",
+    hdrs = ["//include/violet/Subprocess:Unix.h"],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:public"],
+    deps = ["//violet"],
+)
+
+cc_library(
     name = "subprocess",
-    srcs = ["//src:subprocess.cc"] + select({
+    srcs = select({
         "@platforms//os:linux": [
             "//src/subprocess:linux.cc",
             "//src/subprocess:unix.cc",
@@ -42,6 +54,7 @@ cc_library(
     }),
     hdrs = ["//include/violet:Subprocess.h"],
     deps = [
+        ":unix",
         "//violet",
         "//violet/container:optional",
         "//violet/filesystem:path",
@@ -57,6 +70,10 @@ cc_test(
     srcs = [
         "//tests/subprocess:Subprocess.test.cc",
         "//tests/subprocess:gtest.main.cc",
+    ],
+    data = [
+        "//tests/helper:print_args",
+        "//tests/helper:print_env",
     ],
     with_gtest_main = False,
     deps = [

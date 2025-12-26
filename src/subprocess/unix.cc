@@ -27,10 +27,18 @@
 #include <violet/Subprocess.h>
 #include <violet/Subprocess/Unix.h>
 
+#include <sys/wait.h>
+
 using violet::String;
 using violet::Vec;
 using violet::process::Command;
+using violet::process::ExitStatus;
 using violet::process::Stdio;
+
+auto ExitStatus::Success() const noexcept -> bool
+{
+    return !WIFSIGNALED(this->n_value) && this->n_value == 0;
+}
 
 auto Command::Impl::BuildArgv() const noexcept -> Vec<char*>
 {
@@ -42,6 +50,7 @@ auto Command::Impl::BuildArgv() const noexcept -> Vec<char*>
         argv.push_back(const_cast<char*>(arg.c_str())); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     }
 
+    argv.push_back(nullptr); // NULL-terminate the array
     return argv;
 }
 
@@ -187,6 +196,29 @@ auto Command::Status() const noexcept -> io::Result<ExitStatus>
 auto Command::Spawn() const noexcept -> io::Result<Child>
 {
     return this->n_impl->Spawn();
+}
+
+auto violet::process::Child::Wait() const noexcept -> io::Result<ExitStatus>
+{
+    int status = 0;
+    while (true) {
+        if (::waitpid(this->ProcessID, &status, 0) >= 0) {
+            break;
+        }
+
+        if (errno != EINTR)
+            break;
+    }
+
+    if (WIFEXITED(status)) {
+        return { WEXITSTATUS(status) };
+    }
+
+    if (WIFSIGNALED(status)) {
+        return { WTERMSIG(status) };
+    }
+
+    return { -1 };
 }
 
 #endif

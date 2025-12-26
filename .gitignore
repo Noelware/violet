@@ -194,3 +194,4 @@ build.ninja
 .direnv/
 build/
 .dist/
+logs/
