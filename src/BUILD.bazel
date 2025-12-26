@@ -19,7 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-_files = glob(["*.cc"])
+_files = glob(
+    ["*.cc"],
+    allow_empty = True,
+)
 
 exports_files(_files)
 

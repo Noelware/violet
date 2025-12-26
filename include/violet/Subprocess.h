@@ -38,15 +38,192 @@
 
 namespace violet::process {
 
-struct Stdio final {};
+struct ExitStatus;
 
-struct ChildStdin final {};
+struct Stdio final {
+    constexpr VIOLET_IMPLICIT Stdio() noexcept = delete;
 
-struct ChildStdout final {};
+    constexpr static auto Inherit() noexcept -> Stdio
+    {
+        return Stdio(tag_t::kInherit);
+    }
 
-struct ChildStderr final {};
+    constexpr static auto Null() noexcept -> Stdio
+    {
+        return Stdio(tag_t::kNull);
+    }
 
-struct Child final {};
+    constexpr static auto Pipe(Optional<filesystem::PathRef> path = {}) noexcept -> Stdio
+    {
+        Stdio stdio = Stdio(tag_t::kPipe);
+        if (path) {
+            stdio.n_pipeTo = *path.Value();
+        }
+
+        return stdio;
+    }
+
+    constexpr auto IsInherited() const noexcept -> bool
+    {
+        return this->n_tag == tag_t::kInherit;
+    }
+
+    constexpr auto IsNull() const noexcept -> bool
+    {
+        return this->n_tag == tag_t::kNull;
+    }
+
+    constexpr auto IsPipe() const noexcept -> bool
+    {
+        return this->n_tag == tag_t::kPipe;
+    }
+
+    constexpr auto PipedToFile() const noexcept -> bool
+    {
+        return this->IsPipe() && this->n_pipeTo.HasValue();
+    }
+
+    constexpr auto PipedFile() const noexcept -> Optional<filesystem::Path>
+    {
+        return this->n_pipeTo;
+    }
+
+private:
+    enum struct tag_t : UInt8 {
+        kInherit,
+        kNull,
+        kPipe
+    };
+
+    constexpr VIOLET_EXPLICIT Stdio(tag_t tag)
+        : n_tag(tag)
+    {
+    }
+
+    tag_t n_tag;
+    Optional<filesystem::Path> n_pipeTo = Nothing;
+};
+
+struct ChildStdin final {
+    constexpr VIOLET_IMPLICIT ChildStdin() noexcept = delete;
+    constexpr VIOLET_EXPLICIT ChildStdin(io::FileDescriptor::value_type fd)
+        : n_descriptor(fd)
+    {
+    }
+
+    [[nodiscard]] auto Write(Span<const UInt8> buf) const noexcept -> io::Result<UInt>
+    {
+        return this->n_descriptor.Write(buf);
+    }
+
+    [[nodiscard]] auto Flush() const noexcept -> io::Result<void>
+    {
+        return this->n_descriptor.Flush();
+    }
+
+    void Close()
+    {
+        this->n_descriptor.Close();
+    }
+
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        return std::format("ChildStdin(fd={})", this->n_descriptor);
+    }
+
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    {
+        return os << this->ToString();
+    }
+
+private:
+    io::FileDescriptor n_descriptor;
+};
+
+static_assert(io::Writable<ChildStdin>, "`ChildStdin` doesn't conform to io::Writable concept");
+
+struct ChildStdout final {
+    constexpr VIOLET_IMPLICIT ChildStdout() noexcept = delete;
+    constexpr VIOLET_EXPLICIT ChildStdout(io::FileDescriptor::value_type fd)
+        : n_descriptor(fd)
+    {
+    }
+
+    [[nodiscard]] auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
+    {
+        return this->n_descriptor.Read(buf);
+    }
+
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        return std::format("ChildStdout(fd={})", this->n_descriptor);
+    }
+
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    {
+        return os << this->ToString();
+    }
+
+private:
+    io::FileDescriptor n_descriptor;
+};
+
+static_assert(io::Readable<ChildStdout>, "`ChildStdout` doesn't conform to io::Readable concept");
+
+struct ChildStderr final {
+    constexpr VIOLET_IMPLICIT ChildStderr() noexcept = delete;
+    constexpr VIOLET_EXPLICIT ChildStderr(io::FileDescriptor::value_type fd)
+        : n_descriptor(fd)
+    {
+    }
+
+    [[nodiscard]] auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
+    {
+        return this->n_descriptor.Read(buf);
+    }
+
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        return std::format("ChildStderr(fd={})", this->n_descriptor);
+    }
+
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    {
+        return os << this->ToString();
+    }
+
+private:
+    io::FileDescriptor n_descriptor;
+};
+
+static_assert(io::Readable<ChildStderr>, "`ChildStderr` doesn't conform to io::Readable concept");
+
+struct Child final {
+#ifdef VIOLET_UNIX
+    using pid_t = ::pid_t;
+#elif defined(VIOLET_WINDOWS)
+    using pid_t = DWORD;
+#else
+    using pid_t = void*;
+#endif
+
+    Optional<ChildStdin> Stdin;
+    Optional<ChildStdout> Stdout;
+    Optional<ChildStderr> Stderr;
+    pid_t ProcessID;
+
+    auto Wait() const noexcept -> io::Result<ExitStatus>;
+
+    auto ToString() const noexcept -> String
+    {
+        return std::format("Child(pid={})", this->ProcessID);
+    }
+
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    {
+        return os << this->ToString();
+    }
+};
 
 /// Representation of a subprocess' exit status.
 ///
@@ -118,7 +295,7 @@ private:
 /// cmd.WithArg("hello");
 ///
 /// if (auto output = cmd.Output()) {
-///     violet::String out(output.Value().Stdout.begin(), output.Value().Stdout.end());
+///     violet::String out(output->Stdout.begin(), output->Stdout.end());
 ///     std::cout << "captured stdout: " << captured << '\n';
 /// }
 /// ```
@@ -146,9 +323,9 @@ struct Command final {
     auto WithEnvs(std::initializer_list<Pair<String, String>> envs) noexcept -> Command&;
     auto WithEnvs(Span<Pair<String, String>> envs) noexcept -> Command&;
     auto WithWorkingDirectory(filesystem::PathRef path) noexcept -> Command&;
-    auto WithStdin() noexcept -> Command&;
-    auto WithStdout() noexcept -> Command&;
-    auto WithStderr() noexcept -> Command&;
+    auto WithStdin(Stdio cfg) noexcept -> Command&;
+    auto WithStdout(Stdio cfg) noexcept -> Command&;
+    auto WithStderr(Stdio cfg) noexcept -> Command&;
 
 #ifdef VIOLET_UNIX
     auto WithUID(uid_t uid) noexcept -> Command&;
@@ -161,6 +338,11 @@ struct Command final {
     [[nodiscard]] auto Output() const noexcept -> io::Result<Output>;
     [[nodiscard]] auto Status() const noexcept -> io::Result<ExitStatus>;
     [[nodiscard]] auto Spawn() const noexcept -> io::Result<Child>;
+
+private:
+    struct Impl;
+
+    Impl* n_impl;
 };
 
 } // namespace violet::process

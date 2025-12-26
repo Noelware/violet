@@ -29,8 +29,14 @@ exports_files(
 cc_library(
     name = "subprocess",
     srcs = ["//src:subprocess.cc"] + select({
-        "@platforms//os:linux": ["//src/subprocess:unix.cc"],
-        "@platforms//os:macos": ["//src/subprocess:unix.cc"],
+        "@platforms//os:linux": [
+            "//src/subprocess:linux.cc",
+            "//src/subprocess:unix.cc",
+        ],
+        "@platforms//os:macos": [
+            "//src/subprocess:macos.cc",
+            "//src/subprocess:unix.cc",
+        ],
         "@platforms//os:windows": ["//src/subprocess:windows.cc"],
         "//conditions:default": ["//src/subprocess:unsupported.cc"],
     }),
