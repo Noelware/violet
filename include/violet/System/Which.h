@@ -44,12 +44,12 @@ struct WhichConfig final {
 /// #include <violet/System/Which.h>
 ///
 /// if (auto clang = violet::sys::Which("clang"); clang.Ok()) {
-///     std::cout << "resolved `clang` binary: " << clang.Value() << '\n';
+///     std::cout << "resolved `clang` binary: " << *clang << '\n';
 /// }
 /// ```
 ///
 /// @param command the command's name
 /// @param config configuration options
-auto Which(Str command, WhichConfig config = {}) -> io::Result<filesystem::Path>;
+auto Which(Str command, const WhichConfig& config = {}) -> io::Result<filesystem::Path>;
 
 } // namespace violet::sys

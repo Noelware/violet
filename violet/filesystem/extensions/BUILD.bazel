@@ -31,7 +31,6 @@ cc_library(
     srcs = select({
         "@platforms//os:linux": ["//src/filesystem/platform/extensions/xattr:unix.cc"],
         "@platforms//os:macos": ["//src/filesystem/platform/extensions/xattr:unix.cc"],
-        "@platforms//os:windows": ["//src/filesystem/platform/extensions/xattr:windows.cc"],
         "//conditions:default": ["//src/filesystem/platform/extensions/xattr:unsupported.cc"],
     }),
     hdrs = ["//include/violet/Filesystem/Extensions:XAttr.h"],

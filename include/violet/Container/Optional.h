@@ -677,22 +677,27 @@ struct VIOLET_API Optional final {
         reset();
     }
 
-    constexpr auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    auto ToString() const noexcept -> String
     {
         if (!this->HasValue()) {
-            return os << "«no value»";
+            return "«no value»";
         }
 
         if constexpr (Stringify<T>) {
-            return os << violet::ToString(Value());
+            return violet::ToString(*Value());
         }
 
 #if VIOLET_USE_RTTI
         const auto& type = typeid(T);
-        return os << "«type `" << util::DemangleCXXName(type.name()) << '@' << type.hash_code() << "` not streamable»";
+        return std::format("type `{}@{}`", util::DemangleCXXName(type.name()), type.hash_code());
 #else
-        return os << "«type `T` not streamable»";
+        return "????";
 #endif
+    }
+
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    {
+        return os << this->ToString();
     }
 
     constexpr auto operator->() noexcept -> T*

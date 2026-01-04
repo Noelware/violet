@@ -18,3 +18,36 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#include <violet/System.h>
+#include <violet/System/Which.h>
+#include <violet/Violet.h>
+
+using violet::CStr;
+
+#ifdef VIOLET_UNIX
+static inline const char kSeparator = ':';
+#elif defined(VIOLET_WINDOWS)
+static inline const char kSeparator = ';';
+#endif
+
+auto violet::sys::Which(Str, const WhichConfig& config) -> io::Result<filesystem::Path>
+{
+    auto path = sys::GetEnv(config.PathEnv);
+    if (!path) {
+        return Err(VIOLET_IO_ERROR(
+            InvalidData, String, std::format("`$PATH` environment (set to {}) was not found", config.PathEnv)));
+    }
+
+    // TODO(@auguwu/Noel): should `$PATH` computation be cached?
+    Vec<String> paths;
+    std::stringstream ss(*path);
+    String current;
+
+    while (std::getline(ss, current, kSeparator)) {
+        paths.push_back(current);
+    }
+
+    // Now that we have our paths, let's iterate!
+    return { "/" };
+}

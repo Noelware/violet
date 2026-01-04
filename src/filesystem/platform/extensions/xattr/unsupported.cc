@@ -28,27 +28,15 @@ using value_type = violet::io::FileDescriptor::value_type;
 
 auto violet::filesystem::xattr::Get(value_type, Str) noexcept -> io::Result<Optional<Vec<UInt8>>>
 {
-#if VIOLET_USE_RTTI
-    return Err(io::Error::New<String>(io::ErrorKind::Unsupported, "unsupported operation"));
-#else
-    return Err(io::Error(io::ErrorKind::Unsupported));
-#endif
+    return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
 }
 
 auto violet::filesystem::xattr::Set(value_type, Str, Span<const UInt8>) noexcept -> io::Result<void>
 {
-#if VIOLET_USE_RTTI
-    return Err(io::Error::New<String>(io::ErrorKind::Unsupported, "unsupported operation"));
-#else
-    return Err(io::Error(io::ErrorKind::Unsupported));
-#endif
+    return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
 }
 
 auto violet::filesystem::xattr::Remove(value_type, Str) -> io::Result<void>
 {
-#if VIOLET_USE_RTTI
-    return Err(io::Error::New<String>(io::ErrorKind::Unsupported, "unsupported operation"));
-#else
-    return Err(io::Error(io::ErrorKind::Unsupported));
-#endif
+    return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
 }

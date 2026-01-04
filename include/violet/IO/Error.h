@@ -345,9 +345,10 @@ namespace __detail {
         return io::Error(kind, VIOLET_FWD(Args, args)...);
     }
 #else
-    template<typename T, typename... Args>
-    auto __mk_io_error(ErrorKind kind) -> io::Error
+    template<typename /*T*/, typename... Args>
+    auto __mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
     {
+        (void)sizeof...(args);
         return { kind };
     }
 #endif

@@ -48,9 +48,9 @@ auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
     ssize_t bytes = 0;
     while (true) {
         bytes = copy_file_range(
-            /*infd=*/in.Value().Descriptor(),
+            /*infd=*/in->Descriptor(),
             /*pinoff=*/nullptr,
-            /*outfd=*/out.Value().Descriptor(),
+            /*outfd=*/out->Descriptor(),
             /*poutoff=*/nullptr,
             /*length=*/1 << 20, // TODO(@auguwu): is 1MiB/chunk ok or should this be customizable?
             /*flags=*/0);
@@ -69,8 +69,8 @@ auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
     }
 
     // Close the files
-    auto _ = VIOLET_MOVE(in.Value()).Close(); // NOLINT(readability-identifier-length)
-    auto _ = VIOLET_MOVE(out.Value()).Close(); // NOLINT(readability-identifier-length)
+    auto _ = in->Close(); // NOLINT(readability-identifier-length)
+    auto _ = out->Close(); // NOLINT(readability-identifier-length)
 
     return bytes;
 }

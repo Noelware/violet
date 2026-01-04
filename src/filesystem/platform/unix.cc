@@ -310,9 +310,9 @@ auto violet::filesystem::TryExists(PathRef path) -> io::Result<bool>
     }
 
     struct stat st{};
-    if (::fstat(file.Value().Descriptor(), &st) < 0) {
+    if (::fstat(file->Descriptor(), &st) < 0) {
         Int32 saved = errno;
-        auto _ = VIOLET_MOVE(file.Value()).Close(); // NOLINT(readability-identifier-length)
+        auto _ = file->Close(); // NOLINT(readability-identifier-length)
 
         errno = saved;
         return Err(io::Error::OSError());

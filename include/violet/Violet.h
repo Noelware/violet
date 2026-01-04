@@ -297,6 +297,16 @@ constexpr auto ToString(const Pair<T, U>& pair) -> String
     return std::format("({}, {})", pair.first, pair.second);
 }
 
+constexpr auto ToString(std::nullopt_t) -> String
+{
+    return "violet::Nothing";
+}
+
+constexpr auto ToString(std::nullptr_t) -> String
+{
+    return "nullptr";
+}
+
 /// A marker type that determines a function is unsafe for a specific reason.
 struct Unsafe final {
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Unsafe);

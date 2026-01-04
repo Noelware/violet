@@ -863,7 +863,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// empty, this will result in undefined behavior.
     ///
     /// @return The contained value.
-    constexpr auto UnwrapUnchecked(Unsafe) && -> T
+    constexpr auto UnwrapUnchecked(Unsafe) && noexcept -> T
     {
         return VIOLET_MOVE(this->n_storage.ok);
     }
@@ -875,7 +875,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// empty, this will result in undefined behavior.
     ///
     /// @return The contained value.
-    constexpr auto UnwrapUnchecked(Unsafe) & -> T
+    constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept -> T
     {
         return VIOLET_MOVE(this->n_storage.ok);
     }
@@ -887,9 +887,21 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// empty, this will result in undefined behavior.
     ///
     /// @return The contained value.
-    constexpr auto UnwrapUnchecked(Unsafe) const& -> T
+    constexpr auto UnwrapUnchecked(Unsafe) & noexcept -> T
     {
-        return VIOLET_MOVE(this->n_storage.ok);
+        return this->n_storage.ok;
+    }
+
+    /// Returns the contained value, consuming the `Result`, without checking if it has a value.
+    ///
+    /// ## Safety
+    /// This function is unsafe because it does not check if the `Result` has a value. If the `Result` is
+    /// empty, this will result in undefined behavior.
+    ///
+    /// @return The contained value.
+    constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> T
+    {
+        return this->n_storage.ok;
     }
 
 #ifndef VIOLET_HAS_EXCEPTIONS
@@ -1059,15 +1071,24 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     }
 
 #endif
-
-    constexpr auto operator*() noexcept -> T&
+    constexpr auto operator*() & noexcept -> T&
     {
-        return this->UnwrapUnchecked(Unsafe("required by caller"));
+        return this->UnwrapUnchecked(Unsafe("it is upon the callee"));
     }
 
-    constexpr auto operator*() const noexcept -> const T&
+    constexpr auto operator*() const& noexcept -> const T&
     {
-        return this->UnwrapUnchecked(Unsafe("required by caller"));
+        return this->UnwrapUnchecked(Unsafe("it is upon the callee"));
+    }
+
+    constexpr auto operator*() && noexcept -> T&&
+    {
+        return this->UnwrapUnchecked(Unsafe("it is upon the callee"));
+    }
+
+    constexpr auto operator*() const&& noexcept -> const T&&
+    {
+        return this->UnwrapUnchecked(Unsafe("it is upon the callee"));
     }
 
     constexpr auto operator->() noexcept -> T*
@@ -1102,33 +1123,36 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     }
 #endif
 
-    constexpr auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    auto ToString() const noexcept -> String
     {
         if (this->Ok()) {
             if constexpr (Stringify<T>) {
-                return os << violet::ToString(Value());
+                return violet::ToString(Value());
             }
 
 #if VIOLET_USE_RTTI
             const auto& type = typeid(T);
-            return os << "ok variant type `" << util::DemangleCXXName(type.name()) << '@' << type.hash_code()
-                      << "` not streamable»";
+            return std::format("ok variant: type `{}@{}`", util::DemangleCXXName(type.name()), type.hash_code());
 #else
-            return os << "«type `T` not streamable»";
+            return "error variant: ????";
 #endif
         } else {
-            if constexpr (Stringify<T>) {
-                return os << violet::ToString(Value());
+            if constexpr (Stringify<E>) {
+                return violet::ToString(Value());
             }
 
 #if VIOLET_USE_RTTI
             const auto& type = typeid(E);
-            return os << "error variant type `" << util::DemangleCXXName(type.name()) << '@' << type.hash_code()
-                      << "` not streamable»";
+            return std::format("error variant: type `{}@{}`", util::DemangleCXXName(type.name()), type.hash_code());
 #else
-            return os << "«type `E` not streamable»";
+            return "error variant: ????";
 #endif
         }
+    }
+
+    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    {
+        return os << this->ToString();
     }
 
 private:
