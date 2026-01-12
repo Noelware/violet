@@ -33,6 +33,12 @@ common --enable_platform_specific_config
 startup --windows_enable_symlinks
 build:windows --enable_runfiles
 
+# macOS: Set Apple SDK to 15.5
+build:macos --macos_minimum_os=15.5
+
+# C++: Disable modules as Violet doesn't support it (yet).
+build --cxxopt=-fno-modules
+
 # Only show errors in test output
 test --test_output=errors
 

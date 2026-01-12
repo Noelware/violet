@@ -23,9 +23,9 @@
 #include <gtest/gtest.h>
 #include <violet/Subprocess.h>
 
-using namespace violet::testing;
-using namespace violet::process;
-using namespace violet;
+using namespace violet::testing; // NOLINT(google-build-using-namespace)
+using namespace violet::process; // NOLINT(google-build-using-namespace)
+using namespace violet; // NOLINT(google-build-using-namespace)
 
 TEST(Process, ShouldExecuteWithoutEnviron)
 {

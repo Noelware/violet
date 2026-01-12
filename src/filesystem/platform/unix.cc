@@ -138,11 +138,23 @@ auto WalkDirs::Next() noexcept -> Optional<WalkDirs::Item>
 
 auto violet::filesystem::Metadata::FromPosix(struct stat st) noexcept -> Metadata
 {
+#ifdef VIOLET_APPLE_MACOS
+#define ST_MTIM st.st_mtimespec
+#define ST_ATIM st.st_atimespec
+#else
+#define ST_MTIM st.st_mtim
+#define ST_ATIM st.st_atim
+#endif
+
     Metadata mt;
     mt.Size = st.st_size;
-    mt.ModifiedAt = getMillisecondsFromTimespec(st.st_mtim);
-    mt.AccessedAt = Some<UInt64>(getMillisecondsFromTimespec(st.st_atim));
+    mt.ModifiedAt = getMillisecondsFromTimespec(ST_MTIM);
+    mt.AccessedAt = Some<UInt64>(getMillisecondsFromTimespec(ST_ATIM));
     mt.Permissions = static_cast<struct Permissions>(st.st_mode);
+
+#ifdef VIOLET_APPLE_MACOS
+    mt.CreatedAt = Some<UInt64>(getMillisecondsFromTimespec(st.st_birthtimespec));
+#endif
 
     if (S_ISREG(st.st_mode)) {
         mt.Type = FileType::mkfile();

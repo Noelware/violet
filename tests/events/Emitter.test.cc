@@ -23,6 +23,8 @@
 #include <violet/Events/EventEmitter.h>
 #include <violet/Violet.h>
 
+#include <thread>
+
 using namespace violet; // NOLINT(google-build-using-namespace)
 using namespace violet::events; // NOLINT(google-build-using-namespace)
 

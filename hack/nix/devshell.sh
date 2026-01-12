@@ -44,7 +44,6 @@ if [ ! -f "$CWD/.usr.bazelrc" ]; then
 # +=+ You are free to modify this to your heart's content. The shell environment  +=+
 # +=+ will hot-replace instead of overwriting your changes. You have been warned! +=+
 # +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-#
 # This is a workaround for missing standard C++ headers on NixOS using the wrapped
 # \`clang\` interface.
 #

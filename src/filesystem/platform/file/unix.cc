@@ -143,6 +143,59 @@ auto File::Flush() const noexcept -> io::Result<void>
     return this->n_fd.Flush();
 }
 
+auto File::Lock() const noexcept -> io::Result<void>
+{
+    if (!this->Valid()) {
+#if VIOLET_USE_RTTI
+        return Err(io::Error::New<String>(io::ErrorKind::InvalidInput, "file is not valid"));
+#else
+        return Err(io::Error(io::ErrorKind::InvalidInput));
+#endif
+    }
+
+    if (::flock(this->n_fd.Get(), LOCK_EX) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
+}
+
+auto File::SharedLock() const noexcept -> io::Result<void>
+{
+    if (!this->Valid()) {
+        return VIOLET_IO_ERROR(InvalidInput, String, "current file is not valid");
+    }
+
+    if (::flock(this->n_fd.Get(), LOCK_SH) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
+}
+
+auto File::Unlock() const noexcept -> io::Result<void>
+{
+    if (!this->Valid()) {
+        return VIOLET_IO_ERROR(InvalidInput, String, "current file is not valid");
+    }
+
+    if (::flock(this->n_fd.Get(), LOCK_UN) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
+}
+
+auto File::Locked() const noexcept -> io::Result<bool>
+{
+    if (::flock(this->n_fd.Get(), LOCK_SH | LOCK_NB) == 0) {
+        ::flock(this->n_fd.Get(), LOCK_UN);
+        return false;
+    }
+
+    return errno == EWOULDBLOCK;
+}
+
 auto File::MkScopedLock() const noexcept -> io::Result<ScopeLock>
 {
     auto result = this->Lock();
