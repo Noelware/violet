@@ -259,3 +259,15 @@
 #define VIOLET_DISALLOW_CONSTEXPR_COPY_AND_MOVE(Type)                                                                  \
     VIOLET_DISALLOW_CONSTEXPR_COPY(Type)                                                                               \
     VIOLET_DISALLOW_CONSTEXPR_MOVE(Type)
+
+#define VIOLET_IMPLICIT_COPY(Type)                                                                                     \
+    VIOLET_IMPLICIT Type(const Type&) noexcept = default;                                                              \
+    auto operator=(const Type&) noexcept -> Type& = default;
+
+#define VIOLET_IMPLICIT_MOVE(Type)                                                                                     \
+    VIOLET_IMPLICIT Type(Type&&) noexcept = default;                                                                   \
+    auto operator=(Type&&) noexcept -> Type& = default;
+
+#define VIOLET_IMPLICIT_COPY_AND_MOVE(Type)                                                                            \
+    VIOLET_IMPLICIT_COPY(Type)                                                                                         \
+    VIOLET_IMPLICIT_MOVE(Type)

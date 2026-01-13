@@ -41,6 +41,57 @@ auto getMillisecondsFromTimespec(const statx_timestamp& ts) noexcept -> UInt64
 
 } // namespace
 
+auto File::Lock() const noexcept -> io::Result<void>
+{
+    if (!this->Valid()) {
+        return VIOLET_IO_ERROR(InvalidInput, String, "current file is not valid");
+    }
+
+    if (::flock(this->n_fd.Get(), LOCK_EX) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
+}
+
+auto File::SharedLock() const noexcept -> io::Result<void>
+{
+    if (!this->Valid()) {
+        return VIOLET_IO_ERROR(InvalidInput, String, "current file is not valid");
+    }
+
+    if (::flock(this->n_fd.Get(), LOCK_SH) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
+}
+
+auto File::Unlock() const noexcept -> io::Result<void>
+{
+
+    if (!this->Valid()) {
+        return VIOLET_IO_ERROR(InvalidInput, String, "current file is not valid");
+    }
+
+    if (::flock(this->n_fd.Get(), LOCK_UN) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
+}
+
+auto File::Locked() const noexcept -> io::Result<bool>
+{
+
+    if (::flock(this->n_fd.Get(), LOCK_SH | LOCK_NB) == 0) {
+        ::flock(this->n_fd.Get(), LOCK_UN);
+        return false;
+    }
+
+    return errno == EWOULDBLOCK;
+}
+
 auto File::Metadata() const noexcept -> io::Result<struct Metadata>
 {
     struct statx sx{};

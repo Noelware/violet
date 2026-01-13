@@ -44,12 +44,12 @@ bazel_dep(name = "rules_python", version = "1.7.0")
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 git_override(
     module_name = "hedron_compile_commands",
-    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
     commit = "abb61a688167623088f8768cc9264798df6a9d10",
+    patch_strip = 1,
     patches = [
         "patches/000_hedron_compile_commands__fix_assertion.patch",
     ],
-    patch_strip = 1,
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
 )
 
 ## :- END ~ DEVELOPMENT DEPENDENCIES -: ##

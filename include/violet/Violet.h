@@ -393,8 +393,8 @@ inline void DoAssertion(bool condition, CStr condStr, CStr message,
 #define VIOLET_DBG(var) ::violet::detail::PrintDebugVariable(var, #var)
 #define VIOLET_ASSERT(cond, message) ::violet::detail::DoAssertion(cond, #cond, message)
 
-#define VIOLET_TODO_WITH(msg) ::violet::detail::DoAssertion(false, "todo!()", msg)
-#define VIOLET_TODO VIOLET_TODO_WITH("prototype not implemented")
+#define VIOLET_TODO_WITH(msg) ::violet::detail::DoAssertion(false, "todo!(" msg ")", msg)
+#define VIOLET_TODO() VIOLET_TODO_WITH("prototype not implemented")
 
 #define VIOLET_UNREACHABLE_WITH(msg) ::violet::detail::DoAssertion(false, "unreachable!()", msg)
 #define VIOLET_UNREACHABLE VIOLET_UNREACHABLE_WITH("unreachable code detected")
