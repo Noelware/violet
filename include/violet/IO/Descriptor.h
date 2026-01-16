@@ -94,6 +94,11 @@ struct VIOLET_API FileDescriptor final {
     VIOLET_EXPLICIT operator value_type() const noexcept;
 #endif
 
+    auto operator==(const FileDescriptor& rhs) const noexcept -> bool;
+    auto operator!=(const FileDescriptor& rhs) const noexcept -> bool;
+    auto operator==(value_type rhs) const noexcept -> bool;
+    auto operator!=(value_type rhs) const noexcept -> bool;
+
 private:
 #ifdef VIOLET_WINDOWS
     constexpr static const HANDLE INVALID = INVALID_HANDLE_VALUE;

@@ -145,4 +145,24 @@ FileDescriptor::operator Int32() const noexcept
     return this->Get();
 }
 
+auto FileDescriptor::operator==(const FileDescriptor& other) const noexcept -> bool
+{
+    return this->n_value == other.n_value;
+}
+
+auto FileDescriptor::operator!=(const FileDescriptor& other) const noexcept -> bool
+{
+    return this->n_value != other.n_value;
+}
+
+auto FileDescriptor::operator==(Int32 other) const noexcept -> bool
+{
+    return this->n_value == other;
+}
+
+auto FileDescriptor::operator!=(Int32 other) const noexcept -> bool
+{
+    return this->n_value != other;
+}
+
 #endif

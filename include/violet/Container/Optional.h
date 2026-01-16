@@ -23,10 +23,6 @@
 
 #include "violet/Violet.h"
 
-#if VIOLET_USE_RTTI
-#include "violet/Support/Demangle.h"
-#endif
-
 #ifndef VIOLET_HAS_EXCEPTIONS
 #include <source_location>
 #endif
@@ -683,16 +679,7 @@ struct VIOLET_API Optional final {
             return "«no value»";
         }
 
-        if constexpr (Stringify<T>) {
-            return violet::ToString(*Value());
-        }
-
-#if VIOLET_USE_RTTI
-        const auto& type = typeid(T);
-        return std::format("type `{}@{}`", util::DemangleCXXName(type.name()), type.hash_code());
-#else
-        return "????";
-#endif
+        return violet::ToString(*Value());
     }
 
     auto operator<<(std::ostream& os) const noexcept -> std::ostream&

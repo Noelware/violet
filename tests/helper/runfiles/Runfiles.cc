@@ -38,13 +38,13 @@ violet::UniquePtr<rules_cc::cc::runfiles::Runfiles> n_runfiles;
 } // namespace
 #endif
 
-void violet::testing::runfiles::Init()
+void violet::testing::runfiles::Init(violet::CStr argv0)
 {
 #ifdef BAZEL
-    violet::String* error = nullptr;
-    n_runfiles.reset(rules_cc::cc::runfiles::Runfiles::CreateForTest("", error));
+    violet::String error;
+    n_runfiles.reset(rules_cc::cc::runfiles::Runfiles::Create(argv0, "", &error));
     if (!n_runfiles) {
-        auto msg = std::format("failed to build runfiles for test: {}", *error);
+        auto msg = std::format("failed to build runfiles for test: {}", error);
         VIOLET_ASSERT(false, msg.c_str());
     }
 #endif
@@ -57,7 +57,7 @@ auto violet::testing::runfiles::Get(violet::Str path) -> violet::Optional<violet
 #ifdef BAZEL
     VIOLET_ASSERT(static_cast<bool>(n_runfiles), "`violet::testing::runfiles::Init()` was never called");
 
-    auto logical = n_runfiles->Rlocation(std::format("{}/{}", kWorkspace, path.data()));
+    auto logical = n_runfiles->Rlocation(std::format("{}/{}", kWorkspace, path));
     VIOLET_ASSERT(!logical.empty(), "bad runfile location");
 
     auto result = violet::filesystem::TryExists(static_cast<violet::Str>(logical));

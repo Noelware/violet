@@ -271,3 +271,17 @@
 #define VIOLET_IMPLICIT_COPY_AND_MOVE(Type)                                                                            \
     VIOLET_IMPLICIT_COPY(Type)                                                                                         \
     VIOLET_IMPLICIT_MOVE(Type)
+
+#define VIOLET_IMPLICIT_CONSTEXPR_COPY(Type)                                                                           \
+    constexpr VIOLET_IMPLICIT Type(const Type&) noexcept = default;                                                    \
+    constexpr auto operator=(const Type&) noexcept -> Type& = default;
+
+#define VIOLET_IMPLICIT_CONSTEXPR_MOVE(Type)                                                                           \
+    constexpr VIOLET_IMPLICIT Type(Type&&) noexcept = default;                                                         \
+    constexpr auto operator=(Type&&) noexcept -> Type& = default;
+
+#define VIOLET_IMPLICIT_CONSTEXPR_COPY_AND_MOVE(Type)                                                                  \
+    VIOLET_IMPLICIT_CONSTEXPR_COPY(Type)                                                                               \
+    VIOLET_IMPLICIT_CONSTEXPR_MOVE(Type)
+
+#define VIOLET_REQUIRE_STL(ver) (defined(_MSVC_LANG) && _MSVC_LANG >= ver) || __cplusplus >= ver

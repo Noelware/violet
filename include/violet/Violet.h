@@ -211,12 +211,20 @@ using NodeHashSet = absl::node_hash_set<T, Hash, Eq, Alloc>;
 template<typename T, typename Comparator = std::less<T>, typename Alloc = std::allocator<T>>
 using BTreeSet = absl::btree_set<T, Comparator, Alloc>;
 
-constexpr auto ToString() noexcept -> String
-{
-    return {};
-}
+struct __dummy_t final {};
+
+/// C++ concept to require type `T` to have a `ToString` instance member that can
+/// stringify `T`.
+///
+/// @note You can use the [`violet::ToString`] function to call any `Stringify`-able
+/// types as well.
+template<typename T>
+concept Stringify = requires(T ty) {
+    { ty.ToString() } -> std::convertible_to<std::string>;
+};
 
 template<typename T>
+    requires(!std::is_arithmetic_v<T>)
 inline auto ToString(const T& val) -> String
 {
     if constexpr (requires { val.ToString(); }) {
@@ -233,18 +241,6 @@ inline auto ToString(const T& val) -> String
         static_assert(sizeof(T) == 0, "`T` doesn't satisfy the `Stringify` concept");
     }
 }
-
-/// C++ concept to require type `T` to have a `ToString` instance member that can
-/// stringify `T`.
-///
-/// @note You can use the [`violet::ToString`] function to call any `Stringify`-able
-/// types as well.
-template<typename T>
-concept Stringify = requires(T ty) {
-    { ty.ToString() } -> std::convertible_to<std::string>;
-} || requires(const T& value) {
-    { violet::ToString(value) } -> std::convertible_to<std::string>;
-};
 
 inline auto ToString(const String& val) -> String
 {
@@ -274,6 +270,12 @@ inline auto ToString(bool val) -> String
 #else
 #define VIOLET_CONSTEXPR_FOR_SSTREAM inline
 #endif
+
+template<std::integral N>
+constexpr auto ToString(N num) -> String
+{
+    return std::format("{}", num);
+}
 
 VIOLET_CONSTEXPR_FOR_SSTREAM auto ToString(Int128 val) -> String
 {
@@ -342,7 +344,7 @@ private:
     bool n_moved = false;
 };
 
-template<Stringify S>
+template<typename S>
 struct StringifyFormatter {
     constexpr StringifyFormatter() = default;
 
@@ -381,10 +383,10 @@ inline void DoAssertion(bool condition, CStr condStr, CStr message,
 {
     VIOLET_UNLIKELY_IF(!condition)
     {
-        os << "[violet::assertion@" << loc.file_name() << ':' << loc.line() << ':' << loc.column() << "]: ";
+        os << '[' << loc.file_name() << ':' << loc.line() << ':' << loc.column() << "]: ";
         os << "condition '" << condStr << "' failed: " << message << '\n';
 
-        std::abort();
+        std::exit(1);
     }
 }
 
