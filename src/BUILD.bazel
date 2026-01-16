@@ -37,7 +37,6 @@ filegroup(
         "//src/filesystem/platform/permissions:srcs",
         "//src/filesystem/platform/temporary:srcs",
         "//src/io:srcs",
-        "//src/subprocess:srcs",
         "//src/support:srcs",
         "//src/system:srcs",
     ],

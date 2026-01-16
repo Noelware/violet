@@ -26,7 +26,6 @@
 #
 #    * `gcc-15`
 #    * `gcc-14`
-#    * `gcc-13`
 #
 # Older compilers are not avaliable under Noelware's container registry. Once a new
 # version of GCC is released, we provide tests and soft-deprecate the second latest
@@ -44,31 +43,31 @@ RUN apt update -y && apt install -y curl lsb-release
 
 ## 1. Install Bazelisk (which will be aliased as `bazel`) and Bazel build-tools.
 # renovate: datasource=github-tags repository=bazelbuild/bazelisk
-ENV BAZELISK_VERSION="1.27.0"
+ENV BAZELISK_VERSION="1.28.0"
 
 # renovate: datasource=github-tags repository=bazelbuild/buildtools
 ENV BAZEL_BUILDTOOLS_VERSION="8.2.1"
 
 RUN set -eux; \
-  arch="$(dpkg --print-architecture)"; \
-  case "${arch}" in \
+    arch="$(dpkg --print-architecture)"; \
+    case "${arch}" in \
     aarch64|arm64) \
-      BAZEL_UNUSED_DEPS_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/unused_deps-linux-arm64"; \
-      BAZEL_BUILDIFIER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildifier-linux-arm64"; \
-      BAZEL_BUILDOZER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildozer-linux-arm64"; \
-      BAZELISK_DOWNLOAD_URL="https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/bazelisk-linux-arm64"; \
-      ;; \
+    BAZEL_UNUSED_DEPS_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/unused_deps-linux-arm64"; \
+    BAZEL_BUILDIFIER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildifier-linux-arm64"; \
+    BAZEL_BUILDOZER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildozer-linux-arm64"; \
+    BAZELISK_DOWNLOAD_URL="https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/bazelisk-linux-arm64"; \
+    ;; \
     amd64|x86_64) \
-      BAZEL_UNUSED_DEPS_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/unused_deps-linux-amd64"; \
-      BAZEL_BUILDIFIER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildifier-linux-amd64"; \
-      BAZEL_BUILDOZER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildozer-linux-amd64"; \
-      BAZELISK_DOWNLOAD_URL="https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/bazelisk-linux-amd64"; \
-      ;; \
-  esac; \
-  curl -fsSL -o /usr/local/bin/bazel       ${BAZELISK_DOWNLOAD_URL}; \
-  curl -fsSL -o /usr/local/bin/buildifier  ${BAZEL_BUILDIFIER_DOWNLOAD_URL}; \
-  curl -fsSL -o /usr/local/bin/buildozer   ${BAZEL_BUILDOZER_DOWNLOAD_URL}; \
-  curl -fsSL -o /usr/local/bin/unused_deps ${BAZEL_UNUSED_DEPS_DOWNLOAD_URL}
+    BAZEL_UNUSED_DEPS_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/unused_deps-linux-amd64"; \
+    BAZEL_BUILDIFIER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildifier-linux-amd64"; \
+    BAZEL_BUILDOZER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildozer-linux-amd64"; \
+    BAZELISK_DOWNLOAD_URL="https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/bazelisk-linux-amd64"; \
+    ;; \
+    esac; \
+    curl -fsSL -o /usr/local/bin/bazel       ${BAZELISK_DOWNLOAD_URL}; \
+    curl -fsSL -o /usr/local/bin/buildifier  ${BAZEL_BUILDIFIER_DOWNLOAD_URL}; \
+    curl -fsSL -o /usr/local/bin/buildozer   ${BAZEL_BUILDOZER_DOWNLOAD_URL}; \
+    curl -fsSL -o /usr/local/bin/unused_deps ${BAZEL_UNUSED_DEPS_DOWNLOAD_URL}
 
 RUN chmod +x /usr/local/bin/bazel && chmod +x /usr/local/bin/buildifier && chmod +x /usr/local/bin/buildozer && chmod +x /usr/local/bin/unused_deps
 

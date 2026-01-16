@@ -34,8 +34,6 @@ filegroup(
         "//tests/io:srcs",
         "//tests/iterator:srcs",
         "//tests/numeric:srcs",
-        "//tests/subprocess:srcs",
-        "//tests/subprocess/platform:srcs",
         "//tests/support:srcs",
     ],
     visibility = ["//:__subpackages__"],

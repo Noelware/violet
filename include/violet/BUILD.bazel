@@ -34,7 +34,6 @@ filegroup(
         "//include/violet/Iterator:srcs",
         "//include/violet/Language:srcs",
         "//include/violet/Numeric:srcs",
-        "//include/violet/Subprocess:srcs",
         "//include/violet/Support:srcs",
         "//include/violet/System:srcs",
     ],
