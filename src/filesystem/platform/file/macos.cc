@@ -23,24 +23,61 @@
 
 #ifdef VIOLET_APPLE_MACOS
 
+#include <violet/Filesystem/File.h>
+
+#include <cerrno>
+#include <sys/file.h>
+#include <sys/stat.h>
+
+using violet::filesystem::File;
+
 auto File::Lock() const noexcept -> io::Result<void>
 {
-    VIOLET_TODO();
+    if (!this->Valid()) {
+        return VIOLET_IO_ERROR(InvalidInput, String, "current file is not valid");
+    }
+
+    if (::flock(this->n_fd.Get(), LOCK_EX) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
 }
 
 auto File::SharedLock() const noexcept -> io::Result<void>
 {
-    VIOLET_TODO();
+    if (!this->Valid()) {
+        return VIOLET_IO_ERROR(InvalidInput, String, "current file is not valid");
+    }
+
+    if (::flock(this->n_fd.Get(), LOCK_SH) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
 }
 
 auto File::Unlock() const noexcept -> io::Result<void>
 {
-    VIOLET_TODO();
+    if (!this->Valid()) {
+        return VIOLET_IO_ERROR(InvalidInput, String, "current file is not valid");
+    }
+
+    if (::flock(this->n_fd.Get(), LOCK_UN) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    return {};
 }
 
 auto File::Locked() const noexcept -> io::Result<bool>
 {
-    VIOLET_TODO();
+    if (::flock(this->n_fd.Get(), LOCK_SH | LOCK_NB) == 0) {
+        ::flock(this->n_fd.Get(), LOCK_UN);
+        return false;
+    }
+
+    return errno == EWOULDBLOCK;
 }
 
 #endif

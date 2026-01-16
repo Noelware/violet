@@ -101,7 +101,10 @@ cc_library(
             "//src/filesystem/platform/file:linux.cc",
             "//src/filesystem/platform/file:unix.cc",
         ],
-        "@platforms//os:macos": ["//src/filesystem/platform/file:unix.cc"],
+        "@platforms//os:macos": [
+            "//src/filesystem/platform/file:macos.cc",
+            "//src/filesystem/platform/file:unix.cc",
+        ],
         "@platforms//os:windows": ["//src/filesystem/platform/file:windows.cc"],
         "//conditions:default": ["//src/filesystem/platform/file:unsupported.cc"],
     }),
