@@ -66,6 +66,8 @@ FileDescriptor::FileDescriptor(Int32 fd) noexcept
 {
 }
 
+FileDescriptor::~FileDescriptor() = default;
+
 auto FileDescriptor::Valid() const noexcept -> bool
 {
     return this->n_impl->n_fd != -1;

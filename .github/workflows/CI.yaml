@@ -63,7 +63,7 @@ jobs:
             fail-fast: false
             matrix:
                 compiler: [gcc-15, gcc-14, clang-21, clang-20]
-                bazel-version: ["7.6.0", "8.4.2"]
+                bazel-version: ["7.7.1", "8.5.1"]
                 cxx-standard: ["26", "23", "20"]
                 include:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: ""}
@@ -129,7 +129,7 @@ jobs:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: " --test_env=ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
-            USE_BAZEL_VERSION: "8.4.2"
+            USE_BAZEL_VERSION: "8.5.1"
             BAZELFLAGS: "--config=ci --config=asan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
@@ -156,7 +156,7 @@ jobs:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=UBSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
-            USE_BAZEL_VERSION: "8.4.2"
+            USE_BAZEL_VERSION: "8.5.1"
             BAZELFLAGS: "--config=ci --config=ubsan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
@@ -183,7 +183,7 @@ jobs:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=TSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21 "}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
-            USE_BAZEL_VERSION: "8.4.2"
+            USE_BAZEL_VERSION: "8.5.1"
             BAZELFLAGS: "--config=ci --config=tsan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
