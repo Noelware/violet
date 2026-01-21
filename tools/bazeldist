@@ -38,6 +38,7 @@ dirs=(
     "include"
     "src"
     "tests"
+    "violet"
 )
 
 files=(
