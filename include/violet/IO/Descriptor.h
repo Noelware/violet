@@ -21,54 +21,42 @@
 
 #pragma once
 
-#include "violet/IO/Read.h"
-#include "violet/IO/Write.h"
-#include "violet/Violet.h"
-
-#ifdef VIOLET_WINDOWS
-#include <windows.h>
-#endif
+#include <violet/IO/Read.h>
+#include <violet/IO/Write.h>
+#include <violet/Violet.h>
 
 namespace violet::io {
 
-/// Abstraction around a POSIX file descriptor or a Windows `HANDLE`.
+/// A zero-cost, tiny abstraction around OS-related file descriptors.
 struct VIOLET_API FileDescriptor final {
-#ifdef VIOLET_WINDOWS
-    /// Value type on Windows that wraps a file descriptor.
-    using value_type = HANDLE;
-#elif defined(VIOLET_UNIX)
+#ifdef VIOLET_UNIX
     /// Value type on POSIX (macOS, Linux) that wraps a file descriptor.
     using value_type = Int32;
 #else
-    /// On a unsupported platform, this will be `void*` (which will always be `nullptr`).
+    /// Value type for Windows and unsupported systems.
     using value_type = void*;
 #endif
 
-    VIOLET_DISALLOW_COPY(FileDescriptor);
+    VIOLET_IMPLICIT_COPY_AND_MOVE(FileDescriptor);
 
-    /// Produce a new, dummy file descriptor.
-    VIOLET_IMPLICIT FileDescriptor() = default;
-
-    /// Creates a new file descriptor from the OS value type.
-    /// @param value the value.
-    VIOLET_IMPLICIT FileDescriptor(value_type value);
+    VIOLET_IMPLICIT FileDescriptor() noexcept;
+    VIOLET_IMPLICIT FileDescriptor(value_type value) noexcept;
 
     /// This will clean up the resource that this file descriptor owns.
     ///
+    /// ## Platform-specific Notes
     /// - Windows: Calls `CloseHandle(HANDLE)`.
     /// - POSIX: Calls `close(fd)`.
     ~FileDescriptor();
 
-    /// Moves the file descriptor into a new structure. This will close `other`'s
-    /// descriptor and moves `other` into `this`, producing a new file descriptor.
-    VIOLET_IMPLICIT FileDescriptor(FileDescriptor&& other) noexcept;
+    /// Returns **true** if this file descriptor points to a valid handle.
+    [[nodiscard]] auto Valid() const noexcept -> bool;
 
-    auto operator=(FileDescriptor&& other) noexcept -> FileDescriptor&;
-
-#if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)
-    /// Returns the raw value type.
+    /// Returns the raw value type of this file descriptor.
     [[nodiscard]] auto Get() const noexcept -> value_type;
-#endif
+
+    /// Closes this file descriptor.
+    void Close();
 
     /// Returns a text representation of this file descriptor.
     ///
@@ -76,23 +64,17 @@ struct VIOLET_API FileDescriptor final {
     /// - POSIX: `Descriptor(<id>)`
     [[nodiscard]] auto ToString() const noexcept -> String;
 
-    /// Closes the file descriptor and this descriptor will be invalidated.
-    void Close();
-
-    /// Returns **true** if this file descriptor points to a valid handle.
-    [[nodiscard]] auto Valid() const noexcept -> bool;
-
-    /// Conversion operator: `violet::io::FileDescriptor` -> `bool`.
-    VIOLET_EXPLICIT operator bool() const noexcept;
-
+    /// @see violet::io::Readable
     [[nodiscard]] auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>;
+
+    /// @see violet::io::Writable
     [[nodiscard]] auto Write(Span<const UInt8> buf) const noexcept -> io::Result<UInt>;
+
+    /// @see violet::io::Writable
     [[nodiscard]] auto Flush() const noexcept -> io::Result<void>;
 
-#if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)
-    /// Conversion operator: `violet::io::FileDescriptor` -> `value_type`.
+    VIOLET_EXPLICIT operator bool() const noexcept;
     VIOLET_EXPLICIT operator value_type() const noexcept;
-#endif
 
     auto operator==(const FileDescriptor& rhs) const noexcept -> bool;
     auto operator!=(const FileDescriptor& rhs) const noexcept -> bool;
@@ -100,15 +82,9 @@ struct VIOLET_API FileDescriptor final {
     auto operator!=(value_type rhs) const noexcept -> bool;
 
 private:
-#ifdef VIOLET_WINDOWS
-    constexpr static const HANDLE INVALID = INVALID_HANDLE_VALUE;
-#elif defined(VIOLET_UNIX)
-    constexpr static const Int32 INVALID = -1;
-#else
-    constexpr static const void* INVALID = nullptr;
-#endif
+    struct Impl;
 
-    value_type n_value = INVALID;
+    SharedPtr<Impl> n_impl;
 };
 
 static_assert(Readable<FileDescriptor>, "`FileDescriptor` doesn't conform to the `Readable` concept");

@@ -24,11 +24,9 @@
 
 using violet::io::FileDescriptor;
 
-FileDescriptor::FileDescriptor(void*) {}
-FileDescriptor::FileDescriptor(FileDescriptor&& other) noexcept = default;
-FileDescriptor::~FileDescriptor() {} // NOLINT(modernize-use-equals-default)
+struct FileDescriptor::Impl final {};
 
-auto FileDescriptor::operator=(FileDescriptor&& other) noexcept -> FileDescriptor& = default;
+FileDescriptor::~FileDescriptor() = default;
 
 auto FileDescriptor::ToString() const noexcept -> String
 {

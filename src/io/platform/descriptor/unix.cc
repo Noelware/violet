@@ -25,59 +25,65 @@
 
 #include <violet/IO/Descriptor.h>
 
-#include <utility>
-
+using violet::Int32;
 using violet::io::FileDescriptor;
 
-FileDescriptor::FileDescriptor(Int32 value)
-    : n_value(value)
-{
-}
+struct FileDescriptor::Impl final {
+    VIOLET_IMPLICIT_COPY_AND_MOVE(Impl);
 
-FileDescriptor::FileDescriptor(FileDescriptor&& other) noexcept
-    : n_value(std::exchange(other.n_value, INVALID))
-{
-}
-
-FileDescriptor::~FileDescriptor()
-{
-    this->Close();
-}
-
-auto FileDescriptor::operator=(FileDescriptor&& other) noexcept -> FileDescriptor&
-{
-    if (this != &other) {
-        if (this->n_value != INVALID) {
-            ::close(this->n_value);
-        }
-
-        this->n_value = std::exchange(other.n_value, INVALID);
+    ~Impl()
+    {
+        this->close();
     }
 
-    return *this;
+    VIOLET_IMPLICIT Impl() noexcept = default;
+    VIOLET_IMPLICIT Impl(Int32 fd) noexcept
+        : n_fd(fd)
+    {
+    }
+
+    void close()
+    {
+        if (this->n_fd != -1) {
+            ::close(this->n_fd);
+            this->n_fd = -1;
+        }
+    }
+
+private:
+    friend struct FileDescriptor;
+
+    Int32 n_fd = -1;
+};
+
+FileDescriptor::FileDescriptor() noexcept
+    : n_impl(std::make_shared<FileDescriptor::Impl>())
+{
 }
 
-auto FileDescriptor::Get() const noexcept -> value_type
+FileDescriptor::FileDescriptor(Int32 fd) noexcept
+    : n_impl(std::make_shared<FileDescriptor::Impl>(fd))
 {
-    return this->n_value;
-}
-
-auto FileDescriptor::ToString() const noexcept -> String
-{
-    return std::format("FileDescriptor({})", this->n_value);
 }
 
 auto FileDescriptor::Valid() const noexcept -> bool
 {
-    return this->n_value != INVALID;
+    return this->n_impl->n_fd != -1;
+}
+
+auto FileDescriptor::Get() const noexcept -> Int32
+{
+    return this->n_impl->n_fd;
+}
+
+auto FileDescriptor::ToString() const noexcept -> String
+{
+    return std::format("FileDescriptor({})", this->Get());
 }
 
 void FileDescriptor::Close()
 {
-    if (this->n_value != INVALID) {
-        ::close(this->n_value);
-        this->n_value = INVALID;
-    }
+    this->n_impl->close();
 }
 
 auto FileDescriptor::Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
@@ -147,22 +153,22 @@ FileDescriptor::operator Int32() const noexcept
 
 auto FileDescriptor::operator==(const FileDescriptor& other) const noexcept -> bool
 {
-    return this->n_value == other.n_value;
+    return this->Get() == other.Get();
 }
 
 auto FileDescriptor::operator!=(const FileDescriptor& other) const noexcept -> bool
 {
-    return this->n_value != other.n_value;
+    return this->Get() != other.Get();
 }
 
 auto FileDescriptor::operator==(Int32 other) const noexcept -> bool
 {
-    return this->n_value == other;
+    return this->Get() == other;
 }
 
 auto FileDescriptor::operator!=(Int32 other) const noexcept -> bool
 {
-    return this->n_value != other;
+    return this->Get() != other;
 }
 
 #endif
