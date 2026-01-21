@@ -99,8 +99,8 @@ module(
 EOF
 
 deps=(
-    "bazel/deps/bzl.MODULE.bazel"
-    "bazel/deps/cc.MODULE.bazel"
+    "buildsystem/bazel/deps/bzl.MODULE.bazel"
+    "buildsystem/bazel/deps/cc.MODULE.bazel"
 )
 
 for depfile in "${deps[@]}"; do
