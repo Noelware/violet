@@ -70,11 +70,19 @@ FileDescriptor::~FileDescriptor() = default;
 
 auto FileDescriptor::Valid() const noexcept -> bool
 {
+    if (this->n_impl == nullptr) {
+        return false;
+    }
+
     return this->n_impl->n_fd != -1;
 }
 
 auto FileDescriptor::Get() const noexcept -> Int32
 {
+    if (this->n_impl == nullptr) {
+        return -1;
+    }
+
     return this->n_impl->n_fd;
 }
 
@@ -85,7 +93,9 @@ auto FileDescriptor::ToString() const noexcept -> String
 
 void FileDescriptor::Close()
 {
-    this->n_impl->close();
+    if (this->n_impl != nullptr) {
+        this->n_impl->close();
+    }
 }
 
 auto FileDescriptor::Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>

@@ -3,6 +3,8 @@
 .ci/
 .github/
 .vscode/
+.bazeldist/
+.agents/
 build/
 external/
 
