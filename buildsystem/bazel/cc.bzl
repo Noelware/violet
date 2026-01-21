@@ -101,7 +101,7 @@ def cc_library(name, hdrs = [], **kwargs):
         linkopts = linkopts + SANITIZER_OPTS,
         includes = ["include"],
         defines = ["BAZEL"] + OS_DEFINES + ARCH_DEFINES + COMPILER_DEFINES + [
-            "VIOLET_VERSION_STR=%s" % VERSION,
+            "VIOLET_VERSION_STR=\"%s\"" % VERSION,
             "VIOLET_VERSION=%d" % encode_as_int(),
         ],
         deps = deps,

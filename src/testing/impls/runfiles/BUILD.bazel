@@ -19,28 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library")
-
-cc_library(
-    name = "runfiles",
-    srcs = ["//src/testing/impls/runfiles:bazel.cc"],
-    hdrs = ["//include/violet/Testing:Runfiles.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/container:optional",
-        "//violet/filesystem",
-        "//violet/system",
-        "@rules_cc//cc/runfiles",
-    ],
-)
-
-cc_library(
-    name = "runfiles_main",
-    srcs = ["//src/testing:Runfiles.main.cc"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":runfiles",
-        "@googletest//:gtest",
-    ],
-)
+exports_files(glob(["*.cc"]))

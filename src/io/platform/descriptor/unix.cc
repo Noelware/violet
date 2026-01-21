@@ -147,6 +147,12 @@ auto FileDescriptor::Write(Span<const UInt8> buf) const noexcept -> Result<UInt>
 auto FileDescriptor::Flush() const noexcept -> io::Result<void>
 {
     if (this->Valid() && ::fsync(this->Get()) == -1) {
+        // For now, it is ok to ignore `EINVAL` since this means
+        // that the file descriptor wasn't a valid one (i.e, `STDOUT_FILENO`)
+        if (errno == EINVAL) {
+            return {};
+        }
+
         return Err(Error::OSError());
     }
 

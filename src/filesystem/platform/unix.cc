@@ -300,7 +300,7 @@ auto violet::filesystem::Canonicalize(PathRef path) -> io::Result<Path>
         return Err(io::Error::OSError());
     }
 
-    return Path(buf.data(), buf.size());
+    return Path(buf.data());
 }
 
 auto violet::filesystem::Exists(PathRef path) -> bool
