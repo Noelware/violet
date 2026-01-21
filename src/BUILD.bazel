@@ -19,26 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-_files = glob(
+exports_files(glob(
     ["*.cc"],
     allow_empty = True,
-)
-
-exports_files(_files)
-
-filegroup(
-    name = "files",
-    srcs = _files + [
-        "//src/container:srcs",
-        "//src/filesystem/platform:srcs",
-        "//src/filesystem/platform/extensions/xattr:srcs",
-        "//src/filesystem/platform/file:srcs",
-        "//src/filesystem/platform/path:srcs",
-        "//src/filesystem/platform/permissions:srcs",
-        "//src/filesystem/platform/temporary:srcs",
-        "//src/io:srcs",
-        "//src/support:srcs",
-        "//src/system:srcs",
-    ],
-    visibility = ["//:__subpackages__"],
-)
+))

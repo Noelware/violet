@@ -19,27 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <gtest/gtest.h>
+#include <violet/Testing/Runfiles.h>
 
-int main(int argc, char** argv)
+auto main(int argc, char* argv[]) -> int
 {
-    if (argc < 2) {
-        write(STDERR_FILENO, "Usage: print_env VAR_NAME\n", 26);
-        return 2;
-    }
+    testing::InitGoogleTest(&argc, argv);
+    violet::testing::runfiles::Init(argv[0]);
 
-    const char* var_name = argv[1];
-    const char* val = getenv(var_name);
-
-    if (!val) {
-        write(STDERR_FILENO, "Environment variable not set\n", 29);
-        return 1;
-    }
-
-    write(STDOUT_FILENO, val, strlen(val));
-    write(STDOUT_FILENO, "\n", 1);
-    return 0;
+    return RUN_ALL_TESTS();
 }

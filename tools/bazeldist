@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# +---------------------------------------------------------------------------------+
+# 🌺💜 Violet: Extended C++ standard library
+# Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# +----------------------------------------------------------------------------------
+
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &> /dev/null && pwd)
+VERSION=$(cat "$SCRIPT_DIR/.violet-version")
+
+echo "[violet/tools:bazeldist] Preparing Bazel distribution..."
+
+[ -d "$SCRIPT_DIR/.bazeldist" ] && rm -rf "$SCRIPT_DIR/.bazeldist" || true
+
+# Create a directory in the script directory so that
+# we can copy files into this for the final tarball
+mkdir -p "$SCRIPT_DIR/.bazeldist"
+
+dirs=(
+    "buildsystem"
+    "include"
+    "src"
+    "tests"
+)
+
+files=(
+    ".violet-version"
+    "BUILD.bazel"
+    "README.md"
+    "LICENSE"
+)
+
+for dir in "${dirs[@]}"; do
+    echo "[violet/tools:bazeldist] copying directory $dir ~> $SCRIPT_DIR/.bazeldist/$dir"
+    cp -r "$SCRIPT_DIR/$dir" "$SCRIPT_DIR/.bazeldist"
+
+    if [ "$dir" == "buildsystem" ]; then
+        rm -rf "$SCRIPT_DIR/.bazeldist/buildsystem/bazel/deps"
+        rm -rf "$SCRIPT_DIR/.bazeldist/buildsystem/cmake"
+        rm -rf "$SCRIPT_DIR/.bazeldist/buildsystem/meson"
+
+        sed -i "s/^VERSION = \".*\"/VERSION = \"$VERSION\"/" "$SCRIPT_DIR/.bazeldist/buildsystem/bazel/version.bzl"
+    fi
+done
+
+for file in "${files[@]}"; do
+    echo "[violet/tools:bazeldist] copying file $file ~> $SCRIPT_DIR/.bazeldist/$file"
+    cp -f "$SCRIPT_DIR/$file" "$SCRIPT_DIR/.bazeldist"
+done
+
+echo "[violet/tools:bazeldist] rebuilding \`MODULE.bazel\`..."
+
+cat <<EOF > "$SCRIPT_DIR/.bazeldist/MODULE.bazel"
+# 🌺💜 Violet: Extended C++ standard library
+# Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+module(
+    name = "violet",
+    version = "$VERSION",
+    compatibility_level = 0,
+    repo_name = "org_noelware_violet",
+)
+
+EOF
+
+deps=(
+    "bazel/deps/bzl.MODULE.bazel"
+    "bazel/deps/cc.MODULE.bazel"
+)
+
+for depfile in "${deps[@]}"; do
+    awk '
+        FNR==1 { skipping = 1 }
+        skipping && (/^#/ || /^$/) { next }
+        skipping { skipping = 0 }
+        { print } ENDFILE { print "" }
+    ' "$SCRIPT_DIR/$depfile" >> "$SCRIPT_DIR/.bazeldist/MODULE.bazel"
+done
+
+awk '
+  /^load\("@hedron_compile_commands\/\// { next }
+  /^refresh_compile_commands\(/ { s=1 }
+  s && /^\)/ { s=0; next }
+  !s
+' "$SCRIPT_DIR/BUILD.bazel" > "$SCRIPT_DIR/.bazeldist/BUILD.bazel"
+
+if command -v buildifier >/dev/null; then
+    buildifier -mode fix "$SCRIPT_DIR/.bazeldist/MODULE.bazel"
+    buildifier -mode fix "$SCRIPT_DIR/.bazeldist/BUILD.bazel"
+fi
+
+echo "[violet/tools:bazeldist] repackaging \`.bazeldist\` as a tarball file with a determinstic timestamp"
+GZIP=-n tar \
+  -C "$SCRIPT_DIR/.bazeldist" \
+  --mtime='@0' \
+  --sort=name \
+  --owner=0 --group=0 --numeric-owner \
+  -czvf "$SCRIPT_DIR/dist.tgz" \
+  .

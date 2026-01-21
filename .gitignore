@@ -190,6 +190,11 @@ build.ninja
 .ninja_logs
 
 **/.usr.bazelrc
+dist.tgz
+
+!include/violet/Testing/
+
+.bazeldist/
 .cache/
 .direnv/
 build/

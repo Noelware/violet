@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "tests/helper/runfiles/Runfiles.h"
+#include <violet/Testing/Runfiles.h>
 
 #ifdef BAZEL
 #include "rules_cc/cc/runfiles/runfiles.h"
@@ -27,12 +27,14 @@
 #include <violet/System.h>
 #endif
 
+#include <violet/Container/Optional.h>
 #include <violet/Filesystem.h>
 #include <violet/Violet.h>
 
 #ifdef BAZEL
 namespace {
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 violet::UniquePtr<rules_cc::cc::runfiles::Runfiles> n_runfiles;
 
 } // namespace

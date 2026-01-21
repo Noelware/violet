@@ -19,27 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
-
-cc_library(
-    name = "endian",
-    hdrs = ["//include/violet/Numeric:Endian.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
-cc_library(
-    name = "int128",
-    hdrs = ["//include/violet/Numeric:Int128.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "@absl//absl/numeric:int128",
-    ],
-)
-
-cc_test(
-    name = "int128_test",
-    srcs = ["//tests/numeric:Int128.test.cc"],
-    deps = [":int128"],
-)
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.16")

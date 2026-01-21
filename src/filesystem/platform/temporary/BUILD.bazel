@@ -19,12 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-_files = glob(["*.cc"])
-
-exports_files(_files)
-
-filegroup(
-    name = "srcs",
-    srcs = _files,
-    visibility = ["//:__subpackages__"],
-)
+exports_files(glob(["*.cc"]))

@@ -20,9 +20,3 @@
 # SOFTWARE.
 
 exports_files(glob(["*.h"]))
-
-filegroup(
-    name = "srcs",
-    srcs = glob(["*.h"]),
-    visibility = ["//:__subpackages__"],
-)

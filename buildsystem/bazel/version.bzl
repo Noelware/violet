@@ -19,36 +19,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library")
+VERSION = "26.02"
 
-exports_files([
-    "Runfiles.cc",
-    "Runfiles.h",
-    "BUILD.bazel",
-])
+def encode_as_int():
+    parts = VERSION.split(".")
+    if len(parts) == 2:
+        yy, mm = parts
+        dd = "00"
+    elif len(parts) == 3:
+        yy, mm, dd = parts
+    else:
+        fail("invalid version format: %s" % VERSION)
 
-filegroup(
-    name = "srcs",
-    srcs = [
-        "BUILD.bazel",
-        "Runfiles.cc",
-        "Runfiles.h",
-    ],
-    visibility = ["//:__subpackages__"],
-)
-
-cc_library(
-    name = "runfiles",
-    srcs = ["Runfiles.cc"],
-    hdrs = ["Runfiles.h"],
-    visibility = [
-        "//tests:__subpackages__",
-        "//violet:__subpackages__",
-    ],
-    deps = [
-        "//violet",
-        "//violet/container:optional",
-        "//violet/filesystem",
-        "@rules_cc//cc/runfiles",
-    ],
-)
+    return (int(yy) * 10000 +
+            int(mm) * 100 +
+            int(dd))

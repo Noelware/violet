@@ -19,22 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-_files = glob(["*.test.cc"])
-
-exports_files(_files)
-
-filegroup(
-    name = "files",
-    srcs = _files + [
-        "//tests/container:srcs",
-        "//tests/events:srcs",
-        "//tests/filesystem:srcs",
-        "//tests/helper:srcs",
-        "//tests/helper/runfiles:srcs",
-        "//tests/io:srcs",
-        "//tests/iterator:srcs",
-        "//tests/numeric:srcs",
-        "//tests/support:srcs",
-    ],
-    visibility = ["//:__subpackages__"],
-)
+exports_files(glob(["*.test.cc"]))

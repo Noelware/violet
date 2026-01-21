@@ -19,36 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("@rules_cc//cc:defs.bzl", "cc_binary")
-
-exports_files([
-    "PrintArgs.c",
-    "PrintEnv.c",
-    "BUILD.bazel",
-])
-
-_files = glob(["*.c"])
-
-filegroup(
-    name = "srcs",
-    srcs = _files + ["BUILD.bazel"],
-    visibility = ["//:__subpackages__"],
-)
-
-cc_binary(
-    name = "print_args",
-    srcs = ["PrintArgs.c"],
-    visibility = [
-        "//tests:__subpackages__",
-        "//violet:__subpackages__",
-    ],
-)
-
-cc_binary(
-    name = "print_env",
-    srcs = ["PrintEnv.c"],
-    visibility = [
-        "//tests:__subpackages__",
-        "//violet:__subpackages__",
-    ],
-)
+BOOL_FLAGS = [
+    "win32_dllexport",
+    "ubsan",
+    "tsan",
+    "msan",
+    "asan",
+]

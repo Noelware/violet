@@ -20,43 +20,15 @@
 # SOFTWARE.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-
-filegroup(
-    name = "files",
-    srcs = [
-        "BUILD.bazel",
-    ],
-    visibility = ["//:__subpackages__"],
-)
-
-bool_flag(
-    name = "win32_dllexport",
-    build_setting_default = False,
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "win32_dllexport_enabled",
-    flag_values = {"//buildsystem/bazel/flags:win32_dllexport": "True"},
-)
+load(":flags.bzl", "BOOL_FLAGS")
 
 [bool_flag(
-    name = san,
+    name = name,
     build_setting_default = False,
     visibility = ["//visibility:public"],
-) for san in [
-    "asan",
-    "msan",
-    "tsan",
-    "ubsan",
-]]
+) for name in BOOL_FLAGS]
 
 [config_setting(
-    name = "%s_enabled" % san,
-    flag_values = {"//buildsystem/bazel/flags:%s" % san: "True"},
-) for san in [
-    "asan",
-    "msan",
-    "tsan",
-    "ubsan",
-]]
+    name = "%s_enabled" % name,
+    flag_values = {("//buildsystem/bazel/flags:%s" % name): "True"},
+) for name in BOOL_FLAGS]

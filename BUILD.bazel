@@ -21,49 +21,7 @@
 
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-
-filegroup(
-    name = "distfiles",
-    srcs = glob(
-        ["**"],
-        exclude = [
-            ".agents/**",
-            ".ci/**",
-            ".github/**",
-            ".idea/**",
-            ".vscode/**",
-            ".git/**",
-            ".cache/**",
-            ".direnv/**",
-            ".dist/**",
-            "bazel-*/**",
-            "build/**",
-            "hack/**",
-            "nix/**",
-            "patches/**",
-            ".bazel*",
-            ".clang*",
-            "**/CMakeLists.txt",
-            "**/meson.build",
-            "**/meson_options.txt",
-            "**/*.cmake",
-            "**/*.cmake.in",
-            ".buildifier.json",
-            ".envrc",
-            "AGENTS.md",
-            "*.nix",
-            "flake.lock",
-            "MODULE.bazel.lock",
-            "renovate.json",
-            ".usr.bazelrc",
-            ".gitignore",
-            "compile_commands.json",
-            "*.tgz",  # don't include any tarballs inside of root
-            "*.tar.gz",
-        ],
-    ),
-    visibility = ["//visibility:public"],
-)
+load("//buildsystem/bazel/flags:flags.bzl", "BOOL_FLAGS")
 
 refresh_compile_commands(
     name = "rcc",
@@ -75,21 +33,8 @@ cc_library(
     visibility = ["//:__subpackages__"],
 )
 
-# Alias `--@violet//:win32_dllexport` -> `--@violet//buildsystem/bazel/flags:win32_dllexport`
-alias(
-    name = "win32_dllexport",
-    actual = "//buildsystem/bazel/flags:win32_dllexport",
-    visibility = ["//visibility:public"],
-)
-
-# Alias `--@violet//:[a|s|t|ub]san` -> `--@violet//buildsystem/bazel/flags:[a|s|t|ub]san`
 [alias(
-    name = "%ssan" % san,
-    actual = "//buildsystem/bazel/flags:%ssan" % san,
+    name = "%s" % name,
+    actual = "//buildsystem/bazel/flags:%s" % name,
     visibility = ["//visibility:public"],
-) for san in [
-    "a",
-    "m",
-    "t",
-    "ub",
-]]
+) for name in BOOL_FLAGS]

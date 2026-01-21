@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-//! # 🌺💜 `tests/helper/runfiles/Runfiles.h`
+//! # 🌺💜 `violet/Testing/Runfiles.h`
 //! This header is a bridge for accessing files from Bazel, CMake, or Meson depending
 //! on what is being invoked.
 //!
@@ -27,8 +27,16 @@
 //! * CMake: Accesses "runfiles" from `$CMAKE_BINARY_DIR` (requires `-DCMAKE`)
 //! * Meson: Accesses "runfiles" from `$MESON_BUILD_DIR` (requires `-DMESON`)
 
-#include <violet/Container/Optional.h>
+#pragma once
+
 #include <violet/Violet.h>
+
+namespace violet {
+
+template<typename T>
+struct Optional;
+
+}
 
 namespace violet::testing::runfiles {
 

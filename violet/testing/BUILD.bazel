@@ -19,27 +19,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("//buildsystem/bazel:cc.bzl", "cc_library")
 
 cc_library(
-    name = "endian",
-    hdrs = ["//include/violet/Numeric:Endian.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//violet"],
-)
-
-cc_library(
-    name = "int128",
-    hdrs = ["//include/violet/Numeric:Int128.h"],
+    name = "runfiles",
+    srcs = ["//src/testing:Runfiles.cc"],
+    hdrs = ["//include/violet/Testing:Runfiles.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//violet",
-        "@absl//absl/numeric:int128",
+        "//violet/container:optional",
+        "//violet/filesystem",
+        "@rules_cc//cc/runfiles",
     ],
 )
 
-cc_test(
-    name = "int128_test",
-    srcs = ["//tests/numeric:Int128.test.cc"],
-    deps = [":int128"],
+cc_binary(
+    name = "runfiles_main",
+    srcs = ["//src/testing:Runfiles.main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":runfiles",
+        "@googletest//:gtest",
+    ],
 )

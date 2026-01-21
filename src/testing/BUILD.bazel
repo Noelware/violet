@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# ~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+
 # 🌺💜 Violet: Extended C++ standard library
 # Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
 #
@@ -20,6 +18,5 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# ~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+~+
-# The `./hack/translation/cmake.py` file will translate all Bazel targets into their
-# respective `CMakeLists.txt` files inside of the `violet` directory.
+
+exports_files(glob(["*.cc"]))
