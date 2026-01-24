@@ -18,47 +18,5 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-{
-  description = "🌺💜 Extended C++ standard library";
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
-  };
 
-  outputs = {
-    self,
-    nixpkgs,
-    ...
-  }: let
-    overlays = [];
-    eachSystem = f:
-      nixpkgs.lib.genAttrs [
-        "x86_64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
-      ] (system:
-        f (import nixpkgs {
-          inherit system overlays;
-        }));
-  in {
-    formatter = eachSystem (pkgs: pkgs.alejandra);
-    devShells = eachSystem (pkgs: {
-      default = pkgs.callPackage ./nix/devshell.nix {};
-    });
-
-    overlays.default = import ./nix;
-    packages = eachSystem (pkgs: let
-      overlay = self.overlays.default {} pkgs;
-    in
-      builtins.listToAttrs (map (key: {
-        name = key;
-        value = overlay.${key};
-      }) (builtins.attrNames overlay))
-      // {
-        default = overlay.violet.base;
-      });
-  };
-}
+exports_files(glob(["*.test.cc"]))

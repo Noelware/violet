@@ -31,6 +31,7 @@ using rules_cc::cc::runfiles::Runfiles;
 using violet::CStr;
 using violet::String;
 using violet::UInt8;
+using violet::UniquePtr;
 using violet::Vec;
 using violet::filesystem::Canonicalize;
 using violet::filesystem::File;
@@ -40,7 +41,13 @@ using violet::filesystem::TryExists;
 using violet::sys::GetEnv;
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static violet::UniquePtr<rules_cc::cc::runfiles::Runfiles> n_runfiles;
+static UniquePtr<rules_cc::cc::runfiles::Runfiles> n_runfiles;
+
+// TODO(@auguwu/Noel): Introduce `$VIOLET_TESTING_RUNFILES_TEST_WORKSPACE_OVERRIDE` to
+// override this value if it wasn't detected
+//
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static String n_testWorkspace = "_main";
 
 constexpr static CStr kWorkspaceEnv = "TEST_WORKSPACE";
 constexpr static CStr kRunfilesDirEnv = "RUNFILES_DIR";
@@ -139,6 +146,14 @@ auto detectWorkspaceName() -> String
                               << "' environment variable to populate your workspace\n\n";
 #endif
 
+                    ++it; // go to the third element for the test workspace
+                    auto tws = *it;
+                    n_testWorkspace = String(tws.begin(), tws.end());
+
+#ifndef VIOLET_RUNFILES_LOGS
+                    std::cout << "[violet/testing/runfiles@init] $TEST_WORKSPACE = " << n_testWorkspace << '\n';
+#endif
+
                     break;
                 }
             }
@@ -178,29 +193,37 @@ void violet::testing::runfiles::Init(CStr argv0)
 
 auto violet::testing::runfiles::Get(Str path) -> Optional<String>
 {
-    VIOLET_ASSERT(static_cast<bool>(n_runfiles), "`violet::testing::runfiles::Init()` was never called");
+    VIOLET_ASSERT(static_cast<bool>(n_runfiles), "`violet::testing::runfiles::Init` was never called");
 
-    auto logical = n_runfiles->Rlocation(String(path));
+    String logicalPath;
+    if (!n_testWorkspace.empty()) {
+        logicalPath = std::format("{}/{}", n_testWorkspace, path);
+    } else {
+        logicalPath = path;
+    }
+
+    auto logical = n_runfiles->Rlocation(logicalPath);
     VIOLET_ASSERT(!logical.empty(), "bad runfile location");
 
-    auto result = violet::filesystem::TryExists(static_cast<violet::Str>(logical));
-    if (result.Err()) {
+    auto exists = filesystem::TryExists(static_cast<Str>(logical));
+    if (exists.Err()) {
 #ifndef NDEBUG
-        auto error = VIOLET_MOVE(result.Error());
-        std::cout << "checking the existence of file '" << logical << "' failed: " << error.ToString()
-                  << "; failing!\n";
+        auto error = VIOLET_MOVE(exists.Error());
+        std::cerr << "[violet/testing/runfiles] Unable to check the existence of runfile '" << logical << ": "
+                  << error.ToString() << '\n';
 #endif
 
         return Nothing;
     }
 
-    if (!result.Value()) {
+    if (!exists.Value()) {
 #ifndef NDEBUG
-        std::cout << "runfile '" << logical << "' didn't exist (from {" << path << "})\n";
+        std::cerr << "[violet/testing/runfiles] runfile [" << logical << "] doesn't exist (from path: " << path
+                  << ")\n";
 #endif
 
         return Nothing;
     }
 
-    return logical;
+    return logicalPath;
 }

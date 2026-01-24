@@ -25,6 +25,10 @@
 using namespace violet; // NOLINT(google-build-using-namespace)
 using namespace violet::filesystem; // NOLINT(google-build-using-namespace)
 
+#ifdef VIOLET_UNIX
+
+#include <sys/stat.h>
+
 TEST(Permissions, BasicReadonly)
 {
     Permissions perm(Mode(S_IRUSR | S_IRGRP | S_IROTH)); // r--r--r--
@@ -32,10 +36,6 @@ TEST(Permissions, BasicReadonly)
     perm.SetReadonly(false);
     EXPECT_FALSE(perm.Readonly());
 }
-
-#ifdef VIOLET_UNIX
-
-#include <sys/stat.h>
 
 TEST(Mode, PermissionAccessors)
 {
