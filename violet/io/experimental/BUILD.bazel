@@ -107,7 +107,7 @@ cc_library(
 
 cc_library(
     name = "output_stream",
-    hdrs = ["//include/violet/IO/Experimental/OutputStream.h"],
+    hdrs = ["//include/violet/IO/Experimental:OutputStream.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//violet",
