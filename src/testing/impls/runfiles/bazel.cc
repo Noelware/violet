@@ -225,5 +225,5 @@ auto violet::testing::runfiles::Get(Str path) -> Optional<String>
         return Nothing;
     }
 
-    return logicalPath;
+    return logical;
 }

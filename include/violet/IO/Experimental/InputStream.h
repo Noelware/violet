@@ -30,7 +30,7 @@ struct InputStream {
     virtual ~InputStream() = default;
 
     virtual auto Read(Span<UInt8> buf) noexcept -> Result<UInt> = 0;
-    [[nodiscard]] virtual auto Available() const noexcept -> UInt = 0;
+    [[nodiscard]] virtual auto Available() const noexcept -> Result<UInt> = 0;
     virtual auto Skip(UInt bytes) noexcept -> Result<void> = 0;
 };
 

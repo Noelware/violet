@@ -19,32 +19,50 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <violet/Violet.h>
 
-#pragma once
+#ifdef VIOLET_UNIX
 
-#include <violet/IO/Descriptor.h>
-#include <violet/IO/Error.h>
-#include <violet/IO/Experimental/InputStream.h>
+#include <violet/IO/Experimental/Input/StdinInputStream.h>
 
-namespace violet::io {
+#include <sys/ioctl.h>
+#include <sys/stat.h>
 
-struct StringInputStream final: public InputStream {
-    VIOLET_IMPLICIT StringInputStream() noexcept = default;
+using violet::io::StdinInputStream;
 
-    template<std::convertible_to<Str> Str>
-    VIOLET_IMPLICIT StringInputStream(Str&& str)
-        : n_data(VIOLET_FWD(Str, str))
-    {
+StdinInputStream::StdinInputStream() noexcept
+    : n_descriptor(STDIN_FILENO)
+{
+}
+
+auto StdinInputStream::Available() const noexcept -> Result<UInt>
+{
+    Int32 num = 0;
+    const auto fd = this->n_descriptor.Get();
+
+    if (::ioctl(fd, FIONREAD, &num) == 0 && num > 0) {
+        return num;
     }
 
-    auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
-    [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
-    auto Skip(UInt bytes) noexcept -> Result<void> override;
+    struct stat st{};
+    if (::fstat(fd, &st) > 0) {
+        return Err(io::Error::OSError());
+    }
 
-private:
-    Str n_data;
-    UInt n_pos = 0;
-};
+    if (!S_ISREG(st.st_mode)) {
+        return 0;
+    }
 
-} // namespace violet::io
+    const auto seeked = ::lseek(fd, 0, SEEK_CUR);
+    if (seeked < 0) {
+        return Err(io::Error::OSError());
+    }
+
+    if (st.st_size <= seeked) {
+        return 0;
+    }
+
+    return static_cast<UInt>(st.st_size - seeked);
+}
+
+#endif

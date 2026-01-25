@@ -31,14 +31,25 @@ struct FileInputStream final: public InputStream {
     VIOLET_DISALLOW_CONSTRUCTOR(FileInputStream);
 
     template<std::convertible_to<filesystem::PathRef> Path>
-    static auto Open(Path&& path) noexcept -> Result<FileInputStream>;
+    static auto Open(Path&& path) noexcept -> Result<FileInputStream>
+    {
+        auto file = filesystem::OpenOptions{}.Read(true).Open(VIOLET_FWD(Path, path));
+        if (file.Err()) {
+            return Err(VIOLET_MOVE(file.Error()));
+        }
+
+        return FileInputStream(VIOLET_MOVE(file.Value()));
+    }
 
     auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
-    [[nodiscard]] auto Available() const noexcept -> UInt override;
+    [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
     auto Skip(UInt bytes) noexcept -> Result<void> override;
 
 private:
-    VIOLET_EXPLICIT FileInputStream(filesystem::File file) noexcept;
+    VIOLET_EXPLICIT FileInputStream(filesystem::File&& file) noexcept
+        : n_file(VIOLET_MOVE(file))
+    {
+    }
 
     filesystem::File n_file;
 };

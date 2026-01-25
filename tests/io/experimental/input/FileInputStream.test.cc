@@ -1,0 +1,61 @@
+// 🌺💜 Violet: Extended C++ standard library
+// Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+#include <gtest/gtest.h>
+#include <violet/IO/Experimental/Input/FileInputStream.h>
+#include <violet/Testing/Runfiles.h>
+
+// NOLINTBEGIN(google-build-using-namespace)
+using namespace violet::testing;
+using namespace violet::io;
+using namespace violet;
+// NOLINTEND(google-build-using-namespace)
+
+constexpr static auto kLoveLetterFile = "tests/io/experimental/input/runfiles/loveletter.txt";
+
+TEST(FileInputStream, ItWorks)
+{
+    auto runfile = runfiles::Get(kLoveLetterFile);
+    ASSERT_TRUE(runfile) << "runfile '" << kLoveLetterFile << "' was not avaliable";
+
+    auto stream = FileInputStream::Open(Str(*runfile));
+    ASSERT_TRUE(stream) << "failed to open file [" << *runfile << "]: " << VIOLET_MOVE(stream.Error()).ToString();
+
+    Vec<UInt8> buf(12);
+    auto res = stream->Read(buf);
+    ASSERT_TRUE(res) << "failed to read 12 bytes in file [" << *runfile << "]: " << VIOLET_MOVE(res.Error()).ToString();
+    ASSERT_EQ(res.Value(), 12);
+    ASSERT_EQ(String(buf.begin(), buf.end()), "I love a Fox");
+}
+
+TEST(FileInputStream, ShouldProduceEmptyBufferIfNoDataIsNeeded)
+{
+    auto runfile = runfiles::Get(kLoveLetterFile);
+    ASSERT_TRUE(runfile) << "runfile '" << kLoveLetterFile << "' was not avaliable";
+
+    auto stream = FileInputStream::Open(Str(*runfile));
+    ASSERT_TRUE(stream) << "failed to open file [" << *runfile << "]: " << VIOLET_MOVE(stream.Error()).ToString();
+
+    Vec<UInt8> buf;
+    auto res = stream->Read(buf);
+    ASSERT_TRUE(res) << "failed to read 12 bytes in file [" << *runfile << "]: " << VIOLET_MOVE(res.Error()).ToString();
+    ASSERT_EQ(res.Value(), 0);
+}

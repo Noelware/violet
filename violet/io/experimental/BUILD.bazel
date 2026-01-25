@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library")
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
 cc_library(
     name = "input_stream",
-    hdrs = ["//include/violet/IO/Experimental/InputStream.h"],
+    hdrs = ["//include/violet/IO/Experimental:InputStream.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//violet",
@@ -43,9 +43,20 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "byte_array_input_stream_test",
+    srcs = ["//tests/io/experimental/input:ByteArrayInputStream.test.cc"],
+    deps = [":byte_array_input_stream"],
+)
+
 cc_library(
     name = "file_input_stream",
-    srcs = ["//src/io/experimental/input:file.cc"],
+    srcs = ["//src/io/experimental/input:file.cc"] + select({
+        "@platforms//os:linux": ["//src/io/experimental/input/file:unix.cc"],
+        "@platforms//os:macos": ["//src/io/experimental/input/file:unix.cc"],
+        "@platforms//os:windows": ["//src/io/experimental/input/file:windows.cc"],
+        "//conditions:default": ["//src/io/experimental/input/file:unsupported.cc"],
+    }),
     hdrs = ["//include/violet/IO/Experimental/Input:FileInputStream.h"],
     visibility = ["//visibility:public"],
     deps = [
@@ -53,6 +64,18 @@ cc_library(
         "//violet",
         "//violet/filesystem:file",
         "//violet/io:error",
+    ],
+)
+
+cc_test(
+    name = "file_input_stream_test",
+    srcs = ["//tests/io/experimental/input:FileInputStream.test.cc"],
+    data = ["//tests/io/experimental/input:runfiles/loveletter.txt"],
+    with_gtest_main = False,
+    deps = [
+        ":file_input_stream",
+        "//violet/testing:runfiles",
+        "//violet/testing:runfiles_main",
     ],
 )
 

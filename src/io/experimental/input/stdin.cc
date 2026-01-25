@@ -18,3 +18,17 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#include <violet/IO/Experimental/Input/StdinInputStream.h>
+
+using violet::io::StdinInputStream;
+
+auto StdinInputStream::Read(Span<UInt8> buf) noexcept -> Result<UInt>
+{
+    return this->n_descriptor.Read(buf);
+}
+
+auto StdinInputStream::Skip(UInt) noexcept -> Result<void>
+{
+    return {};
+}

@@ -19,32 +19,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <violet/IO/Experimental/Input/StdinInputStream.h>
+#include <violet/Violet.h>
 
-#pragma once
-
-#include <violet/IO/Descriptor.h>
-#include <violet/IO/Error.h>
-#include <violet/IO/Experimental/InputStream.h>
-
-namespace violet::io {
-
-struct StringInputStream final: public InputStream {
-    VIOLET_IMPLICIT StringInputStream() noexcept = default;
-
-    template<std::convertible_to<Str> Str>
-    VIOLET_IMPLICIT StringInputStream(Str&& str)
-        : n_data(VIOLET_FWD(Str, str))
-    {
-    }
+/*
+struct StdinInputStream final: public InputStream {
+    VIOLET_IMPLICIT StdinInputStream() noexcept;
 
     auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
     [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
     auto Skip(UInt bytes) noexcept -> Result<void> override;
 
 private:
-    Str n_data;
-    UInt n_pos = 0;
+    io::FileDescriptor n_descriptor;
 };
-
-} // namespace violet::io
+*/

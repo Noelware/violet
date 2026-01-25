@@ -18,3 +18,45 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#include <violet/IO/Experimental/Input/ByteArrayInputStream.h>
+
+using violet::Span;
+using violet::UInt8;
+using violet::io::ByteArrayInputStream;
+
+ByteArrayInputStream::ByteArrayInputStream(Span<const UInt8> buf) noexcept
+    : n_buf(buf)
+{
+}
+
+auto ByteArrayInputStream::Read(Span<UInt8> buf) noexcept -> Result<UInt>
+{
+    if (this->n_pos >= this->n_buf.size()) {
+        return 0;
+    }
+
+    const UInt bytesToRead = std::min(buf.size(), this->n_buf.size() - this->n_pos);
+    ::memcpy(buf.data(), this->n_buf.data() + this->n_pos, bytesToRead);
+
+    this->n_pos += bytesToRead;
+    return bytesToRead;
+}
+
+auto ByteArrayInputStream::Available() const noexcept -> Result<UInt>
+{
+    return this->n_buf.size() - this->n_pos;
+}
+
+auto ByteArrayInputStream::Skip(UInt bytes) noexcept -> Result<void>
+{
+    const UInt skipped = std::min(bytes, this->Available().UnwrapOr(0));
+    this->n_pos += skipped;
+
+    return {};
+}
+
+void ByteArrayInputStream::Reset() noexcept
+{
+    this->n_pos = 0;
+}
