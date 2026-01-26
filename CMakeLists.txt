@@ -23,11 +23,7 @@ cmake_minimum_required(VERSION 3.25)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/buildsystem/cmake")
 
-include(ReadFile)
-get_violet_version(violet_VERSION)
-
 project(violet
-    VERSION ${violet_VERSION}
     DESCRIPTION "🌺💜 Extended C++ standard library"
     HOMEPAGE_URL "https://docs.noelware.org/libraries/cpp/violet"
     LANGUAGES CXX
@@ -73,8 +69,6 @@ if(VIOLET_ENABLE_ALL)
 
     set(VIOLET_ENABLE_FS ON)
     set(VIOLET_ENABLE_IO ON)
-    set(VIOLET_ENABLE_BACKTRACE ON)
-    set(VIOLET_ENABLE_SUBPROCESS ON)
 endif()
 
 include(FetchContent)
