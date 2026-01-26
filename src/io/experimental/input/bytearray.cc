@@ -23,7 +23,7 @@
 
 using violet::Span;
 using violet::UInt8;
-using violet::io::ByteArrayInputStream;
+using violet::io::experimental::ByteArrayInputStream;
 
 ByteArrayInputStream::ByteArrayInputStream(Span<const UInt8> buf) noexcept
     : n_buf(buf)
@@ -32,15 +32,16 @@ ByteArrayInputStream::ByteArrayInputStream(Span<const UInt8> buf) noexcept
 
 auto ByteArrayInputStream::Read(Span<UInt8> buf) noexcept -> Result<UInt>
 {
-    if (this->n_pos >= this->n_buf.size()) {
+    const UInt remaining = this->n_pos < this->n_buf.size() ? this->n_buf.size() - this->n_pos : 0;
+    if (remaining == 0 || buf.empty()) {
         return 0;
     }
 
-    const UInt bytesToRead = std::min(buf.size(), this->n_buf.size() - this->n_pos);
-    ::memcpy(buf.data(), this->n_buf.data() + this->n_pos, bytesToRead);
+    const UInt8 toRead = std::min(remaining, buf.size());
+    ::memcpy(buf.data(), this->n_buf.data() + this->n_pos, toRead);
 
-    this->n_pos += bytesToRead;
-    return bytesToRead;
+    this->n_pos += toRead;
+    return toRead;
 }
 
 auto ByteArrayInputStream::Available() const noexcept -> Result<UInt>

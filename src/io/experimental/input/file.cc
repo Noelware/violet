@@ -21,7 +21,7 @@
 
 #include <violet/IO/Experimental/Input/FileInputStream.h>
 
-using violet::io::FileInputStream;
+using violet::io::experimental::FileInputStream;
 
 auto FileInputStream::Read(Span<UInt8> buf) noexcept -> Result<UInt>
 {

@@ -18,3 +18,39 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#include <violet/IO/Experimental/Input/StringInputStream.h>
+
+using violet::io::experimental::StringInputStream;
+
+auto StringInputStream::Read(Span<UInt8> buf) noexcept -> Result<UInt>
+{
+    const UInt remaining = this->n_pos < this->n_data.size() ? this->n_data.size() - this->n_pos : 0;
+    if (remaining == 0 || buf.empty()) {
+        return 0;
+    }
+
+    const UInt8 toRead = std::min(remaining, buf.size());
+    ::memcpy(buf.data(), reinterpret_cast<const UInt8*>(this->n_data.data()) + this->n_pos, toRead);
+
+    this->n_pos += toRead;
+    return toRead;
+}
+
+auto StringInputStream::Available() const noexcept -> Result<UInt>
+{
+    if (this->n_pos >= this->n_data.size()) {
+        return 0;
+    }
+
+    return this->n_data.size() - this->n_pos;
+}
+
+auto StringInputStream::Skip(UInt bytes) noexcept -> Result<void>
+{
+    const UInt remaining = this->n_pos < this->n_data.size() ? this->n_data.size() - this->n_pos : 0;
+    const UInt8 toSkip = std::min(bytes, remaining);
+
+    this->n_pos += toSkip;
+    return {};
+}

@@ -27,7 +27,7 @@
 #include <violet/IO/Error.h>
 #include <violet/IO/Experimental/InputStream.h>
 
-namespace violet::io {
+namespace violet::io::experimental {
 
 struct StringInputStream final: public InputStream {
     VIOLET_IMPLICIT StringInputStream() noexcept = default;
@@ -42,9 +42,11 @@ struct StringInputStream final: public InputStream {
     [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
     auto Skip(UInt bytes) noexcept -> Result<void> override;
 
+    void Reset() noexcept;
+
 private:
     Str n_data;
     UInt n_pos = 0;
 };
 
-} // namespace violet::io
+} // namespace violet::io::experimental

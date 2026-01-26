@@ -24,7 +24,7 @@
 #include <violet/IO/Error.h>
 #include <violet/IO/Experimental/InputStream.h>
 
-namespace violet::io {
+namespace violet::io::experimental {
 
 struct ByteArrayInputStream final: public InputStream {
     VIOLET_IMPLICIT ByteArrayInputStream() noexcept = default;
@@ -41,4 +41,4 @@ private:
     UInt n_pos = 0;
 };
 
-} // namespace violet::io
+} // namespace violet::io::experimental

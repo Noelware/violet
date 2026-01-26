@@ -21,16 +21,3 @@
 
 #include <violet/IO/Experimental/Input/StdinInputStream.h>
 #include <violet/Violet.h>
-
-/*
-struct StdinInputStream final: public InputStream {
-    VIOLET_IMPLICIT StdinInputStream() noexcept;
-
-    auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
-    [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
-    auto Skip(UInt bytes) noexcept -> Result<void> override;
-
-private:
-    io::FileDescriptor n_descriptor;
-};
-*/

@@ -21,27 +21,31 @@
 
 #pragma once
 
-#include <violet/Filesystem/File.h>
-#include <violet/Filesystem/Path.h>
-#include <violet/IO/Descriptor.h>
-#include <violet/IO/Error.h>
-#include <violet/IO/Experimental/OutputStream.h>
+#include <violet/IO/Experimental/InputStream.h>
+#include <violet/Violet.h>
 
-namespace violet::io {
+namespace violet::io::experimental {
 
-struct FileOutputStream final: public OutputStream {
-    VIOLET_IMPLICIT FileOutputStream() noexcept;
+struct BufferedInputStream final: public InputStream {
+    template<typename Stream>
+        requires(std::is_base_of_v<InputStream, std::remove_cvref_t<Stream>>)
+    VIOLET_IMPLICIT BufferedInputStream(Stream&& src, UInt bufSize = 8192) noexcept
+        : n_src(std::make_unique<std::remove_cvref_t<Stream>>(VIOLET_FWD(Stream, src)))
+        , n_buf(bufSize)
+    {
+    }
 
-    template<std::convertible_to<filesystem::PathRef> Path>
-    static auto Open(Path&& path) noexcept -> Result<FileOutputStream>;
-
-    auto Write(Span<const UInt8> buf) noexcept -> Result<UInt> override;
-    auto Flush() noexcept -> Result<void> override;
+    auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
+    [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
+    auto Skip(UInt bytes) noexcept -> Result<void> override;
 
 private:
-    VIOLET_EXPLICIT FileOutputStream(filesystem::File file) noexcept;
+    violet::UniquePtr<InputStream> n_src;
+    Vec<UInt8> n_buf;
+    UInt n_pos = 0;
+    UInt n_end = 0;
 
-    filesystem::File n_file;
+    void doRefill() noexcept;
 };
 
-} // namespace violet::io
+} // namespace violet::io::experimental

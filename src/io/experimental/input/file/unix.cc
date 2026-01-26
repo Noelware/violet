@@ -28,7 +28,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
-using violet::io::FileInputStream;
+using violet::io::experimental::FileInputStream;
 
 auto FileInputStream::Available() const noexcept -> Result<UInt>
 {

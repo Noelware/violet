@@ -19,24 +19,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <gtest/gtest.h>
+#include <violet/IO/Experimental/BufferedInputStream.h>
+#include <violet/IO/Experimental/Input/ByteArrayInputStream.h>
 
-#pragma once
+// NOLINTBEGIN(google-build-using-namespace)
+using namespace violet::io::experimental;
+using namespace violet;
+// NOLINTEND(google-build-using-namespace)
 
-#include <violet/IO/Descriptor.h>
-#include <violet/IO/Error.h>
-#include <violet/IO/Experimental/OutputStream.h>
+TEST(BufferedInputStream, ItWorks)
+{
+    Vec<UInt8> buf(1024);
+    std::iota(buf.data(), buf.data() + buf.size(), 0);
 
-namespace violet::io {
+    ByteArrayInputStream bas(buf);
+    BufferedInputStream stream(bas, 128);
 
-struct StdoutOutputStream final: public OutputStream {
-    VIOLET_IMPLICIT StdoutOutputStream() noexcept;
+    Vec<UInt8> out(1024);
+    auto res = stream.Read(out);
+    ASSERT_TRUE(res) << "failed to call 'stream.Read()': " << VIOLET_MOVE(res.Error()).ToString();
+    EXPECT_EQ(res.Value(), 1024);
+    EXPECT_EQ(out, buf);
+}
 
-    auto Write(Span<const UInt8> buf) noexcept -> Result<UInt> override;
-    auto Flush() noexcept -> Result<void> override;
-
-private:
-    io::FileDescriptor n_descriptor;
-};
-
-} // namespace violet::io
+// TODO(@auguwu/Noel): add more tests here for correctness

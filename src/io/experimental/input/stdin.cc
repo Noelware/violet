@@ -21,7 +21,7 @@
 
 #include <violet/IO/Experimental/Input/StdinInputStream.h>
 
-using violet::io::StdinInputStream;
+using violet::io::experimental::StdinInputStream;
 
 auto StdinInputStream::Read(Span<UInt8> buf) noexcept -> Result<UInt>
 {

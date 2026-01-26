@@ -25,7 +25,7 @@
 #include <violet/IO/Error.h>
 #include <violet/IO/Experimental/InputStream.h>
 
-namespace violet::io {
+namespace violet::io::experimental {
 
 struct FileInputStream final: public InputStream {
     VIOLET_DISALLOW_CONSTRUCTOR(FileInputStream);
@@ -54,4 +54,4 @@ private:
     filesystem::File n_file;
 };
 
-} // namespace violet::io
+} // namespace violet::io::experimental

@@ -28,7 +28,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
-using violet::io::StdinInputStream;
+using violet::io::experimental::StdinInputStream;
 
 StdinInputStream::StdinInputStream() noexcept
     : n_descriptor(STDIN_FILENO)
@@ -40,29 +40,11 @@ auto StdinInputStream::Available() const noexcept -> Result<UInt>
     Int32 num = 0;
     const auto fd = this->n_descriptor.Get();
 
-    if (::ioctl(fd, FIONREAD, &num) == 0 && num > 0) {
-        return num;
-    }
-
-    struct stat st{};
-    if (::fstat(fd, &st) > 0) {
+    if (::ioctl(fd, FIONREAD, &num) != 0) {
         return Err(io::Error::OSError());
     }
 
-    if (!S_ISREG(st.st_mode)) {
-        return 0;
-    }
-
-    const auto seeked = ::lseek(fd, 0, SEEK_CUR);
-    if (seeked < 0) {
-        return Err(io::Error::OSError());
-    }
-
-    if (st.st_size <= seeked) {
-        return 0;
-    }
-
-    return static_cast<UInt>(st.st_size - seeked);
+    return num;
 }
 
 #endif

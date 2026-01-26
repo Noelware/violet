@@ -25,7 +25,7 @@
 #include <violet/IO/Error.h>
 #include <violet/IO/Experimental/InputStream.h>
 
-namespace violet::io {
+namespace violet::io::experimental {
 
 struct StdinInputStream final: public InputStream {
     VIOLET_IMPLICIT StdinInputStream() noexcept;
@@ -38,4 +38,4 @@ private:
     io::FileDescriptor n_descriptor;
 };
 
-} // namespace violet::io
+} // namespace violet::io::experimental
