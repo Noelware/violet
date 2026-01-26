@@ -64,3 +64,30 @@ cc_test(
     srcs = ["//tests:Iterator.test.cc"],
     deps = [":iterator"],
 )
+
+# A "uber" library that contains all base Noelware.Violet libraries and code
+cc_library(
+    name = "base_uber",
+    srcs = ["//:dummy.cc"],
+    linkstatic = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":macros",
+        ":violet",
+        "//violet/container",
+        "//violet/iterator:enumerate",
+        "//violet/iterator:filter",
+        "//violet/iterator:map",
+        "//violet/iterator:peekable",
+        "//violet/iterator:skip",
+        "//violet/iterator:take",
+        "//violet/numeric:endian",
+        "//violet/numeric:int128",
+        "//violet/support:bitflags",
+        "//violet/support:demangle",
+        "//violet/support:terminal",
+        "//violet/system",
+        "//violet/system:ci",
+        "//violet/system:which",
+    ],
+)

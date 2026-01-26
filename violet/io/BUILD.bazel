@@ -21,6 +21,20 @@
 
 load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
+# A "uber" library that contains all base Noelware.Violet.IO libraries and code
+cc_library(
+    name = "uber",
+    srcs = ["//:dummy.cc"],
+    linkstatic = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":descriptor",
+        ":error",
+        ":read",
+        ":write",
+    ],
+)
+
 cc_library(
     name = "error",
     srcs = ["//src/io:error.cc"] + select({

@@ -21,6 +21,22 @@
 
 load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
+# A "uber" library that contains all base Noelware.Violet.IO.Experimental libraries and code
+cc_library(
+    name = "uber",
+    srcs = ["//:dummy.cc"],
+    linkstatic = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":buffered_input_stream",
+        ":byte_array_input_stream",
+        ":file_input_stream",
+        ":input_stream",
+        ":stdin_input_stream",
+        ":string_input_stream",
+    ],
+)
+
 cc_library(
     name = "input_stream",
     hdrs = ["//include/violet/IO/Experimental:InputStream.h"],

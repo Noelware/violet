@@ -3,14 +3,17 @@
 
 **Violet** is a C++20 and higher library that extends the current C++ standard library with enriching types coming from a Rust developer and cross-platform libraries that are readily avaliable.
 
-<!-- **Violet** is a C++26 library that extends C++'s standard library with better enriching types and provide a common framework for building C++ applications from the ground up without much effort. **Violet** was made to help develop our projects to bridge common code between our products and services using C++ a lot easier. -->
-
 > [!IMPORTANT]
 > **Violet** is 100% experimental software and may not work as intended! Please report bugs via [GitHub Issues](https://github.com/Noelware/Violet/issues/new)! **Violet** is also NOT production ready either! things will break!!!
 >
 > ---
 >
-> **Violet** uses a rather unique versioning scheme: `year.month.revision` (i.e, `25.09.01`).
+> **Violet** (and other frameworks) uses a rather unique versioning scheme: `year.month.revision[-channel[.patch]]`:
+>
+> * `25.09`
+> * `25.09.01`
+> * `25.09.01-dev`
+> * `25.09.01-dev.1`
 >
 > We decided on this because it is very easy to see when a version of the library was released and doesn't
 > enforce "breaking/change" semantics like [SemVer](https://semver.org), we depend on release timing for

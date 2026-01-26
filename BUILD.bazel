@@ -23,6 +23,11 @@ load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//buildsystem/bazel/flags:flags.bzl", "BOOL_FLAGS")
 
+exports_files(
+    ["dummy.cc"],
+    visibility = ["//:__subpackages__"],
+)
+
 refresh_compile_commands(
     name = "rcc",
 )

@@ -322,28 +322,6 @@ struct Infallible final {
     constexpr VIOLET_IMPLICIT Infallible() = default;
 };
 
-template<typename Fun>
-    requires(callable<Fun> && callable_returns<Fun, void>)
-struct Defer final { // NOLINT(cppcoreguidelines-special-member-functions)
-    Defer(Fun&& fun)
-        : n_fun(VIOLET_MOVE(fun))
-    {
-    }
-
-    Defer(Defer&) = delete;
-    Defer(Defer&& other) noexcept
-        : n_fun(VIOLET_MOVE(other.n_fun))
-    {
-        other.n_moved = true;
-    }
-
-    ~Defer() noexcept(false);
-
-private:
-    Fun n_fun;
-    bool n_moved = false;
-};
-
 template<typename S>
 struct StringifyFormatter {
     constexpr StringifyFormatter() = default;
@@ -378,7 +356,7 @@ inline void PrintDebugVariable(CStr name, const T& value,
 }
 
 /// @internal
-inline void DoAssertion(bool condition, CStr condStr, CStr message,
+inline void DoAssertion(bool condition, CStr condStr, Str message,
     const std::source_location& loc = std::source_location::current(), std::ostream& os = std::cerr)
 {
     VIOLET_UNLIKELY_IF(!condition)
@@ -406,24 +384,3 @@ inline void DoAssertion(bool condition, CStr condStr, CStr message,
 #else
 #define VIOLET_DEBUG_ASSERT(expr, message)
 #endif
-
-namespace violet {
-
-template<typename Fun>
-    requires(callable<Fun> && callable_returns<Fun, void>)
-Defer<Fun>::~Defer<Fun>() noexcept(false)
-{
-    try {
-        if (!this->n_moved) {
-            std::invoke(this->n_fun);
-        }
-    } catch (...) {
-        if (std::uncaught_exceptions() > 0) {
-            VIOLET_UNREACHABLE_WITH("defer function threw an exception during exception handling");
-        }
-
-        throw;
-    }
-}
-
-} // namespace violet

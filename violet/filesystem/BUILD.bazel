@@ -21,6 +21,22 @@
 
 load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
+# A "uber" library that contains all base Noelware.Violet.Filesystem libraries and code
+cc_library(
+    name = "uber",
+    srcs = ["//:dummy.cc"],
+    linkstatic = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":file",
+        ":filesystem",
+        ":path",
+        ":permissions",
+        ":temporary",
+        "//violet/filesystem/extensions:xattr",
+    ],
+)
+
 cc_library(
     name = "filesystem",
     srcs = select({

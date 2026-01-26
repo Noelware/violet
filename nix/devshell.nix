@@ -47,30 +47,15 @@
   bash,
   ripgrep,
 }: let
+  inherit
+    (import ./lib/common.nix {
+      inherit stdenv llvmPackages_21 stdenvAdapters lib;
+    })
+    llvm
+    ;
+
   darwinPackages = [apple-sdk_15];
   linuxPackages = [valgrind];
-
-  # Alias for `llvmPackages_XX` that we aim to support. At the moment,
-  # we develop Violet in LLVM 21 and above.
-  llvm = let
-    oldStdenv = stdenv; # keep a copy of the old standard environment
-    pkgs = {inherit llvmPackages_21;}; # a hack so that we can do `pkgs."llvmPackages_${version}"`
-    version = "21";
-  in rec {
-    inherit version;
-
-    package = pkgs."llvmPackages_${version}";
-
-    inherit (package) compiler-rt libcxx clang-tools bintools lldb;
-
-    stdenv =
-      (
-        if oldStdenv.hostPlatform.isLinux
-        then stdenvAdapters.useMoldLinker
-        else lib.id
-      )
-      package.stdenv;
-  };
 
   packages =
     [

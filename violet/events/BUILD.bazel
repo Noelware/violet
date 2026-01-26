@@ -21,6 +21,15 @@
 
 load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
+# A "uber" library that contains all base Noelware.Violet.Events libraries and code
+cc_library(
+    name = "uber",
+    srcs = ["//:dummy.cc"],
+    linkstatic = 0,
+    visibility = ["//visibility:public"],
+    deps = [":emitter"],
+)
+
 cc_library(
     name = "emitter",
     hdrs = ["//include/violet/Events:EventEmitter.h"],

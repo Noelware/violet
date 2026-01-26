@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION = "26.02.03-dev"
+VERSION = "26.02.03-dev.1"
 DEVBUILD = True
 
 def encode_as_int():
@@ -30,13 +30,21 @@ def encode_as_int():
             mm = mm[:2]
 
         dd = "00"
+        patch = "00"
     elif len(parts) == 3:
         yy, mm, dd = parts
+        if dd.endswith("-dev"):
+            dd = dd[:2]
+
+        patch = "00"
+    elif len(parts) == 4:
+        yy, mm, dd, patch = parts
         if dd.endswith("-dev"):
             dd = dd[:2]
     else:
         fail("invalid version format: %s" % VERSION)
 
-    return (int(yy) * 10000 +
-            int(mm) * 100 +
-            int(dd))
+    return (int(yy) * 1000000 +
+            int(mm) * 10000 +
+            int(dd) * 100 +
+            int(patch))
