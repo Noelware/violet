@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 load("@rules_cc//cc:defs.bzl", cc_library_ = "cc_library", cc_test_ = "cc_test")
-load(":version.bzl", "VERSION", "encode_as_int")
+load(":version.bzl", "DEVBUILD", "encode_as_int")
 
 SANITIZER_OPTS = select({
     "//buildsystem/bazel/flags:asan_enabled": ["-fsanitize=address"],
@@ -94,16 +94,21 @@ def cc_library(name, hdrs = [], **kwargs):
     # buildifier: disable=unused-variable
     _ = kwargs.pop("includes", [])
 
+    defines = ["BAZEL"] + OS_DEFINES + ARCH_DEFINES + COMPILER_DEFINES + [
+        "VIOLET_VERSION=%d" % encode_as_int(),
+    ]
+
+    if DEVBUILD:
+        # buildifier: disable=list-append
+        defines += ["VIOLET_DEVBUILD"]
+
     return cc_library_(
         name = name,
         hdrs = hdrs,
         copts = copts + SANITIZER_OPTS + COMPILER_COPTS,
         linkopts = linkopts + SANITIZER_OPTS,
         includes = ["include"],
-        defines = ["BAZEL"] + OS_DEFINES + ARCH_DEFINES + COMPILER_DEFINES + [
-            "VIOLET_VERSION_STR=\"%s\"" % VERSION,
-            "VIOLET_VERSION=%d" % encode_as_int(),
-        ],
+        defines = defines,
         deps = deps,
         **kwargs
     )

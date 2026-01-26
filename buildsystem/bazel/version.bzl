@@ -19,15 +19,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION = "26.02.02"
+VERSION = "26.02.03-dev"
+DEVBUILD = True
 
 def encode_as_int():
     parts = VERSION.split(".")
     if len(parts) == 2:
         yy, mm = parts
+        if mm.endswith("-dev"):
+            mm = mm[:2]
+
         dd = "00"
     elif len(parts) == 3:
         yy, mm, dd = parts
+        if dd.endswith("-dev"):
+            dd = dd[:2]
     else:
         fail("invalid version format: %s" % VERSION)
 
