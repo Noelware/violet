@@ -141,10 +141,7 @@ def cc_library(name, hdrs = [], **kwargs):
         name = name,
         hdrs = hdrs,
         copts = copts + SANITIZER_OPTS + COMPILER_COPTS,
-        linkopts = linkopts + SANITIZER_OPTS + select({
-            "//buildsystem/bazel/flags:ubsan_enabled": ["-fsanitize-link-c++-runtime"],
-            "//conditions:default": [],
-        }),
+        linkopts = linkopts + SANITIZER_OPTS,
         includes = ["include"],
         defines = defines,
         deps = deps,
