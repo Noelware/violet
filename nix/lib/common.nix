@@ -27,14 +27,14 @@ pkgs: {
   llvm = let
     oldStdenv = pkgs.stdenv;
     version = "21";
-    llvmPkgs = {
-      inherit (pkgs) llvmPackages_21;
-    };
-
-    package = llvmPkgs."llvmPackages_${version}";
+    package = pkgs."llvmPackages_${version}";
   in {
     inherit version package;
-    inherit (package) compiler-rt libcxx clang-tools bintools lldb;
+    inherit (package) compiler-rt libcxx bintools lldb;
+
+    clang-tools = package.clang-tools.override {
+      enableLibcxx = true;
+    };
 
     stdenv =
       (
@@ -42,6 +42,6 @@ pkgs: {
         then pkgs.stdenvAdapters.useMoldLinker
         else pkgs.lib.id
       )
-      package.stdenv;
+      package.libcxxStdenv;
   };
 }

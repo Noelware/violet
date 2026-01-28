@@ -88,7 +88,9 @@
     ++ (lib.optionals stdenv.isLinux linuxPackages)
     ++ (lib.optionals stdenv.isDarwin darwinPackages);
 
-  mkShell' = mkShell.override {stdenv = llvm.stdenv;};
+  mkShell' = mkShell.override {
+    inherit (llvm) stdenv;
+  };
 
   devshell = builtins.readFile ../hack/nix/devshell.sh;
   shellHook =
@@ -97,11 +99,13 @@
       "@ripgrep@"
       "@compiler-rt@"
       "@libcxx@"
+      "@libcxx.dev@"
     ] [
       "${bash}"
       "${ripgrep}"
       "${llvm.compiler-rt.dev}"
       "${llvm.libcxx}"
+      "${llvm.libcxx.dev}"
     ]
     devshell;
 in

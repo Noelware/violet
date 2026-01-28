@@ -23,17 +23,11 @@
 #include <violet/Support/Demangle.h>
 
 #if VIOLET_HAS_INCLUDE(<cxxabi.h>)
+#include <cstdlib>
 #include <cxxabi.h>
 #include <memory>
 
 #define VIOLET_HAS_CXXABI_HDR
-#endif
-
-#ifdef VIOLET_APPLE_MACOS
-// on macOS, `std::free` doesn't exist so we use `::free` instead
-#define __free ::free
-#else
-#define __free ::std::free
 #endif
 
 auto violet::util::DemangleCXXName(const char* name) -> std::string
@@ -42,7 +36,7 @@ auto violet::util::DemangleCXXName(const char* name) -> std::string
     return name;
 #else
     int status = -1;
-    std::unique_ptr<char, void (*)(void*)> result(abi::__cxa_demangle(name, nullptr, nullptr, &status), __free);
+    std::unique_ptr<char, void (*)(void*)> result(abi::__cxa_demangle(name, nullptr, nullptr, &status), free);
 
     return status == 0 ? result.get() : name;
 #endif

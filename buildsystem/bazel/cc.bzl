@@ -24,28 +24,64 @@ load(":version.bzl", "DEVBUILD", "encode_as_int")
 
 SANITIZER_OPTS = select({
     "//buildsystem/bazel/flags:asan_enabled": ["-fsanitize=address"],
-    "//buildsystem/bazel/flags:msan_enabled": ["-fsanitize=memory"],
+    "//buildsystem/bazel/flags:msan_enabled": [
+        "-fsanitize=memory",
+        "-fsanitize-memory-track-origins",
+        "-fsanitize-memory-use-after-dtor",
+    ],
     "//buildsystem/bazel/flags:tsan_enabled": ["-fsanitize=thread"],
     "//buildsystem/bazel/flags:ubsan_enabled": ["-fsanitize=undefined"],
     "//conditions:default": [],
 })
 
-MSAN_OPTS = []
-UBSAN_OPTS = ["print_summary=1", "print_stacktrace=1"]
-ASAN_OPTS = ["print_summary=1"]
-TSAN_OPTS = ["print_summary=1"]
+UBSAN_OPTIONS = [
+    "halt_on_error=1",
+    "print_summary=1",
+    "print_stacktrace=1",
+]
+
+TSAN_OPTIONS = [
+    "halt_on_error=1",
+    "print_summary=1",
+    "second_deadlock_state=1",
+    "report_atomic_races=0",
+]
+
+MSAN_OPTIONS = [
+    "poison_in_dtor=1",
+]
+
+LSAN_OPTIONS = [
+    "report_objects=1",
+    "print_summary=1",
+]
+
+ASAN_OPTIONS = [
+    "detect_leaks=1",
+    "color=always",
+    "print_summary=1",
+]
 
 SANITIZER_ENV = select({
-    "//buildsystem/bazel/flags:ubsan_enabled": {"UBSAN_OPTIONS": ":".join(UBSAN_OPTS)},
+    "//buildsystem/bazel/flags:ubsan_enabled": {
+        "UBSAN_OPTIONS": ":".join(UBSAN_OPTIONS),
+    },
     "//conditions:default": {},
 }) | select({
-    "//buildsystem/bazel/flags:asan_enabled": {"ASAN_OPTIONS": ":".join(ASAN_OPTS)},
+    "//buildsystem/bazel/flags:asan_enabled": {
+        "ASAN_OPTIONS": ":".join(ASAN_OPTIONS),
+        "LSAN_OPTIONS": ":".join(LSAN_OPTIONS),
+    },
     "//conditions:default": {},
 }) | select({
-    "//buildsystem/bazel/flags:tsan_enabled": {"TSAN_OPTIONS": ":".join(TSAN_OPTS)},
+    "//buildsystem/bazel/flags:tsan_enabled": {
+        "TSAN_OPTIONS": ":".join(TSAN_OPTIONS),
+    },
     "//conditions:default": {},
 }) | select({
-    "//buildsystem/bazel/flags:tsan_enabled": {"MSAN_OPTIONS": ":".join(MSAN_OPTS)},
+    "//buildsystem/bazel/flags:tsan_enabled": {
+        "MSAN_OPTIONS": ":".join(MSAN_OPTIONS),
+    },
     "//conditions:default": {},
 })
 
@@ -84,7 +120,6 @@ COMPILER_COPTS = select({
 def cc_library(name, hdrs = [], **kwargs):
     copts = kwargs.pop("copts", [])
     linkopts = kwargs.pop("linkopts", [])
-
     deps = kwargs.pop("deps", [])
 
     # buildifier: disable=list-append
@@ -106,7 +141,10 @@ def cc_library(name, hdrs = [], **kwargs):
         name = name,
         hdrs = hdrs,
         copts = copts + SANITIZER_OPTS + COMPILER_COPTS,
-        linkopts = linkopts + SANITIZER_OPTS,
+        linkopts = linkopts + SANITIZER_OPTS + select({
+            "//buildsystem/bazel/flags:ubsan_enabled": ["-fsanitize-link-c++-runtime"],
+            "//conditions:default": [],
+        }),
         includes = ["include"],
         defines = defines,
         deps = deps,
@@ -133,8 +171,20 @@ def cc_test(name, with_gtest_main = True, **kwargs):
     return cc_test_(
         name = name,
         deps = deps,
-        copts = copts + SANITIZER_OPTS,
-        linkopts = linkopts + SANITIZER_OPTS,
+        copts = copts + select({
+            "//buildsystem/bazel/flags:asan_enabled": ["-fsanitize=address"],
+            "//buildsystem/bazel/flags:msan_enabled": ["-fno-sanitize=memory"],
+            "//buildsystem/bazel/flags:tsan_enabled": ["-fsanitize=thread"],
+            "//buildsystem/bazel/flags:ubsan_enabled": ["-fsanitize=undefined"],
+            "//conditions:default": [],
+        }),
+        linkopts = linkopts + select({
+            "//buildsystem/bazel/flags:asan_enabled": ["-fsanitize=address"],
+            "//buildsystem/bazel/flags:msan_enabled": ["-fno-sanitize=memory"],
+            "//buildsystem/bazel/flags:tsan_enabled": ["-fsanitize=thread"],
+            "//buildsystem/bazel/flags:ubsan_enabled": ["-fsanitize=undefined"],
+            "//conditions:default": [],
+        }),
         env = env | SANITIZER_ENV,
         visibility = ["//visibility:private"],
         size = size,
