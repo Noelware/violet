@@ -25,7 +25,9 @@
 
 #pragma once
 
-#include "violet/Violet.h"
+#include <violet/Violet.h>
+
+#include <functional>
 
 namespace violet::events {
 
@@ -232,7 +234,7 @@ private:
     event_t n_event;
     mutable std::atomic<Int64> n_nextId = 0;
     mutable Mutex n_mu;
-    mutable Vec<entry> n_listeners ABSL_GUARDED_BY(n_mu);
+    mutable Vec<entry> n_listeners;
 };
 
 /// A handle that allows subscribing listeners from a [`Emitter<Args...>`].

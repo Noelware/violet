@@ -31,6 +31,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 using violet::CStr;
 using violet::UInt64;

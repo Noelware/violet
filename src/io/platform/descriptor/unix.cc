@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <unistd.h>
 #include <violet/Violet.h>
 
 #ifdef VIOLET_UNIX
@@ -33,7 +34,7 @@ struct FileDescriptor::Impl final {
 
     ~Impl()
     {
-        this->close();
+        this->doClose();
     }
 
     VIOLET_IMPLICIT Impl() noexcept = default;
@@ -42,10 +43,10 @@ struct FileDescriptor::Impl final {
     {
     }
 
-    void close()
+    void doClose()
     {
         if (this->n_fd != -1) {
-            ::close(this->n_fd);
+            close(this->n_fd);
             this->n_fd = -1;
         }
     }
@@ -94,7 +95,7 @@ auto FileDescriptor::ToString() const noexcept -> String
 void FileDescriptor::Close()
 {
     if (this->n_impl != nullptr) {
-        this->n_impl->close();
+        this->n_impl->doClose();
     }
 }
 

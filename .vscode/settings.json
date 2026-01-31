@@ -3,8 +3,9 @@
     "editor.formatOnSave": true,
     "editor.formatOnPaste": true,
     "files.associations": {
-        ".eous-version": "yaml",
-        ".clangd": "yaml"
+        ".violet-version": "plaintext",
+        ".clangd": "yaml",
+        "*.inc": "cpp"
     },
     "files.exclude": {
         "**/.git": true,

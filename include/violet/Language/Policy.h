@@ -25,8 +25,8 @@
 
 // Violet only guarantees support for the following:
 // * MSVC (Visual Studio 2019 or higher)
-// * Clang 19
-// * GCC 13
+// * Clang 20
+// * GCC 14
 
 /**
  * @macro VIOLET_MIN_CPP_VERSION

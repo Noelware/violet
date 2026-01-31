@@ -84,6 +84,13 @@ jobs:
                     ~/.cache/bazelisk
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
+
+            - name: "build: without C++ exceptions"
+              run: bazel build ${{env.BAZELFLAGS}} --cxxopt=-fno-exceptions --host_cxxopt=-fno-exceptions //...
+
+            - name: "build: without RTTI"
+              run: bazel build ${{env.BAZELFLAGS}} --cxxopt=-fno-rtti --host_cxxopt=-fno-rtti //...
+
             - run: bazel test ${{env.BAZELFLAGS}} //...
     # cmake-linux:
     #     name: "CMake / Linux [${{matrix.compiler}}, C++${{matrix.cxx-standard}}]"

@@ -50,6 +50,10 @@ build:libcxx --linkopt=-stdlib=libc++
 build:libcxx --linkopt=-lc++
 build:libcxx --linkopt=-lc++abi
 
+# C++ (macOS, Linux): Disable warnings that are annoying
+build:linux --cxxopt=-Wno-unused-command-line-argument
+build:macos --cxxopt=-Wno-unused-command-line-argument
+
 # Only show errors in test output
 test --test_output=errors
 

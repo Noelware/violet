@@ -25,6 +25,8 @@
 
 #include <violet/System.h>
 
+#include <unistd.h>
+
 auto violet::sys::GetEnv(Str key) noexcept -> Optional<String>
 {
     const auto* var = ::getenv(key.data());

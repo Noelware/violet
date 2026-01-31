@@ -23,23 +23,22 @@
 
 #pragma once
 
-#include "absl/container/btree_map.h"
-#include "absl/container/btree_set.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
-#include "absl/container/node_hash_map.h"
-#include "absl/container/node_hash_set.h"
-#include "absl/numeric/int128.h"
-#include "violet/Language/Macros.h" // IWYU pragma: export
-#include "violet/Language/Policy.h" // IWYU pragma: export
+#include <violet/Language/Macros.h> // IWYU pragma: export
+#include <violet/Language/Policy.h> // IWYU pragma: export
 
 #include <any>
 #include <condition_variable>
 #include <cstddef>
+#include <format>
+#include <iostream>
+#include <map>
 #include <source_location>
 #include <span>
+#include <sstream>
 #include <string>
 #include <string_view>
+#include <unordered_map>
+#include <vector>
 
 namespace violet {
 
@@ -105,9 +104,6 @@ using Int32 = std::int32_t;
 /// Newtype for [`std::int64_t`].
 using Int64 = std::int64_t;
 
-/// Newtype for [`absl::int128`].
-using Int128 = absl::int128;
-
 /// Newtype for [`std::ptrdiff_t`].
 using Int = std::ptrdiff_t;
 
@@ -122,9 +118,6 @@ using UInt32 = std::uint32_t;
 
 /// Newtype for [`std::uint64_t`].
 using UInt64 = std::uint64_t;
-
-/// Newtype for [`absl::uint128`].
-using UInt128 = absl::uint128;
 
 /// Newtype for [`std::size_t`].
 using UInt = std::size_t;
@@ -182,36 +175,6 @@ using UnorderedMap = std::unordered_map<K, V>;
 /// Newtype for [`std::pair`].
 template<typename T1, typename T2>
 using Pair = std::pair<T1, T2>;
-
-/// Newtype for [`absl::flat_hash_map`].
-template<typename K, typename V, typename Hash = absl::DefaultHashContainerHash<K>,
-    typename Eq = absl::DefaultHashContainerEq<K>, typename Alloc = std::allocator<Pair<const K, V>>>
-using FlatHashMap = absl::flat_hash_map<K, V, Hash, Eq, Alloc>;
-
-/// Newtype for [`absl::node_hash_map`].
-template<typename K, typename V, typename Hash = absl::DefaultHashContainerHash<K>,
-    typename Eq = absl::DefaultHashContainerEq<K>, typename Alloc = std::allocator<Pair<const K, V>>>
-using NodeHashMap = absl::node_hash_map<K, V, Hash, Eq, Alloc>;
-
-/// Newtype for [`absl::btree_map`].
-template<typename K, typename V, typename Comparator = std::less<K>, typename Alloc = std::allocator<Pair<const K, V>>>
-using BTreeMap = absl::btree_map<K, V, Comparator, Alloc>;
-
-/// Newtype for [`absl::flat_hash_set`].
-template<typename T, typename Hash = absl::DefaultHashContainerHash<T>, typename Eq = absl::DefaultHashContainerEq<T>,
-    typename Alloc = std::allocator<T>>
-using FlatHashSet = absl::flat_hash_set<T, Hash, Eq, Alloc>;
-
-/// Newtype for [`absl::node_hash_set`].
-template<typename T, typename Hash = absl::DefaultHashContainerHash<T>, typename Eq = absl::DefaultHashContainerEq<T>,
-    typename Alloc = std::allocator<T>>
-using NodeHashSet = absl::node_hash_set<T, Hash, Eq, Alloc>;
-
-/// Newtype for [`absl::btree_set`].
-template<typename T, typename Comparator = std::less<T>, typename Alloc = std::allocator<T>>
-using BTreeSet = absl::btree_set<T, Comparator, Alloc>;
-
-struct __dummy_t final {};
 
 /// C++ concept to require type `T` to have a `ToString` instance member that can
 /// stringify `T`.
@@ -275,22 +238,6 @@ template<std::integral N>
 constexpr auto ToString(N num) -> String
 {
     return std::format("{}", num);
-}
-
-VIOLET_CONSTEXPR_FOR_SSTREAM auto ToString(Int128 val) -> String
-{
-    std::stringstream buf;
-    buf << val;
-
-    return buf.str();
-}
-
-VIOLET_CONSTEXPR_FOR_SSTREAM auto ToString(UInt128 val) -> String
-{
-    std::stringstream buf;
-    buf << val;
-
-    return buf.str();
 }
 
 template<Stringify T, Stringify U>
@@ -368,6 +315,20 @@ inline void DoAssertion(bool condition, CStr condStr, Str message,
     }
 }
 
+[[noreturn]] inline void Unreachable() noexcept
+{
+#if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
+    std::unreachable();
+#elif defined(VIOLET_WINDOWS)
+    __assume(false);
+#elif defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+    __builtin_unreachable();
+#else
+    for (;;)
+        ;
+#endif
+}
+
 } // namespace violet::detail
 
 #define VIOLET_DBG(var) ::violet::detail::PrintDebugVariable(var, #var)
@@ -376,8 +337,7 @@ inline void DoAssertion(bool condition, CStr condStr, Str message,
 #define VIOLET_TODO_WITH(msg) ::violet::detail::DoAssertion(false, "todo!(" msg ")", msg)
 #define VIOLET_TODO() VIOLET_TODO_WITH("prototype not implemented")
 
-#define VIOLET_UNREACHABLE_WITH(msg) ::violet::detail::DoAssertion(false, "unreachable!()", msg)
-#define VIOLET_UNREACHABLE VIOLET_UNREACHABLE_WITH("unreachable code detected")
+#define VIOLET_UNREACHABLE() ::violet::detail::Unreachable()
 
 #ifndef NDEBUG
 #define VIOLET_DEBUG_ASSERT(expr, message) ::violet::detail::DoAssertion(expr, #expr, message)

@@ -145,6 +145,7 @@ auto getForceColorLevel() noexcept -> UInt
             return 0;
         }
 
+#ifdef VIOLET_HAS_EXCEPTIONS
         UInt lvl = 1;
         try {
             lvl = static_cast<UInt>(std::stoi(*level));
@@ -153,6 +154,9 @@ auto getForceColorLevel() noexcept -> UInt
         } catch (const std::out_of_range&) {
             // ...
         }
+#else
+        UInt lvl = static_cast<UInt>(std::stoi(*level));
+#endif
 
         return std::min(lvl, static_cast<UInt>(3));
     }

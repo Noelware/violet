@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <violet/Container/Optional.h>
 #include <violet/IO/Error.h>
 #include <violet/Violet.h>
 
@@ -108,12 +109,16 @@ template<typename T>
 auto Error::Downcast() const noexcept -> Optional<T>
 {
     if (const auto* pair = std::get_if<Pair<ErrorKind, Any>>(&this->n_repr)) {
+#ifdef VIOLET_HAS_EXCEPTIONS
         try {
             auto downcasted = std::any_cast<T>(pair->second);
             return Some<T>(downcasted);
         } catch (const std::bad_any_cast&) {
             return Nothing;
         }
+#else
+        return Some<T>(std::any_cast<T>(pair->second));
+#endif
     }
 
     return Nothing;

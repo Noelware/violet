@@ -23,6 +23,8 @@
 #include <violet/IO/Experimental/BufferedInputStream.h>
 #include <violet/IO/Experimental/Input/ByteArrayInputStream.h>
 
+#include <numeric>
+
 // NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::io::experimental;
 using namespace violet;

@@ -27,6 +27,8 @@
 #include <violet/Testing/Runfiles.h>
 #include <violet/Violet.h>
 
+#include <ranges>
+
 using rules_cc::cc::runfiles::Runfiles;
 using violet::CStr;
 using violet::String;
@@ -187,7 +189,7 @@ void violet::testing::runfiles::Init(CStr argv0)
 
     if (!n_runfiles) {
         auto msg = std::format("failed to build runfiles for test: {}", error);
-        VIOLET_ASSERT(false, msg.c_str());
+        VIOLET_ASSERT(false, msg);
     }
 }
 

@@ -48,16 +48,18 @@ auto FileInputStream::Available() const noexcept -> Result<UInt>
         return 0;
     }
 
-    const auto seeked = ::lseek(fd, 0, SEEK_CUR);
-    if (seeked < 0) {
-        return Err(io::Error::OSError());
-    }
+    return 0;
 
-    if (st.st_size <= seeked) {
-        return 0;
-    }
+    // const auto seeked = ::lseek(fd, 0, SEEK_CUR);
+    // if (seeked < 0) {
+    //     return Err(io::Error::OSError());
+    // }
 
-    return static_cast<UInt>(st.st_size - seeked);
+    // if (st.st_size <= seeked) {
+    //     return 0;
+    // }
+
+    // return static_cast<UInt>(st.st_size - seeked);
 }
 
 #endif

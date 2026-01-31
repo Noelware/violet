@@ -40,11 +40,6 @@ cc_library(
     deps = [
         ":macros",
         ":policy_checks",
-        "@absl//absl/container:btree",
-        "@absl//absl/container:flat_hash_map",
-        "@absl//absl/container:flat_hash_set",
-        "@absl//absl/container:node_hash_map",
-        "@absl//absl/container:node_hash_set",
         "@absl//absl/numeric:int128",
     ],
 )

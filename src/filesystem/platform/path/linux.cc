@@ -27,6 +27,8 @@
 #include <violet/IO/Descriptor.h>
 #include <violet/IO/Error.h>
 
+#include <unistd.h>
+
 using violet::Err;
 using violet::Ok;
 using violet::String;
@@ -36,7 +38,7 @@ using violet::io::FileDescriptor;
 using violet::io::Result;
 
 namespace {
-auto impl(FileDescriptor descriptor) -> Result<Path>
+auto impl(const FileDescriptor& descriptor) -> Result<Path>
 {
     char buf[PATH_MAX];
     ssize_t len = readlink(std::format("/proc/self/fd/{}", descriptor.Get()).c_str(), buf, sizeof(buf) - 1);
@@ -49,12 +51,12 @@ auto impl(FileDescriptor descriptor) -> Result<Path>
 }
 } // namespace
 
-auto violet::filesystem::PathRef::FromFileDescriptor(FileDescriptor descriptor) -> Result<Path, Error>
+auto violet::filesystem::PathRef::FromFileDescriptor(const FileDescriptor& descriptor) -> Result<Path, Error>
 {
     return impl(VIOLET_MOVE(descriptor));
 }
 
-auto violet::filesystem::Path::FromFileDescriptor(FileDescriptor descriptor) -> Result<Path, Error>
+auto violet::filesystem::Path::FromFileDescriptor(const FileDescriptor& descriptor) -> Result<Path, Error>
 {
     return impl(VIOLET_MOVE(descriptor));
 }

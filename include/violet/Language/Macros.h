@@ -209,6 +209,12 @@
 #define VIOLET_COLD
 #endif
 
+#if VIOLET_HAS_CPP_ATTRIBUTE(gnu::hot)
+#define VIOLET_HOT [[gnu::hot]]
+#else
+#define VIOLET_HOT
+#endif
+
 #if defined(_CPPUNWIND) || defined(__EXCEPTIONS) || defined(__cpp_exceptions)
 #define VIOLET_HAS_EXCEPTIONS
 #endif
@@ -285,3 +291,22 @@
     VIOLET_IMPLICIT_CONSTEXPR_MOVE(Type)
 
 #define VIOLET_REQUIRE_STL(ver) (defined(_MSVC_LANG) && _MSVC_LANG >= ver) || __cplusplus >= ver
+
+#ifdef VIOLET_IS_LITTLE_ENDIAN
+#error "Do not pre-define `VIOLET_IS_LITTLE_ENDIAN`"
+#endif
+
+#ifdef VIOLET_IS_BIG_ENDIAN
+#error "Do not pre-define `VIOLET_IS_BIG_ENDIAN`"
+#endif
+
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define VIOLET_IS_LITTLE_ENDIAN 1
+#elif defined(VIOLET_WINDOWS)
+// Windows is always little-endian
+#define VIOLET_IS_LITTLE_ENDIAN 1
+#elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define VIOLET_IS_BIG_ENDIAN 1
+#else
+#error "Cannot determine endianness"
+#endif

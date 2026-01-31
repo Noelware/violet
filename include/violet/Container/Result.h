@@ -1257,13 +1257,13 @@ struct [[nodiscard("always check the error state before discard")]] VIOLET_API R
 
     [[nodiscard]] constexpr auto Error() const -> const E&
     {
-        assert(Err());
+        VIOLET_DEBUG_ASSERT(this->Err(), "invalid variant reached");
         return this->n_err->Error();
     }
 
     [[nodiscard]] constexpr auto Error() -> E&
     {
-        assert(Err());
+        VIOLET_DEBUG_ASSERT(this->Err(), "invalid variant reached");
         return this->n_err->Error();
     }
 
@@ -1284,7 +1284,7 @@ struct [[nodiscard("always check the error state before discard")]] VIOLET_API R
 
     constexpr VIOLET_EXPLICIT operator std::unexpected<E>() const noexcept
     {
-        assert(this->Err());
+        VIOLET_DEBUG_ASSERT(this->Err(), "invalid variant reached");
         return std::unexpected<E>(Error());
     }
 #endif

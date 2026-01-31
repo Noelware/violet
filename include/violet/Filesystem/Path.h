@@ -443,7 +443,7 @@ struct VIOLET_API PathRef final: public BasePath<PathRef, Str> {
     /// Constructs a [`Path`] from a file descriptor.
     /// @param descriptor file descriptor from a file that was passed down from the OS.
     /// @returns I/O result of the found path from the descriptor, or an error.
-    static auto FromFileDescriptor(io::FileDescriptor descriptor) -> io::Result<Path>;
+    static auto FromFileDescriptor(const io::FileDescriptor& descriptor) -> io::Result<Path>;
 
     /// Canonicalizes this path by removing redundant `.` and `..` components, as well as consecutive path separators.
     ///
@@ -529,7 +529,7 @@ struct VIOLET_API Path final: public BasePath<Path, String> {
     /// Constructs a [`Path`] from a file descriptor.
     /// @param descriptor file descriptor from a file that was passed down from the OS.
     /// @returns I/O result of the found path from the descriptor, or an error.
-    static auto FromFileDescriptor(io::FileDescriptor descriptor) -> io::Result<Path>;
+    static auto FromFileDescriptor(const io::FileDescriptor& descriptor) -> io::Result<Path>;
 
     /// Canonicalizes this path by removing redundant `.` and `..` components, as well as consecutive path separators.
     ///
