@@ -26,6 +26,8 @@
 #include <violet/Language/Macros.h> // IWYU pragma: export
 #include <violet/Language/Policy.h> // IWYU pragma: export
 
+#include "absl/numeric/int128.h"
+
 #include <any>
 #include <condition_variable>
 #include <cstddef>
@@ -104,6 +106,9 @@ using Int32 = std::int32_t;
 /// Newtype for [`std::int64_t`].
 using Int64 = std::int64_t;
 
+/// Newtype for [`absl::uint128`]
+using Int128 = absl::int128;
+
 /// Newtype for [`std::ptrdiff_t`].
 using Int = std::ptrdiff_t;
 
@@ -118,6 +123,9 @@ using UInt32 = std::uint32_t;
 
 /// Newtype for [`std::uint64_t`].
 using UInt64 = std::uint64_t;
+
+/// Newtype for [`absl::uint128`]
+using UInt128 = absl::uint128;
 
 /// Newtype for [`std::size_t`].
 using UInt = std::size_t;
