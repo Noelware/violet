@@ -76,8 +76,6 @@ cc_library(
         "//violet/iterator:peekable",
         "//violet/iterator:skip",
         "//violet/iterator:take",
-        "//violet/numeric:endian",
-        "//violet/numeric:int128",
         "//violet/support:bitflags",
         "//violet/support:demangle",
         "//violet/support:terminal",
