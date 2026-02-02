@@ -109,7 +109,7 @@ jobs:
                     - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: "--config=libcxx"}
         env:
             USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-            BAZELFLAGS: "--config=ci --action_env=CC=$(brew --prefix llvm@20)/bin/clang --action_env=CXX=$(brew --prefix llvm@20) --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}} --client_env=BAZEL_CXXOPTS=-std=c++${{matrix.cxx-standard}} --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
+            BAZELFLAGS: "--config=ci --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}} --client_env=BAZEL_CXXOPTS=-std=c++${{matrix.cxx-standard}} --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
             - uses: actions/cache@v5
@@ -139,7 +139,7 @@ jobs:
                 bazel-version: ["7.7.1", "8.5.1"]
         env:
             USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-            BAZELFLAGS: "--config=ci --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}}"
+            BAZELFLAGS: "--config=ci --action_env=CC=$(brew --prefix llvm@20)/bin/clang --action_env=CXX=$(brew --prefix llvm@20) --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}}"
         steps:
             - uses: actions/checkout@v6
             - uses: actions/cache@v5

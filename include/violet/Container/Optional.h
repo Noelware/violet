@@ -92,7 +92,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         std::is_nothrow_constructible_v<T, Args...>)
         : n_engaged(true)
     {
-        ::new (&this->n_storage.Value) T(VIOLET_FWD(Args, args)...);
+        ::new (&this->n_value) T(VIOLET_FWD(Args, args)...);
     }
 
     template<typename U = T>
@@ -117,7 +117,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         : n_engaged(other.has_value())
     {
         if (other.has_value()) {
-            ::new (&this->n_storage.Value) T(*other);
+            ::new (&this->n_value) T(*other);
             this->n_engaged = true;
         } else {
             this->n_engaged = false;
@@ -132,7 +132,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         : n_engaged(other.has_value())
     {
         if (other.has_value()) {
-            ::new (&this->n_storage.Value) T(VIOLET_MOVE(*other));
+            ::new (&this->n_value) T(VIOLET_MOVE(*other));
             this->n_engaged = true;
         } else {
             this->n_engaged = false;
@@ -143,7 +143,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         : n_engaged(other.n_engaged)
     {
         if (other.n_engaged) {
-            ::new (&this->n_storage.Value) T(other.n_storage.Value);
+            ::new (&this->n_value) T(other.n_value);
         }
     }
 
@@ -156,7 +156,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
                 if (this->n_engaged) {
                     this->getValueRef() = other.getValueRef();
                 } else {
-                    ::new (&this->n_storage.Value) T(other.getValueRef());
+                    ::new (&this->n_value) T(other.getValueRef());
                     this->n_engaged = true;
                 }
             } else {
@@ -171,7 +171,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         : n_engaged(other.n_engaged)
     {
         if (other.n_engaged) {
-            ::new (&this->n_storage.Value) T(VIOLET_MOVE(other.n_storage.Value));
+            ::new (&this->n_value) T(VIOLET_MOVE(other.n_value));
             other.n_engaged = false;
         }
     }
@@ -183,7 +183,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
                 if (this->n_engaged) {
                     this->getValueRef() = VIOLET_MOVE(other.getValueRef());
                 } else {
-                    ::new (&this->n_storage.Value) T(VIOLET_MOVE(other.getValueRef()));
+                    ::new (&this->n_value) T(VIOLET_MOVE(other.getValueRef()));
                     this->n_engaged = true;
                 }
 
@@ -215,7 +215,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             if (this->n_engaged) {
                 *this->getValueRef() = *other;
             } else {
-                ::new (&this->n_storage.Value) T(*other);
+                ::new (&this->n_value) T(*other);
                 this->n_engaged = true;
             }
         } else {
@@ -233,7 +233,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             if (this->n_engaged) {
                 *this->getValueRef() = *other;
             } else {
-                ::new (&this->n_storage.Value) T(*other);
+                ::new (&this->n_value) T(*other);
                 this->n_engaged = true;
             }
 
@@ -577,7 +577,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             this->Reset();
         }
 
-        ::new (&this->n_storage.Value) T(VIOLET_FWD(Args, args)...);
+        ::new (&this->n_value) T(VIOLET_FWD(Args, args)...);
         this->n_engaged = true;
 
         return Value();
@@ -651,7 +651,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             return false;
         }
 
-        return this->Value() == other.Value();
+        return this->n_value() == other.Value();
     }
 
     constexpr auto operator!=(const Optional& other) const noexcept -> bool
@@ -667,7 +667,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             return false;
         }
 
-        return this->Value() == *other;
+        return this->n_value() == *other;
     }
 
     constexpr auto operator!=(const std::optional<T>& other) const noexcept -> bool
@@ -679,7 +679,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     constexpr auto operator==(const T& other) const noexcept -> bool
         requires(requires { this->Value() == other; })
     {
-        return this->HasValue() && this->Value() == other;
+        return this->HasValue() && this->n_value() == other;
     }
 
     constexpr auto operator!=(const T& other) const noexcept -> bool
@@ -704,18 +704,15 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
 
 private:
     mutable bool n_engaged = false;
-    union storage_t { // NOLINT(cppcoreguidelines-special-member-functions)
-        T Value;
-
-        constexpr storage_t() {}
-        ~storage_t() {}
-    } n_storage;
+    union { // NOLINT(cppcoreguidelines-special-member-functions)
+        T n_value;
+    };
 
     void destroy() noexcept(std::is_nothrow_destructible_v<T>)
     {
         if (this->n_engaged) {
             if constexpr (!std::is_trivially_destructible_v<T>) {
-                this->n_storage.Value.~T();
+                this->n_value.~T();
             }
 
             this->n_engaged = false;
@@ -724,22 +721,22 @@ private:
 
     constexpr auto getValueRef() & noexcept -> T&
     {
-        return *std::launder(&this->n_storage.Value);
+        return *std::launder(&this->n_value);
     }
 
     constexpr auto getValueRef() const& noexcept -> const T&
     {
-        return *std::launder(&this->n_storage.Value);
+        return *std::launder(&this->n_value);
     }
 
     constexpr auto getValueRef() && noexcept -> T&
     {
-        return VIOLET_MOVE(*std::launder(&this->n_storage.Value));
+        return VIOLET_MOVE(*std::launder(&this->n_value));
     }
 
     constexpr auto getValueRef() const&& noexcept -> const T&&
     {
-        return VIOLET_MOVE(*std::launder(&this->n_storage.Value));
+        return VIOLET_MOVE(*std::launder(&this->n_value));
     }
 
     [[noreturn]] VIOLET_COLD static void panicUnexpectly(Str message, [[maybe_unused]] const std::source_location& loc)
