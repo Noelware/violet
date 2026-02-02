@@ -177,3 +177,16 @@ TEST(Optionals, Reset)
     opt.Reset();
     ASSERT_FALSE(opt.HasValue());
 }
+
+TEST(Optionals, SizeAndAlignmentRequirementsMustMatchRust)
+{
+    struct AlignTest final {
+        alignas(16) char __dummy_data[16];
+    };
+
+    EXPECT_GE(sizeof(Optional<int>), sizeof(int));
+    EXPECT_EQ(alignof(Optional<int>), alignof(int));
+
+    EXPECT_EQ(alignof(Optional<AlignTest>), alignof(AlignTest));
+    EXPECT_GE(sizeof(Optional<AlignTest>), sizeof(AlignTest) + 1);
+}
