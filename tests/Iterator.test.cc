@@ -53,7 +53,7 @@ TEST(Iterators, Find)
 
     auto even = it.Find([](UInt32 value) -> bool { return value % 2 == 0; });
     ASSERT_TRUE(even);
-    ASSERT_EQ(*even, 2);
+    ASSERT_EQ(even, 2);
 }
 
 TEST(Iterators, FindMap)

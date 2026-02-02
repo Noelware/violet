@@ -21,18 +21,11 @@
 
 #pragma once
 
+#include <violet/Support/Demangle.h>
 #include <violet/Violet.h>
 
-#if VIOLET_USE_RTTI
-#include <violet/Support/Demangle.h>
-#endif
-
-#ifndef VIOLET_HAS_EXCEPTIONS
-#include <cstdio>
-#include <source_location>
-#endif
-
 #include <expected>
+#include <source_location>
 #include <type_traits>
 
 namespace violet {
@@ -664,6 +657,46 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
     }
 
+    constexpr auto UnwrapUnchecked(Unsafe) & noexcept -> T&
+    {
+        return this->n_storage.Value;
+    }
+
+    constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> const T&
+    {
+        return this->n_storage.Value;
+    }
+
+    constexpr auto UnwrapUnchecked(Unsafe) && noexcept -> T&&
+    {
+        return VIOLET_MOVE(this->n_storage.Value);
+    }
+
+    constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept -> const T&&
+    {
+        return VIOLET_MOVE(this->n_storage.Value);
+    }
+
+    constexpr auto UnwrapErrUnchecked(Unsafe) & noexcept -> T&
+    {
+        return this->n_storage.Error.Error();
+    }
+
+    constexpr auto UnwrapErrUnchecked(Unsafe) const& noexcept -> const T&
+    {
+        return this->n_storage.Value;
+    }
+
+    constexpr auto UnwrapErrUnchecked(Unsafe) && noexcept -> E&&
+    {
+        return VIOLET_MOVE(this->n_storage.Error.Error());
+    }
+
+    constexpr auto UnwrapErrUnchecked(Unsafe) const&& noexcept -> const E&&
+    {
+        return VIOLET_MOVE(this->n_storage.Error.Error());
+    }
+
     constexpr auto operator*() & -> T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
@@ -766,10 +799,15 @@ private:
         throw std::logic_error(std::format("panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(),
             loc.column(), util::DemangleCXXName(loc.function_name()), message));
 #else
-        std::println(stderr, "panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(), loc.column(),
-            util::DemangleCXXName(loc.function_name()), message);
+#if VIOLET_REQUIRE_STL(202302L)
+        std::println(std::cerr, "panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(),
+            loc.column(), util::DemangleCXXName(loc.function_name()), message);
+#else
+        std::cerr << "panic in `Result<T, E>` [" << loc.file_name() << ':' << loc.line() << ':' << loc.column() << " ("
+                  << util::DemangleCXXName(loc.function_name()) << ")]: " << message;
+#endif
 
-        std::unreachable();
+        VIOLET_UNREACHABLE();
 #endif
     }
 };

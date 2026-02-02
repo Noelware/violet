@@ -35,6 +35,7 @@ on:
             - 'nix/**'
 
             - renovate.json
+            - CHANGELOG.md
             - flake.lock
             - .*ignore
             - .clangd
@@ -43,6 +44,7 @@ on:
         types: [opened, synchronize]
         branches:
             - 'issues/gh-**'
+            - 'noel/**'
             - 'feat/**'
             - master
         paths:
@@ -138,9 +140,18 @@ jobs:
                 bazel-version: ["7.7.1", "8.5.1"]
         env:
             USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-            BAZELFLAGS: "--config=ci --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}}"
+            BAZELFLAGS: "--config=ci --action_env=CC=$(brew --prefix llvm@20)/bin/clang --action_env=CXX=$(brew --prefix llvm@20) --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}}"
         steps:
             - uses: actions/checkout@v6
+            - uses: actions/cache@v5
+              with:
+                path: /opt/homebrew/opt/llvm@20
+                key: macos-homebrew-llvm-20
+                restore-keys: |
+                    macos-homebrew-llvm-
+
+            - run: brew install llvm@20
+
             - uses: actions/cache@v5
               with:
                 key: bazel-cache-macos-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}

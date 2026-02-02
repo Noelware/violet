@@ -128,7 +128,7 @@ auto detectWorkspaceName() -> String
                 // If the line ends with `$TEST_WORKSPACE` (usually `_main` but
                 // I could be wrong), get the first element of splitting `,` and
                 // that is our repository!
-                if (line.ends_with(*workspace.Value())) {
+                if (line.ends_with(workspace.Value())) {
                     auto parts = std::ranges::views::split(line, ',');
 
                     auto it = parts.begin();
@@ -166,7 +166,7 @@ auto detectWorkspaceName() -> String
 #endif
         }
     } else if (auto name = GetEnv(kWorkspaceOverrideEnv)) {
-        workspaceName = VIOLET_MOVE(*name.Value());
+        workspaceName = VIOLET_MOVE(name.Value());
     } else {
 #ifndef VIOLET_RUNFILES_LOGS
         std::cerr << "[violet/testing/runfiles@warning] unable to collect `$" << kRunfilesDirEnv << "' or `$"

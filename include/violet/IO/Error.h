@@ -21,12 +21,9 @@
 
 #pragma once
 
-#include "violet/Container/Result.h"
-#include "violet/Violet.h"
-
-#if VIOLET_USE_RTTI
-#include "violet/Container/Optional.h"
-#endif
+#include <violet/Container/Optional.h>
+#include <violet/Container/Result.h>
+#include <violet/Violet.h>
 
 #include <variant>
 
@@ -216,7 +213,7 @@ VIOLET_TO_STRING(const violet::io::ErrorKind&, self, {
     VIOLET_DIAGNOSTIC_POP
 #endif
 
-    return "";
+    VIOLET_UNREACHABLE();
 });
 
 namespace violet::io {
@@ -276,13 +273,13 @@ struct VIOLET_API Error final {
     }
 #endif
 
-    [[nodiscard]] auto RawOSError() const noexcept -> Optional<PlatformError::error_type>;
+    [[nodiscard]] auto RawOSError() const noexcept -> violet::Optional<PlatformError::error_type>;
     [[nodiscard]] auto Kind() const noexcept -> ErrorKind;
     [[nodiscard]] auto ToString() const noexcept -> String;
 
 #if VIOLET_USE_RTTI
     template<typename T>
-    auto Downcast() const noexcept -> Optional<T>;
+    auto Downcast() const noexcept -> violet::Optional<T>;
 #endif
 
 private:
