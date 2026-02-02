@@ -7,6 +7,16 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.02.03...master>
+
+### 26.02.03
+- **Noelware.Violet.IO**: Add `Noelware.Violet.IO.Experimental` framework ([`@auguwu`])
+- **Noelware.Violet.IO.Experimental**: Add input streams for stdin, files, strings, and byte arrays (`Vec<UInt8>`) ([`@auguwu`])
+- **Noelware.Violet.IO**: Fix issue where `free` wasn't found in `violet::util::DemangleCXXName` ([`@auguwu`])
+- **Noelware.Violet**: Add `VIOLET_HOT` and `VIOLET_IS_{LITTLE|BIG}_ENDIAN` macros ([`@auguwu`])
+- **Noelware.Violet**: Remove numeric framework as it wasn't needed ([`@auguwu`])
+- **Noelware.Violet**: Remove `VIOLET_UNREACHABLE_WITH` and `VIOLET_UNREACHABLE` will use `std::unreachable()` in C++23 ([`@auguwu`])
+- **Noelware.Violet.IO**, **Noelware.Violet** (`Support` framework): Fix errors with `-fno-exceptions`-enabled code ([`@auguwu`], [#22])
 - **Noelware.Violet**: Remove flat hash map/set, btree maps from Abseil ([`@auguwu`])
 - **Noelware.Violet**: Remove Numeric framework ([`@auguwu`])
 - **Noelware.Violet**: Refractor `violet::Result<T, E>` API ([`@auguwu`])
@@ -26,7 +36,7 @@ availableAt:
     - Add `is_optional`, `is_optional_v` type traits
     - `Unwrap`, `Expect` will show source location where it was thrown at
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.02.03-dev.2...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.02.02...26.02.03>
 
 ### 26.02.03-dev.2
 - **Noelware.Violet**: Add `VIOLET_HOT` and `VIOLET_IS_{LITTLE|BIG}_ENDIAN` macros ([`@auguwu`])
