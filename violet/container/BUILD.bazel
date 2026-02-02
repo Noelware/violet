@@ -49,13 +49,9 @@ cc_test(
 
 cc_library(
     name = "result",
-    srcs = ["//src/container:ResultUnwrapFail.cc"],
     hdrs = ["//include/violet/Container:Result.h"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//violet",
-        "//violet/support:demangle",
-    ],
+    deps = ["//violet"],
 )
 
 cc_test(

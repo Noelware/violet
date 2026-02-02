@@ -44,18 +44,6 @@ TEST(Result, Err)
     EXPECT_EQ(result.Error(), 404);
 }
 
-TEST(Result, IntoOpt)
-{
-    auto result = Ok<String, UInt32>("world");
-    auto opt = result.IntoOpt();
-    ASSERT_TRUE(opt.HasValue());
-    EXPECT_EQ(*opt.Value(), "world");
-
-    Result<String, UInt32> err = Err<UInt32>(404);
-    auto opt_err = err.IntoOpt();
-    ASSERT_FALSE(opt_err.HasValue());
-}
-
 #if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
 TEST(Result, ToStdExpected)
 {
@@ -186,29 +174,3 @@ TEST(Result, MoveAssignErr)
     ASSERT_TRUE(r2.Err());
     EXPECT_EQ(r2.Error(), 123);
 }
-
-#ifdef VIOLET_HAS_EXCEPTIONS
-TEST(Result, UnwrapShouldThrow)
-{
-    Result<String, UInt32> r1 = Err<UInt32>(123);
-    EXPECT_THROW(r1.Unwrap(), std::logic_error);
-}
-
-TEST(Result, ExpectShouldThrow)
-{
-    Result<String, UInt32> r1 = Err<UInt32>(123);
-    EXPECT_THROW(r1.Expect("my message here :3"), std::logic_error);
-}
-#else
-TEST(Result, UnwrapShouldAbort)
-{
-    Result<String, UInt32> r1 = Err<UInt32>(123);
-    EXPECT_DEATH(r1.Unwrap(), ".*");
-}
-
-TEST(Result, ExpectShouldAbort)
-{
-    Result<String, UInt32> r1 = Err<UInt32>(123);
-    EXPECT_DEATH(r1.Expect("my message here :3"), ".*");
-}
-#endif

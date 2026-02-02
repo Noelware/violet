@@ -41,16 +41,10 @@ violet_cc_library(
         violet::macros
         violet::policy_checks
         absl::int128
-        absl::flat_hash_map
-        absl::flat_hash_set
-        absl::node_hash_map
-        absl::node_hash_set
-        absl::btree
 )
 
 add_subdirectory(support)
 add_subdirectory(container)
-add_subdirectory(numeric)
 add_subdirectory(iterator)
 # add_subdirectory(system)
 

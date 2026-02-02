@@ -56,6 +56,7 @@ for dir in "${dirs[@]}"; do
         rm -rf "$SCRIPT_DIR/.bazeldist/buildsystem/bazel/deps"
         rm -rf "$SCRIPT_DIR/.bazeldist/buildsystem/cmake"
         rm -rf "$SCRIPT_DIR/.bazeldist/buildsystem/meson"
+        rm -rf "$SCRIPT_DIR/.bazeldist/buildsystem/gn"
 
         sed -i "s/^VERSION = \".*\"/VERSION = \"$VERSION\"/" "$SCRIPT_DIR/.bazeldist/buildsystem/bazel/version.bzl"
     fi

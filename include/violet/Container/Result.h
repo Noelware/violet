@@ -21,10 +21,10 @@
 
 #pragma once
 
-#include "violet/Violet.h"
+#include <violet/Violet.h>
 
 #if VIOLET_USE_RTTI
-#include "violet/Support/Demangle.h"
+#include <violet/Support/Demangle.h>
 #endif
 
 #ifndef VIOLET_HAS_EXCEPTIONS
@@ -32,156 +32,14 @@
 #endif
 
 #include <expected>
-#include <initializer_list>
 #include <type_traits>
 
 namespace violet {
 
-/* --=-- START :: internals --=--*/
-
-#ifndef VIOLET_HAS_EXCEPTIONS
-VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
-void resultUnwrapFail(const std::source_location& loc);
-
-VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
-void resultUnwrapErrFail(const std::source_location& loc);
-
-VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
-void resultUnwrapFail(CStr message, const std::source_location& loc);
-#else
-VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
-void resultUnwrapFail();
-
-VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
-void resultUnwrapErrFail();
-
-VIOLET_COLD [[noreturn, deprecated("internal function -- do not use")]]
-void resultUnwrapFail(CStr message);
-#endif
-
-/* --=--  END :: internals  --=-- */
-
-template<typename T>
-struct Optional;
-
 template<typename T, typename E>
 struct Result;
 
-/// Backport of C++23's `std::unexpected`.
-// -+- TODO(@auguwu): alias this as `std::unexpected` once we drop C++20 support -+-
-template<typename E>
-struct Err final {
-    static_assert(!std::is_void_v<E>, "`E` cannot be used with `void`");
-    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Err);
-
-    constexpr VIOLET_EXPLICIT Err(const E& err)
-        : n_error(err)
-    {
-    }
-
-    constexpr VIOLET_IMPLICIT Err(E&& err)
-        : n_error(VIOLET_MOVE(err))
-    {
-    }
-
-    template<typename... Args>
-        requires(!std::is_same_v<std::decay_t<Args>..., E> && std::is_constructible_v<E, Args...>)
-    constexpr VIOLET_IMPLICIT Err(Args&&... args)
-        : n_error(VIOLET_FWD(Args, args)...)
-    {
-    }
-
-    template<typename U, typename... Args>
-        requires std::is_constructible_v<E, std::initializer_list<U>&, Args&&...>
-    constexpr VIOLET_EXPLICIT Err(std::initializer_list<U> list, Args&&... args)
-        : n_error(list, VIOLET_FWD(Args, args)...)
-    {
-    }
-
-    constexpr auto Error() & noexcept -> E&
-    {
-        return n_error;
-    }
-
-    constexpr auto Error() const& noexcept -> const E&
-    {
-        return n_error;
-    }
-
-    constexpr auto Error() && noexcept -> E&&
-    {
-        return VIOLET_MOVE(n_error);
-    }
-
-    constexpr auto Error() const&& noexcept -> const E&&
-    {
-        return VIOLET_MOVE(n_error);
-    }
-
-    constexpr auto operator==(const Err& other)
-    {
-        return this->Error() == other.Error();
-    }
-
-    constexpr auto operator!=(const Err& other)
-    {
-        return this->Error() != other.Error();
-    }
-
-    constexpr auto operator<(const Err& other)
-    {
-        return this->Error() < other.Error();
-    }
-
-    constexpr auto operator<=(const Err& other)
-    {
-        return this->Error() <= other.Error();
-    }
-
-    constexpr auto operator>(const Err& other)
-    {
-        return this->Error() > other.Error();
-    }
-
-    constexpr auto operator>=(const Err& other)
-    {
-        return this->Error() != other.Error();
-    }
-
-    template<typename T>
-    constexpr VIOLET_EXPLICIT operator violet::Result<T, E>() noexcept
-    {
-        return violet::Result<T, E>(std::in_place_index<1L>, Error());
-    }
-
-#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
-    template<typename T>
-    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() & noexcept
-    {
-        return std::expected<T, E>(std::unexpect, VIOLET_MOVE(Error()));
-    }
-
-    template<typename T>
-    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() && noexcept
-    {
-        return std::expected<T, E>(std::unexpect, VIOLET_MOVE(Error()));
-    }
-
-    constexpr VIOLET_EXPLICIT operator std::unexpected<E>() noexcept
-    {
-        return std::unexpected<E>(Error());
-    }
-#endif
-
-private:
-    E n_error;
-};
-
-template<typename E>
-Err(E) -> Err<E>;
-
 /// Creates a new `Result<T, E>` that contains a successful value.
-///
 /// @tparam T The underlying success type to construct.
 /// @tparam E The underlying error type to pass.
 /// @tparam Args The arguments to pass to `T`'s constructor.
@@ -190,120 +48,320 @@ Err(E) -> Err<E>;
 template<typename T, typename E, typename... Args>
 constexpr static auto Ok(Args&&... args) -> Result<T, E>
 {
-    static_assert(!std::is_void_v<T>, "`void` types cannot be constructed. use `{}` for void-like results");
+    static_assert(std::is_object_v<T>, "`Result<T, E>` requires `T` to be a object type or `void`");
+    static_assert(std::is_object_v<E>, "`Result<T, E>` requires `E` to be an object type");
+    static_assert(!std::is_reference_v<T>, "`Result<T, E>` must not wrap a reference type");
+    static_assert(!std::is_reference_v<E>, "`Result<T, E>` must not wrap a reference type");
+    static_assert(!std::is_array_v<T>, "`Result<T, E>` must not wrap an array type");
+    static_assert(!std::is_array_v<E>, "`Result<T, E>` must not wrap an array type");
+    static_assert(
+        !std::is_const_v<E> && !std::is_volatile_v<E>, "`Result<T, E>` must not have a cv-qualified error type");
+    static_assert(std::is_destructible_v<T>, "`Result<T, E>` requires T to be destructible");
+    static_assert(std::is_destructible_v<E>, "`Result<T, E>` requires E to be destructible");
+    static_assert(std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>,
+        "`Result<T, E>` requires T to be movable or copyable");
+    static_assert(std::is_move_constructible_v<E> || std::is_copy_constructible_v<E>,
+        "`Result<T, E>` requires E to be movable or copyable");
+    static_assert(sizeof(E) > 0, "`Result<T, E>` requires E to be a complete type");
 
     return Result<T, E>(std::in_place_index<0>, VIOLET_FWD(Args, args)...);
 }
 
+/// Concept for detecting nested [`violet::Result`] types.
+///
+/// **nested_result** determines whether a type `T` is a **nested `Result<Result<U, E>, E>`** for some `U`.
+/// This is useful for implementing functions like [`Result::transpose`] where only nested [`Result`]s
+/// should be normalized.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Container/Result.h>
+///
+/// using inner = violet::Result<int, std::string>;
+/// using outer = violet::Result<inner, std::string>;
+///
+/// static_assert(violet::nested_result<outer, std::string>);
+/// static_assert(!violet::nested_result<int, std::string>);
+/// ```
+template<typename T, typename E>
+concept nested_result = instanceof_v<Result, T> && std::same_as<typename T::error_type, E>;
+
+/// Type trait that detects whether a type `T` is a `Result<..., ...>`.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Container/Result.h>
+/// #include <type_traits>
+///
+/// static_assert(violet::is_result_v<violet::Result<int, std::string>>);
+/// static_assert(!violet::is_result_v<int>);
+/// ```
+template<typename T>
+struct is_result: std::false_type {};
+
+template<typename T, typename E>
+struct is_result<Result<T, E>>: std::true_type {};
+
+template<typename T>
+static constexpr bool is_result_v = is_result<T>::value;
+
+/// A tagged error variant.
+///
+/// `Err<E>` is a lightweight, non-zero abstraction used to explicitly construct `violet::Result<T, E>`
+/// or `std::expected<T, E>` in their error states.
+///
+/// > [!NOTE]
+/// > This is a backport-compatible equivalent of C++23's `std::unexpected` as Violet targets C++20 as the
+/// > MSCPPV (Minimum Supported C++ Version)
+///
+/// ## Design
+/// - `Err<E>` is **not** implicitly convertible to `E`
+/// - It exists solely to disambiguate error construction
+/// - Prevents accidental success-path conversions
+///
+/// ## Invariants
+/// - `E` must not be `void`
+/// - The contained error is always engaged
+template<typename E>
+struct VIOLET_API Err final {
+    static_assert(!std::is_void_v<E>, "`Err<void>` is ill-formed");
+    static_assert(std::is_object_v<E>, "`Err<E>` requires `E` to be a object type");
+    static_assert(!std::is_reference_v<E>, "`Err<E>` must not wrap a reference type");
+    static_assert(!std::is_array_v<E>, "`Err<E>` must not wrap an array type");
+    static_assert(!std::is_const_v<E> && !std::is_volatile_v<E>, "`Err<E>` must not be cv-qualified");
+    static_assert(!std::is_pointer_v<E>, "`Err<E>` should not wrap raw pointer types");
+    static_assert(!std::is_function_v<E>, "`Err<E>` must not wrap function types");
+    static_assert(std::is_move_constructible_v<E> || std::is_copy_constructible_v<E>,
+        "`Err<E>` requires `E` to be movable or copyable");
+    static_assert(sizeof(E) > 0, "`Err<E>` requires `E` to be a complete type");
+    static_assert(!std::same_as<E, Err<E>>, "`Err<Err<E>>` is ill-formed");
+    static_assert(!std::same_as<E, std::in_place_t>, "`Err<E>` must not wrap `std::in_place_t`");
+    static_assert(!std::same_as<E, std::unexpect_t>, "`Err<E>` must not wrap `std::unexpect_t`");
+
+    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Err);
+
+    /// Constructs from a const lvalue error.
+    constexpr VIOLET_EXPLICIT Err(const E& error) noexcept(std::is_nothrow_copy_constructible_v<E>)
+        : n_value(error)
+    {
+    }
+
+    /// Constructs from an rvalue error.
+    constexpr VIOLET_EXPLICIT Err(E&& error) noexcept(std::is_nothrow_move_constructible_v<E>)
+        : n_value(VIOLET_MOVE(error))
+    {
+    }
+
+    /// Constructs the contained error in-place.
+    ///
+    /// This constructor is disabled when it would collide with copy/move construction from `E`.
+    template<typename... Args>
+        requires(std::is_constructible_v<E, Args...>
+            && !(sizeof...(Args) == 1 && (std::same_as<std::decay_t<Args>, E> || ...)))
+    constexpr VIOLET_EXPLICIT Err(Args&&... args) noexcept(std::is_nothrow_constructible_v<E, Args...>)
+        : n_value(VIOLET_FWD(Args, args)...)
+    {
+    }
+
+    /// [**lvalue**] Access the contained error.
+    constexpr auto Error() & noexcept -> E&
+    {
+        return this->n_value;
+    }
+
+    /// [**rvalue**] Access the contained error.
+    constexpr auto Error() && noexcept -> E&&
+    {
+        return VIOLET_MOVE(this->n_value);
+    }
+
+    /// [const **lvalue**] Access the contained error.
+    constexpr auto Error() const& noexcept -> const E&
+    {
+        return this->n_value;
+    }
+
+    /// [const **rvalue**] Access the contained error.
+    constexpr auto Error() const&& noexcept -> const E&&
+    {
+        return VIOLET_MOVE(this->n_value);
+    }
+
+    constexpr auto operator==(const Err& other) const noexcept -> bool
+        requires(requires { this->Error() == other.Error(); })
+    {
+        return this->Error() == other.Error();
+    }
+
+    constexpr auto operator!=(const Err& other) const noexcept -> bool
+        requires(requires { this->Error() != other.Error(); })
+    {
+        return this->Error() != other.Error();
+    }
+
+    template<typename T>
+    constexpr VIOLET_EXPLICIT operator violet::Result<T, E>() const noexcept
+    {
+        return Result<T, E>(std::in_place_index<1>, this->n_value);
+    }
+
+#if VIOLET_REQUIRE_STL(202302L)
+    template<typename T>
+    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() const noexcept
+    {
+        return std::expected<T, E>(std::unexpect, this->n_value);
+    }
+
+    constexpr VIOLET_EXPLICIT operator std::unexpected<E>() const noexcept
+    {
+        return std::unexpected<E>(this->n_value);
+    }
+#endif
+
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        return violet::ToString(Error());
+    }
+
+    constexpr friend auto operator<<(std::ostream& os, const Err<E>& self) -> std::ostream&
+    {
+        return os << self.ToString();
+    }
+
+private:
+    E n_value;
+};
+
 /// Representation of a successful or failed state, analgous of Rust's [`std::result::Result`].
 ///
 /// [`std::result::Result`]: https://doc.rust-lang.org/1.90.0/std/result/enum.Result.html
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Container/Result.h>
+///
+/// auto res = violet::Ok<int, std::string>(42);
+/// violet::println("the answer to life is: {}", res);
+/// ```
 template<typename T, typename E>
 struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
-    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Result);
+    static_assert(
+        std::is_object_v<T> || std::is_void_v<T>, "`Result<T, E>` requires `T` to be a object type or `void`");
+    static_assert(std::is_object_v<E>, "`Result<T, E>` requires `E` to be an object type");
+    static_assert(!std::is_reference_v<T>, "`Result<T, E>` must not wrap a reference type");
+    static_assert(!std::is_reference_v<E>, "`Result<T, E>` must not wrap a reference type");
+    static_assert(!std::is_array_v<T>, "`Result<T, E>` must not wrap an array type");
+    static_assert(!std::is_array_v<E>, "`Result<T, E>` must not wrap an array type");
+    static_assert(
+        !std::is_const_v<E> && !std::is_volatile_v<E>, "`Result<T, E>` must not have a cv-qualified error type");
+    static_assert(std::is_destructible_v<T>, "`Result<T, E>` requires T to be destructible");
+    static_assert(std::is_destructible_v<E>, "`Result<T, E>` requires E to be destructible");
+    static_assert(std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>,
+        "`Result<T, E>` requires T to be movable or copyable");
+    static_assert(std::is_move_constructible_v<E> || std::is_copy_constructible_v<E>,
+        "`Result<T, E>` requires E to be movable or copyable");
+    static_assert(sizeof(E) > 0, "`Result<T, E>` requires E to be a complete type");
 
     using value_type = T;
     using error_type = E;
 
+    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Result);
+
     constexpr VIOLET_IMPLICIT Result(const T& ok)
         : n_ok(true)
     {
-        ::new (&this->n_storage.ok) T(ok);
+        ::new (&this->n_storage.Value) T(ok);
     }
 
     constexpr VIOLET_IMPLICIT Result(T&& ok) noexcept(std::is_nothrow_move_constructible_v<T>)
         : n_ok(true)
     {
-        ::new (&this->n_storage.ok) T(VIOLET_MOVE(ok));
+        ::new (&this->n_storage.Value) T(VIOLET_MOVE(ok));
     }
 
-    /// @internal
     template<typename... Args>
-        requires std::is_constructible_v<T, Args...>
+        requires(std::is_constructible_v<T, Args...>)
     constexpr VIOLET_EXPLICIT Result(std::in_place_index_t<0L>, Args&&... args)
-        : n_ok(true)
+        : Result(T(VIOLET_FWD(Args, args)...))
     {
-        ::new (&this->n_storage.ok) T(VIOLET_FWD(Args, args)...);
     }
 
-    /// @internal
     template<typename... Args>
-        requires std::is_constructible_v<E, Args&&...>
+        requires(std::is_constructible_v<E, Args...>)
     constexpr VIOLET_EXPLICIT Result(std::in_place_index_t<1L>, Args&&... args)
-        : n_ok(true)
+        : Result(violet::Err<E>(VIOLET_FWD(Args, args)...))
     {
-        ::new (&this->n_storage.ok) violet::Err<E>(VIOLET_FWD(Args, args)...);
     }
 
     constexpr VIOLET_IMPLICIT Result(const violet::Err<E>& err)
     {
-        ::new (&this->n_storage.err) violet::Err<E>(err);
+        ::new (&this->n_storage.Error) violet::Err(err);
     }
 
-    constexpr VIOLET_IMPLICIT Result(violet::Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
+    constexpr VIOLET_IMPLICIT Result(violet::Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<T>)
     {
-        ::new (&this->n_storage.err) violet::Err<E>(VIOLET_MOVE(err));
+        ::new (&this->n_storage.Error) violet::Err(VIOLET_MOVE(err));
     }
 
     ~Result()
     {
-        destroy();
+        this->destroy();
     }
 
     constexpr VIOLET_IMPLICIT Result(const Result& other)
         : n_ok(other.n_ok)
     {
-        if (other.n_ok) {
-            ::new (&this->n_storage.ok) T(other.n_storage.ok);
+        if (this->n_ok) {
+            ::new (&this->n_storage.Value) T(other.n_storage.Value);
         } else {
-            ::new (&this->n_storage.err) violet::Err<E>(other.n_storage.err);
+            ::new (&this->n_storage.Error) violet::Err<E>(other.n_storage.Error);
         }
     }
 
-    constexpr auto operator=(const Result& other) noexcept -> Result&
+    constexpr auto operator=(const Result& other) -> Result&
     {
         if (this != &other) {
-            destroy();
+            this->destroy();
 
             this->n_ok = other.n_ok;
-            if (other.n_ok) {
-                ::new (&this->n_storage.ok) T(other.n_storage.ok);
+            if (this->n_ok) {
+                ::new (&this->n_storage.Value) T(other.n_storage.Value);
             } else {
-                ::new (&this->n_storage.err) violet::Err<E>(other.n_storage.err);
+                ::new (&this->n_storage.Error) violet::Err<E>(other.n_storage.Error);
             }
         }
 
         return *this;
     }
 
-    constexpr Result(Result&& other) noexcept(
+    constexpr VIOLET_IMPLICIT Result(Result&& other) noexcept(
         std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
-        : n_ok(other.n_ok)
+        : n_ok(std::exchange(other.n_ok, false))
     {
-        if (other.n_ok) {
-            ::new (&this->n_storage.ok) T(VIOLET_MOVE(other.n_storage.ok));
+        if (this->n_ok) {
+            ::new (&this->n_storage.Value) T(VIOLET_MOVE(other.n_storage.Value));
         } else {
-            ::new (&this->n_storage.err) violet::Err<E>(VIOLET_MOVE(other.n_storage.err));
+            ::new (&this->n_storage.Error) violet::Err<E>(VIOLET_MOVE(other.n_storage.Error));
         }
     }
 
-    constexpr auto operator=(Result&& other) noexcept(std::is_nothrow_move_constructible_v<T>
-        && std::is_nothrow_move_constructible_v<E> && std::is_nothrow_move_assignable_v<T>
-        && std::is_nothrow_move_assignable_v<E>) -> Result&
+    constexpr auto operator=(Result&& other) noexcept(
+        std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>) -> Result&
     {
         if (this != &other) {
             // If both are same variant, move-assign; else destroy + reconstruct.
             if (this->n_ok && other.n_ok) {
-                this->n_storage.ok = VIOLET_MOVE(other.n_storage.ok);
+                this->n_storage.Value = VIOLET_MOVE(other.n_storage.Value);
             } else if (!this->n_ok && !other.n_ok) {
-                this->n_storage.err = VIOLET_MOVE(other.n_storage.err);
+                this->n_storage.Error = VIOLET_MOVE(other.n_storage.Error);
             } else {
-                destroy();
+                this->destroy();
                 this->n_ok = other.n_ok;
+
                 if (other.n_ok) {
-                    ::new (&this->n_storage.ok) T(VIOLET_MOVE(other.n_storage.ok));
+                    ::new (&this->n_storage.Value) T(VIOLET_MOVE(other.n_storage.Value));
                 } else {
-                    ::new (&this->n_storage.err) violet::Err<E>(VIOLET_MOVE(other.n_storage.err));
+                    ::new (&this->n_storage.Error) violet::Err<E>(VIOLET_MOVE(other.n_storage.Error));
                 }
             }
         }
@@ -311,943 +369,9 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return *this;
     }
 
-    constexpr auto Ok() const noexcept -> bool
-    {
-        return this->n_ok;
-    }
-
-    constexpr auto Err() const noexcept -> bool
-    {
-        return !this->Ok();
-    }
-
-    constexpr auto IntoOpt() const noexcept -> Optional<T>
-    {
-        return Ok() ? Optional<T>(Value()) : std::nullopt;
-    }
-
-    constexpr auto Value() noexcept -> T&
-    {
-        VIOLET_DEBUG_ASSERT(Ok(), "`Result<T, E>` doesn't contain any value");
-        return this->n_storage.ok;
-    }
-
-    constexpr auto Value() const noexcept -> const T&
-    {
-        VIOLET_DEBUG_ASSERT(Ok(), "`Result<T, E>` doesn't contain any value");
-        return this->n_storage.ok;
-    }
-
-    constexpr auto Error() noexcept -> E&
-    {
-        VIOLET_DEBUG_ASSERT(Err(), "`Result<T, E>` contains a error");
-        return this->n_storage.err.Error();
-    }
-
-#ifdef VIOLET_HAS_EXCEPTIONS
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    ///
-    /// @throws std::logic_error If the error variant was present in this `Result`.
-    constexpr auto Unwrap() && -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapFail();
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    ///
-    /// @throws std::logic_error If the error variant was present in this `Result`.
-    constexpr auto Unwrap() & -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapFail();
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    ///
-    /// @throws std::logic_error If the error variant was present in this `Result`.
-    constexpr auto Unwrap() const& -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return Value();
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapFail();
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-#else
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Process Termination
-    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
-    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    constexpr auto Unwrap(const std::source_location& loc = std::source_location::current()) && -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapFail(loc);
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Process Termination
-    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
-    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    constexpr auto Unwrap(const std::source_location& loc = std::source_location::current()) & -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapFail(loc);
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Process Termination
-    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
-    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    constexpr auto Unwrap(const std::source_location& loc = std::source_location::current()) const& -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return Value();
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapFail(loc);
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-#endif
-
-#ifdef VIOLET_HAS_EXCEPTIONS
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    ///
-    /// @throws std::logic_error If the error variant was present in this `Result`.
-    constexpr auto UnwrapErr() && -> E
-    {
-        VIOLET_LIKELY_IF(this->Err())
-        {
-            return Error();
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapErrFail();
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    ///
-    /// @throws std::logic_error If the error variant was present in this `Result`.
-    constexpr auto UnwrapErr() & -> E
-    {
-        VIOLET_LIKELY_IF(this->Err())
-        {
-            return Error();
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapErrFail();
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    ///
-    /// @throws std::logic_error If the error variant was present in this `Result`.
-    constexpr auto UnwrapErr() const& -> E
-    {
-        VIOLET_LIKELY_IF(this->Err())
-        {
-            return Error();
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapErrFail();
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-#else
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Process Termination
-    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
-    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    constexpr auto UnwrapErr(const std::source_location& loc = std::source_location::current()) && -> E
-    {
-        VIOLET_LIKELY_IF(this->Err())
-        {
-            return Error();
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapErrFail(loc);
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Process Termination
-    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
-    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    constexpr auto UnwrapErr(const std::source_location& loc = std::source_location::current()) & -> E
-    {
-        VIOLET_LIKELY_IF(this->Err())
-        {
-            return Error();
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapErrFail(loc);
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming this `Result`.
-    ///
-    /// ## Process Termination
-    /// This function will terminate the process if the `Optional` is empty. If you want to provide a
-    /// default value, use `UnwrapOr` or `UnwrapOrElse`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<String, UInt32>("hello world");
-    /// String str = res.Unwrap();
-    /// ```
-    constexpr auto UnwrapErr(const std::source_location& loc = std::source_location::current()) const& -> E
-    {
-        VIOLET_LIKELY_IF(this->Err())
-        {
-            return Error();
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapErrFail(loc);
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-#endif
-
-    /// Returns the contained value, consuming the `Result`, or a default value.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res1 = violet::Ok<int, String>(42);
-    /// int val1 = std::move(res1).UnwrapOr(0); // val1 == 42
-    ///
-    /// Result<int, String> res2 = violet::Err<String>("hello world");
-    /// int val2 = std::move(res2).UnwrapOr(0); // val2 == 0
-    /// ```
-    ///
-    /// @param def The default value to return if the `Optional` is empty.
-    /// @return The contained value or the default value.
-    constexpr auto UnwrapOr(T&& def) && -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-        else
-        {
-            return VIOLET_MOVE(def);
-        }
-    }
-
-    /// Returns the contained value, consuming the `Result`, or a default value.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res1 = violet::Ok<int, String>(42);
-    /// int val1 = std::move(res1).UnwrapOr(0); // val1 == 42
-    ///
-    /// Result<int, String> res2 = violet::Err<String>("hello world");
-    /// int val2 = std::move(res2).UnwrapOr(0); // val2 == 0
-    /// ```
-    ///
-    /// @param def The default value to return if the `Optional` is empty.
-    /// @return The contained value or the default value.
-    constexpr auto UnwrapOr(T&& def) & -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-        else
-        {
-            return VIOLET_MOVE(def);
-        }
-    }
-
-    /// Returns the contained value, consuming the `Result`, or a default value.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res1 = violet::Ok<int, String>(42);
-    /// int val1 = std::move(res1).UnwrapOr(0); // val1 == 42
-    ///
-    /// Result<int, String> res2 = violet::Err<String>("hello world");
-    /// int val2 = std::move(res2).UnwrapOr(0); // val2 == 0
-    /// ```
-    ///
-    /// @param def The default value to return if the `Optional` is empty.
-    /// @return The contained value or the default value.
-    constexpr auto UnwrapOr(T&& def) const& -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return Value();
-        }
-        else
-        {
-            return VIOLET_MOVE(def);
-        }
-    }
-
-    /// Returns the contained value, consuming the `Result`, or computes it from a closure.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res1 = violet::Ok<int, String>(42);
-    /// int val1 = std::move(res1).UnwrapOrElse([]() { return 0; }); // val1 == 42
-    ///
-    /// Result<int, String> res2 = violet::Err<String>("hello world");
-    /// int val2 = std::move(res2).UnwrapOr([]() { return 0; }); // val2 == 0
-    /// ```
-    ///
-    /// @param fun The closure to call to compute the default value.
-    /// @return The contained value or the computed default value.
-    template<typename Fun>
-        requires callable<Fun> && std::convertible_to<std::invoke_result_t<Fun>, T>
-    constexpr auto UnwrapOrElse(Fun&& fun) &&
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-        else
-        {
-            return std::invoke(VIOLET_FWD(Fun, fun));
-        }
-    }
-
-    /// Returns the contained value, consuming the `Result`, or computes it from a closure.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res1 = violet::Ok<int, String>(42);
-    /// int val1 = std::move(res1).UnwrapOrElse([]() { return 0; }); // val1 == 42
-    ///
-    /// Result<int, String> res2 = violet::Err<String>("hello world");
-    /// int val2 = std::move(res2).UnwrapOr([]() { return 0; }); // val2 == 0
-    /// ```
-    ///
-    /// @param fun The closure to call to compute the default value.
-    /// @return The contained value or the computed default value.
-    template<typename Fun>
-        requires callable<Fun> && std::convertible_to<std::invoke_result_t<Fun>, T>
-    constexpr auto UnwrapOrElse(Fun&& fun) &
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-        else
-        {
-            return std::invoke(VIOLET_FWD(Fun, fun));
-        }
-    }
-
-    /// Returns the contained value, consuming the `Result`, or computes it from a closure.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res1 = violet::Ok<int, String>(42);
-    /// int val1 = std::move(res1).UnwrapOrElse([]() { return 0; }); // val1 == 42
-    ///
-    /// Result<int, String> res2 = violet::Err<String>("hello world");
-    /// int val2 = std::move(res2).UnwrapOr([]() { return 0; }); // val2 == 0
-    /// ```
-    ///
-    /// @param fun The closure to call to compute the default value.
-    /// @return The contained value or the computed default value.
-    template<typename Fun>
-        requires callable<Fun> && std::convertible_to<std::invoke_result_t<Fun>, T>
-    constexpr auto UnwrapOrElse(Fun&& fun) const&
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return Value();
-        }
-        else
-        {
-            return std::invoke(VIOLET_FWD(Fun, fun));
-        }
-    }
-
-    /// Returns the contained value, consuming the `Result`, without checking if it has a value.
-    ///
-    /// ## Safety
-    /// This function is unsafe because it does not check if the `Result` has a value. If the `Result` is
-    /// empty, this will result in undefined behavior.
-    ///
-    /// @return The contained value.
-    constexpr auto UnwrapUnchecked(Unsafe) && noexcept -> T
-    {
-        return VIOLET_MOVE(this->n_storage.ok);
-    }
-
-    /// Returns the contained value, consuming the `Result`, without checking if it has a value.
-    ///
-    /// ## Safety
-    /// This function is unsafe because it does not check if the `Result` has a value. If the `Result` is
-    /// empty, this will result in undefined behavior.
-    ///
-    /// @return The contained value.
-    constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept -> T
-    {
-        return VIOLET_MOVE(this->n_storage.ok);
-    }
-
-    /// Returns the contained value, consuming the `Result`, without checking if it has a value.
-    ///
-    /// ## Safety
-    /// This function is unsafe because it does not check if the `Result` has a value. If the `Result` is
-    /// empty, this will result in undefined behavior.
-    ///
-    /// @return The contained value.
-    constexpr auto UnwrapUnchecked(Unsafe) & noexcept -> T
-    {
-        return this->n_storage.ok;
-    }
-
-    /// Returns the contained value, consuming the `Result`, without checking if it has a value.
-    ///
-    /// ## Safety
-    /// This function is unsafe because it does not check if the `Result` has a value. If the `Result` is
-    /// empty, this will result in undefined behavior.
-    ///
-    /// @return The contained value.
-    constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> T
-    {
-        return this->n_storage.ok;
-    }
-
-#ifndef VIOLET_HAS_EXCEPTIONS
-    /// Returns the contained value, consuming the `Optional`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<int, String>("hello world");
-    /// int val = std::move(res).Expect("value was not present"); // terminates
-    /// ```
-    ///
-    /// ## Process Termination
-    /// This function will terminate the process if the `Result` is empty, with a custom message.
-    ///
-    /// @param message The message to print on termination.
-    /// @param loc The source location of the call, which is used for the termination message.
-    /// @return The contained value.
-    constexpr auto Expect(Str message, const std::source_location& loc = std::source_location::current()) && -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-
-        resultUnwrapFail(message.data(), loc);
-    }
-
-    /// Returns the contained value, consuming the `Optional`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<int, String>("hello world");
-    /// int val = std::move(res).Expect("value was not present"); // terminates
-    /// ```
-    ///
-    /// ## Process Termination
-    /// This function will terminate the process if the `Result` is empty, with a custom message.
-    ///
-    /// @param message The message to print on termination.
-    /// @param loc The source location of the call, which is used for the termination message.
-    /// @return The contained value.
-    constexpr auto Expect(Str message, const std::source_location& loc = std::source_location::current()) & -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-
-        resultUnwrapFail(message.data(), loc);
-    }
-
-    /// Returns the contained value, consuming the `Optional`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<int, String>("hello world");
-    /// int val = std::move(res).Expect("value was not present"); // terminates
-    /// ```
-    ///
-    /// ## Process Termination
-    /// This function will terminate the process if the `Result` is empty, with a custom message.
-    ///
-    /// @param message The message to print on termination.
-    /// @param loc The source location of the call, which is used for the termination message.
-    /// @return The contained value.
-    constexpr auto Expect(Str message, const std::source_location& loc = std::source_location::current()) const& -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-
-        resultUnwrapFail(message.data(), loc);
-    }
-#else
-    /// Returns the contained value, consuming the `Result`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<int, String>("hello world");
-    /// int val = std::move(res).Expect("value was not present"); // throws
-    /// ```
-    ///
-    /// @throws [std::logic_error] if the `Result` is empty, with a custom message.
-    /// @param message The message to use for the exception.
-    /// @return The contained value.
-    ///
-    constexpr auto Expect(Str message) && -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapFail(message.data());
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming the `Result`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<int, String>("hello world");
-    /// int val = std::move(res).Expect("value was not present"); // throws
-    /// ```
-    ///
-    /// @throws [std::logic_error] if the `Result` is empty, with a custom message.
-    /// @param message The message to use for the exception.
-    /// @return The contained value.
-    ///
-    constexpr auto Expect(Str message) & -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return VIOLET_MOVE(Value());
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapFail(message.data());
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-    /// Returns the contained value, consuming the `Result`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// auto res = violet::Ok<int, String>("hello world");
-    /// int val = std::move(res).Expect("value was not present"); // throws
-    /// ```
-    ///
-    /// @throws [std::logic_error] if the `Result` is empty, with a custom message.
-    /// @param message The message to use for the exception.
-    /// @return The contained value.
-    ///
-    constexpr auto Expect(Str message) const& -> T
-    {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return Value();
-        }
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
-#endif
-
-        resultUnwrapFail(message.data());
-
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-        VIOLET_DIAGNOSTIC_POP
-#endif
-    }
-
-#endif
-    constexpr auto operator*() & noexcept -> T&
-    {
-        return this->UnwrapUnchecked(Unsafe("it is upon the callee"));
-    }
-
-    constexpr auto operator*() const& noexcept -> const T&
-    {
-        return this->UnwrapUnchecked(Unsafe("it is upon the callee"));
-    }
-
-    constexpr auto operator*() && noexcept -> T&&
-    {
-        return this->UnwrapUnchecked(Unsafe("it is upon the callee"));
-    }
-
-    constexpr auto operator*() const&& noexcept -> const T&&
-    {
-        return this->UnwrapUnchecked(Unsafe("it is upon the callee"));
-    }
-
-    constexpr auto operator->() noexcept -> T*
-    {
-        return std::addressof(this->n_storage.ok);
-    }
-
-    constexpr auto operator->() const noexcept -> const T*
-    {
-        return std::addressof(this->n_storage.ok);
-    }
-
-    constexpr VIOLET_EXPLICIT operator bool() const noexcept
-    {
-        return this->Ok();
-    }
-
-#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
-    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() noexcept
-    {
-        if (this->Ok()) {
-            return std::expected<T, E>(Value());
-        }
-
-        return std::unexpected<E>(Error());
-    }
-
-    constexpr VIOLET_EXPLICIT operator std::unexpected<E>() noexcept
-    {
-        assert(this->Err());
-        return std::unexpected<E>(Error());
-    }
-#endif
-
-    auto ToString() const noexcept -> String
-    {
-        if (this->Ok()) {
-            if constexpr (Stringify<T>) {
-                return violet::ToString(Value());
-            }
-
-#if VIOLET_USE_RTTI
-            const auto& type = typeid(T);
-            return std::format("ok variant: type `{}@{}`", util::DemangleCXXName(type.name()), type.hash_code());
-#else
-            return "error variant: ????";
-#endif
-        } else {
-            if constexpr (Stringify<E>) {
-                return violet::ToString(Value());
-            }
-
-#if VIOLET_USE_RTTI
-            const auto& type = typeid(E);
-            return std::format("error variant: type `{}@{}`", util::DemangleCXXName(type.name()), type.hash_code());
-#else
-            return "error variant: ????";
-#endif
-        }
-    }
-
-    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
-    {
-        return os << this->ToString();
-    }
-
-private:
-    mutable bool n_ok = false;
-    union storage_t { // NOLINT(cppcoreguidelines-special-member-functions)
-        T ok;
-        violet::Err<E> err;
-
-        storage_t() {}
-        ~storage_t() {}
-    } n_storage;
-
-    void destroy()
-    {
-        if (this->n_ok) {
-            if constexpr (!std::is_trivially_destructible_v<T>) {
-                this->n_storage.ok.~T();
-            }
-        } else {
-            if constexpr (!std::is_trivially_destructible_v<E>) {
-                this->n_storage.err.~Err<E>();
-            }
-        }
-    }
-};
-
-/// Specialization for `void`-returned types of a [`Result`].
-template<typename E>
-struct [[nodiscard("always check the error state before discard")]] VIOLET_API Result<void, E> final {
-    using value_type = void;
-    using error_type = E;
-
-    constexpr Result() noexcept = default;
-    constexpr VIOLET_IMPLICIT Result(const violet::Err<E>& err)
-        : n_err(new violet::Err<E>(err))
-    {
-    }
-
-    constexpr VIOLET_IMPLICIT Result(violet::Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
-        : n_err(new violet::Err<E>(VIOLET_MOVE(err)))
-    {
-    }
-
-    template<typename U = E>
-        requires std::convertible_to<U, E>
-    constexpr VIOLET_IMPLICIT Result(const U& err)
-        : n_err(new violet::Err<U>(err))
-    {
-    }
-
-    template<typename U = E>
-        requires std::convertible_to<U, E>
-    constexpr VIOLET_IMPLICIT Result(U&& err)
-        : n_err(new violet::Err<U>(VIOLET_FWD(U, err)))
-    {
-    }
-
-    ~Result()
-    {
-        delete this->n_err;
-    }
-
-    constexpr VIOLET_IMPLICIT Result(const Result& other)
-        : n_err(other.n_err ? new violet::Err<E>(*other.n_err) : nullptr)
-    {
-    }
-
-    constexpr auto operator=(const Result& other) noexcept -> Result&
-    {
-        if (this != &other) {
-            delete this->n_err;
-            this->n_err = other.n_err ? new violet::Err<E>(*other.n_err) : nullptr;
-        }
-
-        return *this;
-    }
-
-    constexpr VIOLET_IMPLICIT Result(Result&& other) noexcept
-        : n_err(std::exchange(other.n_err, nullptr))
-    {
-    }
-
-    constexpr auto operator=(Result&& other) noexcept -> Result&
-    {
-        if (this != &other) {
-            delete this->n_err;
-            this->n_err = std::exchange(other.n_err, nullptr);
-        }
-
-        return *this;
-    }
-
     [[nodiscard]] constexpr auto Ok() const noexcept -> bool
     {
-        return this->n_err == nullptr;
+        return this->n_ok;
     }
 
     [[nodiscard]] constexpr auto Err() const noexcept -> bool
@@ -1255,64 +379,344 @@ struct [[nodiscard("always check the error state before discard")]] VIOLET_API R
         return !this->Ok();
     }
 
-    [[nodiscard]] constexpr auto Error() const -> const E&
+    constexpr auto Value() noexcept -> T&
     {
-        VIOLET_DEBUG_ASSERT(this->Err(), "invalid variant reached");
-        return this->n_err->Error();
+        VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
+        return this->n_storage.Value;
     }
 
-    [[nodiscard]] constexpr auto Error() -> E&
+    constexpr auto Value() const noexcept -> const T&
     {
-        VIOLET_DEBUG_ASSERT(this->Err(), "invalid variant reached");
-        return this->n_err->Error();
+        VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
+        return this->n_storage.Value;
+    }
+
+    constexpr auto Error() noexcept -> E&
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
+        return this->n_storage.Error.Error();
+    }
+
+    constexpr auto Error() const noexcept -> const E&
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
+        return this->n_storage.Error.Error();
+    }
+
+    template<typename U>
+        requires(nested_result<Result<U, E>, E>)
+    constexpr auto Transpose() && -> Result<U, E>
+    {
+        if (this->Ok()) {
+            return VIOLET_MOVE(Value());
+        }
+
+        return Err<E>(VIOLET_MOVE(Error()));
+    }
+
+    template<typename Fun>
+        requires(callable<Fun>)
+    constexpr auto AndThen(Fun&& fun) && -> Result<std::invoke_result_t<Fun, T>, E>
+    {
+        using Ret = std::invoke_result_t<Fun, T>;
+        if (this->Ok()) {
+            return Ok<Ret, E>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
+        }
+
+        return Err<E>(VIOLET_MOVE(Error()));
+    }
+
+    template<typename Fun>
+        requires(callable<Fun> && callable_returns<Fun, void, const T&>)
+    constexpr auto Inspect(Fun&& fun) noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T>())))
+        -> Result&
+    {
+        if (this->Ok()) {
+            std::invoke(VIOLET_FWD(Fun, fun), Value());
+        }
+
+        return *this;
+    }
+
+    template<typename Fun>
+        requires(callable<Fun> && callable_returns<Fun, void, const E&>)
+    constexpr auto InspectErr(Fun&& fun) noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<E>())))
+        -> Result&
+    {
+        if (this->Ok()) {
+            std::invoke(VIOLET_FWD(Fun, fun), Error());
+        }
+
+        return *this;
+    }
+
+    constexpr auto IntoErr() && noexcept -> E
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` tried to consume an inexistent error");
+        return VIOLET_MOVE(this->n_storage.Error.Error());
+    }
+
+    template<typename Pred>
+        requires(callable<Pred> && callable_returns<Pred, bool, const T&>)
+    constexpr auto OkAnd(Pred&& pred) const noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<T>())))
+        -> bool
+    {
+        return this->Ok() && std::invoke(VIOLET_FWD(Pred, pred), Value());
+    }
+
+    template<typename Pred>
+        requires(callable<Pred> && callable_returns<Pred, bool, const E&>)
+    constexpr auto ErrAnd(Pred&& pred) const noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<E>())))
+        -> bool
+    {
+        return this->Err() && std::invoke(VIOLET_FWD(Pred, pred), Error());
     }
 
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
     {
-        return this->n_err == nullptr;
+        return this->Ok();
     }
 
-#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
-    constexpr VIOLET_EXPLICIT operator std::expected<void, E>() const noexcept
+    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() const noexcept
     {
-        if (this->Ok()) {
-            return std::expected<void, E>();
-        }
-
-        return std::unexpected<E>(Error());
+        return this->Ok() ? std::expected<T, E>(Value()) : std::expected<T, E>(std::unexpect, Error());
     }
 
+#if VIOLET_REQUIRE_STL(202302L)
     constexpr VIOLET_EXPLICIT operator std::unexpected<E>() const noexcept
     {
-        VIOLET_DEBUG_ASSERT(this->Err(), "invalid variant reached");
-        return std::unexpected<E>(Error());
+        VIOLET_DEBUG_ASSERT(this->Err(), "tried to convert a Ok `Result<T, E>` into `std::unexpected<E>`");
+        return std::unexpected(Error());
     }
 #endif
 
-    constexpr auto operator<<(std::ostream& os) noexcept -> std::ostream&
+    [[nodiscard]] auto ToString() const noexcept -> String
     {
-        if (Ok()) {
-            return os << "«result of 'void' type»";
+        if (this->Ok()) {
+            return violet::ToString(Value());
         }
 
-        if constexpr (Stringify<E>) {
-            return os << violet::ToString(Error());
-        }
+        return violet::ToString(Error());
+    }
 
-#if VIOLET_USE_RTTI
-        const auto& type = typeid(E);
-        return os << "error variant type `" << util::DemangleCXXName(type.name()) << '@' << type.hash_code()
-                  << "` not streamable»";
-#else
-        return os << "«type `E` not streamable»";
-#endif
+    constexpr friend auto operator<<(std::ostream& os, const Result<T, E>& self) -> std::ostream&
+    {
+        return os << self.ToString();
     }
 
 private:
-    violet::Err<E>* n_err = nullptr;
+    mutable bool n_ok = false;
+
+    // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
+    union storage_t {
+        T Value;
+        violet::Err<E> Error;
+
+        constexpr storage_t() noexcept {}
+        ~storage_t() {}
+    } n_storage;
+
+    void destroy() noexcept(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<E>)
+    {
+        if (this->n_ok) {
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                this->n_storage.Value.~T();
+            }
+        } else {
+            if constexpr (!std::is_trivially_destructible_v<E>) {
+                this->n_storage.Error.~Err<E>();
+            }
+        }
+    }
+};
+
+template<typename E>
+struct Result<void, E> final {
+    static_assert(std::is_object_v<E>, "`Result<T, E>` requires `E` to be an object type");
+    static_assert(!std::is_reference_v<E>, "`Result<T, E>` must not wrap a reference type");
+    static_assert(!std::is_array_v<E>, "`Result<T, E>` must not wrap an array type");
+    static_assert(
+        !std::is_const_v<E> && !std::is_volatile_v<E>, "`Result<T, E>` must not have a cv-qualified error type");
+    static_assert(std::is_destructible_v<E>, "`Result<T, E>` requires E to be destructible");
+    static_assert(std::is_move_constructible_v<E> || std::is_copy_constructible_v<E>,
+        "`Result<T, E>` requires E to be movable or copyable");
+    static_assert(sizeof(E) > 0, "`Result<T, E>` requires E to be a complete type");
+
+    using value_type = void;
+    using error_type = E;
+
+    constexpr VIOLET_IMPLICIT Result() noexcept = default;
+    constexpr VIOLET_IMPLICIT Result(const violet::Err<E>& err)
+        : n_value(new violet::Err<E>(err))
+    {
+    }
+
+    constexpr VIOLET_IMPLICIT Result(violet::Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<E>)
+        : n_value(new violet::Err<E>(VIOLET_MOVE(err)))
+    {
+    }
+
+    template<typename U>
+        requires(!std::same_as<std::decay_t<U>, Result<void, E>> && std::convertible_to<U, E>)
+    constexpr VIOLET_IMPLICIT Result(const U& err)
+        : n_value(new violet::Err<E>(err))
+    {
+    }
+
+    template<typename U>
+        requires(!std::same_as<std::decay_t<U>, Result<void, E>> && std::convertible_to<U, E>)
+    constexpr VIOLET_IMPLICIT Result(U&& err)
+        : n_value(new violet::Err<E>(VIOLET_FWD(U, err)))
+    {
+    }
+
+    ~Result()
+    {
+        delete this->n_value;
+    }
+
+    constexpr VIOLET_IMPLICIT Result(const Result& other)
+        : n_value(other.n_value ? new violet::Err<E>(*other.n_value) : nullptr)
+    {
+    }
+
+    constexpr auto operator=(const Result& other) noexcept -> Result&
+    {
+        if (this != &other) {
+            delete this->n_value;
+            this->n_value = other.n_value ? new violet::Err<E>(*other.n_value) : nullptr;
+        }
+
+        return *this;
+    }
+
+    constexpr VIOLET_IMPLICIT Result(Result&& other) noexcept
+        : n_value(std::exchange(other.n_value, nullptr))
+    {
+    }
+
+    constexpr auto operator=(Result&& other) noexcept -> Result&
+    {
+        if (this != &other) {
+            delete this->n_value;
+            this->n_value = std::exchange(other.n_value, nullptr);
+        }
+
+        return *this;
+    }
+
+    [[nodiscard]] constexpr auto Ok() const noexcept -> bool
+    {
+        return this->n_value == nullptr;
+    }
+
+    [[nodiscard]] constexpr auto Err() const noexcept -> bool
+    {
+        return this->n_value != nullptr;
+    }
+
+    constexpr auto Error() noexcept -> E&
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
+        return this->n_value->Error();
+    }
+
+    constexpr auto Error() const noexcept -> const E&
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
+        return this->n_value->Error();
+    }
+
+    template<typename Fun>
+        requires(callable<Fun>)
+    constexpr auto AndThen(Fun&& fun) && -> Result<std::invoke_result_t<Fun>, E>
+    {
+        using Ret = std::invoke_result_t<Fun>;
+        if (this->Ok()) {
+            return Ok<Ret, E>(std::invoke(VIOLET_FWD(Fun, fun)));
+        }
+
+        return Err<E>(VIOLET_MOVE(Error()));
+    }
+
+    template<typename Fun>
+        requires(callable<Fun> && callable_returns<Fun, void>)
+    constexpr auto Inspect(Fun&& fun) noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun)))) -> Result&
+    {
+        if (this->Ok()) {
+            std::invoke(VIOLET_FWD(Fun, fun));
+        }
+
+        return *this;
+    }
+
+    template<typename Fun>
+        requires(callable<Fun> && callable_returns<Fun, void, const E&>)
+    constexpr auto InspectErr(Fun&& fun) noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<E>())))
+        -> Result&
+    {
+        if (this->Ok()) {
+            std::invoke(VIOLET_FWD(Fun, fun), Error());
+        }
+
+        return *this;
+    }
+
+    constexpr auto IntoErr() && noexcept -> E
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<void, E>` tried to consume an inexistent error");
+        return VIOLET_MOVE(this->n_value);
+    }
+
+    template<typename Pred>
+        requires(callable<Pred> && callable_returns<Pred, bool>)
+    constexpr auto OkAnd(Pred&& pred) const noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred)))) -> bool
+    {
+        return this->Ok() && std::invoke(VIOLET_FWD(Pred, pred));
+    }
+
+    template<typename Pred>
+        requires(callable<Pred> && callable_returns<Pred, bool, const E&>)
+    constexpr auto ErrAnd(Pred&& pred) const noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<E>())))
+        -> bool
+    {
+        return this->Err() && std::invoke(VIOLET_FWD(Pred, pred), Error());
+    }
+
+    constexpr VIOLET_EXPLICIT operator bool() const noexcept
+    {
+        return this->Ok();
+    }
+
+    constexpr VIOLET_EXPLICIT operator std::expected<void, E>() const noexcept
+    {
+        return this->Ok() ? std::expected<void, E>({}) : std::expected<void, E>(std::unexpect, Error());
+    }
+
+#if VIOLET_REQUIRE_STL(202302L)
+    constexpr VIOLET_EXPLICIT operator std::unexpected<E>() const noexcept
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "tried to convert a Ok `Result<void, E>` into `std::unexpected<E>`");
+        return std::unexpected<E>(Error());
+    }
+#endif
+
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        if (this->Ok()) {
+            return "<void type>";
+        }
+
+        return violet::ToString(Error());
+    }
+
+    constexpr friend auto operator<<(std::ostream& os, const Result<void, E>& self) -> std::ostream&
+    {
+        return os << self.ToString();
+    }
+
+private:
+    violet::Err<E>* n_value = nullptr;
 };
 
 } // namespace violet
-
-template<typename T, typename E>
-struct std::formatter<violet::Result<T, E>>: public violet::StringifyFormatter<violet::Result<T, E>> {};
