@@ -61,23 +61,24 @@ def main():
         body += "\n\n## Bazel\n"
         body += "> As of **21/01/26**, we have plans on uploading all **Noelware.Violet** frameworks onto the BCR and our own (`https://bzl.noelware.cloud`). It could exist right now, if you are, you can use `--registry=https://bzl.noelware.cloud` and all frameworks will be available."
         body += "\n"
-        body += "\n```python"
+        body += "\n```python\n"
         body += "bazel_dep(name = \"violet\", version = \"%s\")\n" % tag
         body += "archive_override(\n"
         body += "    module_name = \"violet\",\n"
         body += "    integrity = \"%s\",\n" % integrity
         body += "    urls = [\n"
         body += "        # \"https://artifacts.noelware.org/bazel-registry/violet/%s/bazeldist.tgz\",\n" % tag
-        body += "        \"https://github.com/Noelware/violet/releases/download/%s/bazeldist.tgz\"," % tag
+        body += "        \"https://github.com/Noelware/violet/releases/download/%s/bazeldist.tgz\",\n" % tag
         body += "    ]\n"
-        body += ")\n\n"
+        body += ")\n"
+        body += "```\n\n"
 
     # TODO: Meson, CMake hotpatch
     body += "## CMake\n"
     body += "Right now, it is not the best to use the frameworks in a CMake environment! *ehehe...~*\n"
     body += "\n## Meson \n"
     body += "Using the frameworks in a Meson environment is not ready yet!\n"
-    body += "\n## GN (\"Generate Ninja\")"
+    body += "\n## GN (\"Generate Ninja\")\n"
     body += "Using the frameworks in a GN environment is not ready yet!\n"
 
     _github_request(

@@ -135,3 +135,5 @@ GZIP=-n tar \
   --owner=0 --group=0 --numeric-owner \
   -czvf "$SCRIPT_DIR/bazeldist.tgz" \
   .
+
+echo "now available at $SCRIPT_DIR/bazeldist.tgz"
