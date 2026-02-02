@@ -35,6 +35,7 @@ on:
             - 'nix/**'
 
             - renovate.json
+            - CHANGELOG.md
             - flake.lock
             - .*ignore
             - .clangd

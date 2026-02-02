@@ -21,6 +21,10 @@ availableAt:
         - `IntoErr`
         - `OkAnd`
         - `ErrAnd`
+- **Noelware.Violet**: Refractor `violet::Optional<T>` API ([`@auguwu`])
+    - Added stricter requirements
+    - Add `is_optional`, `is_optional_v` type traits
+    - `Unwrap`, `Expect` will show source location where it was thrown at
 
 **Git History**: <https://github.com/Noelware/violet/compare/26.02.03-dev.2...master>
 
