@@ -129,14 +129,16 @@ jobs:
 
             - run: bazel test ${{env.BAZELFLAGS}} //...
     bazel-macos:
-        name: "Bazel / macOS [C++${{matrix.cxx-standard}}, clang ${{matrix.clang}}]"
+        name: "Bazel ${{matrix.bazel-version}} / macOS [C++${{matrix.cxx-standard}}, clang ${{matrix.clang}}]"
         runs-on: macos-latest
         strategy:
             fail-fast: false
             matrix:
                 cxx-standard: [26, 23, 20]
+                bazel-version: ["7.7.1", "8.5.1"]
                 clang: [20]
         env:
+            USE_BAZEL_VERSION: ${{matrix.bazel-version}}
             BAZELFLAGS: "--config=ci --action_env=CC=$(brew --prefix llvm@${{matrix.clang}})/bin/clang --action_env=CXX=$(brew --prefix llvm@${{matrix.clang}})/bin/clang++ --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}}"
         steps:
             - uses: actions/checkout@v6
@@ -157,7 +159,6 @@ jobs:
               run: bazel build ${{env.BAZELFLAGS}} --cxxopt=-fno-rtti --host_cxxopt=-fno-rtti //...
 
             - run: bazel test ${{env.BAZELFLAGS}} //...
-
     # cmake-linux:
     #     strategy:
     #         fail-fast: false

@@ -518,10 +518,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` a error variant", loc);
     }
 
-    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&& -> T
+    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
