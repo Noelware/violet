@@ -80,7 +80,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
 
     using value_type = T;
 
-    constexpr VIOLET_IMPLICIT Optional() noexcept = default;
+    constexpr VIOLET_IMPLICIT Optional() noexcept {}
     constexpr VIOLET_IMPLICIT Optional(std::nullopt_t) noexcept
         : Optional()
     {
@@ -651,7 +651,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             return false;
         }
 
-        return this->n_value() == other.Value();
+        return this->Value() == other.Value();
     }
 
     constexpr auto operator!=(const Optional& other) const noexcept -> bool
@@ -667,7 +667,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             return false;
         }
 
-        return this->n_value() == *other;
+        return this->Value() == *other;
     }
 
     constexpr auto operator!=(const std::optional<T>& other) const noexcept -> bool
@@ -679,7 +679,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     constexpr auto operator==(const T& other) const noexcept -> bool
         requires(requires { this->Value() == other; })
     {
-        return this->HasValue() && this->n_value() == other;
+        return this->HasValue() && this->Value() == other;
     }
 
     constexpr auto operator!=(const T& other) const noexcept -> bool
