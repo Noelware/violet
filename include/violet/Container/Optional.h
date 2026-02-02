@@ -708,7 +708,7 @@ private:
         T n_value;
     };
 
-    void destroy() noexcept(std::is_nothrow_destructible_v<T>)
+    constexpr void destroy() noexcept(std::is_nothrow_destructible_v<T>)
     {
         if (this->n_engaged) {
             if constexpr (!std::is_trivially_destructible_v<T>) {
@@ -745,11 +745,16 @@ private:
 #endif
     {
 #ifdef VIOLET_HAS_EXCEPTIONS
-        throw std::logic_error(std::format("panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(),
+        throw std::logic_error(std::format("panic in `Optional<T>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(),
             loc.column(), util::DemangleCXXName(loc.function_name()), message));
 #else
-        std::println(stderr, "panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(), loc.column(),
+#if VIOLET_REQUIRE_STL(202302L)
+        std::println(stderr, "panic in `Optional<T>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(), loc.column(),
             util::DemangleCXXName(loc.function_name()), message);
+#else
+        std::cerr << "panic in `Optional<T>` [" << loc.file_name() << ':' << loc.line() << ':' << loc.column() << " ("
+                  << util::DemangleCXXName(loc.function_name()) << ")]: " << message;
+#endif
 
         VIOLET_UNREACHABLE();
 #endif
