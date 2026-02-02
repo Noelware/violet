@@ -24,10 +24,6 @@
 #include <violet/Support/Demangle.h>
 #include <violet/Violet.h>
 
-#ifndef VIOLET_HAS_EXCEPTIONS
-#include <cstdio>
-#endif
-
 #include <optional>
 #include <source_location>
 

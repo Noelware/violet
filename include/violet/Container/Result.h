@@ -21,15 +21,8 @@
 
 #pragma once
 
-#include <violet/Violet.h>
-
-#if VIOLET_USE_RTTI
 #include <violet/Support/Demangle.h>
-#endif
-
-#ifndef VIOLET_HAS_EXCEPTIONS
-#include <cstdio>
-#endif
+#include <violet/Violet.h>
 
 #include <expected>
 #include <source_location>
