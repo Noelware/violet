@@ -21,7 +21,7 @@ availableAt:
         - `IntoErr`
         - `OkAnd`
         - `ErrAnd`
-- **Noelware.Violet**: Refractor `violet::Optional<T>` API ([`@auguwu`])
+- **Noelware.Violet**: Refractor `violet::Optional<T>` API ([`@auguwu`], [PR #23])
     - Added stricter requirements
     - Add `is_optional`, `is_optional_v` type traits
     - `Unwrap`, `Expect` will show source location where it was thrown at
@@ -73,4 +73,6 @@ This release indicates that Violet is ready to be shipped as a **MVP**. Report a
 **Git History**: https://github.com/Noelware/violet/commits/26.02
 
 [`@auguwu`]: https://github.com/auguwu
+
+[PR #23]: https://github.com/Noelware/violet/pull/23
 [#22]: https://github.com/Noelware/violet/issues/22
