@@ -809,7 +809,7 @@ private:
         std::println(stderr, "panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(), loc.column(),
             util::DemangleCXXName(loc.function_name()), message);
 
-        std::unreachable();
+        VIOLET_UNREACHABLE();
 #endif
     }
 };
