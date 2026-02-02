@@ -68,10 +68,6 @@ auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
         }
     }
 
-    // Close the files
-    auto _ = in->Close(); // NOLINT(readability-identifier-length)
-    auto _ = out->Close(); // NOLINT(readability-identifier-length)
-
     return bytes;
 }
 

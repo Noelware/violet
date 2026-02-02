@@ -28,6 +28,7 @@
 #endif
 
 #ifndef VIOLET_HAS_EXCEPTIONS
+#include <cstdio>
 #include <source_location>
 #endif
 
@@ -472,6 +473,166 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return this->Err() && std::invoke(VIOLET_FWD(Pred, pred), Error());
     }
 
+    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) & -> T
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return this->n_storage.Value;
+        }
+
+        panicUnexpectly("tried to `Unwrap()` a error variant", loc);
+    }
+
+    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) && -> T
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(this->n_storage.Value);
+        }
+
+        panicUnexpectly("tried to `Unwrap()` a error variant", loc);
+    }
+
+    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const& -> T
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return this->n_storage.Value;
+        }
+
+        panicUnexpectly("tried to `Unwrap()` a error variant", loc);
+    }
+
+    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&& -> T
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(this->n_storage.Value);
+        }
+
+        panicUnexpectly("tried to `Unwrap()` a error variant", loc);
+    }
+
+    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) & -> T
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return this->n_storage.Value;
+        }
+
+        panicUnexpectly(message, loc);
+    }
+
+    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) && -> T
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(this->n_storage.Value);
+        }
+
+        panicUnexpectly(message, loc);
+    }
+
+    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const& -> T
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return this->n_storage.Value;
+        }
+
+        panicUnexpectly(message, loc);
+    }
+
+    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&& -> T
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(this->n_storage.Value);
+        }
+
+        panicUnexpectly(message, loc);
+    }
+
+    constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> T
+    {
+        return this->Ok() ? this->n_storage.Value : VIOLET_MOVE(defaultValue);
+    }
+
+    constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> T
+    {
+        return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
+    }
+
+    constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> T
+    {
+        return this->Ok() ? this->n_storage.Value : VIOLET_MOVE(defaultValue);
+    }
+
+    constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
+    {
+        return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
+    }
+
+    constexpr auto operator*() & -> T&
+    {
+        VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
+        return this->n_storage.Value;
+    }
+
+    constexpr auto operator*() && -> T&&
+    {
+        VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
+        return VIOLET_MOVE(this->n_storage.Value);
+    }
+
+    constexpr auto operator*() const& -> const T&
+    {
+        VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
+        return this->n_storage.Value;
+    }
+
+    constexpr auto operator*() const&& -> const T&&
+    {
+        VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
+        return VIOLET_MOVE(this->n_storage.Value);
+    }
+
+    constexpr auto operator->() -> T*
+    {
+        VIOLET_DEBUG_ASSERT(this->Ok(), "Accessing a Result in Err state");
+        return std::addressof(this->n_storage.Value);
+    }
+
+    constexpr auto operator->() const -> const T*
+    {
+        VIOLET_DEBUG_ASSERT(this->Ok(), "Accessing a Result in Err state");
+        return std::addressof(this->n_storage.Value);
+    }
+
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
     {
         return this->Ok();
@@ -527,6 +688,22 @@ private:
                 this->n_storage.Error.~Err<E>();
             }
         }
+    }
+
+    [[noreturn]] VIOLET_COLD static void panicUnexpectly(Str message, [[maybe_unused]] const std::source_location& loc)
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+#ifdef VIOLET_HAS_EXCEPTIONS
+        throw std::logic_error(std::format("panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(),
+            loc.column(), util::DemangleCXXName(loc.function_name()), message));
+#else
+        std::println(stderr, "panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(), loc.column(),
+            util::DemangleCXXName(loc.function_name()), message);
+
+        std::unreachable();
+#endif
     }
 };
 
