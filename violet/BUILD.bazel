@@ -45,6 +45,16 @@ cc_library(
 )
 
 cc_library(
+    name = "print",
+    hdrs = ["//include/violet:Print.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":violet",
+        "//violet/io:descriptor",
+    ],
+)
+
+cc_library(
     name = "iterator",
     hdrs = ["//include/violet:Iterator.h"],
     visibility = ["//visibility:public"],
