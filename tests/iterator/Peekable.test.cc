@@ -42,11 +42,11 @@ TEST(Iterators, PeekDoesntConsume)
 
     auto peeked = it.Peek();
     ASSERT_NE(peeked, Nothing);
-    ASSERT_EQ(*peeked.Value(), 1);
+    ASSERT_EQ(peeked.Value(), 1);
 
     auto value = it.Next();
     ASSERT_TRUE(value);
-    ASSERT_EQ(*value.Value(), 1);
+    ASSERT_EQ(value.Value(), 1);
 }
 
 TEST(Iterators, StableMultiplePeek)
@@ -59,7 +59,7 @@ TEST(Iterators, StableMultiplePeek)
     ASSERT_NE(p1, Nothing);
     ASSERT_NE(p2, Nothing);
     EXPECT_EQ(p1, p2);
-    EXPECT_EQ(*p1.Value(), 10);
+    EXPECT_EQ(p1.Value(), 10);
 }
 
 TEST(Iterators, PeekableNextAfterPeekAdvance)
@@ -67,14 +67,14 @@ TEST(Iterators, PeekableNextAfterPeekAdvance)
     Vec<UInt32> vi({ 10, 20 });
     auto it = MkIterable(vi).Peekable();
 
-    it.Peek();
+    (void)it.Peek();
     auto vi1 = it.Next();
     auto vi2 = it.Next();
 
     ASSERT_TRUE(vi1);
-    EXPECT_EQ(*vi1.Value(), 10);
+    EXPECT_EQ(vi1.Value(), 10);
 
     ASSERT_TRUE(vi2);
-    EXPECT_EQ(*vi2.Value(), 20);
+    EXPECT_EQ(vi2.Value(), 20);
     EXPECT_EQ(it.Next(), Nothing);
 }

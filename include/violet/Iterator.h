@@ -554,7 +554,7 @@ struct Iterator {
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
-                return value;
+                return Some<iter::TypeOf<Impl>>(*value);
             }
         }
 
@@ -572,7 +572,7 @@ struct Iterator {
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
-                return value;
+                return Some<iter::TypeOf<Impl>>(*value);
             }
         }
 

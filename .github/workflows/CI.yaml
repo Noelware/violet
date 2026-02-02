@@ -43,6 +43,7 @@ on:
         types: [opened, synchronize]
         branches:
             - 'issues/gh-**'
+            - 'noel/**'
             - 'feat/**'
             - master
         paths:

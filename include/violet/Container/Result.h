@@ -29,10 +29,10 @@
 
 #ifndef VIOLET_HAS_EXCEPTIONS
 #include <cstdio>
-#include <source_location>
 #endif
 
 #include <expected>
+#include <source_location>
 #include <type_traits>
 
 namespace violet {
@@ -662,6 +662,46 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
     {
         return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
+    }
+
+    constexpr auto UnwrapUnchecked(Unsafe) & noexcept -> T&
+    {
+        return this->n_storage.Value;
+    }
+
+    constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> const T&
+    {
+        return this->n_storage.Value;
+    }
+
+    constexpr auto UnwrapUnchecked(Unsafe) && noexcept -> T&&
+    {
+        return VIOLET_MOVE(this->n_storage.Value);
+    }
+
+    constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept -> const T&&
+    {
+        return VIOLET_MOVE(this->n_storage.Value);
+    }
+
+    constexpr auto UnwrapErrUnchecked(Unsafe) & noexcept -> T&
+    {
+        return this->n_storage.Error.Error();
+    }
+
+    constexpr auto UnwrapErrUnchecked(Unsafe) const& noexcept -> const T&
+    {
+        return this->n_storage.Value;
+    }
+
+    constexpr auto UnwrapErrUnchecked(Unsafe) && noexcept -> E&&
+    {
+        return VIOLET_MOVE(this->n_storage.Error.Error());
+    }
+
+    constexpr auto UnwrapErrUnchecked(Unsafe) const&& noexcept -> const E&&
+    {
+        return VIOLET_MOVE(this->n_storage.Error.Error());
     }
 
     constexpr auto operator*() & -> T&

@@ -44,7 +44,7 @@ TEST(Optionals, InPlaceConstructor)
     ASSERT_TRUE(opt.HasValue());
     ASSERT_TRUE(opt2.HasValue());
 
-    ASSERT_EQ(*opt.Value(), *opt2.Value());
+    ASSERT_EQ(opt.Value(), opt2.Value());
 }
 
 TEST(Optionals, CopyConstructor)
@@ -54,18 +54,18 @@ TEST(Optionals, CopyConstructor)
 
     ASSERT_TRUE(opt1.HasValue());
     ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(*opt1.Value(), "hello");
-    ASSERT_EQ(*opt2.Value(), "hello");
+    ASSERT_EQ(opt1.Value(), "hello");
+    ASSERT_EQ(opt2.Value(), "hello");
 }
 
 TEST(Optionals, MoveConstructor)
 {
     auto opt1 = Some<String>("hello");
-    const auto opt2 = VIOLET_MOVE(opt1);
+    auto opt2 = VIOLET_MOVE(opt1);
 
     ASSERT_FALSE(opt1.HasValue());
     ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(*opt2.Value(), "hello");
+    ASSERT_EQ(opt2.Value(), "hello");
 }
 
 TEST(Optionals, CopyAssignment)
@@ -77,8 +77,8 @@ TEST(Optionals, CopyAssignment)
 
     ASSERT_TRUE(opt1.HasValue());
     ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(*opt1.Value(), "hello");
-    ASSERT_EQ(*opt2.Value(), "hello");
+    ASSERT_EQ(opt1.Value(), "hello");
+    ASSERT_EQ(opt2.Value(), "hello");
 }
 
 TEST(Optionals, MoveAssignment)
@@ -90,7 +90,7 @@ TEST(Optionals, MoveAssignment)
 
     ASSERT_FALSE(opt1.HasValue());
     ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(*opt2.Value(), "hello");
+    ASSERT_EQ(opt2.Value(), "hello");
 }
 
 TEST(Optionals, HasValue)
@@ -105,7 +105,7 @@ TEST(Optionals, HasValue)
 TEST(Optionals, Value)
 {
     const auto opt = Some<String>("world");
-    ASSERT_EQ(*opt.Value(), "world");
+    ASSERT_EQ(opt.Value(), "world");
 }
 
 TEST(Optionals, Unwrap)
@@ -123,35 +123,6 @@ TEST(Optionals, UnwrapOr)
     ASSERT_EQ(VIOLET_MOVE(opt2).UnwrapOr("hello"), "hello");
 }
 
-TEST(Optionals, UnwrapOrElse)
-{
-    auto opt1 = Some<String>("world");
-    auto opt2 = Optional<String>();
-
-    ASSERT_EQ(VIOLET_MOVE(opt1).UnwrapOrElse([] -> String { return "hello"; }), "world");
-    ASSERT_EQ(VIOLET_MOVE(opt2).UnwrapOrElse([] -> String { return "hello"; }), "hello");
-}
-
-TEST(Optionals, And)
-{
-    const auto opt1 = Some<UInt32>(2);
-    const Optional<UInt32> opt2{};
-    const auto opt3 = Some<String>("hello");
-
-    ASSERT_TRUE(opt1.And(opt3).HasValue());
-    ASSERT_EQ(*opt1.And(opt3).Value(), "hello");
-    ASSERT_FALSE(opt2.And(opt3).HasValue());
-}
-
-TEST(Optionals, AndThen)
-{
-    const auto opt1 = Some<UInt32>(2);
-    const auto res = opt1.AndThen([](UInt32 value) -> Optional<UInt32> { return Some<UInt32>(value * 2); });
-
-    ASSERT_TRUE(res.HasValue());
-    ASSERT_EQ(*res.Value(), 4);
-}
-
 TEST(Optionals, Map)
 {
     const auto opt1 = Some<String>("hello");
@@ -161,7 +132,7 @@ TEST(Optionals, Map)
     const auto res2 = opt2.Map([](const String& value) -> UInt { return value.length(); });
 
     ASSERT_TRUE(res1.HasValue());
-    ASSERT_EQ(*res1.Value(), 5);
+    ASSERT_EQ(res1.Value(), 5);
     ASSERT_FALSE(res2.HasValue());
 }
 
@@ -195,7 +166,7 @@ TEST(Optionals, Take)
 
     ASSERT_FALSE(opt1.HasValue());
     ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(*opt2.Value(), "hello");
+    ASSERT_EQ(opt2.Value(), "hello");
 }
 
 TEST(Optionals, Reset)
