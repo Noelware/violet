@@ -144,6 +144,15 @@ jobs:
             - uses: actions/checkout@v6
             - uses: actions/cache@v5
               with:
+                path: /opt/homebrew/opt/llvm@20
+                key: macos-homebrew-llvm-20
+                restore-keys: |
+                    macos-homebrew-llvm-
+
+            - run: brew install llvm@20
+
+            - uses: actions/cache@v5
+              with:
                 key: bazel-cache-macos-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
                 restore-keys: bazel-cache-macos-
                 path: |

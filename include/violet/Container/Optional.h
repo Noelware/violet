@@ -749,7 +749,7 @@ private:
             loc.column(), util::DemangleCXXName(loc.function_name()), message));
 #else
 #if VIOLET_REQUIRE_STL(202302L)
-        std::println(stderr, "panic in `Optional<T>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(), loc.column(),
+        std::println(std::cerr, "panic in `Optional<T>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(), loc.column(),
             util::DemangleCXXName(loc.function_name()), message);
 #else
         std::cerr << "panic in `Optional<T>` [" << loc.file_name() << ':' << loc.line() << ':' << loc.column() << " ("
