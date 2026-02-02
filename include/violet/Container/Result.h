@@ -137,7 +137,10 @@ struct VIOLET_API Err final {
     static_assert(sizeof(E) > 0, "`Err<E>` requires `E` to be a complete type");
     static_assert(!std::same_as<E, Err<E>>, "`Err<Err<E>>` is ill-formed");
     static_assert(!std::same_as<E, std::in_place_t>, "`Err<E>` must not wrap `std::in_place_t`");
+
+#if VIOLET_REQUIRE_STL(202302L)
     static_assert(!std::same_as<E, std::unexpect_t>, "`Err<E>` must not wrap `std::unexpect_t`");
+#endif
 
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Err);
 
@@ -525,6 +528,58 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` a error variant", loc);
     }
 
+    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) & -> E
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Err())
+        {
+            return this->n_storage.Error.Error();
+        }
+
+        panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
+    }
+
+    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) && -> E
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Err())
+        {
+            return VIOLET_MOVE(this->n_storage.Error.Error());
+        }
+
+        panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
+    }
+
+    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const& -> E
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Err())
+        {
+            return this->n_storage.Error.Error();
+        }
+
+        panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
+    }
+
+    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const&& -> E
+#ifndef VIOLET_HAS_EXCEPTIONS
+        noexcept
+#endif
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(this->n_storage.Error.Error());
+        }
+
+        panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
+    }
+
     constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) & -> T
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -638,12 +693,12 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return this->Ok();
     }
 
+#if VIOLET_REQUIRE_STL(202302L)
     constexpr VIOLET_EXPLICIT operator std::expected<T, E>() const noexcept
     {
         return this->Ok() ? std::expected<T, E>(Value()) : std::expected<T, E>(std::unexpect, Error());
     }
 
-#if VIOLET_REQUIRE_STL(202302L)
     constexpr VIOLET_EXPLICIT operator std::unexpected<E>() const noexcept
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "tried to convert a Ok `Result<T, E>` into `std::unexpected<E>`");
@@ -865,12 +920,12 @@ struct Result<void, E> final {
         return this->Ok();
     }
 
+#if VIOLET_REQUIRE_STL(202302L)
     constexpr VIOLET_EXPLICIT operator std::expected<void, E>() const noexcept
     {
         return this->Ok() ? std::expected<void, E>({}) : std::expected<void, E>(std::unexpect, Error());
     }
 
-#if VIOLET_REQUIRE_STL(202302L)
     constexpr VIOLET_EXPLICIT operator std::unexpected<E>() const noexcept
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "tried to convert a Ok `Result<void, E>` into `std::unexpected<E>`");

@@ -54,6 +54,18 @@ build:libcxx --linkopt=-lc++abi
 build:linux --cxxopt=-Wno-unused-command-line-argument
 build:macos --cxxopt=-Wno-unused-command-line-argument
 
+# --config=cxx20: Test with C++20 (Linux, macOS)
+build:cxx20 --cxxopt=-std=c++20
+build:cxx20 --host_cxxopt=-std=c++20
+
+# --config=cxx23: Test with C++23 (Linux, macOS)
+build:cxx23 --cxxopt=-std=c++23
+build:cxx23 --host_cxxopt=-std=c++23
+
+# --config=cxx26: Test with C++26 (Linux, macOS)
+build:cxx26 --cxxopt=-std=c++26
+build:cxx26 --host_cxxopt=-std=c++26
+
 # Only show errors in test output
 test --test_output=errors
 
