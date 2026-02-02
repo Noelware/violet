@@ -476,10 +476,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return this->Err() && std::invoke(VIOLET_FWD(Pred, pred), Error());
     }
 
-    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) & -> T
+    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -489,10 +490,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` a error variant", loc);
     }
 
-    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) && -> T
+    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -502,10 +504,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` a error variant", loc);
     }
 
-    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const& -> T
+    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -528,10 +531,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` a error variant", loc);
     }
 
-    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) & -> E
+    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> E
     {
         VIOLET_LIKELY_IF(this->Err())
         {
@@ -541,10 +545,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
     }
 
-    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) && -> E
+    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> E
     {
         VIOLET_LIKELY_IF(this->Err())
         {
@@ -554,10 +559,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
     }
 
-    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const& -> E
+    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> E
     {
         VIOLET_LIKELY_IF(this->Err())
         {
@@ -567,10 +573,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
     }
 
-    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const&& -> E
+    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> E
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -580,10 +587,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
     }
 
-    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) & -> T
+    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -593,10 +601,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly(message, loc);
     }
 
-    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) && -> T
+    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -606,10 +615,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly(message, loc);
     }
 
-    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const& -> T
+    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -619,10 +629,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly(message, loc);
     }
 
-    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&& -> T
+    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -923,7 +934,7 @@ struct Result<void, E> final {
 #if VIOLET_REQUIRE_STL(202302L)
     constexpr VIOLET_EXPLICIT operator std::expected<void, E>() const noexcept
     {
-        return this->Ok() ? std::expected<void, E>({}) : std::expected<void, E>(std::unexpect, Error());
+        return this->Ok() ? std::expected<void, E>(std::in_place) : std::expected<void, E>(std::unexpect, Error());
     }
 
     constexpr VIOLET_EXPLICIT operator std::unexpected<E>() const noexcept
