@@ -46,6 +46,7 @@ files=(
     "BUILD.bazel"
     "README.md"
     "LICENSE"
+    "CHANGELOG.md"
 )
 
 for dir in "${dirs[@]}"; do
