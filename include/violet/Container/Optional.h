@@ -196,7 +196,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return *this;
     }
 
-    ~Optional() noexcept(std::is_nothrow_destructible_v<T>)
+    constexpr ~Optional() noexcept(std::is_nothrow_destructible_v<T>)
     {
         this->destroy();
     }
