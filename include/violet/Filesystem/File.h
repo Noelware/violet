@@ -27,6 +27,8 @@
 #include "violet/Support/Bitflags.h"
 #include "violet/Violet.h"
 
+#include <sstream>
+
 #ifdef VIOLET_UNIX
 #include <sys/stat.h>
 #endif

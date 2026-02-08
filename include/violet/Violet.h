@@ -36,7 +36,6 @@
 #include <map>
 #include <source_location>
 #include <span>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -191,26 +190,13 @@ using Pair = std::pair<T1, T2>;
 /// types as well.
 template<typename T>
 concept Stringify = requires(T ty) {
-    { ty.ToString() } -> std::convertible_to<std::string>;
+    { ty.ToString() } -> std::convertible_to<String>;
 };
 
-template<typename T>
-    requires(!std::is_arithmetic_v<T>)
-inline auto ToString(const T& val) -> String
+template<Stringify T>
+inline auto ToString(T val) -> String
 {
-    if constexpr (requires { val.ToString(); }) {
-        return val.ToString();
-    } else if constexpr (requires { violet::ToString(val); }) {
-        return violet::ToString(val);
-    } else {
-        std::ostringstream buf;
-        if constexpr (requires { buf << val; }) {
-            buf << val;
-            return buf.str();
-        }
-
-        static_assert(sizeof(T) == 0, "`T` doesn't satisfy the `Stringify` concept");
-    }
+    return val.ToString();
 }
 
 inline auto ToString(const String& val) -> String

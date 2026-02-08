@@ -23,6 +23,8 @@
 #include <violet/IO/Error.h>
 #include <violet/Violet.h>
 
+#include <sstream>
+
 using violet::io::Error;
 
 auto Error::OSError() -> Error

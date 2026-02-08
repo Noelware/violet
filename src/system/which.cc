@@ -23,6 +23,8 @@
 #include <violet/System/Which.h>
 #include <violet/Violet.h>
 
+#include <sstream>
+
 using violet::CStr;
 
 #ifdef VIOLET_UNIX

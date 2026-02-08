@@ -23,6 +23,8 @@
 #include <violet/System.h>
 #include <violet/System/CI.h>
 
+#include <sstream>
+
 using violet::String;
 using violet::UInt;
 using violet::terminal::RGB;
@@ -114,15 +116,15 @@ auto Style::ToString() const noexcept -> String
     }
 
     if (const auto* rgb = std::get_if<terminal::RGB>(&this->n_style)) {
-        os << "state=" << rgb << ", ";
+        os << "state=" << rgb->ToString() << ", ";
     }
 
-    os << "bold=" << this->n_tag.Contains(tag::kBold) << ", ";
-    os << "dim=" << this->n_tag.Contains(tag::kDim) << ", ";
-    os << "italic=" << this->n_tag.Contains(tag::kItalic) << ", ";
-    os << "underline=" << this->n_tag.Contains(tag::kUnderline) << ", ";
-    os << "inverse=" << this->n_tag.Contains(tag::kInverse) << ", ";
-    os << "strikethrough=" << this->n_tag.Contains(tag::kStrikethrough) << ')';
+    os << "bold=" << std::boolalpha << this->n_tag.Contains(tag::kBold) << ", ";
+    os << "dim=" << std::boolalpha << this->n_tag.Contains(tag::kDim) << ", ";
+    os << "italic=" << std::boolalpha << this->n_tag.Contains(tag::kItalic) << ", ";
+    os << "underline=" << std::boolalpha << this->n_tag.Contains(tag::kUnderline) << ", ";
+    os << "inverse=" << std::boolalpha << this->n_tag.Contains(tag::kInverse) << ", ";
+    os << "strikethrough=" << std::boolalpha << this->n_tag.Contains(tag::kStrikethrough) << ')';
 
     return os.str();
 }
@@ -208,7 +210,7 @@ auto violet::terminal::ColourLevel(StreamSource source) noexcept -> ColorLevel
 {
     UInt level = 0;
     if (auto forced = getForceColorLevel(); forced > 0) {
-        return { .SupportsBasic = level >= 1, .Supports256Bit = level >= 2, .Supports16M = level >= 3 };
+        return { .SupportsBasic = forced >= 1, .Supports256Bit = forced >= 2, .Supports16M = forced >= 3 };
     }
 
     if (isNoColour() || violet::sys::GetEnv(kTerm) == Some<String>("dumb") || !terminal::IsTTY(source)) {
@@ -219,17 +221,20 @@ auto violet::terminal::ColourLevel(StreamSource source) noexcept -> ColorLevel
         || violet::sys::GetEnv(kTerm).HasValueAnd(checkTerm16m)
         || violet::sys::GetEnv(kTermProgram) == Some<String>("iTerm.app")) {
         level = 3;
+        return { .SupportsBasic = level >= 1, .Supports256Bit = level >= 2, .Supports16M = level >= 3 };
     }
 
     if (violet::sys::GetEnv(kTermProgram) == Some<String>("Apple_Terminal")
         || violet::sys::GetEnv(kTerm).HasValueAnd(check256BitColor)) {
         level = 2;
+        return { .SupportsBasic = level >= 1, .Supports256Bit = level >= 2, .Supports16M = level >= 3 };
     }
 
     if (violet::sys::GetEnv(kTerm).HasValueAnd(checkPlatformANSIColor)
         || violet::sys::GetEnv("CLICOLOR").MapOr(false, [](const String& val) { return val != "0"; })
         || violet::sys::ContinuousIntegration()) {
         level = 1;
+        return { .SupportsBasic = level >= 1, .Supports256Bit = level >= 2, .Supports16M = level >= 3 };
     }
 
     return { .SupportsBasic = level >= 1, .Supports256Bit = level >= 2, .Supports16M = level >= 3 };
