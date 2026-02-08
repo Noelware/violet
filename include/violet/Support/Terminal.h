@@ -86,7 +86,6 @@ struct RGB final {
     bool Foreground = true; ///< whether if the color is for the foreground or background
 
     constexpr VIOLET_IMPLICIT RGB() noexcept = default;
-
     constexpr VIOLET_IMPLICIT RGB(UInt8 red, UInt8 green, UInt8 blue, bool foreground = true) noexcept
         : Red(red)
         , Green(green)
@@ -97,7 +96,10 @@ struct RGB final {
 
     [[nodiscard]] auto Paint() const noexcept -> String;
     [[nodiscard]] auto ToString() const noexcept -> String;
-    auto operator<<(std::ostream& os) const noexcept -> std::ostream&;
+    friend auto operator<<(std::ostream& os, const RGB& self) noexcept -> std::ostream&
+    {
+        return os << self.ToString();
+    }
 
     auto operator==(const RGB& rhs) const noexcept -> bool
     {
@@ -195,8 +197,10 @@ struct Style final {
 
     [[nodiscard]] auto Paint() const noexcept -> String;
     [[nodiscard]] auto ToString() const noexcept -> String;
-
-    auto operator<<(std::ostream& os) const noexcept -> std::ostream&;
+    friend auto operator<<(std::ostream& os, const Style& self) noexcept -> std::ostream&
+    {
+        return os << self.ToString();
+    }
 
 private:
     enum struct tag : UInt8 {
@@ -250,9 +254,9 @@ struct Styled final {
         return std::format("Styled(Target={}, {})", this->Target, this->Style);
     }
 
-    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    friend auto operator<<(std::ostream& os, const Styled& self) noexcept -> std::ostream&
     {
-        return os << this->ToString();
+        return os << self.ToString();
     }
 };
 
@@ -283,7 +287,7 @@ auto ColourLevel(StreamSource source = StreamSource::Stdout) noexcept -> ColorLe
 
 } // namespace violet::terminal
 
-VIOLET_TO_STRING(const violet::terminal::ColorChoice&, choice, {
+VIOLET_TO_STRING(violet::terminal::ColorChoice, choice, {
     switch (choice) {
     case violet::terminal::ColorChoice::Always:
         return "always";
@@ -296,7 +300,7 @@ VIOLET_TO_STRING(const violet::terminal::ColorChoice&, choice, {
     }
 });
 
-VIOLET_TO_STRING(const violet::terminal::StreamSource&, src, {
+VIOLET_TO_STRING(violet::terminal::StreamSource, src, {
     switch (src) {
     case violet::terminal::StreamSource::Stdout:
         return "standard output";

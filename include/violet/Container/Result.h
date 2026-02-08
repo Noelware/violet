@@ -220,7 +220,7 @@ struct VIOLET_API Err final {
         return violet::ToString(Error());
     }
 
-    constexpr friend auto operator<<(std::ostream& os, const Err<E>& self) -> std::ostream&
+    friend auto operator<<(std::ostream& os, const Err<E>& self) -> std::ostream&
     {
         return os << self.ToString();
     }
@@ -760,7 +760,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return violet::ToString(Error());
     }
 
-    constexpr friend auto operator<<(std::ostream& os, const Result<T, E>& self) -> std::ostream&
+    friend auto operator<<(std::ostream& os, const Result<T, E>& self) -> std::ostream&
     {
         return os << self.ToString();
     }
@@ -992,7 +992,7 @@ struct Result<void, E> final {
         return violet::ToString(Error());
     }
 
-    constexpr friend auto operator<<(std::ostream& os, const Result<void, E>& self) -> std::ostream&
+    friend auto operator<<(std::ostream& os, const Result<void, E>& self) -> std::ostream&
     {
         return os << self.ToString();
     }
@@ -1002,3 +1002,16 @@ private:
 };
 
 } // namespace violet
+
+VIOLET_FORMATTER_TEMPLATE(violet::Err<E>, typename E);
+
+template<typename T, typename E>
+struct std::formatter<violet::Result<T, E>> final: public std::formatter<std::string> {
+    constexpr formatter() = default;
+
+    template<class FC>
+    auto format(const violet::Result<T, E>& value, FC& cx) const
+    {
+        return ::std::formatter<std::string>::format(value.ToString(), cx);
+    }
+};

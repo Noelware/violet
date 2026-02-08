@@ -229,29 +229,29 @@ struct VIOLET_API FileType final {
     [[nodiscard]] auto ToString() const noexcept -> String
     {
         std::ostringstream os;
-        FileType::operator<<(os);
+        os << *this;
 
         return os.str();
     }
 
-    auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    friend auto operator<<(std::ostream& os, const FileType& self) noexcept -> std::ostream&
     {
         os << "FileType(type=";
 
-        if (this->n_tag.Contains(tag::kFile)) {
+        if (self.n_tag.Contains(tag::kFile)) {
             os << "file";
-        } else if (this->n_tag.Contains(tag::kDir)) {
+        } else if (self.n_tag.Contains(tag::kDir)) {
             os << "directory";
-        } else if (this->n_tag.Contains(tag::kSymlink)) {
+        } else if (self.n_tag.Contains(tag::kSymlink)) {
             os << "symbolic link";
 #ifdef VIOLET_UNIX
-        } else if (this->n_tag.Contains(tag::kBlkDev)) {
+        } else if (self.n_tag.Contains(tag::kBlkDev)) {
             os << "block device";
-        } else if (this->n_tag.Contains(tag::kCharDev)) {
+        } else if (self.n_tag.Contains(tag::kCharDev)) {
             os << "char device";
-        } else if (this->n_tag.Contains(tag::kFIFO)) {
+        } else if (self.n_tag.Contains(tag::kFIFO)) {
             os << "fifo";
-        } else if (this->n_tag.Contains(tag::kSocket)) {
+        } else if (self.n_tag.Contains(tag::kSocket)) {
             os << "unix socket";
         }
 #else

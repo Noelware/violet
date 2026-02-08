@@ -153,19 +153,40 @@
 
 #define VIOLET_TO_STRING(TYPE, NAME, BLOCK)                                                                            \
     namespace violet {                                                                                                 \
-    inline auto ToString(TYPE NAME) -> ::violet::String BLOCK                                                          \
+    inline auto ToString(const TYPE& NAME) -> ::violet::String BLOCK                                                   \
     }                                                                                                                  \
                                                                                                                        \
     template<>                                                                                                         \
-    struct std::formatter<TYPE, char>: public violet::StringifyFormatter<TYPE> {};
+    struct std::formatter<std::remove_cvref_t<TYPE>> final: public std::formatter<std::string> {                       \
+        constexpr formatter() = default;                                                                               \
+        template<class FC>                                                                                             \
+        auto format(const TYPE& value, FC& cx) const                                                                   \
+        {                                                                                                              \
+            return ::std::formatter<std::string>::format(::violet::ToString(value), cx);                               \
+        }                                                                                                              \
+    };
 
 #define VIOLET_FORMATTER(TYPE)                                                                                         \
     template<>                                                                                                         \
-    struct std::formatter<TYPE, char>: public violet::StringifyFormatter<TYPE> {};
+    struct std::formatter<TYPE> final: public std::formatter<std::string> {                                            \
+        constexpr formatter() = default;                                                                               \
+        template<class FC>                                                                                             \
+        auto format(const TYPE& value, FC& cx) const                                                                   \
+        {                                                                                                              \
+            return ::std::formatter<std::string>::format(value.ToString(), cx);                                        \
+        }                                                                                                              \
+    };
 
 #define VIOLET_FORMATTER_TEMPLATE(TYPE, ...)                                                                           \
     template<__VA_ARGS__>                                                                                              \
-    struct std::formatter<TYPE, char>: public violet::StringifyFormatter<TYPE> {};
+    struct std::formatter<TYPE> final: public std::formatter<std::string> {                                            \
+        constexpr formatter() = default;                                                                               \
+        template<class FC>                                                                                             \
+        auto format(const TYPE& value, FC& cx) const                                                                   \
+        {                                                                                                              \
+            return ::std::formatter<std::string>::format(value.ToString(), cx);                                        \
+        }                                                                                                              \
+    };
 
 #define VIOLET_IMPLICIT
 #define VIOLET_EXPLICIT explicit

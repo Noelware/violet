@@ -41,11 +41,6 @@ auto RGB::ToString() const noexcept -> String
         "RGB(Red={}, Green={}, Blue={}, Foreground={})", this->Red, this->Green, this->Blue, this->Foreground);
 }
 
-auto RGB::operator<<(std::ostream& os) const noexcept -> std::ostream&
-{
-    return os << this->ToString();
-}
-
 auto Style::createStream() const noexcept -> std::ostringstream
 {
     std::ostringstream os;
@@ -127,11 +122,6 @@ auto Style::ToString() const noexcept -> String
     os << "strikethrough=" << std::boolalpha << this->n_tag.Contains(tag::kStrikethrough) << ')';
 
     return os.str();
-}
-
-auto Style::operator<<(std::ostream& os) const noexcept -> std::ostream&
-{
-    return os << this->ToString();
 }
 
 namespace {

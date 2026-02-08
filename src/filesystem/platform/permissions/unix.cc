@@ -83,11 +83,6 @@ auto Mode::ToString() const noexcept -> String
     return { buf };
 }
 
-auto Mode::operator<<(std::ostream& os) const noexcept -> std::ostream&
-{
-    return os << this->ToString();
-}
-
 #endif
 
 constexpr const auto kReadonly = S_IWUSR | S_IWGRP | S_IWOTH;
@@ -115,9 +110,4 @@ auto Permissions::Mode() const noexcept -> violet::filesystem::Mode
 auto Permissions::ToString() const noexcept -> String
 {
     return std::format("Permissions(readonly={}, mode=\"{}\")", this->Readonly(), this->Mode().ToString());
-}
-
-auto Permissions::operator<<(std::ostream& os) const noexcept -> std::ostream&
-{
-    return os << this->ToString();
 }

@@ -67,7 +67,10 @@ struct VIOLET_API Mode final {
     }
 
     [[nodiscard]] auto ToString() const noexcept -> String;
-    auto operator<<(std::ostream& os) const noexcept -> std::ostream&;
+    friend auto operator<<(std::ostream& os, const Mode& self) noexcept -> std::ostream&
+    {
+        return os << self.ToString();
+    }
 
 #define IMPL_MODE(IDENT, BIT)                                                                                          \
     constexpr auto IDENT() const noexcept -> bool                                                                      \
@@ -183,7 +186,10 @@ struct VIOLET_API Permissions final {
 #endif
 
     [[nodiscard]] auto ToString() const noexcept -> String;
-    auto operator<<(std::ostream& os) const noexcept -> std::ostream&;
+    friend auto operator<<(std::ostream& os, const Permissions& self) noexcept -> std::ostream&
+    {
+        return os << self.ToString();
+    }
 
     constexpr auto operator<=>(const Permissions&) const noexcept = default;
     constexpr auto operator==(const Permissions&) const noexcept -> bool = default;

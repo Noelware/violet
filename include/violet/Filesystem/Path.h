@@ -387,9 +387,9 @@ struct VIOLET_API BasePath {
         return getThisObject().storage() != rhs;
     }
 
-    constexpr auto operator<<(std::ostream& os) const noexcept -> std::ostream&
+    friend auto operator<<(std::ostream& os, const BasePath& self) noexcept -> std::ostream&
     {
-        return os << getThisObject().storage();
+        return os << self.ToString();
     }
 
 private:

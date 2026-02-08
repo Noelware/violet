@@ -194,7 +194,7 @@ concept Stringify = requires(T ty) {
 };
 
 template<Stringify T>
-inline auto ToString(T val) -> String
+inline auto ToString(const T& val) -> String
 {
     return val.ToString();
 }
@@ -253,26 +253,6 @@ struct Unsafe final {
 /// [`std::convert::Infallible`]: https://doc.rust-lang.org/1.91.1/std/convert/enum.Infallible.html
 struct Infallible final {
     constexpr VIOLET_IMPLICIT Infallible() = default;
-};
-
-template<typename S>
-struct StringifyFormatter {
-    constexpr StringifyFormatter() = default;
-
-    constexpr auto parse(std::format_parse_context& cx)
-    {
-        return this->n_base.parse(cx);
-    }
-
-    template<class FC>
-    auto format(const S& value, FC& cx) const
-    {
-        using violet::ToString;
-        return this->n_base.format(ToString(value), cx);
-    }
-
-private:
-    std::formatter<String> n_base;
 };
 
 } // namespace violet

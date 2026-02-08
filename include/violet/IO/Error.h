@@ -79,7 +79,7 @@ enum struct VIOLET_API ErrorKind : UInt8 {
 
 } // namespace violet::io
 
-VIOLET_TO_STRING(const violet::io::ErrorKind&, self, {
+VIOLET_TO_STRING(violet::io::ErrorKind, self, {
 #if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
     VIOLET_DIAGNOSTIC_PUSH
     VIOLET_DIAGNOSTIC_IGNORE("-Wswitch")
@@ -358,4 +358,3 @@ namespace __detail {
     ::violet::io::__detail::__mk_io_error<T>(::violet::io::ErrorKind::KIND, ##__VA_ARGS__)
 
 VIOLET_FORMATTER(violet::io::Error);
-VIOLET_FORMATTER(violet::io::ErrorKind);

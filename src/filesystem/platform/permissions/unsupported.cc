@@ -35,8 +35,3 @@ auto Permissions::ToString() const noexcept -> String
 {
     return "Permissions(unsupported system)";
 }
-
-auto Permissions::operator<<(std::ostream& os) const noexcept -> std::ostream&
-{
-    return os << this->ToString();
-}
