@@ -57,7 +57,10 @@ RUN curl -sSL https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.
 RUN echo "deb http://apt.llvm.org/trixie/  llvm-toolchain-trixie-${LLVM_VERSION} main" | tee /etc/apt/sources.list.d/llvm.list
 
 ## 2. Update APTs to include LLVM repository and install LLVM-based stuff first.
-RUN apt update -y && apt install -y \
+### A workaround for https://github.com/llvm/llvm-project/issues/153385
+RUN sed -i 's/\(sha1\.second_preimage_resistance =\).*/\1 9999-01-01/' /usr/share/apt/default-sequoia.config && \
+    apt update -y && \
+    apt install -y \
     clang-tidy-${LLVM_VERSION} \
     clang-format-${LLVM_VERSION} \
     clang-tools-${LLVM_VERSION} \
@@ -68,33 +71,37 @@ RUN apt update -y && apt install -y \
 
 ## 3. Install Bazelisk (which will be aliased as `bazel`) and Bazel build-tools.
 # renovate: datasource=github-tags repository=bazelbuild/bazelisk
-ENV BAZELISK_VERSION="1.27.0"
+ENV BAZELISK_VERSION="1.28.1"
 
 # renovate: datasource=github-tags repository=bazelbuild/buildtools
-ENV BAZEL_BUILDTOOLS_VERSION="8.2.1"
+ENV BAZEL_BUILDTOOLS_VERSION="8.5.1"
 
 RUN set -eux; \
-  arch="$(dpkg --print-architecture)"; \
-  case "${arch}" in \
+    arch="$(dpkg --print-architecture)"; \
+    case "${arch}" in \
     aarch64|arm64) \
-      BAZEL_UNUSED_DEPS_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/unused_deps-linux-arm64"; \
-      BAZEL_BUILDIFIER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildifier-linux-arm64"; \
-      BAZEL_BUILDOZER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildozer-linux-arm64"; \
-      BAZELISK_DOWNLOAD_URL="https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/bazelisk-linux-arm64"; \
-      ;; \
+    BAZEL_UNUSED_DEPS_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/unused_deps-linux-arm64"; \
+    BAZEL_BUILDIFIER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildifier-linux-arm64"; \
+    BAZEL_BUILDOZER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildozer-linux-arm64"; \
+    BAZELISK_DOWNLOAD_URL="https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/bazelisk-linux-arm64"; \
+    ;; \
     amd64|x86_64) \
-      BAZEL_UNUSED_DEPS_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/unused_deps-linux-amd64"; \
-      BAZEL_BUILDIFIER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildifier-linux-amd64"; \
-      BAZEL_BUILDOZER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildozer-linux-amd64"; \
-      BAZELISK_DOWNLOAD_URL="https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/bazelisk-linux-amd64"; \
-      ;; \
-  esac; \
-  curl -fsSL -o /usr/local/bin/bazel       ${BAZELISK_DOWNLOAD_URL}; \
-  curl -fsSL -o /usr/local/bin/buildifier  ${BAZEL_BUILDIFIER_DOWNLOAD_URL}; \
-  curl -fsSL -o /usr/local/bin/buildozer   ${BAZEL_BUILDOZER_DOWNLOAD_URL}; \
-  curl -fsSL -o /usr/local/bin/unused_deps ${BAZEL_UNUSED_DEPS_DOWNLOAD_URL}
+    BAZEL_UNUSED_DEPS_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/unused-deps-linux-amd64"; \
+    BAZEL_BUILDIFIER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildifier-linux-amd64"; \
+    BAZEL_BUILDOZER_DOWNLOAD_URL="https://github.com/bazelbuild/buildtools/releases/download/v${BAZEL_BUILDTOOLS_VERSION}/buildozer-linux-amd64"; \
+    BAZELISK_DOWNLOAD_URL="https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/bazelisk-linux-amd64"; \
+    ;; \
+    esac; \
+    curl -fsSL -o /usr/local/bin/bazel       ${BAZELISK_DOWNLOAD_URL}; \
+    curl -fsSL -o /usr/local/bin/buildifier  ${BAZEL_BUILDIFIER_DOWNLOAD_URL}; \
+    curl -fsSL -o /usr/local/bin/buildozer   ${BAZEL_BUILDOZER_DOWNLOAD_URL}; \
+    curl -fsSL -o /usr/local/bin/unused-deps ${BAZEL_UNUSED_DEPS_DOWNLOAD_URL}; \
+    ln -s /usr/local/bin/unused-deps /usr/local/bin/unused_deps
 
-RUN chmod +x /usr/local/bin/bazel && chmod +x /usr/local/bin/buildifier && chmod +x /usr/local/bin/buildozer && chmod +x /usr/local/bin/unused_deps
+RUN chmod +x /usr/local/bin/bazel && \
+    chmod +x /usr/local/bin/buildifier && \
+    chmod +x /usr/local/bin/buildozer && \
+    chmod +x /usr/local/bin/unused-deps
 
 ## 4. Install required software
 ##    -------------------------

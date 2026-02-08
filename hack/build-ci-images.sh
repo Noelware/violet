@@ -29,10 +29,10 @@ set -eu pipefail
 declare -A gccimages
 
 # renovate: ref=gcc:15.2-trixie
-gccimages["gcc-15"]="gcc@sha256:bc5daa3a6407ceb0b0928bbeb0f552d134ac88bb8e88f420e61e28dca72566f8"
+gccimages["gcc-15"]="gcc@sha256:0cc1665930da5d3052d4af019579f1f35dbdf02598ddadfba3b15365b0507de5"
 
 # renovate: ref=gcc:14.3-trixie
-gccimages["gcc-14"]="gcc@sha256:d54101b77cc31c2ad122814313f4cee58b3cda6eb97a5c531c6f31f33bf3481f"
+gccimages["gcc-14"]="gcc@sha256:5004ba96657738ce0497542c98fdc3422fdd2b741b4e8d9b941b0753510cf2c5"
 
 if ! command -v docker >/dev/null; then
     echo "~> missing \`docker\` command :: exiting"
