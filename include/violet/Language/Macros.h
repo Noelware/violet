@@ -157,15 +157,15 @@
     }                                                                                                                  \
                                                                                                                        \
     template<>                                                                                                         \
-    struct std::formatter<TYPE>: public violet::StringifyFormatter<TYPE> {};
+    struct std::formatter<TYPE, char>: public violet::StringifyFormatter<TYPE> {};
 
 #define VIOLET_FORMATTER(TYPE)                                                                                         \
     template<>                                                                                                         \
-    struct std::formatter<TYPE>: public violet::StringifyFormatter<TYPE> {};
+    struct std::formatter<TYPE, char>: public violet::StringifyFormatter<TYPE> {};
 
 #define VIOLET_FORMATTER_TEMPLATE(TYPE, ...)                                                                           \
     template<__VA_ARGS__>                                                                                              \
-    struct std::formatter<TYPE>: public violet::StringifyFormatter<TYPE> {};
+    struct std::formatter<TYPE, char>: public violet::StringifyFormatter<TYPE> {};
 
 #define VIOLET_IMPLICIT
 #define VIOLET_EXPLICIT explicit

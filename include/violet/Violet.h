@@ -219,16 +219,8 @@ inline auto ToString(bool val) -> String
     return val ? "true" : "false";
 }
 
-// C++23 allows `std::stringstream` to be constexpr. Due to us supporting C++20,
-// we have to provide this for any library in Violet that supports constexpr
-// for `std::stringstream`.
-#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
-#define VIOLET_CONSTEXPR_FOR_SSTREAM constexpr
-#else
-#define VIOLET_CONSTEXPR_FOR_SSTREAM inline
-#endif
-
-template<std::integral N>
+template<typename N>
+    requires(std::is_arithmetic_v<N>)
 constexpr auto ToString(N num) -> String
 {
     return std::format("{}", num);
@@ -275,7 +267,8 @@ struct StringifyFormatter {
     template<class FC>
     auto format(const S& value, FC& cx) const
     {
-        return this->n_base.format(::violet::ToString(value), cx);
+        using violet::ToString;
+        return this->n_base.format(ToString(value), cx);
     }
 
 private:
