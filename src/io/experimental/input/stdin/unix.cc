@@ -27,6 +27,7 @@
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 using violet::io::experimental::StdinInputStream;
 

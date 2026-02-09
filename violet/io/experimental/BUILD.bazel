@@ -130,7 +130,12 @@ cc_test(
 
 cc_library(
     name = "stdin_input_stream",
-    srcs = ["//src/io/experimental/input:stdin.cc"],
+    srcs = ["//src/io/experimental/input:stdin.cc"] + select({
+        "@platforms//os:linux": ["//src/io/experimental/input/stdin:unix.cc"],
+        "@platforms//os:macos": ["//src/io/experimental/input/stdin:unix.cc"],
+        "@platforms//os:windows": ["//src/io/experimental/input/stdin:windows.cc"],
+        "//conditions:default": ["//src/io/experimental/input/stdin:unsupported.cc"],
+    }),
     hdrs = ["//include/violet/IO/Experimental/Input:StdinInputStream.h"],
     visibility = ["//visibility:public"],
     deps = [
