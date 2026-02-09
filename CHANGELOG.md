@@ -9,6 +9,21 @@ availableAt:
 ### unreleased
 **Git History**: <https://github.com/Noelware/violet/compare/26.02.03...master>
 
+### 26.03.03
+- **Noelware.Violet.IO**: Fix `stdin_input_stream` target not including the Unix implementation ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.02...26.03.03>
+
+### 26.03.02
+- **Noelware.Violet**: Get rid of `violet::StringifyFormatter` and write `std::formatter` in-place ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.01...26.03.02>
+
+### 26.03.01
+- **Noelware.Violet**: Fix ADL issues with `VIOLET_TO_STRING` macro (and `violet::StringifyFormatter` class) ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.03...26.03.01>
+
 ### 26.02.03
 - **Noelware.Violet.IO**: Add `Noelware.Violet.IO.Experimental` framework ([`@auguwu`])
 - **Noelware.Violet.IO.Experimental**: Add input streams for stdin, files, strings, and byte arrays (`Vec<UInt8>`) ([`@auguwu`])
