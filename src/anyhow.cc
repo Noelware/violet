@@ -30,10 +30,22 @@ using violet::terminal::Styled;
 #if VIOLET_REQUIRE_STL(202302L)
 namespace {
 
-#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
-#define eprint(...) ::std::print(std::cerr, ##__VA_ARGS__)
-#define eprintln(...) ::std::println(std::cerr, ##__VA_ARGS__)
-#endif
+template<typename... Args>
+inline void eprint(std::format_string<Args...> fmt, Args&&... args)
+{
+    std::print(std::cerr, fmt, VIOLET_FWD(Args, args)...);
+}
+
+inline void eprintln()
+{
+    std::println(std::cerr);
+}
+
+template<typename... Args>
+inline void eprintln(std::format_string<Args...> fmt, Args&&... args)
+{
+    std::println(std::cerr, fmt, VIOLET_FWD(Args, args)...);
+}
 
 } // namespace
 #endif
