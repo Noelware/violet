@@ -80,6 +80,8 @@ Error::node_t::~node_t() noexcept
         this->VTable.Destruct(this->Object);
         this->Object = nullptr;
     }
+
+    delete this->Next;
 }
 
 Error::Error(Error&& other) noexcept

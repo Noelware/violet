@@ -102,7 +102,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                compiler: [gcc-15, gcc-14, clang-21, clang-20]
+                compiler: [clang-21, clang-20]
                 bazel-version: ["7.7.1", "8.5.1"]
                 cxx-standard: ["26", "23", "20"]
                 include:

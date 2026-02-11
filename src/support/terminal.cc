@@ -263,6 +263,7 @@ auto violet::terminal::ColoursEnabled(StreamSource source) noexcept -> bool
             return false;
 
         default:
+            break;
         }
     }
 
