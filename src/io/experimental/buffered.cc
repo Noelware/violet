@@ -25,13 +25,21 @@ using violet::io::experimental::BufferedInputStream;
 
 void BufferedInputStream::doRefill() noexcept
 {
-    auto refill = this->n_src->Read(this->n_buf);
-    if (refill.Err()) {
+    if (this->n_pos < this->n_end) {
         return;
     }
 
     this->n_pos = 0;
-    this->n_end = refill.Value();
+    this->n_end = 0;
+
+    Span<UInt8> span(this->n_buf.data(), this->n_buf.size());
+    auto result = n_src->Read(span);
+
+    if (result.Err()) {
+        return;
+    }
+
+    this->n_end = result.Value();
 }
 
 auto BufferedInputStream::Read(Span<UInt8> buf) noexcept -> Result<UInt>

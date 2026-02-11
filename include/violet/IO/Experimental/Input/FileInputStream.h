@@ -27,9 +27,40 @@
 
 namespace violet::io::experimental {
 
+/// An [`InputStream`] that reads data from a file on disk.
+///
+/// This stream wraps a [`violet::filesystem::File`] and provides a sequential,
+/// read-only interface. It supports reading, skipping, and querying the number
+/// of available bytes.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/IO/Experimental/Input/FileInputStream.h>
+///
+/// using namespace violet;
+/// using namespace violet::io::experimental;
+///
+/// auto stream = FileInputStream::Open("config.toml");
+/// if (stream.Err()) {
+///     std::println(std::cerr, "failed to open file `config.toml': {}", stream.Error());
+///     std::abort();
+/// }
+///
+/// UInt8 buf[1024];
+/// auto action = stream->Read(buf);
+/// ```
 struct FileInputStream final: public InputStream {
     VIOLET_DISALLOW_CONSTRUCTOR(FileInputStream);
 
+    /// Constructs a `FileInputStream` from a [`filesystem::File`].
+    /// @param file an already opened file, moved into the stream.
+    VIOLET_IMPLICIT FileInputStream(filesystem::File&& file) noexcept
+        : n_file(VIOLET_MOVE(file))
+    {
+    }
+
+    /// Opens a file at the specified path for reading.
+    /// @param path the file path to open.
     template<std::convertible_to<filesystem::PathRef> Path>
     static auto Open(Path&& path) noexcept -> Result<FileInputStream>
     {
@@ -41,16 +72,16 @@ struct FileInputStream final: public InputStream {
         return FileInputStream(VIOLET_MOVE(file.Value()));
     }
 
+    /// @inheritdoc violet::io::experimental::InputStream::Read(violet::Span<violet::UInt8>)
     auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
+
+    /// @inheritdoc violet::io::experimental::InputStream::Available()
     [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
+
+    /// @inheritdoc violet::io::experimental::InputStream::Skip(violet::UInt8)
     auto Skip(UInt bytes) noexcept -> Result<void> override;
 
 private:
-    VIOLET_EXPLICIT FileInputStream(filesystem::File&& file) noexcept
-        : n_file(VIOLET_MOVE(file))
-    {
-    }
-
     filesystem::File n_file;
 };
 

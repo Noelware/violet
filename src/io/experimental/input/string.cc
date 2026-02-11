@@ -54,3 +54,13 @@ auto StringInputStream::Skip(UInt bytes) noexcept -> Result<void>
     this->n_pos += toSkip;
     return {};
 }
+
+auto StringInputStream::Position() const noexcept -> UInt
+{
+    return this->n_pos;
+}
+
+auto StringInputStream::EOS() const noexcept -> bool
+{
+    return this->n_pos >= this->n_data.size();
+}

@@ -27,11 +27,34 @@
 
 namespace violet::io::experimental {
 
+/// An [`InputStream`] that reads from the process' standard input (`stdin`).
+///
+/// This stream wraps the process' standard input file descriptor and provides a
+/// sequential read inferface. It supports reading, skipping, and querying the
+/// number of bytes available.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/IO/Experimental/Input/StdinInputStream.h>
+///
+/// using namespace violet;
+/// using namespace violet::io::experimental::StdinInputStream;
+///
+/// StdinInputStream stream;
+/// UInt8 buf[1024];
+/// auto action = stream.Read(buf);
+/// ```
 struct StdinInputStream final: public InputStream {
+    /// Constructs a new stdin-based input stream.
     VIOLET_IMPLICIT StdinInputStream() noexcept;
 
+    /// @inheritdoc violet::io::experimental::InputStream::Read(violet::Span<violet::UInt8>)
     auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
+
+    /// @inheritdoc violet::io::experimental::InputStream::Available()
     [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
+
+    /// @inheritdoc violet::io::experimental::InputStream::Skip(violet::UInt8)
     auto Skip(UInt bytes) noexcept -> Result<void> override;
 
 private:

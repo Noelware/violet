@@ -26,15 +26,52 @@
 
 namespace violet::io::experimental {
 
+/// A simple [`InputStream`] implementation that reads from a contiguous byte array.
+///
+/// This stream allows reading, skipping, and querying data from an in-memory buffer without
+/// performing any allocations or syscalls. This is primarily used for testing or for wrapping
+/// data that is already loaded in memory.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/IO/Experimental/Input/ByteArrayInputStream.h>
+///
+/// using namespace violet;
+/// using namespace violet::io::experimental;
+///
+/// const UInt8 data[] = {1, 2, 3, 4, 5};
+/// ByteArrayInputStream stream(data);
+///
+/// Array<UInt8, 2> buf;
+/// auto action = stream.Read(buf); // reads 2 bytes
+/// ```
 struct ByteArrayInputStream final: public InputStream {
+    /// Creates an empty byte array input stream.
     VIOLET_IMPLICIT ByteArrayInputStream() noexcept = default;
+
+    /// Creates a byte array input stream from a contiguous buffer.
+    /// @param buf read-only span of bytes to read from.
     VIOLET_IMPLICIT ByteArrayInputStream(Span<const UInt8> buf) noexcept;
 
+    /// @inheritdoc violet::io::experimental::InputStream::Read(violet::Span<violet::UInt8>)
     auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
+
+    /// @inheritdoc violet::io::experimental::InputStream::Available()
     [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
+
+    /// @inheritdoc violet::io::experimental::InputStream::Skip(violet::UInt8)
     auto Skip(UInt bytes) noexcept -> Result<void> override;
 
+    /// Resets the read position to the beginning of the buffer.
     void Reset() noexcept;
+
+    /// Returns the current read position within the buffer.
+    ///
+    /// This is the number of bytes already consumed from the beginning of the buffer.
+    [[nodiscard]] auto Position() const noexcept -> UInt;
+
+    /// Returns **true** if the stream has reached the end of the buffer.
+    [[nodiscard]] auto EOS() const noexcept -> bool;
 
 private:
     Span<const UInt8> n_buf;

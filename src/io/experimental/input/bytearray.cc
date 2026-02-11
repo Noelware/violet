@@ -61,3 +61,13 @@ void ByteArrayInputStream::Reset() noexcept
 {
     this->n_pos = 0;
 }
+
+auto ByteArrayInputStream::Position() const noexcept -> UInt
+{
+    return this->n_pos;
+}
+
+auto ByteArrayInputStream::EOS() const noexcept -> bool
+{
+    return this->n_pos >= this->n_buf.size();
+}
