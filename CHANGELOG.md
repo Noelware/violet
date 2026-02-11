@@ -7,6 +7,8 @@ availableAt:
 ---
 
 ### unreleased
+- **Noelware.Violet.IO.Experimental**: Add `Position` and `EOS` methods to ByteArrayInputStream and StringInputStream ([`@auguwu`])
+- **Noelware.Violet.IO.Experimental**:
 - **Noelware.Violet**: Implement **violet::anyhow** (original impl from [`Noelware/Eous`](https://github.com/Noelware/Eous)) ([`@auguwu`])
 
 **Git History**: <https://github.com/Noelware/violet/compare/26.02.03...master>
