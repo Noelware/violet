@@ -7,6 +7,8 @@ availableAt:
 ---
 
 ### unreleased
+- **Noelware.Violet**: Implement **violet::anyhow** (original impl from [`Noelware/Eous`](https://github.com/Noelware/Eous)) ([`@auguwu`])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.02.03...master>
 
 ### 26.03.03

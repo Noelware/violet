@@ -19,58 +19,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Violet.h>
-
-#ifdef VIOLET_UNIX
-
-#include <violet/IO/Error.h>
+#include <gtest/gtest.h>
 #include <violet/Support/Terminal.h>
+#include <violet/anyhow.h>
 
-#include <sys/ioctl.h>
-#include <unistd.h>
+using namespace violet; // NOLINT(google-build-using-namespace)
 
-using violet::terminal::StreamSource;
+struct dummy_t final {
+    String Message;
 
-auto violet::terminal::IsTTY(StreamSource src) noexcept -> bool
+    VIOLET_EXPLICIT dummy_t(String message)
+        : Message(VIOLET_MOVE(message))
+    {
+    }
+
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        return this->Message;
+    }
+};
+
+TEST(Anyhow, ContextWithString)
 {
-    switch (src) {
-    case StreamSource::Stdout:
-        return static_cast<bool>(isatty(STDOUT_FILENO));
+    terminal::SetColorChoice(terminal::ColorChoice::Never);
 
-    case StreamSource::Stderr:
-        return static_cast<bool>(isatty(STDERR_FILENO));
-    }
+    anyhow::Error base(dummy_t("hello world"));
+    anyhow::Error contextual = base.Context("additional context");
 
-    VIOLET_UNREACHABLE();
+    contextual.Print();
+
+    std::ostringstream os;
+    auto* oldOs = std::cerr.rdbuf(os.rdbuf());
+    contextual.Print();
+    std::cerr.rdbuf(oldOs);
+
+    String output = os.str();
+    EXPECT_NE(output.find("additional context"), String::npos);
+    EXPECT_NE(output.find("hello world"), String::npos);
+    EXPECT_LT(output.find("hello world"), output.find("additional context"));
 }
-
-auto violet::terminal::QueryWindowInfo(StreamSource src) noexcept -> io::Result<Window>
-{
-    struct winsize win{};
-    int fd = -1;
-
-    switch (src) {
-    case StreamSource::Stdout:
-        fd = STDOUT_FILENO;
-        break;
-
-    case StreamSource::Stderr:
-        fd = STDERR_FILENO;
-        break;
-
-    default:
-        VIOLET_UNREACHABLE();
-    }
-
-    if (!IsTTY(src)) {
-        return Err(io::Error::OSError());
-    }
-
-    if (fd == -1 || ioctl(fd, TIOCGWINSZ, &win) == -1) {
-        return Err(io::Error::OSError());
-    }
-
-    return Window{ .Columns = win.ws_col, .Rows = win.ws_row };
-}
-
-#endif

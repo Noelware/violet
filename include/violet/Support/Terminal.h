@@ -25,9 +25,9 @@
 
 #pragma once
 
-#include "violet/IO/Error.h"
-#include "violet/Support/Bitflags.h"
-#include "violet/Violet.h"
+#include <violet/IO/Error.h>
+#include <violet/Support/Bitflags.h>
+#include <violet/Violet.h>
 
 namespace violet::terminal {
 
@@ -278,12 +278,28 @@ struct Styled final {
 #endif
 
 /// Returns **true** if we are in a terminal process instead of a pipe or child process.
-///
 /// @param source source to check, by default, stdout.
 auto IsTTY(StreamSource source = StreamSource::Stdout) noexcept -> bool;
 
+/// Queries information about the terminal window.
+/// @param source the stream source to check, by default, standard output.
 auto QueryWindowInfo(StreamSource source = StreamSource::Stdout) noexcept -> io::Result<Window>;
+
+/// Queries information about color displays for terminals.
+/// @param source the stream source to check, by default, standard output.
 auto ColourLevel(StreamSource source = StreamSource::Stdout) noexcept -> ColorLevel;
+
+/// Sets the color choice.
+///
+/// This is used to determine colours when using any of the **Noelware.Violet** frameworks that
+/// depend on the terminal framework as well.
+///
+/// @param choice the color choice to use
+void SetColorChoice(violet::terminal::ColorChoice choice = violet::terminal::ColorChoice::Auto) noexcept;
+
+/// Returns **true** if the terminal framework is supported to use colors. This is usually determined
+/// either if a user has called [`SetColorChoice`] or by the [`ColourLevel`] function.
+auto ColoursEnabled(StreamSource source = StreamSource::Stdout) noexcept -> bool;
 
 } // namespace violet::terminal
 

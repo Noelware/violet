@@ -25,8 +25,10 @@
 
 #include <sstream>
 
+using violet::Int8;
 using violet::String;
 using violet::UInt;
+using violet::terminal::ColorChoice;
 using violet::terminal::RGB;
 using violet::terminal::Style;
 
@@ -111,7 +113,7 @@ auto Style::ToString() const noexcept -> String
     }
 
     if (const auto* rgb = std::get_if<terminal::RGB>(&this->n_style)) {
-        os << "state=" << rgb->ToString() << ", ";
+        os << "state=" << *rgb << ", ";
     }
 
     os << "bold=" << std::boolalpha << this->n_tag.Contains(tag::kBold) << ", ";
@@ -228,4 +230,42 @@ auto violet::terminal::ColourLevel(StreamSource source) noexcept -> ColorLevel
     }
 
     return { .SupportsBasic = level >= 1, .Supports256Bit = level >= 2, .Supports16M = level >= 3 };
+}
+
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static std::atomic<Int8> n_colorChoice = -1; // -1 = not set
+
+/// Sets the color choice.
+///
+/// This is used to determine colours when using any of the **Noelware.Violet** frameworks that
+/// depend on the terminal framework as well.
+///
+/// @param choice the color choice to use
+void violet::terminal::SetColorChoice(ColorChoice choice) noexcept
+{
+    auto result = n_colorChoice.load(std::memory_order_relaxed);
+    if (result != static_cast<Int8>(choice)) {
+        n_colorChoice.store(static_cast<Int8>(choice), std::memory_order_relaxed);
+    }
+}
+
+/// Returns **true** if the terminal framework is supported to use colors. This is usually determined
+/// either if a user has called [`SetColorChoice`] or by the [`ColourLevel`] function.
+auto violet::terminal::ColoursEnabled(StreamSource source) noexcept -> bool
+{
+    auto res = n_colorChoice.load(std::memory_order_relaxed);
+    if (n_colorChoice.load(std::memory_order_relaxed) != -1) {
+        switch (static_cast<ColorChoice>(res)) {
+        case ColorChoice::Always:
+            return true;
+
+        case ColorChoice::Never:
+            return false;
+
+        default:
+        }
+    }
+
+    auto level = ColourLevel(source);
+    return level.SupportsBasic;
 }
