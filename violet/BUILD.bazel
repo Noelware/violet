@@ -79,6 +79,24 @@ cc_test(
     deps = [":anyhow"],
 )
 
+cc_library(
+    name = "strings",
+    srcs = ["//src:strings.cc"],
+    hdrs = ["//include/violet:Strings.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":iterator",
+        ":violet",
+        "//violet/container:optional",
+    ],
+)
+
+cc_test(
+    name = "strings_test",
+    srcs = ["//tests:strings.test.cc"],
+    deps = [":strings"],
+)
+
 # A "uber" library that contains all base Noelware.Violet libraries and code
 cc_library(
     name = "base_uber",
