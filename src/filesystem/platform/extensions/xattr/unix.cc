@@ -32,6 +32,8 @@
 
 using value_type = violet::io::FileDescriptor::value_type;
 
+using violet::filesystem::xattr::Iter;
+
 auto violet::filesystem::xattr::Get(value_type fd, Str key) noexcept -> io::Result<Optional<Vec<UInt8>>>
 {
     ssize_t size = ::fgetxattr(fd, key.data(), nullptr, 0);
@@ -61,13 +63,68 @@ auto violet::filesystem::xattr::Set(value_type fd, Str key, Span<const UInt8> va
     return {};
 }
 
-auto violet::filesystem::xattr::Remove(value_type fd, Str key) -> io::Result<void>
+auto violet::filesystem::xattr::Remove(value_type fd, Str key) noexcept -> io::Result<void>
 {
     if (::fremovexattr(fd, key.data()) < 0) {
         return Err(io::Error::OSError());
     }
 
     return {};
+}
+
+struct Iter::Impl final {
+    static auto New(value_type fd) -> io::Result<Iter>
+    {
+        Int64 size = ::flistxattr(fd, nullptr, 0);
+        if (size <= 0) {
+            return Err(io::Error::OSError());
+        }
+
+        Vec<char> names(size);
+        size = ::flistxattr(fd, names.data(), names.size());
+
+        if (size < 0) {
+            names.clear();
+            return Err(io::Error::OSError());
+        }
+
+        return Iter(fd, names);
+    }
+
+    auto Next() noexcept -> Optional<Item>
+    {
+        if (this->n_offset >= this->n_names.size()) {
+            return Nothing;
+        }
+
+        CStr name = this->n_names.data() + this->n_offset;
+        UInt len = std::strlen(name);
+
+        this->n_offset += len + 1;
+
+        auto result = Get(this->n_descriptor, name);
+        if (result.Err()) {
+            return Err(VIOLET_MOVE(result.Error()));
+        }
+
+        return std::make_pair(name, result->UnwrapOr({}));
+    }
+
+private:
+    VIOLET_EXPLICIT Impl(value_type fd, Vec<char> names)
+        : n_descriptor(fd)
+        , n_names(VIOLET_MOVE(names))
+    {
+    }
+
+    value_type n_descriptor;
+    Vec<char> n_names;
+    UInt n_offset = 0;
+};
+
+auto violet::filesystem::xattr::List(value_type fd) noexcept -> io::Result<Iter>
+{
+    return Iter::Impl::New(fd);
 }
 
 #endif

@@ -19,9 +19,6 @@ availableAt:
 ### Noelware.Violet.Filesystem
 - Add documentation for all headers inside of this framework ([`@auguwu`])
 
-### Noelware.Violet.Events
-- Add documentation for all headers inside of this framework ([`@auguwu`])
-
 ### Noelware.Violet.Testing
 - Add documentation for all headers inside of this framework ([`@auguwu`])
 

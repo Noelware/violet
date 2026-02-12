@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_UNIX
+#ifdef VIOLET_APPLE_MACOS
 
 #include <violet/Filesystem/Extensions/XAttr.h>
 #include <violet/IO/Descriptor.h>

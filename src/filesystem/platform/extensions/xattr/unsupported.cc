@@ -36,7 +36,12 @@ auto violet::filesystem::xattr::Set(value_type, Str, Span<const UInt8>) noexcept
     return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
 }
 
-auto violet::filesystem::xattr::Remove(value_type, Str) -> io::Result<void>
+auto violet::filesystem::xattr::Remove(value_type, Str) noexcept -> io::Result<void>
+{
+    return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
+}
+
+auto violet::filesystem::xattr::List(value_type) noexcept -> io::Result<Iter>
 {
     return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
 }

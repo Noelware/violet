@@ -45,16 +45,15 @@
 
 #pragma once
 
-#include "violet/Container/Optional.h"
-#include "violet/IO/Descriptor.h"
-#include "violet/IO/Error.h"
-#include "violet/Violet.h"
-
-// #include <type_traits>
+#include <violet/Container/Optional.h>
+#include <violet/IO/Descriptor.h>
+#include <violet/IO/Error.h>
+#include <violet/Iterator.h>
+#include <violet/Violet.h>
 
 namespace violet::filesystem::xattr {
 
-// struct Iter;
+struct Iter;
 
 /// Sets an extended attribute for the file. This will overwrite the attribute if it exists
 /// depending on platform semantics.
@@ -74,32 +73,33 @@ auto Get(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<Opti
 /// Removes an extended attribute for the file.
 /// @param fd the raw file descriptor
 /// @param key the key to remove
-auto Remove(io::FileDescriptor::value_type fd, Str key) -> io::Result<void>;
+auto Remove(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<void>;
 
-// /// Returns a iterator that lists all extended attributes present on this file.
-// /// @param fd the raw file descriptor
-// auto List(io::FileDescriptor::value_type fd) noexcept -> io::Result<Iter>;
+/// Returns a iterator that lists all extended attributes present on this file.
+/// @param fd the raw file descriptor
+auto List(io::FileDescriptor::value_type fd) noexcept -> io::Result<Iter>;
 
-// /// An iterator that lists all a file's extended attributes.
-// struct Iter final {
-//     /// The item that is returned from this iterator.
-//     using Item = io::Result<Pair<String, Vec<UInt8>>>;
+/// A iterator that provides a list of a file's extended attributes.
+///
+/// If a platform doesn't support extended attributes, [`Next`] will always
+/// return [`violet::Nothing`].
+struct Iter final: public Iterator<Iter> {
+    VIOLET_DISALLOW_CONSTRUCTOR(Iter);
 
-//     Iter() = delete;
+    /// Item type that is returned.
+    using Item = io::Result<Pair<String, Vec<UInt8>>>;
 
-//     /// Returns the next entry in this iterator. `Nothing` is returned if we exhausted
-//     /// the amount of entries present.
-//     auto Next() noexcept -> Optional<Item>;
+    /// Returns the next entry in this iterator.
+    auto Next() noexcept -> Optional<Item>;
 
-// private:
-//     friend auto violet::filesystem::xattr::List(io::FileDescriptor::value_type) noexcept -> io::Result<Iter>;
+private:
+    friend auto violet::filesystem::xattr::List(io::FileDescriptor::value_type) noexcept -> io::Result<Iter>;
 
-//     /// The platform-implementation of the iterator itself.
-//     struct Impl;
+    /// The platform-implementation of the iterator itself.
+    struct Impl;
 
-//     template<typename... Args>
-//         requires(std::is_constructible_v<Impl, Args...>)
-//     VIOLET_EXPLICIT Iter(Args&&... args) noexcept(std::is_nothrow_constructible_v<Impl, Args...>);
-// };
+    template<typename... Args>
+    VIOLET_EXPLICIT Iter(Args&&... args) noexcept(std::is_nothrow_constructible_v<Impl, Args...>);
+};
 
 } // namespace violet::filesystem::xattr
