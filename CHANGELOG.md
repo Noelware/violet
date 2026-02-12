@@ -7,12 +7,15 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.02.04...master>
+
+### 26.03.04
 - **Noelware.Violet.IO.Experimental**: Add `Position` and `EOS` methods to ByteArrayInputStream and StringInputStream ([`@auguwu`])
 - **Noelware.Violet.IO.Experimental**: Add documentation to all InputStreams ([`@auguwu`])
 - **Noelware.Violet**: Add `violet/Strings.h` header, which provide utilities for strings, original implementation originated from [`Noelware/Eous`](https://github.com/Noelware/Eous ([`@auguwu`])
 - **Noelware.Violet**: Implement **violet::anyhow** (original impl from [`Noelware/Eous`](https://github.com/Noelware/Eous)) ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.02.03...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.02.03...26.02.04>
 
 ### 26.03.03
 - **Noelware.Violet.IO**: Fix `stdin_input_stream` target not including the Unix implementation ([`@auguwu`])
