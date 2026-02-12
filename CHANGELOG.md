@@ -9,6 +9,9 @@ availableAt:
 ### unreleased
 #### Noelware.Violet
 - Add documentation for all headers inside of this framework ([`@auguwu`])
+- Add **optional_type** and **optional_type_t** type traits inside of `violet/Container/Optional.h` rather than as internals ([`@auguwu`])
+- **Breaking**: Return `U` instead of an always engaged `Optional<U>` in `Optional::MapOr` ([`@auguwu`])
+- **Breaking**: Add rvalue variants of `Result::Error()` and remove `Result::IntoErr()` ([`@auguwu`])
 
 #### Noelware.Violet.IO
 - Add documentation for all headers inside of this framework ([`@auguwu`])

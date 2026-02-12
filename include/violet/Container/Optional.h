@@ -183,6 +183,11 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         ::new (&this->n_value) T(VIOLET_FWD(Args, args)...);
     }
 
+    /// Constructs an engaged [`Optional`] from `other`.
+    ///
+    /// This type will participate in overload resolution only if:
+    /// - `U` is not [`Optional`] or [`std::optional`]
+    /// - `T` is constructible from `U`.
     template<typename U = T>
         requires(!std::is_same_v<std::remove_cvref_t<U>, Optional<T>>
             && !violet::instanceof_v<std::optional, std::remove_cvref_t<U>> && std::constructible_from<T, const U&>)
@@ -191,6 +196,11 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     {
     }
 
+    /// Constructs an engaged [`Optional`] by moving `other`.
+    ///
+    /// This type will participate in overload resolution only if:
+    /// - `U` is not [`Optional`] or [`std::optional`]
+    /// - `T` is constructible from `U`.
     template<typename U = T>
         requires(!std::is_same_v<std::remove_cvref_t<U>, Optional<T>>
             && !violet::instanceof_v<std::optional, std::remove_cvref_t<U>> && std::constructible_from<T, U &&>)
@@ -199,6 +209,10 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     {
     }
 
+    /// Constructs from an existing [`std::optional`].
+    ///
+    /// If `other` contains a value, constructs `T` from `*other`. Otherwise, creates a
+    // disengaged `Optional`.
     template<typename U>
         requires(!std::is_same_v<std::remove_cvref_t<U>, Optional> && std::constructible_from<T, U>)
     constexpr VIOLET_IMPLICIT Optional(const std::optional<U>& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
@@ -212,6 +226,9 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         }
     }
 
+    /// Constructs from an existing [`std::optional`] by move.
+    ///
+    /// If engaged, moves the value and resets `other`.
     template<typename U>
         requires(!std::is_same_v<std::remove_cvref_t<U>, Optional> && std::constructible_from<T, U>)
     constexpr VIOLET_IMPLICIT Optional(
@@ -227,6 +244,9 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         }
     }
 
+    /// Copy-constructs from another `Optional`.
+    ///
+    /// If `other` is engaged, the contained value is copy-constructed. Otherwise, the result is disengaged.
     constexpr VIOLET_IMPLICIT Optional(const Optional& other)
         : n_engaged(other.n_engaged)
     {
@@ -235,6 +255,11 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         }
     }
 
+    /// Copy-assigns from another `Optional`.
+    ///
+    /// - If both are engaged, copy-assigns the contained value.
+    /// - If only `other` is engaged, constructs a new value.
+    /// - If `other` is disengaged, this becomes disengaged.
     constexpr auto operator=(const Optional& other) noexcept(
         std::is_nothrow_copy_assignable_v<T> || std::is_nothrow_copy_constructible_v<T>) -> Optional&
         requires(std::is_copy_assignable_v<T> || std::is_copy_constructible_v<T>)
@@ -255,6 +280,10 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return *this;
     }
 
+    /// Move-constructs from another `Optional`.
+    ///
+    /// If engaged, move-constructs the contained value
+    /// and disengages `other`.
     constexpr VIOLET_IMPLICIT Optional(Optional&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
         : n_engaged(other.n_engaged)
     {
@@ -264,6 +293,13 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         }
     }
 
+    /// Move-assigns from another `Optional`.
+    ///
+    /// - If both are engaged, move-assigns.
+    /// - If only `other` is engaged, constructs.
+    /// - If `other` is disengaged, this becomes disengaged.
+    ///
+    /// Leaves `other` disengaged.
     constexpr auto operator=(Optional&& other) noexcept(std::is_nothrow_move_constructible_v<T>) -> Optional&
     {
         if (this != &other) {
@@ -289,12 +325,23 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         this->destroy();
     }
 
+    /// Disengages the `Optional`, destroying the contained value if present.
     constexpr auto operator=(std::nullopt_t) noexcept -> Optional&
     {
         this->destroy();
         return *this;
     }
 
+    /// Disengages the `Optional`, destroying the contained value if present.
+    constexpr auto operator=(std::nullopt_t&) noexcept -> Optional&
+    {
+        this->destroy();
+        return *this;
+    }
+
+    /// Assigns from `std::optional<T>`.
+    ///
+    /// Mirrors assignment semantics of `Optional<T>`.
     constexpr auto operator=(std::optional<T>& other) noexcept(
         std::is_nothrow_copy_assignable_v<T> && std::is_nothrow_copy_constructible_v<T>) -> Optional&
         requires(std::is_copy_assignable_v<T> || std::is_copy_constructible_v<T>)
@@ -313,6 +360,9 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return *this;
     }
 
+    /// Assigns from `std::optional<T>` by move.
+    ///
+    /// Resets `other` if engaged.
     constexpr auto operator=(std::optional<T>&& other) noexcept(
         std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_constructible_v<T>) -> Optional&
         requires(std::is_move_assignable_v<T> || std::is_move_constructible_v<T>)
@@ -364,35 +414,65 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return *this;
     }
 
+    /// Returns `true` if a value is present.
     constexpr auto HasValue() const noexcept -> bool
     {
         return this->n_engaged;
     }
 
+    /// Returns a reference to the contained value.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if a value is present.
     constexpr auto Value() & noexcept -> T&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
         return this->getValueRef();
     }
 
+    /// Returns a reference to the contained value.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if a value is present.
     constexpr auto Value() const& noexcept -> const T&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
         return this->getValueRef();
     }
 
+    /// Returns a reference to the contained value.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if a value is present.
     constexpr auto Value() && noexcept -> T&&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
         return VIOLET_MOVE(this->getValueRef());
     }
 
+    /// Returns a reference to the contained value.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if a value is present.
     constexpr auto Value() const&& noexcept -> const T&&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
         return VIOLET_MOVE(this->getValueRef());
     }
 
+    /// Forefully retrieve a value from this container or panics if no value was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Unwrap(std::source_location loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -407,6 +487,19 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         panicUnexpectly("tried to unwrap nothing", loc);
     }
 
+    /// Forefully retrieve a value from this container or panics if no value was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Unwrap(std::source_location loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -421,6 +514,19 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         panicUnexpectly("tried to unwrap nothing", loc);
     }
 
+    /// Forefully retrieve a value from this container or panics if no value was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -435,6 +541,19 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         panicUnexpectly("tried to unwrap nothing", loc);
     }
 
+    /// Forefully retrieve a value from this container or panics if no value was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -449,6 +568,19 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         panicUnexpectly("tried to unwrap nothing", loc);
     }
 
+    /// Returns the contained value or panics with `message` if no value is present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -463,6 +595,19 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         panicUnexpectly(message, loc);
     }
 
+    /// Returns the contained value or panics with `message` if no value is present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -477,6 +622,19 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         panicUnexpectly(message, loc);
     }
 
+    /// Returns the contained value or panics with `message` if no value is present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -491,6 +649,19 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         panicUnexpectly(message, loc);
     }
 
+    /// Returns the contained value or panics with `message` if no value is present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -505,46 +676,71 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         panicUnexpectly(message, loc);
     }
 
+    /// Returns the contained value if present, otherwise returns `defaultValue`.
     constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> T
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
+    /// Returns the contained value if present, otherwise returns `defaultValue`.
     constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> T
     {
         return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
     }
 
+    /// Returns the contained value if present, otherwise returns `defaultValue`.
     constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> T
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
+    /// Returns the contained value if present, otherwise returns `defaultValue`.
     constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
     {
         return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
     }
 
+    /// Returns the contained value without checking engagement.
+    ///
+    /// # Safety
+    /// Undefined behavior if no value is present.
     constexpr auto UnwrapUnchecked(Unsafe) & noexcept -> T&
     {
         return this->getValueRef();
     }
 
+    /// Returns the contained value without checking engagement.
+    ///
+    /// # Safety
+    /// Undefined behavior if no value is present.
     constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> const T&
     {
         return this->getValueRef();
     }
 
+    /// Returns the contained value without checking engagement.
+    ///
+    /// # Safety
+    /// Undefined behavior if no value is present.
     constexpr auto UnwrapUnchecked(Unsafe) && noexcept -> T&&
     {
         return VIOLET_MOVE(this->getValueRef());
     }
 
+    /// Returns the contained value without checking engagement.
+    ///
+    /// # Safety
+    /// Undefined behavior if no value is present.
     constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept -> const T&&
     {
         return VIOLET_MOVE(this->getValueRef());
     }
 
+    /// Applies `fun` to the contained value if present.
+    ///
+    /// Equivalent to Rust's [`Option::map`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map)
+    ///
+    /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
     template<typename Fun>
         requires(callable<Fun, T&>)
     constexpr auto Map(Fun&& fun) & -> Optional<std::invoke_result_t<Fun, T&>>
@@ -557,6 +753,11 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return decltype(Optional<Ret>{})(Nothing);
     }
 
+    /// Applies `fun` to the contained value if present.
+    ///
+    /// Equivalent to Rust's [`Option::map`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map)
+    ///
+    /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
     template<typename Fun>
         requires(callable<Fun, const T&>)
     constexpr auto Map(Fun&& fun) const& noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&>())))
@@ -570,6 +771,11 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return decltype(Optional<Ret>{})(Nothing);
     }
 
+    /// Applies `fun` to the contained value if present.
+    ///
+    /// Equivalent to Rust's [`Option::map`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map)
+    ///
+    /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
     template<typename Fun>
         requires(callable<Fun, T &&>)
     constexpr auto Map(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>())))
@@ -583,6 +789,11 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return decltype(Optional<Ret>{})(Nothing);
     }
 
+    /// Applies `fun` to the contained value if present.
+    ///
+    /// Equivalent to Rust's [`Option::map`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map)
+    ///
+    /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
     template<typename Fun>
         requires(callable<Fun, const T &&>)
     constexpr auto Map(Fun&& fun) const&& noexcept(noexcept(
@@ -596,6 +807,10 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return decltype(Optional<Ret>{})(Nothing);
     }
 
+    /// Returns `true` if a value is present and `fun(value)` returns `true`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
     template<typename Fun>
         requires(callable<Fun, T&> && callable_returns<Fun, bool, T&>)
     constexpr auto HasValueAnd(Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&>())))
@@ -604,6 +819,10 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), Value());
     }
 
+    /// Returns `true` if a value is present and `fun(value)` returns `true`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
     template<typename Fun>
         requires(callable<Fun, const T&> && callable_returns<Fun, bool, const T&>)
     constexpr auto HasValueAnd(Fun&& fun) const& noexcept(
@@ -612,6 +831,10 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), Value());
     }
 
+    /// Returns `true` if a value is present and `fun(value)` returns `true`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
     template<typename Fun>
         requires(callable<Fun, T &&> && callable_returns<Fun, bool, T &&>)
     constexpr auto HasValueAnd(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>())))
@@ -620,6 +843,10 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), Value());
     }
 
+    /// Returns `true` if a value is present and `fun(value)` returns `true`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
     template<typename Fun>
         requires(callable<Fun, const T &&> && callable_returns<Fun, bool, const T &&>)
     constexpr auto HasValueAnd(Fun&& fun) const&& noexcept(
@@ -628,54 +855,74 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), Value());
     }
 
+    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
     template<typename U, typename Fun>
         requires(callable<Fun, T&> && std::convertible_to<std::invoke_result_t<Fun, T&>, U>)
     constexpr auto MapOr(U&& defaultValue, Fun&& fun) & noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&>()))) -> Optional<U>
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&>()))) -> U
     {
         if (this->HasValue()) {
-            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), Value()));
+            return std::invoke(VIOLET_FWD(Fun, fun), Value());
         }
 
-        return Some<U>(VIOLET_FWD(U, defaultValue));
+        return VIOLET_FWD(U, defaultValue);
     }
 
+    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
     template<typename U, typename Fun>
         requires(callable<Fun, const T&> && std::convertible_to<std::invoke_result_t<Fun, const T&>, U>)
     constexpr auto MapOr(U&& defaultValue, Fun&& fun) const& noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&>()))) -> Optional<U>
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&>()))) -> U
     {
         if (this->HasValue()) {
-            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), Value()));
+            return std::invoke(VIOLET_FWD(Fun, fun), Value());
         }
 
-        return Some<U>(VIOLET_FWD(U, defaultValue));
+        return VIOLET_FWD(U, defaultValue);
     }
 
+    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
     template<typename U, typename Fun>
         requires(callable<Fun, T &&> && std::convertible_to<std::invoke_result_t<Fun, T &&>, U>)
     constexpr auto MapOr(U&& defaultValue, Fun&& fun) && noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>()))) -> Optional<U>
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>()))) -> U
     {
         if (this->HasValue()) {
-            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value()));
         }
 
-        return Some<U>(VIOLET_FWD(U, defaultValue));
+        return VIOLET_FWD(U, defaultValue);
     }
 
+    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
     template<typename U, typename Fun>
         requires(callable<Fun, const T &&> && std::convertible_to<std::invoke_result_t<Fun, const T &&>, U>)
     constexpr auto MapOr(U&& defaultValue, Fun&& fun) const&& noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&&>()))) -> Optional<U>
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&&>()))) -> U
     {
         if (this->HasValue()) {
-            return Some<U>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value()));
         }
 
-        return Some<U>(VIOLET_FWD(U, defaultValue));
+        return VIOLET_FWD(U, defaultValue);
     }
 
+    /// Takes the contained value, leaving this `Optional` disengaged.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::take`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.take).
     constexpr auto Take() noexcept -> Optional<T>
     {
         if (!this->HasValue()) {
@@ -688,6 +935,12 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return tmp;
     }
 
+    /// Replaces the contained value with a newly constructed one.
+    ///
+    /// Destroys the previous value if present, returns a reference to the new value.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::replace`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.replace).
     template<typename... Args>
     constexpr auto Replace(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>) -> T&
     {
@@ -701,6 +954,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return Value();
     }
 
+    /// Destroys the contained value and disengages the `Optional`.
     auto Reset() noexcept(std::is_nothrow_destructible_v<T>)
     {
         this->destroy();
@@ -857,7 +1111,7 @@ private:
         return VIOLET_MOVE(*std::launder(&this->n_value));
     }
 
-    [[noreturn]] VIOLET_COLD static void panicUnexpectly(Str message, [[maybe_unused]] const std::source_location& loc)
+    [[noreturn]] VIOLET_COLD static void panicUnexpectly(Str message, [[maybe_unused]] std::source_location loc)
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif

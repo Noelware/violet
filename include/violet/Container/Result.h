@@ -264,18 +264,26 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
 
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Result);
 
+    /// Constructs an `Ok` variant by copying `ok`.
     constexpr VIOLET_IMPLICIT Result(const T& ok)
         : n_ok(true)
     {
         ::new (&this->n_storage.Value) T(ok);
     }
 
+    /// Constructs an `Ok` variant by moving `ok`.
     constexpr VIOLET_IMPLICIT Result(T&& ok) noexcept(std::is_nothrow_move_constructible_v<T>)
         : n_ok(true)
     {
         ::new (&this->n_storage.Value) T(VIOLET_MOVE(ok));
     }
 
+    /// Constructs the `Ok` variant in-place.
+    ///
+    /// Equivalent to `Ok(T(args...))`.
+    ///
+    /// # Constraints
+    /// `T` must be constructible from `Args...`.
     template<typename... Args>
         requires(std::is_constructible_v<T, Args...>)
     constexpr VIOLET_EXPLICIT Result(std::in_place_index_t<0L>, Args&&... args)
@@ -283,6 +291,12 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     {
     }
 
+    /// Constructs the `Err` variant in-place.
+    ///
+    /// Equivalent to `Result(Err(args...))`.
+    ///
+    /// # Constraints
+    /// `E` must be constructible from `Args...`.
     template<typename... Args>
         requires(std::is_constructible_v<E, Args...>)
     constexpr VIOLET_EXPLICIT Result(std::in_place_index_t<1L>, Args&&... args)
@@ -290,11 +304,13 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     {
     }
 
+    /// Constructs the `Err` variant from `violet::Err<E>`.
     constexpr VIOLET_IMPLICIT Result(const violet::Err<E>& err)
     {
         ::new (&this->n_storage.Error) violet::Err(err);
     }
 
+    /// Constructs the `Err` variant by move.
     constexpr VIOLET_IMPLICIT Result(violet::Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<T>)
     {
         ::new (&this->n_storage.Error) violet::Err(VIOLET_MOVE(err));
@@ -305,6 +321,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         this->destroy();
     }
 
+    /// Copy-constructs from another `Result`. Preserves the active variant.
     constexpr VIOLET_IMPLICIT Result(const Result& other)
         : n_ok(other.n_ok)
     {
@@ -331,6 +348,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return *this;
     }
 
+    /// Move-constructs from another `Result`. Preserves the variant and transfers ownership.
     constexpr VIOLET_IMPLICIT Result(Result&& other) noexcept(
         std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
         : n_ok(std::exchange(other.n_ok, false))
@@ -366,40 +384,82 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return *this;
     }
 
+    /// Returns `true` if this is the `Ok` variant.
     [[nodiscard]] constexpr auto Ok() const noexcept -> bool
     {
         return this->n_ok;
     }
 
+    /// Returns `true` if this is the `Err` variant.
     [[nodiscard]] constexpr auto Err() const noexcept -> bool
     {
         return !this->Ok();
     }
 
+    /// Returns a reference to the contained value.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if this result is the `Ok` variant.
     constexpr auto Value() noexcept -> T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
         return this->n_storage.Value;
     }
 
+    /// Returns a reference to the contained value.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if this result is the `Ok` variant.
     constexpr auto Value() const noexcept -> const T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
         return this->n_storage.Value;
     }
 
-    constexpr auto Error() noexcept -> E&
+    /// Returns a reference to the contained error.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if this result is the `Err` variant.
+    constexpr auto Error() & noexcept -> E&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return this->n_storage.Error.Error();
     }
 
-    constexpr auto Error() const noexcept -> const E&
+    /// Returns a reference to the contained error.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if this result is the `Err` variant.
+    constexpr auto Error() const& noexcept -> const E&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return this->n_storage.Error.Error();
     }
 
+    /// Returns a reference to the contained error.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if this result is the `Err` variant.
+    constexpr auto Error() const&& noexcept -> const E&&
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
+        return VIOLET_MOVE(this->n_storage.Error.Error());
+    }
+
+    /// Returns a reference to the contained error.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if this result is the `Err` variant.
+    constexpr auto Error() && noexcept -> E&&
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
+        return VIOLET_MOVE(this->n_storage.Error.Error());
+    }
+
+    /// Converts `Result<Result<U, E>, E>` into `Result<U, E>`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::transpose`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.transpose).
     template<typename U>
         requires(nested_result<Result<U, E>, E>)
     constexpr auto Transpose() && -> Result<U, E>
@@ -411,6 +471,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return Err<E>(VIOLET_MOVE(Error()));
     }
 
+    /// Applies `fun` to the contained `Ok` value and returns the result. If this is `Err`, propagates the error
+    /// unchanged.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::and_then`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.and_then).
     template<typename Fun>
         requires(callable<Fun>)
     constexpr auto AndThen(Fun&& fun) && -> Result<std::invoke_result_t<Fun, T>, E>
@@ -423,6 +488,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return Err<E>(VIOLET_MOVE(Error()));
     }
 
+    /// Invokes `fun` with the contained `Ok` value (if present) and returns `*this` unchanged.
     template<typename Fun>
         requires(callable<Fun> && callable_returns<Fun, void, const T&>)
     constexpr auto Inspect(Fun&& fun) noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T>())))
@@ -435,6 +501,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return *this;
     }
 
+    /// Invokes `fun` with the contained `Err` value (if present) and returns `*this` unchanged.
     template<typename Fun>
         requires(callable<Fun> && callable_returns<Fun, void, const E&>)
     constexpr auto InspectErr(Fun&& fun) noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<E>())))
@@ -447,12 +514,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return *this;
     }
 
-    constexpr auto IntoErr() && noexcept -> E
-    {
-        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` tried to consume an inexistent error");
-        return VIOLET_MOVE(this->n_storage.Error.Error());
-    }
-
+    /// Returns `true` if `Ok` and predicate returns `true`.
     template<typename Pred>
         requires(callable<Pred> && callable_returns<Pred, bool, const T&>)
     constexpr auto OkAnd(Pred&& pred) const noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<T>())))
@@ -461,6 +523,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return this->Ok() && std::invoke(VIOLET_FWD(Pred, pred), Value());
     }
 
+    /// Returns `true` if `Err` and predicate returns `true`.
     template<typename Pred>
         requires(callable<Pred> && callable_returns<Pred, bool, const E&>)
     constexpr auto ErrAnd(Pred&& pred) const noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<E>())))
@@ -469,6 +532,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return this->Err() && std::invoke(VIOLET_FWD(Pred, pred), Error());
     }
 
+    /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is in its `Ok` variant.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Unwrap(std::source_location loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -483,6 +559,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` a error variant", loc);
     }
 
+    /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is in its `Ok` variant.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Unwrap(std::source_location loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -497,6 +586,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` a error variant", loc);
     }
 
+    /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is in its `Ok` variant.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -511,6 +613,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` a error variant", loc);
     }
 
+    /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is in its `Ok` variant.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -525,6 +640,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` a error variant", loc);
     }
 
+    /// Forefully retrieve this container's `Err` variant or panics if no error was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is in the `Err` variant.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -539,6 +667,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
     }
 
+    /// Forefully retrieve this container's `Err` variant or panics if no error was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is in the `Err` variant.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -553,6 +694,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
     }
 
+    /// Forefully retrieve this container's `Err` variant or panics if no error was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is in the `Err` variant.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -567,6 +721,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
     }
 
+    /// Forefully retrieve this container's `Err` variant or panics if no error was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is in the `Err` variant.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -581,6 +748,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
     }
 
+    /// Returns the contained value or panics with `message` if no value is present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -595,6 +775,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly(message, loc);
     }
 
+    /// Returns the contained value or panics with `message` if no value is present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -609,6 +802,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly(message, loc);
     }
 
+    /// Returns the contained value or panics with `message` if no value is present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -623,6 +829,19 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly(message, loc);
     }
 
+    /// Returns the contained value or panics with `message` if no value is present.
+    ///
+    /// This will also enforce a fast, hot path if this container is engaged.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
     constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
@@ -637,61 +856,97 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         panicUnexpectly(message, loc);
     }
 
+    /// Returns the contained value if present, otherwise returns `defaultValue`.
     constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> T
     {
         return this->Ok() ? this->n_storage.Value : VIOLET_MOVE(defaultValue);
     }
 
+    /// Returns the contained value if present, otherwise returns `defaultValue`.
     constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> T
     {
         return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
     }
 
+    /// Returns the contained value if present, otherwise returns `defaultValue`.
     constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> T
     {
         return this->Ok() ? this->n_storage.Value : VIOLET_MOVE(defaultValue);
     }
 
+    /// Returns the contained value if present, otherwise returns `defaultValue`.
     constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
     {
         return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
     }
 
+    /// Returns the contained value without checking its state.
+    ///
+    /// # Safety
+    /// Undefined behavior if no value is present.
     constexpr auto UnwrapUnchecked(Unsafe) & noexcept -> T&
     {
         return this->n_storage.Value;
     }
 
+    /// Returns the contained value without checking its state.
+    ///
+    /// # Safety
+    /// Undefined behavior if no value is present.
     constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> const T&
     {
         return this->n_storage.Value;
     }
 
+    /// Returns the contained value without checking its state.
+    ///
+    /// # Safety
+    /// Undefined behavior if no value is present.
     constexpr auto UnwrapUnchecked(Unsafe) && noexcept -> T&&
     {
         return VIOLET_MOVE(this->n_storage.Value);
     }
 
+    /// Returns the contained value without checking its state.
+    ///
+    /// # Safety
+    /// Undefined behavior if no value is present.
     constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept -> const T&&
     {
         return VIOLET_MOVE(this->n_storage.Value);
     }
 
+    /// Returns the contained error without checking its state.
+    ///
+    /// # Safety
+    /// Undefined behavior if no error is present.
     constexpr auto UnwrapErrUnchecked(Unsafe) & noexcept -> T&
     {
         return this->n_storage.Error.Error();
     }
 
+    /// Returns the contained error without checking its state.
+    ///
+    /// # Safety
+    /// Undefined behavior if no error is present.
     constexpr auto UnwrapErrUnchecked(Unsafe) const& noexcept -> const T&
     {
         return this->n_storage.Value;
     }
 
+    /// Returns the contained error without checking its state.
+    ///
+    /// # Safety
+    /// Undefined behavior if no error is present.
     constexpr auto UnwrapErrUnchecked(Unsafe) && noexcept -> E&&
     {
         return VIOLET_MOVE(this->n_storage.Error.Error());
     }
 
+    /// Returns the contained error without checking its state.
+    ///
+    /// # Safety
+    /// Undefined behavior if no error is present.
     constexpr auto UnwrapErrUnchecked(Unsafe) const&& noexcept -> const E&&
     {
         return VIOLET_MOVE(this->n_storage.Error.Error());
@@ -812,6 +1067,11 @@ private:
     }
 };
 
+/// Specialization of `Result` for `void` success type.
+///
+/// Represents:
+/// - success with no value
+/// - failure with error `E`
 template<typename E>
 struct Result<void, E> final {
     static_assert(std::is_object_v<E>, "`Result<T, E>` requires `E` to be an object type");
@@ -827,7 +1087,10 @@ struct Result<void, E> final {
     using value_type = void;
     using error_type = E;
 
+    /// Constructs a successful `Result<void, E>`.
     constexpr VIOLET_IMPLICIT Result() noexcept = default;
+
+    /// Constructs the `Err` variant.
     constexpr VIOLET_IMPLICIT Result(const violet::Err<E>& err)
         : n_value(new violet::Err<E>(err))
     {
@@ -887,26 +1150,40 @@ struct Result<void, E> final {
         return *this;
     }
 
+    /// Returns `true` if success.
     [[nodiscard]] constexpr auto Ok() const noexcept -> bool
     {
         return this->n_value == nullptr;
     }
 
+    /// Returns `true` if failure.
     [[nodiscard]] constexpr auto Err() const noexcept -> bool
     {
         return this->n_value != nullptr;
     }
 
-    constexpr auto Error() noexcept -> E&
+    constexpr auto Error() & noexcept -> E&
     {
-        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<void, E>` invariant reached");
         return this->n_value->Error();
     }
 
-    constexpr auto Error() const noexcept -> const E&
+    constexpr auto Error() const& noexcept -> const E&
     {
-        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<void, E>` invariant reached");
         return this->n_value->Error();
+    }
+
+    constexpr auto Error() && noexcept -> E&&
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<void, E>` invariant reached");
+        return VIOLET_MOVE(this->n_value->Error());
+    }
+
+    constexpr auto Error() const&& noexcept -> const E&&
+    {
+        VIOLET_DEBUG_ASSERT(this->Err(), "`Result<void, E>` invariant reached");
+        return VIOLET_MOVE(this->n_value->Error());
     }
 
     template<typename Fun>
