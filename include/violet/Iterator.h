@@ -85,9 +85,9 @@
 
 #pragma once
 
-#include "violet/Container/Optional.h"
-#include "violet/Container/Result.h"
-#include "violet/Violet.h"
+#include <violet/Container/Optional.h>
+#include <violet/Container/Result.h>
+#include <violet/Violet.h>
 
 #include <concepts>
 #include <type_traits>
@@ -98,50 +98,6 @@ namespace violet {
 template<class Impl>
 struct Iterator;
 struct SizeHint;
-
-namespace iter::detail {
-
-    template<class T>
-    struct is_optional: std::false_type {};
-
-    template<class U>
-    struct is_optional<Optional<U>>: std::true_type {};
-
-    template<class T>
-    inline constexpr bool is_optional_v = is_optional<T>::value;
-
-    template<class T>
-    struct optional_type;
-
-    template<class U>
-    struct optional_type<Optional<U>> {
-        using type = U;
-    };
-
-    template<class T>
-    using optional_type_t = typename optional_type<T>::type;
-
-    template<typename T>
-    concept ValidIterable = requires(T ty) {
-        // Constraint that requires `ty.Next()` to be callable.
-        { ty.Next() } -> std::same_as<decltype(ty.Next())>;
-
-        // Constraint that the type that is returned by `ty.Next()` is a
-        // `Noelware::Violet::Optional`.
-        requires detail::is_optional_v<std::remove_cvref_t<decltype(ty.Next())>>;
-    };
-
-    template<typename T>
-    concept ValidDoubleEndedIterable = ValidIterable<T> && requires(T ty) {
-        // Constraint that requires `ty.NextBack()` to be callable.
-        { ty.NextBack() } -> std::same_as<decltype(ty.Next())>;
-
-        // Constraint that the type that is returned by `ty.NextBack()` is a
-        // `Noelware::Violet::Optional`.
-        requires detail::is_optional_v<std::remove_cvref_t<decltype(ty.NextBack())>>;
-    };
-
-} // namespace iter::detail
 
 /// Concept that identifies types implementing the Violet iteration protocol.
 ///
@@ -154,7 +110,14 @@ namespace iter::detail {
 /// This mirrors the constraints of Rust's `Iterator` trait. Any type meeting
 /// these requirements can be adapted into the Violet iterator ecosystem.
 template<typename T>
-concept Iterable = iter::detail::ValidIterable<std::remove_cvref_t<T>>;
+concept Iterable = requires(T ty) {
+    // Constraint that requires `ty.Next()` to be callable.
+    { ty.Next() } -> std::same_as<decltype(ty.Next())>;
+
+    // Constraint that the type that is returned by `ty.Next()` is a
+    // `Noelware::Violet::Optional`.
+    requires is_optional_v<std::remove_cvref_t<decltype(ty.Next())>>;
+};
 
 /// Concept for types that support double-ended iteration.
 ///
@@ -165,13 +128,20 @@ concept Iterable = iter::detail::ValidIterable<std::remove_cvref_t<T>>;
 /// This corresponds to Rust's `DoubleEndedIterator`, enabling operations
 /// that pull items from both the front and back of a sequence.
 template<typename T>
-concept DoubleEndedIterable = iter::detail::ValidDoubleEndedIterable<std::remove_cvref_t<T>>;
+concept DoubleEndedIterable = Iterable<T> && requires(T ty) {
+    // Constraint that requires `ty.NextBack()` to be callable.
+    { ty.NextBack() } -> std::same_as<decltype(ty.Next())>;
+
+    // Constraint that the type that is returned by `ty.NextBack()` is a
+    // `Noelware::Violet::Optional`.
+    requires is_optional_v<std::remove_cvref_t<decltype(ty.NextBack())>>;
+};
 
 namespace iter {
 
     /// Extracts the type that is returned of a iterator's `Next()` method.
     template<typename T>
-    using TypeOf = detail::optional_type_t<decltype(std::declval<T>().Next())>;
+    using TypeOf = optional_type_t<decltype(std::declval<T>().Next())>;
 
     namespace detail {
         /// Sentinel object used to mark the end of iteration when integrating a
@@ -584,12 +554,11 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::find_map()`].
     /// [`Iterator::find_map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.find_map
     template<typename Fun>
-        requires(callable<Fun, iter::TypeOf<Impl>>
-            && iter::detail::is_optional_v<std::invoke_result_t<Fun, iter::TypeOf<Impl>>>)
+        requires(callable<Fun, iter::TypeOf<Impl>> && is_optional_v<std::invoke_result_t<Fun, iter::TypeOf<Impl>>>)
     auto FindMap(Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
     {
         using Ret = std::invoke_result_t<Fun, iter::TypeOf<Impl>>;
-        using U = iter::detail::optional_type_t<Ret>;
+        using U = optional_type_t<Ret>;
 
         while (auto value = getThisObject().Next()) {
             if (Optional<U> mapped = std::invoke(VIOLET_FWD(Fun, fun), *value)) {
@@ -605,12 +574,11 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::find_map()`].
     /// [`Iterator::find_map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.find_map
     template<typename Fun>
-        requires(callable<Fun, iter::TypeOf<Impl>>
-            && iter::detail::is_optional_v<std::invoke_result_t<Fun, iter::TypeOf<Impl>>>)
+        requires(callable<Fun, iter::TypeOf<Impl>> && is_optional_v<std::invoke_result_t<Fun, iter::TypeOf<Impl>>>)
     auto FindMap(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
     {
         using Ret = std::invoke_result_t<Fun, iter::TypeOf<Impl>>;
-        using U = iter::detail::optional_type_t<Ret>;
+        using U = optional_type_t<Ret>;
 
         while (auto value = getThisObject().Next()) {
             if (Optional<U> mapped = std::invoke(VIOLET_FWD(Fun, fun), *value)) {

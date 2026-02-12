@@ -7,6 +7,21 @@ availableAt:
 ---
 
 ### unreleased
+#### Noelware.Violet
+- Add documentation for all headers inside of this framework ([`@auguwu`])
+
+#### Noelware.Violet.IO
+- Add documentation for all headers inside of this framework ([`@auguwu`])
+
+### Noelware.Violet.Filesystem
+- Add documentation for all headers inside of this framework ([`@auguwu`])
+
+### Noelware.Violet.Events
+- Add documentation for all headers inside of this framework ([`@auguwu`])
+
+### Noelware.Violet.Testing
+- Add documentation for all headers inside of this framework ([`@auguwu`])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.02.04...master>
 
 ### 26.03.04

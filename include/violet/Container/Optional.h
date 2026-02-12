@@ -58,6 +58,42 @@ struct is_optional<std::optional<T>>: std::true_type {};
 template<typename T>
 static constexpr bool is_optional_v = is_optional<T>::value;
 
+/// Type trait to extract the inner type from an [`Optional`] or [`std::optional`].
+///
+/// The primary template (`T`) is intentionally left undefined. It is meant to be specialized
+/// on arbitrary optional types, most used in the `violet/Iterator.h` header.
+///
+/// @tparam T The type from which to extract an inner value type.
+template<class T>
+struct optional_type;
+
+/// Specialization of [`optional_type`] for [`violet::Optional`].
+template<class U>
+struct optional_type<Optional<U>> {
+    /// Extracted inner type from [`violet::Optional`]
+    using type = U;
+};
+
+/// Specialization of [`optional_type`] for [`std::optional`].
+template<class U>
+struct optional_type<std::optional<U>> {
+    /// Extracted inner type from [`violet::Optional`]
+    using type = U;
+};
+
+/// Convenience alias for accessing the extracted inner type.
+///
+/// It is the equivalent to `typename violet::optional_type<T>::type`.
+///
+/// @tparam T which optional wrapper whose inner type should be extracted.
+template<class T>
+using optional_type_t = typename optional_type<T>::type;
+
+/// Constructs an [`Optional`] containing a value.
+///
+/// @tparam T value type to store
+/// @tparam Args argument types that are forwarded to `T`'s constructor
+/// @param args arguments that are forwarded to `T`'s constructor
 template<typename T, typename... Args>
 constexpr static auto Some(Args&&... args) -> Optional<T>
 {
@@ -66,6 +102,46 @@ constexpr static auto Some(Args&&... args) -> Optional<T>
 
 // NOLINTBEGIN(cppcoreguidelines-pro-type-union-access)
 
+/// A container type that may or may not contain a value, analogous to Rust's [`Option`] enumeration
+/// and C++'s [`std::optional`] with functional-style utilities.
+///
+/// [`Option`]: https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html
+///
+/// ## Type Requirements
+/// - Be an object type
+/// - Not be a reference, use [`std::remove_cvref_t`] to remove const and volatile requirements.
+/// - Be destructible, copyable, and movable.
+///
+/// ## Examples
+/// ```cpp
+/// #include <violet/Container/Optional.h>
+///
+/// using violet::Some;
+/// using violet::Optional;
+/// using violet::Nothing;
+///
+/// auto value = Some<int>(10);
+/// auto doubled = value.Map([](int val) -> int { return val * 2; });
+/// VIOLET_ASSERT(value.HasValue(), "doctest failed: no value was provided");
+/// VIOLET_ASSERT(*value == 20, "doctest failed: didn't double up");
+///
+/// Optional<int> empty = Nothing;
+/// VIOLET_ASSERT(empty.UnwrapOr(5) == 5, "doctest failed: wasn't `5`");
+/// ```
+///
+/// ## Panic handling / Exceptions
+/// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+/// on if it is enabled or not.
+///
+/// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+/// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+/// instrinstics if [`std::unreachable`] isn't available.
+///
+/// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
+///
+/// ### Debug Assertions
+/// This type also triggers debug assertions via the [`VIOLET_DEBUG_ASSERT`] macro. You can disable this in production
+/// with the `-DNDEBUG` flag, which will remove unnecessary assertions.
 template<typename T>
 struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional final {
     static_assert(std::is_object_v<T>, "`Optional<T>` requires `T` to be an object type");
@@ -74,14 +150,30 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     static_assert(
         std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>, "Optional<T> must be movable or copyable");
 
+    /// Contained value type of this [`Optional`].
     using value_type = T;
 
+    /// Constructs a empty optional value.
     constexpr VIOLET_IMPLICIT Optional() noexcept {}
+
+    /// Constructs a empty optional value from [`std::nullopt`] or [`violet::Nothing`].
     constexpr VIOLET_IMPLICIT Optional(std::nullopt_t) noexcept
         : Optional()
     {
     }
 
+    /// Constructs a empty optional value from a copied [`std::nullopt`] or [`violet::Nothing`].
+    constexpr VIOLET_IMPLICIT Optional(std::nullopt_t&) noexcept
+        : Optional()
+    {
+    }
+
+    /// Constructs an engaged `Optional<T>` in-place. The contained value is constructed directly from `args...`.
+    ///
+    /// ## Exception Safety
+    /// Propagates exceptions from `T`'s constructor unless `noexcept`.
+    ///
+    /// @param args arguments forwarded to `T`'s constructor.
     template<typename... Args>
         requires(std::is_constructible_v<T, Args...>)
     constexpr VIOLET_EXPLICIT Optional(std::in_place_t, Args&&... args) noexcept(
@@ -239,6 +331,36 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         }
 
         (void)VIOLET_MOVE(other);
+        return *this;
+    }
+
+    /// Assigns a new value to the `Optional`.
+    ///
+    /// If engaged, assigns to the contained value. Otherwise, constructs a new value in-place.
+    constexpr auto operator=(const T& value) noexcept(
+        std::is_nothrow_copy_assignable_v<T> && std::is_nothrow_copy_constructible_v<T>) -> Optional&
+    {
+        if (this->n_engaged) {
+            this->getValueRef() = value;
+        } else {
+            ::new (&this->n_value) T(value);
+            this->n_engaged = true;
+        }
+        return *this;
+    }
+
+    /// Assigns a new value to the `Optional` by move.
+    ///
+    /// If engaged, move-assigns. Otherwise, constructs a new value in-place.
+    constexpr auto operator=(T&& value) noexcept(
+        std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_constructible_v<T>) -> Optional&
+    {
+        if (this->n_engaged) {
+            this->getValueRef() = VIOLET_MOVE(value);
+        } else {
+            ::new (&this->n_value) T(VIOLET_MOVE(value));
+            this->n_engaged = true;
+        }
         return *this;
     }
 
@@ -520,7 +642,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
 
     template<typename U, typename Fun>
         requires(callable<Fun, const T&> && std::convertible_to<std::invoke_result_t<Fun, const T&>, U>)
-    constexpr auto MapOr(U&& defaultValue, Fun&& fun) & noexcept(
+    constexpr auto MapOr(U&& defaultValue, Fun&& fun) const& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&>()))) -> Optional<U>
     {
         if (this->HasValue()) {
@@ -532,7 +654,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
 
     template<typename U, typename Fun>
         requires(callable<Fun, T &&> && std::convertible_to<std::invoke_result_t<Fun, T &&>, U>)
-    constexpr auto MapOr(U&& defaultValue, Fun&& fun) & noexcept(
+    constexpr auto MapOr(U&& defaultValue, Fun&& fun) && noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>()))) -> Optional<U>
     {
         if (this->HasValue()) {
@@ -544,7 +666,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
 
     template<typename U, typename Fun>
         requires(callable<Fun, const T &&> && std::convertible_to<std::invoke_result_t<Fun, const T &&>, U>)
-    constexpr auto MapOr(U&& defaultValue, Fun&& fun) const& noexcept(
+    constexpr auto MapOr(U&& defaultValue, Fun&& fun) const&& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&&>()))) -> Optional<U>
     {
         if (this->HasValue()) {
@@ -741,15 +863,15 @@ private:
 #endif
     {
 #ifdef VIOLET_HAS_EXCEPTIONS
-        throw std::logic_error(std::format("panic in `Optional<T>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(),
+        throw std::logic_error(std::format("[violet::Optional][{}:{}:{} ({})]: panic: {}", loc.file_name(), loc.line(),
             loc.column(), util::DemangleCXXName(loc.function_name()), message));
 #else
 #if VIOLET_REQUIRE_STL(202302L)
-        std::println(std::cerr, "panic in `Optional<T>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(), loc.column(),
-            util::DemangleCXXName(loc.function_name()), message);
+        std::println(std::cerr, "[violet::Optional][{}:{}:{} ({})]: panic: {}", loc.file_name(), loc.line(),
+            loc.column(), util::DemangleCXXName(loc.function_name()), message);
 #else
-        std::cerr << "panic in `Optional<T>` [" << loc.file_name() << ':' << loc.line() << ':' << loc.column() << " ("
-                  << util::DemangleCXXName(loc.function_name()) << ")]: " << message;
+        std::cerr << "[violet::Optional][" << loc.file_name() << ':' << loc.line() << ':' << loc.column() << " ("
+                  << util::DemangleCXXName(loc.function_name()) << ")] panic: " << message;
 #endif
 
         VIOLET_UNREACHABLE();
