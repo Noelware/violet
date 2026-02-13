@@ -172,12 +172,8 @@ auto File::MkSharedScopedLock() const noexcept -> io::Result<ScopeLock>
 auto File::Clone(bool shareFlags) const noexcept -> io::Result<File>
 {
     if (!this->Valid()) {
-#if VIOLET_USE_RTTI
-        return Err(io::Error::New<String>(
-            io::ErrorKind::Unsupported, "cannot `dup` this file as it points to an invalid descriptor"));
-#else
-        return Err(io::Error(io::ErrorKind::Unsupported));
-#endif
+        return Err(
+            VIOLET_IO_ERROR(Unsupported, String, "cannot `dup` this file as it points to an invalid descriptor"));
     }
 
     Int32 newFD = ::dup(this->n_fd.Get());
@@ -191,6 +187,11 @@ auto File::Clone(bool shareFlags) const noexcept -> io::Result<File>
     }
 
     return File(newFD);
+}
+
+auto File::Attributes() const noexcept -> io::Result<xattr::Iter>
+{
+    return xattr::List(this->n_fd.Get());
 }
 
 auto File::GetAttribute(Str key) const noexcept -> io::Result<Optional<Vec<UInt8>>>

@@ -21,11 +21,11 @@
 
 #pragma once
 
-#include "violet/Filesystem/Path.h"
-#include "violet/Filesystem/Permissions.h"
-#include "violet/IO/Descriptor.h"
-#include "violet/Support/Bitflags.h"
-#include "violet/Violet.h"
+#include <violet/Filesystem/Path.h>
+#include <violet/Filesystem/Permissions.h>
+#include <violet/IO/Descriptor.h>
+#include <violet/Support/Bitflags.h>
+#include <violet/Violet.h>
 
 #include <sstream>
 
@@ -37,6 +37,10 @@ namespace violet::filesystem {
 
 struct File;
 struct Metadata;
+
+namespace xattr {
+    struct Iter;
+}
 
 /// Configures options for opening a file.
 ///
@@ -555,6 +559,9 @@ struct File final {
     /// @param shareFlags whether if the cloned file should share the same flags
     /// as this file.
     [[nodiscard]] auto Clone(bool shareFlags = false) const noexcept -> io::Result<File>;
+
+    /// Returns an iterator that lists through this file's extended attributes.
+    [[nodiscard]] auto Attributes() const noexcept -> io::Result<xattr::Iter>;
 
     /// Returns an extended attribute by `key`.
     /// @param key the attribute to fetch

@@ -103,6 +103,14 @@ Dirs::Dirs(Args&&... args)
 {
 }
 
+Dirs::~Dirs() noexcept
+{
+    if (this->n_impl != nullptr) {
+        delete this->n_impl;
+        this->n_impl = nullptr;
+    }
+}
+
 auto Dirs::Next() noexcept -> Optional<Dirs::Item>
 {
     return this->n_impl->Next();
@@ -119,10 +127,65 @@ auto violet::filesystem::ReadDir(PathRef path) -> io::Result<Dirs>
 }
 
 struct WalkDirs::Impl final {
+    struct Frame final {
+        DIR* DirEntry = nullptr;
+        struct filesystem::Path Path;
+    };
+
+    VIOLET_DISALLOW_COPY_AND_MOVE(Impl);
+
+    VIOLET_EXPLICIT Impl(Vec<Frame> stack)
+        : n_stack(VIOLET_MOVE(stack))
+    {
+    }
+
+    ~Impl()
+    {
+        for (const auto& frame: this->n_stack) {
+            VIOLET_DEBUG_ASSERT(frame.DirEntry != nullptr, "existence of a dirent pointer failed");
+            ::closedir(frame.DirEntry);
+        }
+    }
+
     auto Next() -> Optional<WalkDirs::Item>
     {
+        while (!this->n_stack.empty()) {
+            auto& frame = this->n_stack.back();
+
+            errno = 0;
+            dirent* ent = ::readdir(frame.DirEntry);
+            if (ent == nullptr) {
+                ::closedir(frame.DirEntry);
+                this->n_stack.pop_back();
+
+                continue;
+            }
+
+            CStr name = ent->d_name;
+            if (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) {
+                continue;
+            }
+
+            Path path = frame.Path.Join(name);
+            auto metadata = filesystem::Metadata(static_cast<PathRef>(path), /*followSymlinks=*/false);
+            if (metadata.Err()) {
+                return Err(VIOLET_MOVE(metadata.Error()));
+            }
+
+            if (metadata->Type.Dir()) {
+                if (DIR* sub = ::opendir(path.Data().c_str()); sub != nullptr) {
+                    this->n_stack.push_back({ .DirEntry = sub, .Path = path });
+                }
+            }
+
+            return DirEntry{ .Path = path, .Metadata = metadata.Value() };
+        }
+
         return Nothing;
     }
+
+private:
+    Vec<Frame> n_stack;
 };
 
 template<typename... Args>
@@ -132,6 +195,14 @@ WalkDirs::WalkDirs(Args&&... args)
 {
 }
 
+WalkDirs::~WalkDirs()
+{
+    if (this->n_impl != nullptr) {
+        delete this->n_impl;
+        this->n_impl = nullptr;
+    }
+}
+
 auto WalkDirs::Next() noexcept -> Optional<WalkDirs::Item>
 {
     return this->n_impl->Next();
@@ -139,6 +210,7 @@ auto WalkDirs::Next() noexcept -> Optional<WalkDirs::Item>
 
 auto violet::filesystem::Metadata::FromPosix(struct stat st) noexcept -> Metadata
 {
+
 #ifdef VIOLET_APPLE_MACOS
 #define ST_MTIM st.st_mtimespec
 #define ST_ATIM st.st_atimespec
@@ -356,7 +428,6 @@ auto violet::filesystem::SetPermissions(PathRef path, Permissions perms) -> io::
 auto violet::filesystem::Rename(PathRef old, PathRef newPath) -> io::Result<void>
 {
     if (::rename(static_cast<CStr>(old), static_cast<CStr>(newPath)) == -1) {
-
         return Err(io::Error::OSError());
     }
 

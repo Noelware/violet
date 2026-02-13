@@ -73,23 +73,14 @@ auto violet::filesystem::xattr::Remove(value_type fd, Str key) noexcept -> io::R
 }
 
 struct Iter::Impl final {
-    static auto New(value_type fd) -> io::Result<Iter>
+    Impl(value_type fd, Vec<char> names)
+        : n_descriptor(fd)
+        , n_names(VIOLET_MOVE(names))
     {
-        Int64 size = ::flistxattr(fd, nullptr, 0);
-        if (size <= 0) {
-            return Err(io::Error::OSError());
-        }
-
-        Vec<char> names(size);
-        size = ::flistxattr(fd, names.data(), names.size());
-
-        if (size < 0) {
-            names.clear();
-            return Err(io::Error::OSError());
-        }
-
-        return Iter(fd, names);
     }
+
+    VIOLET_DISALLOW_COPY_AND_MOVE(Impl);
+    ~Impl() = default;
 
     auto Next() noexcept -> Optional<Item>
     {
@@ -111,20 +102,45 @@ struct Iter::Impl final {
     }
 
 private:
-    VIOLET_EXPLICIT Impl(value_type fd, Vec<char> names)
-        : n_descriptor(fd)
-        , n_names(VIOLET_MOVE(names))
-    {
-    }
-
     value_type n_descriptor;
     Vec<char> n_names;
     UInt n_offset = 0;
 };
 
+Iter::Iter(Impl* implementation) noexcept
+    : n_impl(implementation)
+{
+}
+
+Iter::~Iter() noexcept
+{
+    if (this->n_impl != nullptr) {
+        delete this->n_impl;
+        this->n_impl = nullptr;
+    }
+}
+
+auto Iter::Next() noexcept -> Optional<Item>
+{
+    return this->n_impl->Next();
+}
+
 auto violet::filesystem::xattr::List(value_type fd) noexcept -> io::Result<Iter>
 {
-    return Iter::Impl::New(fd);
+    Int64 size = ::flistxattr(fd, nullptr, 0);
+    if (size <= 0) {
+        return Err(io::Error::OSError());
+    }
+
+    Vec<char> names(size);
+    size = ::flistxattr(fd, names.data(), names.size());
+
+    if (size < 0) {
+        names.clear();
+        return Err(io::Error::OSError());
+    }
+
+    return Iter(new Iter::Impl(fd, names));
 }
 
 #endif

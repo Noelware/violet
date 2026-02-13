@@ -85,6 +85,7 @@ auto List(io::FileDescriptor::value_type fd) noexcept -> io::Result<Iter>;
 /// return [`violet::Nothing`].
 struct Iter final: public Iterator<Iter> {
     VIOLET_DISALLOW_CONSTRUCTOR(Iter);
+    ~Iter() noexcept;
 
     /// Item type that is returned.
     using Item = io::Result<Pair<String, Vec<UInt8>>>;
@@ -97,9 +98,9 @@ private:
 
     /// The platform-implementation of the iterator itself.
     struct Impl;
+    Impl* n_impl;
 
-    template<typename... Args>
-    VIOLET_EXPLICIT Iter(Args&&... args) noexcept(std::is_nothrow_constructible_v<Impl, Args...>);
+    VIOLET_EXPLICIT Iter(Impl* implementation) noexcept;
 };
 
 } // namespace violet::filesystem::xattr
