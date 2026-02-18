@@ -61,13 +61,18 @@ auto violet::filesystem::xattr::Set(value_type fd, Str key, Span<const UInt8> va
     return {};
 }
 
-auto violet::filesystem::xattr::Remove(value_type fd, Str key) -> io::Result<void>
+auto violet::filesystem::xattr::Remove(value_type fd, Str key) noexcept -> io::Result<void>
 {
     if (::fremovexattr(fd, key.data(), 0) < 0) {
         return Err(io::Error::OSError());
     }
 
     return {};
+}
+
+auto violet::filesystem::xattr::List(value_type) noexcept -> io::Result<Iter>
+{
+    return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
 }
 
 #endif
