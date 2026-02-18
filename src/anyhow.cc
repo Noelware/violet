@@ -36,11 +36,6 @@ inline void eprint(std::format_string<Args...> fmt, Args&&... args)
     std::print(std::cerr, fmt, VIOLET_FWD(Args, args)...);
 }
 
-inline void eprintln()
-{
-    std::println(std::cerr);
-}
-
 template<typename... Args>
 inline void eprintln(std::format_string<Args...> fmt, Args&&... args)
 {
@@ -212,12 +207,7 @@ void Error::Print() noexcept
             eprint("    ~> #");
             eprintColoured(colors, Style{}.Bold(), "{}", index - 1);
 
-            eprint(": {}", node->VTable.Message(node->Object));
-            eprintln();
-            eprint("        --> ");
-
-            eprintlnColoured(colors, Style{}.Dim().Italic(), "[{}:{}:{}]", node->Location.file_name(),
-                node->Location.line(), node->Location.column());
+            eprintln(": {}", node->VTable.Message(node->Object));
         }
 #else
         if (index == 0) {
@@ -232,16 +222,6 @@ void Error::Print() noexcept
             }
 
             std::cerr << ": " << node->VTable.Message(node->Object) << '\n';
-            std::cerr << "        --> ";
-
-            if (colors) {
-                std::cerr << Styled<String>(std::format("[{}:{}:{}]", node->Location.file_name(), node->Location.line(),
-                                                node->Location.column()),
-                    Style{}.Dim().Italic());
-            } else {
-                std::cerr << "[" << node->Location.file_name() << ':' << node->Location.line() << ':'
-                          << node->Location.column() << "]\n";
-            }
         }
 #endif
     }

@@ -46,6 +46,7 @@ auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
     }
 
     ssize_t bytes = 0;
+    ssize_t total = 0;
     while (true) {
         bytes = copy_file_range(
             /*infd=*/in->Descriptor(),
@@ -66,9 +67,11 @@ auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
 
             return Err(io::Error::OSError());
         }
+
+        total += bytes;
     }
 
-    return bytes;
+    return total;
 }
 
 #endif
