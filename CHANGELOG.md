@@ -10,7 +10,10 @@ availableAt:
 #### Noelware.Violet
 - Add documentation for all headers inside of this framework ([`@auguwu`])
 - Add **optional_type** and **optional_type_t** type traits inside of `violet/Container/Optional.h` rather than as internals ([`@auguwu`])
+- Add **result_type**, **result_value_type_t**, and **result_error_type_t** type traits ([`@auguwu`])
 - Remove source location printing in **violet::anyhow** ([`@auguwu`])
+- Add **VIOLET_TRY** and **VIOLET_TRY_VOID** macros for Clang/GCC ([`@auguwu`])
+- Add **VIOLET_UNIQUE_NAME** and **VIOLET_CONCAT** macros ([`@auguwu`])
 - **Breaking**: Return `U` instead of an always engaged `Optional<U>` in `Optional::MapOr` ([`@auguwu`])
 - **Breaking**: Add rvalue variants of `Result::Error()` and remove `Result::IntoErr()` ([`@auguwu`])
 
@@ -21,9 +24,6 @@ availableAt:
 - Add documentation for all headers inside of this framework ([`@auguwu`])
 - Added **xattr::List** to list a file's extended attributes, if supported ([`@auguwu`])
 - **Breaking [Linux]**: In `filesystem::Copy`, return the total amount of bytes rather than the last counter ([`@auguwu`])
-
-### Noelware.Violet.Testing
-- Add documentation for all headers inside of this framework ([`@auguwu`])
 
 **Git History**: <https://github.com/Noelware/violet/compare/26.02.04...master>
 

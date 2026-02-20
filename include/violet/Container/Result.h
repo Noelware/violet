@@ -99,6 +99,38 @@ struct is_result<Result<T, E>>: std::true_type {};
 template<typename T>
 static constexpr bool is_result_v = is_result<T>::value;
 
+/// A type-trait to extract the inner value and error types from an [`Result`] type.
+///
+/// The primary template is intentionally left undefined. It is meant to be specialized
+/// on arbitrary result types, mainly used in the `VIOLET_TRY_VOID` macro.
+///
+/// @tparam T The type from which to extract an inner value and error type.
+template<typename T>
+struct result_type;
+
+/// Specialization of [`result_type`] for [`violet::Result`].
+template<typename U, typename E>
+struct result_type<Result<U, E>> final {
+    using value_type = U;
+    using error_type = E;
+};
+
+/// Convenience alias for accessing the extracted inner value type.
+///
+/// It is the equivalent to `typename violet::result_type<T>::value_type`.
+///
+/// @tparam T which optional wrapper whose inner type should be extracted.
+template<typename T>
+using result_value_type_t = typename result_type<T>::value_type;
+
+/// Convenience alias for accessing the extracted inner error type.
+///
+/// It is the equivalent to `typename violet::result_type<T>::error_type`.
+///
+/// @tparam T which optional wrapper whose inner type should be extracted.
+template<typename T>
+using result_error_type_t = typename result_type<T>::error_type;
+
 /// A tagged error variant.
 ///
 /// `Err<E>` is a lightweight, non-zero abstraction used to explicitly construct `violet::Result<T, E>`
@@ -1310,6 +1342,9 @@ struct std::formatter<violet::Result<T, E>> final: public std::formatter<std::st
     ({                                                                                                                 \
         auto variable = (expr);                                                                                        \
         static_assert(::violet::is_result_v<decltype(variable)>, "expression didn't return a violet::Result");         \
+        static_assert(                                                                                                 \
+            ::std::is_void_v<::violet::result_value_type_t<decltype(variable)>>, "result value type must be `void`");  \
+                                                                                                                       \
         if ((variable).Err()) {                                                                                        \
             return ::violet::Err(VIOLET_MOVE((variable).Error()));                                                     \
         }                                                                                                              \

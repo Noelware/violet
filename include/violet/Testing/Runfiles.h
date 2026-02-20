@@ -32,10 +32,8 @@
 #include <violet/Violet.h>
 
 namespace violet {
-
 template<typename T>
 struct Optional;
-
 }
 
 namespace violet::testing::runfiles {
