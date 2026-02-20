@@ -28,6 +28,7 @@
 #include <violet/IO/Error.h>
 
 #include <cerrno>
+#include <cstring>
 #include <sys/xattr.h>
 
 using value_type = violet::io::FileDescriptor::value_type;
@@ -89,7 +90,7 @@ struct Iter::Impl final {
         }
 
         CStr name = this->n_names.data() + this->n_offset;
-        UInt len = std::strlen(name);
+        UInt len = ::strlen(name);
 
         this->n_offset += len + 1;
 
