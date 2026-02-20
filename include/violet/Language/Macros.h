@@ -331,3 +331,7 @@
 #else
 #error "Cannot determine endianness"
 #endif
+
+#define __violet_concat_inner__(x, y) x##y
+#define VIOLET_CONCAT(x, y) __violet_concat_inner__(x, y)
+#define VIOLET_UNIQUE_NAME(prefix) VIOLET_CONCAT(prefix, __COUNTER__)
