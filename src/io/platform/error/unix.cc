@@ -27,6 +27,7 @@
 #include <violet/IO/Error.h>
 
 #include <cerrno>
+#include <cstring>
 
 using violet::io::ErrorKind;
 using violet::io::PlatformError;
