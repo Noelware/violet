@@ -20,6 +20,7 @@ availableAt:
 - Add **VIOLET_UNIQUE_NAME** and **VIOLET_CONCAT** macros ([`@auguwu`])
 - **Breaking**: Return `U` instead of an always engaged `Optional<U>` in `Optional::MapOr` ([`@auguwu`])
 - **Breaking**: Add rvalue variants of `Result::Error()` and remove `Result::IntoErr()` ([`@auguwu`])
+- **Breaking**: Remove Abseil dependency as it is no longer needed ([`@auguwu`], [#27])
 
 #### Noelware.Violet.IO
 - Add documentation for all headers inside of this framework ([`@auguwu`])
@@ -130,4 +131,5 @@ This release indicates that Violet is ready to be shipped as a **MVP**. Report a
 [`@auguwu`]: https://github.com/auguwu
 
 [PR #23]: https://github.com/Noelware/violet/pull/23
+[#27]: https://github.com/Noelware/violet/issues/27
 [#22]: https://github.com/Noelware/violet/issues/22

@@ -40,7 +40,6 @@ cc_library(
     deps = [
         ":macros",
         ":policy_checks",
-        "@absl//absl/numeric:int128",
     ],
 )
 
