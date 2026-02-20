@@ -21,6 +21,8 @@
 
 #include <violet/IO/Experimental/Input/ByteArrayInputStream.h>
 
+#include <cstring>
+
 using violet::Span;
 using violet::UInt8;
 using violet::io::experimental::ByteArrayInputStream;

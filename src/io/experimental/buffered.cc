@@ -21,6 +21,8 @@
 
 #include <violet/IO/Experimental/BufferedInputStream.h>
 
+#include <cstring>
+
 using violet::io::experimental::BufferedInputStream;
 
 void BufferedInputStream::doRefill() noexcept

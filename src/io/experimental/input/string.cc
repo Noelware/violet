@@ -21,6 +21,8 @@
 
 #include <violet/IO/Experimental/Input/StringInputStream.h>
 
+#include <cstring>
+
 using violet::io::experimental::StringInputStream;
 
 auto StringInputStream::Read(Span<UInt8> buf) noexcept -> Result<UInt>
