@@ -1292,3 +1292,33 @@ struct std::formatter<violet::Result<T, E>> final: public std::formatter<std::st
         return ::std::formatter<std::string>::format(value.ToString(), cx);
     }
 };
+
+#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#define __violet_concat_inner__(x, y) x##y
+#define __violet_concat__(x, y) __violet_concat_inner__(x, y)
+#define __violet_unique_name__(prefix) __violet_concat__(prefix, __COUNTER__)
+
+#define __violet_try_impl__(expr, variable)                                                                            \
+    ({                                                                                                                 \
+        auto variable = (expr);                                                                                        \
+        static_assert(::violet::is_result_v<decltype(variable)>, "expression didn't return a violet::Result");         \
+        if ((variable).Err()) {                                                                                        \
+            return ::violet::Err(VIOLET_MOVE((variable).Error()));                                                     \
+        }                                                                                                              \
+        VIOLET_MOVE(variable.Value());                                                                                 \
+    })
+
+#define __violet_try_void_impl__(expr, variable)                                                                       \
+    VIOLET_DIAGNOSTIC_PUSH                                                                                             \
+    VIOLET_DIAGNOSTIC_IGNORE("-Wgnu-statement-expression-from-macro-expansion")                                        \
+    ({                                                                                                                 \
+        auto variable = (expr);                                                                                        \
+        static_assert(::violet::is_result_v<decltype(variable)>, "expression didn't return a violet::Result");         \
+        if ((variable).Err()) {                                                                                        \
+            return ::violet::Err(VIOLET_MOVE((variable).Error()));                                                     \
+        }                                                                                                              \
+    }) VIOLET_DIAGNOSTIC_POP
+
+#define VIOLET_TRY(expr) __violet_try_impl__(expr, __violet_unique_name__(__violet_try_expr_))
+#define VIOLET_TRY_VOID(expr) __violet_try_void_impl__(expr, __violet_unique_name__(__violet_try_void_expr_))
+#endif
