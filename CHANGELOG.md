@@ -7,6 +7,10 @@ availableAt:
 ---
 
 ### unreleased
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.04...master>
+
+### 26.03.05
 #### Noelware.Violet
 - Add documentation for all headers inside of this framework ([`@auguwu`])
 - Add **optional_type** and **optional_type_t** type traits inside of `violet/Container/Optional.h` rather than as internals ([`@auguwu`])
@@ -25,7 +29,7 @@ availableAt:
 - Added **xattr::List** to list a file's extended attributes, if supported ([`@auguwu`])
 - **Breaking [Linux]**: In `filesystem::Copy`, return the total amount of bytes rather than the last counter ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.02.04...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.02.05...26.02.04>
 
 ### 26.03.04
 - **Noelware.Violet.IO.Experimental**: Add `Position` and `EOS` methods to ByteArrayInputStream and StringInputStream ([`@auguwu`])
