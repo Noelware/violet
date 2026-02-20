@@ -25,6 +25,7 @@
 #include <violet/Violet.h>
 
 #include <expected>
+#include <functional>
 #include <source_location>
 #include <type_traits>
 

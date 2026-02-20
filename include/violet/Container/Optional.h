@@ -24,6 +24,7 @@
 #include <violet/Support/Demangle.h>
 #include <violet/Violet.h>
 
+#include <functional>
 #include <optional>
 #include <source_location>
 
