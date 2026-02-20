@@ -7,6 +7,8 @@ availableAt:
 ---
 
 ### unreleased
+#### Noelware.Violet
+- Fixed memory-related issues in **violet/anyhow.h** ([`@auguwu`])
 
 **Git History**: <https://github.com/Noelware/violet/compare/26.03.04...master>
 

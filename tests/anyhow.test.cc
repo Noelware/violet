@@ -43,18 +43,36 @@ TEST(Anyhow, ContextWithString)
 {
     terminal::SetColorChoice(terminal::ColorChoice::Never);
 
-    anyhow::Error base(dummy_t("hello world"));
-    anyhow::Error contextual = base.Context("additional context");
-
-    contextual.Print();
+    anyhow::Error error = anyhow::Error(dummy_t("hello world")).Context("additional context");
+    error.Print();
 
     std::ostringstream os;
     auto* oldOs = std::cerr.rdbuf(os.rdbuf());
-    contextual.Print();
+    error.Print();
     std::cerr.rdbuf(oldOs);
 
     String output = os.str();
     EXPECT_NE(output.find("additional context"), String::npos);
     EXPECT_NE(output.find("hello world"), String::npos);
     EXPECT_LT(output.find("hello world"), output.find("additional context"));
+}
+
+TEST(Anyhow, DanglingContextLeak)
+{
+    {
+        auto base = anyhow::Error("base error");
+        auto wrapped = anyhow::Error("context").Context(VIOLET_MOVE(base));
+    }
+}
+
+TEST(Anyhow, TempResultMove)
+{
+    auto pleaseNotFuckUp = []() -> anyhow::Result<int> { return Err(anyhow::Error("inner")); };
+    auto test = [&]() -> auto {
+        auto result = pleaseNotFuckUp();
+        return anyhow::Error("outer context").Context(VIOLET_MOVE(result).Error());
+    };
+
+    auto error = test();
+    error.Print();
 }

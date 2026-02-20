@@ -76,7 +76,7 @@ struct Error final {
     {
     }
 
-    auto Context(Error error) noexcept -> Error;
+    auto Context(Error&& error) && noexcept -> Error;
 
     /// Produce a new `Error` that adds an additional context frame on top of the
     /// existing chain.
@@ -92,21 +92,17 @@ struct Error final {
     /// ```
     template<typename T>
         requires(!std::same_as<std::decay_t<T>, Error>)
-    auto Context(T object, std::source_location loc = std::source_location::current()) noexcept -> Error
+    auto Context(T object, std::source_location loc = std::source_location::current()) && noexcept -> Error
     {
-        Error error{};
-        node_t* next = nullptr;
-        if (this->n_node != nullptr) {
-            next = VIOLET_MOVE(this->n_node);
-            this->n_node = nullptr;
-        }
+        node_t* next = std::exchange(this->n_node, nullptr);
 
+        Error error{};
         error.n_node = node_t::New(VIOLET_MOVE(object), loc, next);
         return error;
     }
 
     /// Print a human-readable representation of the error to the process' standard error.
-    void Print() noexcept;
+    void Print() const noexcept;
 
 private:
     VIOLET_IMPLICIT Error() noexcept = default;
@@ -167,7 +163,12 @@ private:
                 },
 
                 [](const void* src, void* dst) -> void* { return new (dst) T(*static_cast<const T*>(src)); },
-                [](void* src) -> void { delete static_cast<T*>(src); }
+                [](void* src) -> void {
+                    T* ptr = static_cast<T*>(src);
+
+                    std::destroy_at(ptr);
+                    ::operator delete(ptr);
+                }
             };
 
             node->VTable = __vtable_for_object;

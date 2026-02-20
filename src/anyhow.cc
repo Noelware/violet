@@ -114,25 +114,23 @@ Error::~Error() noexcept
     }
 }
 
-auto Error::Context(Error context) noexcept -> Error
+auto Error::Context(Error&& context) && noexcept -> Error
 {
     if (context.n_node == nullptr) {
         return VIOLET_MOVE(*this);
     }
 
     if (this->n_node == nullptr) {
-        return context;
+        return VIOLET_MOVE(context);
     }
 
-    Error out{};
-    out.n_node = VIOLET_MOVE(context.n_node);
-
+    Error out = VIOLET_MOVE(context);
     node_t* tail = out.n_node;
     while (tail->Next != nullptr) {
         tail = tail->Next;
     }
 
-    tail->Next = VIOLET_MOVE(this->n_node);
+    tail->Next = this->n_node;
     this->n_node = nullptr;
 
     return out;
@@ -172,7 +170,7 @@ void eprintlnColoured(
 
 constexpr auto kRedBold = Style::RGB<91, 0, 0>().Bold();
 
-void Error::Print() noexcept
+void Error::Print() const noexcept
 {
     auto colors = violet::terminal::ColoursEnabled(terminal::StreamSource::Stderr);
     auto window = violet::terminal::QueryWindowInfo().UnwrapOr({ .Columns = 80, .Rows = 0 });
