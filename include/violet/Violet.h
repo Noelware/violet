@@ -270,7 +270,7 @@ inline void DoAssertion(bool condition, CStr condStr, Str message,
         os << '[' << loc.file_name() << ':' << loc.line() << ':' << loc.column() << "]: ";
         os << "condition '" << condStr << "' failed: " << message << '\n';
 
-        std::exit(1);
+        std::abort();
     }
 }
 
