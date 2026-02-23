@@ -7,7 +7,15 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.03.06...master>
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.07...master>
+
+### 26.03.07
+#### Noelware.Violet
+- Fix out of bounds string in **violet::sys::WorkingDirectory** ([`@auguwu`])
+- Don't use `VIOLET_ASSERT` in `violet::sys::SetEnv`, `violet::sys::RemoveEnv`
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.07...26.03.06>
 
 ### 26.03.06
 #### Noelware.Violet

@@ -1,0 +1,25 @@
+From 3692a62bf778743701999983b471629cebf2ba64 Mon Sep 17 00:00:00 2001
+From: martin4861 <martin.altenburg@swift-nav.com>
+Date: Mon, 5 Jan 2026 11:14:02 +0100
+Subject: [PATCH] Fix -Wunused-command-line-argument for clang
+
+---
+ refresh.template.py | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/refresh.template.py b/refresh.template.py
+index 194f365e..8628fc32 100644
+--- a/refresh.template.py
++++ b/refresh.template.py
+@@ -870,6 +870,11 @@ def _all_platform_patch(compile_args: typing.List[str]):
+     # For more context see: https://github.com/hedronvision/bazel-compile-commands-extractor/issues/21
+     compile_args = (arg for arg in compile_args if not arg == '-fno-canonical-system-headers')
+
++    # Strip out -c flag. It's not needed for language server analysis and causes errors
++    # when combined with preprocessing operations like dependency generation (-M flags).
++    # Error: "argument unused during compilation: '-c' [-Werror,-Wunused-command-line-argument]"
++    compile_args = (arg for arg in compile_args if arg != '-c')
++
+     # Strip out -gcc-toolchain to work around https://github.com/clangd/clangd/issues/1248
+     skip_next = False
+     new_compile_args = []

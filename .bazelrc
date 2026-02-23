@@ -50,9 +50,17 @@ build:libcxx --linkopt=-stdlib=libc++
 build:libcxx --linkopt=-lc++
 build:libcxx --linkopt=-lc++abi
 
+# `--config=host-libcxx` (C++): Enables compilation and linking with libc++ on host platform
+build:host-libcxx --host_cxxopt=-stdlib=libc++
+build:host-libcxx --host_linkopt=-stdlib=libc++
+build:host-libcxx --host_linkopt=-lc++
+build:host-libcxx --host_linkopt=-lc++abi
+
 # C++ (macOS, Linux): Disable warnings that are annoying
 build:linux --cxxopt=-Wno-unused-command-line-argument
 build:macos --cxxopt=-Wno-unused-command-line-argument
+build:linux --host_cxxopt=-Wno-unused-command-line-argument
+build:macos --host_cxxopt=-Wno-unused-command-line-argument
 
 # --config=cxx20: Test with C++20 (Linux, macOS)
 build:cxx20 --cxxopt=-std=c++20

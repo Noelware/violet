@@ -27,7 +27,8 @@ git_override(
     commit = "abb61a688167623088f8768cc9264798df6a9d10",
     patch_strip = 1,
     patches = [
-        "patches/000_hedron_compile_commands__fix_assertion.patch",
+        "patches/hedron_compile_commands/fix_assertion.patch",
+        "patches/hedron_compile_commands/ignore_c_flag.patch",
     ],
     remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
 )

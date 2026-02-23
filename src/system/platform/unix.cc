@@ -39,22 +39,31 @@ auto violet::sys::GetEnv(Str key) noexcept -> Optional<String>
 
 void violet::sys::SetEnv(Unsafe, Str key, Str value, bool replace)
 {
-    VIOLET_ASSERT(::setenv(key.data(), value.data(), replace) == 0, "setenv");
+    ::setenv(key.data(), value.data(), static_cast<int>(replace));
 }
 
 void violet::sys::RemoveEnv(Unsafe, Str key)
 {
-    VIOLET_ASSERT(::unsetenv(key.data()) == 0, "unsetenv");
+    ::unsetenv(key.data());
 }
 
 auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
 {
+    // When executed from `bazel run` or `bazel test`, we are placed in the runfiles
+    // directory, so we use the `BUILD_WORKING_DIRECTORY` environment variable to get
+    // the actual working directory.
+#ifdef BAZEL
+    if (auto wd = GetEnv("BUILD_WORKING_DIRECTORY")) {
+        return filesystem::Path(wd.Value());
+    }
+#endif
+
     Array<char, PATH_MAX> buf;
     if (::getcwd(buf.data(), buf.size()) == nullptr) {
         return Err(io::Error::OSError());
     }
 
-    return filesystem::Path(buf.data(), buf.size());
+    return filesystem::Path(buf.data());
 }
 
 auto violet::sys::SetWorkingDir(filesystem::PathRef path) -> io::Result<void>
