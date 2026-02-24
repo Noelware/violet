@@ -57,7 +57,7 @@ TEST(Strings, TrimWithCustomPredicate)
     EXPECT_EQ(Trim("XXhellXX", isX), "hell");
 }
 
-TEST(StringsTest, SplitOnce)
+TEST(Strings, SplitOnce)
 {
     {
         auto result = SplitOnce("key:value", ':');
@@ -80,7 +80,7 @@ TEST(StringsTest, SplitOnce)
     }
 }
 
-TEST(StringsTest, SplitConsecutiveDelimiters)
+TEST(Strings, SplitConsecutiveDelimiters)
 {
     auto iter = Split("a,,c", ',');
     auto tokens = iter.Collect<Vec<Str>>();
@@ -91,7 +91,7 @@ TEST(StringsTest, SplitConsecutiveDelimiters)
     EXPECT_EQ(tokens[2], "c");
 }
 
-TEST(StringsTest, SplitNoDelimiter)
+TEST(Strings, SplitNoDelimiter)
 {
     auto iter = Split("abc", ',');
     auto next = iter.Next();
@@ -101,8 +101,74 @@ TEST(StringsTest, SplitNoDelimiter)
     EXPECT_FALSE(iter.Next());
 }
 
-TEST(StringsTest, SplitEmptyString)
+TEST(Strings, SplitEmptyString)
 {
     auto iter = Split("", ',');
     EXPECT_FALSE(iter.Next());
+}
+
+TEST(Strings, SplitNBasic)
+{
+    auto iter = SplitN<2>("a:b:c:d", ':');
+
+    auto first = iter.Next();
+    ASSERT_TRUE(first);
+    ASSERT_EQ(first.Value(), "a");
+
+    auto second = iter.Next();
+    ASSERT_TRUE(second);
+    ASSERT_EQ(second.Value(), "b");
+
+    auto third = iter.Next();
+    ASSERT_TRUE(third);
+    ASSERT_EQ(third.Value(), "c:d");
+
+    ASSERT_FALSE(iter.Next());
+}
+
+TEST(Strings, SplitNDefaultDelim)
+{
+    auto iter = SplitN<2>("Hello World");
+
+    auto first = iter.Next();
+    ASSERT_TRUE(first);
+    ASSERT_EQ(first.Value(), "Hello");
+
+    auto second = iter.Next();
+    ASSERT_TRUE(second);
+    ASSERT_EQ(second.Value(), "World");
+
+    ASSERT_FALSE(iter.Next());
+}
+
+TEST(Strings, SplitNWithNoDelimiter)
+{
+    auto iter = SplitN<3>("abcd", ':');
+
+    auto first = iter.Next();
+    ASSERT_TRUE(first);
+    ASSERT_EQ(first.Value(), "abcd");
+
+    ASSERT_FALSE(iter.Next());
+    ASSERT_FALSE(iter.Next());
+    ASSERT_FALSE(iter.Next());
+}
+
+TEST(Strings, SplitNEmptyInput)
+{
+    auto it = SplitN<2>("");
+
+    auto p1 = it.Next();
+    ASSERT_FALSE(p1.HasValue());
+}
+
+TEST(Strings, SplitNMaxSplitsExact)
+{
+    auto it = SplitN<3>("a:b:c:d:e", ':');
+
+    ASSERT_EQ(*it.Next(), "a");
+    ASSERT_EQ(*it.Next(), "b");
+    ASSERT_EQ(*it.Next(), "c"); // remainder after 3 splits
+    ASSERT_EQ(*it.Next(), "d:e");
+    EXPECT_FALSE(it.Next());
 }

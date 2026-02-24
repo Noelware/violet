@@ -335,3 +335,11 @@
 #define __violet_concat_inner__(x, y) x##y
 #define VIOLET_CONCAT(x, y) __violet_concat_inner__(x, y)
 #define VIOLET_UNIQUE_NAME(prefix) VIOLET_CONCAT(prefix, __COUNTER__)
+
+#if VIOLET_HAS_ATTRIBUTE(deprecated)
+#define VIOLET_DEPRECATED(since) [[deprecated("since " #since)]]
+#define VIOLET_DEPRECATED_BECAUSE(since, message) [[deprecated("since " #since ": " message)]]
+#else
+#define VIOLET_DEPRECATED(since)
+#define VIOLET_DEPRECATED_BECAUSE(since, message)
+#endif

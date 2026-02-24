@@ -7,6 +7,9 @@ availableAt:
 ---
 
 ### unreleased
+#### Noelware.Violet
+- Add **violet::strings::SplitN** utility ([`@auguwu`])
+- Added **VIOLET_DEPRECATED** and **VIOLET_DEPRECATED_BECAUSE** macros ([`@auguwu`])
 
 **Git History**: <https://github.com/Noelware/violet/compare/26.03.07...master>
 

@@ -159,6 +159,88 @@ private:
     UInt n_revPos = 0;
 };
 
-static_assert(Iterable<Split>, "`Split` is not a valid iterable object");
+static_assert(Iterable<Split>, "`Split` is not a valid iterable");
+
+/// A fixed-count, splitting iterator over a string slice.
+///
+/// `SplitN<N>` will split the input string atmost `N` times using a given delimiter
+/// or `' '` as the default delimiter. After `N` splits, the remainder of the string is returned
+/// as the last element.
+///
+/// ### Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// auto it = violet::strings::SplitN<2>("a:b:c:d", ':');
+///
+/// auto a = it.Next();
+/// assert(a.HasValueAnd([](const Str& input) -> bool { return input == "a"; }));
+///
+/// auto b = it.Next();
+/// assert(b.HasValueAnd([](const Str& input) -> bool { return input == "b"; }));
+///
+/// auto c = it.Next();
+/// assert(c.HasValueAnd([](const Str& input) -> bool { return input == "c"; }));
+///
+/// auto d = it.Next();
+/// assert(d.HasValueAnd([](const Str& input) -> bool { return input == "d"; }));
+///
+/// auto e = it.Next();
+/// assert(!e.HasValue());
+/// ```
+template<UInt N>
+struct SplitN final: public Iterator<SplitN<N>> {
+    /// Construct the iterator with a given input using the default delimiter (`' '`)
+    VIOLET_IMPLICIT SplitN(Str input) noexcept
+        : SplitN<N>(input, ' ')
+    {
+    }
+
+    /// Construct the iterator with a given input and delimiter.
+    /// @param input input to split
+    /// @param delim the delimiter to check
+    VIOLET_IMPLICIT SplitN(Str input, char delim) noexcept
+        : n_input(input)
+        , n_delim(delim)
+    {
+    }
+
+    /// Advances the iterator and returns the next substring.
+    /// @returns the next segement if available, or [`Nothing`] if iteration is complete.
+    auto Next() noexcept -> Optional<Str>
+    {
+        if (this->n_pos >= this->n_input.size()) {
+            return Nothing;
+        }
+
+        if (this->n_splits >= N) {
+            auto remainder = this->n_input.substr(this->n_pos);
+            this->n_pos = this->n_input.size() + 1;
+
+            return remainder;
+        }
+
+        auto next = this->n_input.find(this->n_delim, this->n_pos);
+        if (next == Str::npos) {
+            auto piece = this->n_input.substr(this->n_pos);
+            this->n_pos = this->n_input.size() + 1;
+            this->n_splits++;
+
+            return piece;
+        }
+
+        auto piece = this->n_input.substr(this->n_pos, next - this->n_pos);
+        this->n_pos = next + 1;
+        this->n_splits++;
+
+        return piece;
+    }
+
+private:
+    Str n_input;
+    char n_delim;
+    UInt n_pos = 0;
+    UInt n_splits = 0;
+};
 
 } // namespace violet::strings
