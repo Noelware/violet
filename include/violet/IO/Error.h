@@ -331,7 +331,7 @@ private:
         std::monostate,      //< used for the private default constructor, considered invalid.
         ErrorKind,           //< a error with just the error kind
         simple_message,      //< a error kind with message
-        PlatformError,       //< a platform based error
+        PlatformError        //< a platform based error
     > n_repr;
     // clang-format on
 #endif
