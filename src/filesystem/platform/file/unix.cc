@@ -62,8 +62,7 @@ File::~File()
 auto File::Open(PathRef path, OpenOptions opts) -> io::Result<File>
 {
     Int32 flags = 0;
-
-    if (opts.n_bits.Intersects(OpenOptions::flag::kRead | OpenOptions::flag::kWrite)) {
+    if (opts.n_bits.Intersects(OpenOptions::flag::kRead) && opts.n_bits.Intersects(OpenOptions::flag::kWrite)) {
         flags |= O_RDWR;
     } else if (opts.n_bits.Contains(OpenOptions::flag::kRead)) {
         flags |= O_RDONLY;
@@ -92,6 +91,7 @@ auto File::Open(PathRef path, OpenOptions opts) -> io::Result<File>
         mode = static_cast<mode_t>(opts.n_mode);
     }
 
+    std::println("flags={} mode={} path={}", flags, mode, path);
     Int32 fd = ::open(static_cast<CStr>(path), flags, mode);
     if (fd < 0) {
         return Err(io::Error::OSError());

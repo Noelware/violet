@@ -111,7 +111,7 @@ auto detectWorkspaceName() -> String
         auto canon = Canonicalize(repoMappingPath);
         VIOLET_ASSERT(canon.Ok(), "failed to canoncalize (and resolve symlinks) of `_repo_mapping`");
 
-        auto runfilesRepoMapping = File::Open(canon.Value(), OpenOptions{}.Read(true));
+        auto runfilesRepoMapping = File::Open(canon.Value(), OpenOptions{}.Read());
         if (runfilesRepoMapping.Ok()) {
             Vec<UInt8> buf(8192);
 
@@ -161,7 +161,7 @@ auto detectWorkspaceName() -> String
             }
         } else {
 #ifndef VIOLET_RUNFILES_LOGS
-            std::cerr << "[violet/testing/runfiles@error] failed to read file '" << runfilesDir->ToString()
+            std::cerr << "[violet/testing/runfiles@error] failed to open file '" << canon.Value()
                       << "' (tests might fail): " << VIOLET_MOVE(runfilesRepoMapping.Error()).ToString() << '\n';
 #endif
         }

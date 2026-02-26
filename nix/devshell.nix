@@ -24,6 +24,7 @@
   lib,
   stdenvAdapters,
   llvmPackages_21,
+  wrapCCWith,
   ## os-specific
   ### - linux
   valgrind,
@@ -49,12 +50,16 @@
 }: let
   inherit
     (import ./lib/common.nix {
-      inherit stdenv llvmPackages_21 stdenvAdapters lib;
+      inherit stdenv llvmPackages_21 stdenvAdapters lib wrapCCWith;
     })
     llvm
     ;
 
-  darwinPackages = [apple-sdk_15];
+  darwinPackages = [
+    apple-sdk_15
+    llvm.lld
+  ];
+
   linuxPackages = [valgrind];
 
   packages =

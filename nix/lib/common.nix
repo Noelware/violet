@@ -30,7 +30,7 @@ pkgs: {
     package = pkgs."llvmPackages_${version}";
   in {
     inherit version package;
-    inherit (package) compiler-rt libcxx bintools lldb;
+    inherit (package) compiler-rt libcxx bintools lldb lld;
 
     clang-tools = package.clang-tools.override {
       enableLibcxx = true;
