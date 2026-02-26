@@ -173,11 +173,13 @@ TempFile::TempFile(TempFile&& other) noexcept
 TempFile::~TempFile()
 {
     if (!this->n_persist) {
-        if (auto path = this->n_explicitPath; !path->Empty()) {
+        if (this->n_explicitPath.HasValueAnd([](auto& value) -> bool { return !value.Empty(); })) {
             VIOLET_DIAGNOSTIC_PUSH
             VIOLET_DIAGNOSTIC_IGNORE("-Wunused-value")
 
-            filesystem::RemoveAllDirs(*path);
+            auto path = this->n_explicitPath.Value();
+            filesystem::RemoveAllDirs(path);
+            filesystem::RemoveFile(path);
 
             VIOLET_DIAGNOSTIC_POP
 

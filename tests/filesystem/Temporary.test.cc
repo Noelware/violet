@@ -67,36 +67,30 @@ TEST(TempDirs, MoveSemantics)
     EXPECT_TRUE(tmpdir->Path().Empty());
 }
 
-// TEST(TempFiles, CreationAndAutoDelete)
-// {
-//     Path path;
-//     {
-//         // auto tmpfile = TempBuilder().WithPrefix("gtest-file-").MkFile();
-//         // ASSERT_TRUE(tmpfile);
+TEST(TempFiles, CreationAndAutoDelete)
+{
+    Path path;
+    {
+        auto tmpfile = TempBuilder{}.WithSuffix(".txt").MkFile();
+        ASSERT_TRUE(tmpfile) << "failed to build temporary file: " << tmpfile.Error();
 
-//         // std::cout << tmpfile->Path().Value() << '\n';
+        auto file = tmpfile->Path();
+        ASSERT_TRUE(file) << "no path was registered";
 
-//         // path = *tmpfile->Path().Value();
-//         // ASSERT_TRUE(filesystem::Exists(path));
+        path = file.Unwrap();
+        auto exists = filesystem::TryExists(path);
+        ASSERT_TRUE(exists) << "failed to check existence of path [" << path << "]: " << exists.Error();
+        ASSERT_TRUE(exists.Value()) << "path [" << path << "] doesn't exist?!";
 
-//         // Array<UInt8, 5> hello({ 'h', 'e', 'l', 'l', '0' });
-//         // ASSERT_TRUE(tmpfile->File().Write(hello));
-//     }
+        // Try to write to the file
+        Array<UInt8, 5> hello({ 'h', 'e', 'l', 'l', 'o' });
+        auto writeResult = tmpfile->File().Write(hello);
+        ASSERT_TRUE(writeResult) << "failed to write `hello' to path [" << path << "]: " << writeResult.Error();
+        EXPECT_EQ(writeResult.Value(), hello.size());
+        ASSERT_TRUE(tmpfile->File().Flush()) << "failed to flush changes";
+    }
 
-//     // ASSERT_FALSE(filesystem::Exists(path));
-// }
-
-// TEST(TempFiles, PersistFile)
-// {
-//     auto tmpfile = TempBuilder().MkFile();
-//     ASSERT_TRUE(tmpfile);
-
-//     Array<UInt8, 5> hello({ 'h', 'e', 'l', 'l', '0' });
-//     ASSERT_TRUE(tmpfile->File().Write(hello));
-
-//     Path dst = "persisted.txt";
-//     auto res = VIOLET_MOVE(tmpfile.Value()).Persist(dst);
-//     ASSERT_TRUE(res);
-//     ASSERT_TRUE(filesystem::Exists(dst));
-//     ASSERT_TRUE(filesystem::RemoveFile(dst));
-// }
+    auto exists = filesystem::TryExists(path);
+    ASSERT_TRUE(exists) << "failed to check existence of path [" << path << "]: " << exists.Error();
+    ASSERT_FALSE(exists.Value()) << "file persisted out of scope?!";
+}
