@@ -21,105 +21,130 @@
 
 #pragma once
 
-#include "violet/Violet.h"
+#include <violet/Violet.h>
 
 #include <type_traits>
 
 namespace violet {
 
-/// Determines if `E` is a valid enumeration to be used with `Bitflags`.
 template<typename E>
-concept ValidBitflagsEnum = std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>;
-
-template<ValidBitflagsEnum E>
+    requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
 struct VIOLET_API Bitflags final {
     using underlying_type = std::underlying_type_t<E>;
 
-    constexpr VIOLET_IMPLICIT Bitflags() = default;
-    constexpr VIOLET_IMPLICIT Bitflags(E enum_)
-        : n_bits(static_cast<underlying_type>(enum_))
-    {
-    }
+    constexpr VIOLET_IMPLICIT Bitflags() noexcept = default;
 
-    constexpr VIOLET_EXPLICIT Bitflags(underlying_type bits)
+    constexpr VIOLET_IMPLICIT Bitflags(underlying_type bits) noexcept
         : n_bits(bits)
     {
     }
 
-    constexpr auto Contains(E enum_) const noexcept -> bool
+    constexpr VIOLET_IMPLICIT Bitflags(E enum_) noexcept
+        : Bitflags(static_cast<underlying_type>(enum_))
     {
-        return Contains(static_cast<underlying_type>(enum_));
     }
 
-    constexpr auto Contains(underlying_type ty) const noexcept -> bool
+    constexpr auto Contains(Bitflags flags) const noexcept -> bool
     {
-        return (this->n_bits & ty) != 0;
+        return (this->n_bits & flags.n_bits) == flags.n_bits;
     }
 
-    constexpr void Add(underlying_type bit) noexcept
+    constexpr auto Intersects(Bitflags flags) const noexcept -> bool
     {
-        this->n_bits |= bit;
+        return (this->n_bits & flags.n_bits) != 0;
     }
 
-    constexpr void Add(E enum_) noexcept
+    constexpr auto Remove(Bitflags flags) noexcept -> Bitflags&
     {
-        return Add(static_cast<underlying_type>(enum_));
+        this->n_bits &= ~flags.n_bits;
+        return *this;
     }
 
-    constexpr void Remove(underlying_type ty) noexcept
+    constexpr auto Apply(Bitflags flags) noexcept -> Bitflags&
     {
-        this->n_bits &= ty;
+        this->n_bits |= flags.n_bits;
+        return *this;
     }
 
-    constexpr void Remove(E enum_) noexcept
+    constexpr auto Toggle(Bitflags flags) noexcept -> Bitflags&
     {
-        return Remove(static_cast<underlying_type>(enum_));
+        this->n_bits ^= flags.n_bits;
+        return *this;
     }
 
-    constexpr VIOLET_EXPLICIT operator bool() const noexcept
-    {
-        return this->n_bits != 0;
-    }
-
-    constexpr VIOLET_EXPLICIT operator underlying_type() const noexcept
+    constexpr auto Get() const noexcept -> underlying_type
     {
         return this->n_bits;
     }
 
-#define OPERATOR_ARG2(OP)                                                                                              \
-    friend constexpr auto operator OP(Bitflags lhs, Bitflags rhs) noexcept -> Bitflags                                 \
-    {                                                                                                                  \
-        return Bitflags(lhs.n_bits OP rhs.n_bits);                                                                     \
+    constexpr auto operator|=(Bitflags other) noexcept -> Bitflags&
+    {
+        n_bits |= other.n_bits;
+        return *this;
     }
 
-#define OPERATOR_ARG1(OP)                                                                                              \
-    friend constexpr auto operator OP(Bitflags other) noexcept -> Bitflags                                             \
-    {                                                                                                                  \
-        return Bitflags(OP other.n_bits);                                                                              \
+    constexpr auto operator&=(Bitflags other) noexcept -> Bitflags&
+    {
+        n_bits &= other.n_bits;
+        return *this;
     }
 
-    OPERATOR_ARG2(|);
-    OPERATOR_ARG2(^);
-    OPERATOR_ARG1(~);
-
-#undef OPERATOR_ARG1
-#undef OPERATOR_ARG2
-
-#define OPERATOR_MUTATE(OP)                                                                                            \
-    constexpr auto operator OP(Bitflags other) noexcept -> Bitflags&                                                   \
-    {                                                                                                                  \
-        this->n_bits OP other.n_bits;                                                                                  \
-        return *this;                                                                                                  \
+    constexpr auto operator^=(Bitflags other) noexcept -> Bitflags&
+    {
+        n_bits ^= other.n_bits;
+        return *this;
     }
 
-    OPERATOR_MUTATE(|=);
-    OPERATOR_MUTATE(&=);
-    OPERATOR_MUTATE(^=);
+    constexpr auto operator|(Bitflags other) const noexcept -> Bitflags
+    {
+        return Bitflags(n_bits | other.n_bits);
+    }
 
-#undef OPERATOR_MUTATE
+    constexpr auto operator&(Bitflags other) const noexcept -> Bitflags
+    {
+        return Bitflags(n_bits & other.n_bits);
+    }
+
+    constexpr auto operator^(Bitflags other) const noexcept -> Bitflags
+    {
+        return Bitflags(n_bits ^ other.n_bits);
+    }
+
+    constexpr auto operator~() const noexcept -> Bitflags
+    {
+        return Bitflags(~n_bits);
+    }
 
 private:
     underlying_type n_bits;
 };
 
 } // namespace violet
+
+template<typename E>
+    requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
+constexpr auto operator|(E lhs, E rhs) noexcept -> violet::Bitflags<E>
+{
+    return violet::Bitflags<E>(lhs) | violet::Bitflags<E>(rhs);
+}
+
+template<typename E>
+    requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
+constexpr auto operator&(E lhs, E rhs) noexcept -> violet::Bitflags<E>
+{
+    return violet::Bitflags<E>(lhs) & violet::Bitflags<E>(rhs);
+}
+
+template<typename E>
+    requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
+constexpr auto operator^(E lhs, E rhs) noexcept -> violet::Bitflags<E>
+{
+    return violet::Bitflags<E>(lhs) ^ violet::Bitflags<E>(rhs);
+}
+
+template<typename E>
+    requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
+constexpr auto operator~(E val) noexcept -> violet::Bitflags<E>
+{
+    return ~violet::Bitflags<E>(val);
+}

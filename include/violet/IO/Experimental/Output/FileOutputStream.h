@@ -19,52 +19,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Violet.h>
+#pragma once
 
-#ifdef VIOLET_LINUX
-
-#include <violet/Filesystem.h>
 #include <violet/Filesystem/File.h>
 #include <violet/Filesystem/Path.h>
+#include <violet/IO/Error.h>
+#include <violet/IO/Experimental/OutputStream.h>
 
-#include <unistd.h>
+namespace violet::io::experimental {
 
-using violet::UInt64;
-using violet::filesystem::OpenOptions;
-using violet::filesystem::PathRef;
+struct FileOutputStream final: public OutputStream {
+    VIOLET_DISALLOW_CONSTRUCTOR(FileOutputStream);
+    VIOLET_IMPLICIT FileOutputStream(filesystem::File&& file) noexcept;
 
-auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
-{
-    auto in = VIOLET_TRY(File::Open(src, OpenOptions().Read()));
-    auto out = VIOLET_TRY(File::Open(dest, OpenOptions().Write().Create().Truncate().Mode(0644)));
-
-    ssize_t bytes = 0;
-    ssize_t total = 0;
-    while (true) {
-        bytes = copy_file_range(
-            /*infd=*/in.Descriptor(),
-            /*pinoff=*/nullptr,
-            /*outfd=*/out.Descriptor(),
-            /*poutoff=*/nullptr,
-            /*length=*/1 << 20, // TODO(@auguwu): is 1MiB/chunk ok or should this be customizable?
-            /*flags=*/0);
-
-        if (bytes == 0) {
-            break;
-        }
-
-        if (bytes < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-
-            return Err(io::Error::OSError());
-        }
-
-        total += bytes;
+    template<std::convertible_to<filesystem::PathRef> Path>
+    static auto Open(Path&& path) noexcept -> io::Result<FileOutputStream>
+    {
+        filesystem::File file = VIOLET_TRY(filesystem::OpenOptions{}.Create().Write().Open(VIOLET_FWD(Path, path)));
+        return FileOutputStream(VIOLET_MOVE(file));
     }
 
-    return total;
-}
+    auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
+    auto Flush() noexcept -> io::Result<void> override;
 
-#endif
+private:
+    filesystem::File n_file;
+};
+
+} // namespace violet::io::experimental

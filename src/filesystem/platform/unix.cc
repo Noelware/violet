@@ -383,7 +383,7 @@ auto violet::filesystem::Exists(PathRef path) -> bool
 
 auto violet::filesystem::TryExists(PathRef path) -> io::Result<bool>
 {
-    auto file = File::Open(path, OpenOptions().Read().Flags(O_NOFOLLOW));
+    auto file = File::Open(path, OpenOptions().Flags(O_PATH | O_NOFOLLOW));
     if (file.Err()) {
         auto err = file.UnwrapErr();
         if (err.RawOSError().HasValueAnd(

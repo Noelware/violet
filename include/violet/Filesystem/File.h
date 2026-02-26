@@ -59,49 +59,55 @@ struct VIOLET_API OpenOptions final {
 
     /// Enables or disables reading this file.
     /// @param yes whether if it should be read or not.
-    constexpr auto Read(bool yes = true) noexcept -> OpenOptions&
+    constexpr auto Read(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
+        = true) noexcept -> OpenOptions&
     {
-        this->populateFlag(flag::kRead, yes);
+        this->n_bits = this->n_bits.Toggle(flag::kRead);
         return *this;
     }
 
     /// Enables or disables writing to this file.
     /// @param yes whether if it should be read or not.
-    constexpr auto Write(bool yes = true) noexcept -> OpenOptions&
+    constexpr auto Write(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
+        = true) noexcept -> OpenOptions&
     {
-        this->populateFlag(flag::kRead, yes);
+        this->n_bits = this->n_bits.Toggle(flag::kWrite);
         return *this;
     }
 
     /// Enables or disables ensuring this file is created if it doesn't exist.
     /// @param yes whether if it should be read or not.
-    constexpr auto Create(bool yes = true) noexcept -> OpenOptions&
+    constexpr auto Create(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
+        = true) noexcept -> OpenOptions&
     {
-        this->populateFlag(flag::kRead, yes);
+        this->n_bits = this->n_bits.Toggle(flag::kCreate);
         return *this;
     }
 
     /// Enables or disables appending new data to this file.
     /// @param yes whether if it should be read or not.
-    constexpr auto Append(bool yes = true) noexcept -> OpenOptions&
+    constexpr auto Append(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
+        = true) noexcept -> OpenOptions&
     {
-        this->populateFlag(flag::kAppend, yes);
+        this->n_bits = this->n_bits.Toggle(flag::kAppend);
         return *this;
     }
 
     /// Enables or disables overwriting file data instead of appending.
     /// @param yes whether if it should be read or not.
-    constexpr auto Truncate(bool yes = true) noexcept -> OpenOptions&
+    constexpr auto Truncate(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
+        = true) noexcept -> OpenOptions&
     {
-        this->populateFlag(flag::kTruncate, yes);
+        this->n_bits = this->n_bits.Toggle(flag::kTruncate);
         return *this;
     }
 
     /// Enables or disables whether if this file will be created atomically.
     /// @param yes whether if it should be read or not.
-    constexpr auto CreateNew(bool yes = true) noexcept -> OpenOptions&
+    constexpr auto CreateNew(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
+        = true) noexcept -> OpenOptions&
     {
-        this->populateFlag(flag::kCreateNew, yes);
+        this->n_bits = this->n_bits.Toggle(flag::kCreateNew);
         return *this;
     }
 
@@ -159,16 +165,6 @@ private:
     struct Mode n_mode;
     Int32 n_flags;
 #endif
-
-    /// Adds or removes a flag based on the boolean `yes`.
-    constexpr void populateFlag(flag flag, bool yes = true) noexcept
-    {
-        if (!this->n_bits.Contains(flag) && yes) {
-            this->n_bits.Add(flag);
-        } else if (this->n_bits.Contains(flag) && !yes) {
-            this->n_bits.Remove(flag);
-        }
-    }
 };
 
 /// Representation of a filesystem entry's type.
@@ -313,7 +309,7 @@ private:
     static constexpr auto mksymlink() noexcept -> FileType
     {
         FileType ft{};
-        ft.n_tag.Add(tag::kSymlink);
+        ft.n_tag |= tag::kSymlink;
 
         return ft;
     }
@@ -321,7 +317,7 @@ private:
     static constexpr auto mkfile() noexcept -> FileType
     {
         FileType ft = {};
-        ft.n_tag.Add(tag::kFile);
+        ft.n_tag |= tag::kFile;
 
         return ft;
     }
@@ -329,7 +325,7 @@ private:
     static constexpr auto mkdir() noexcept -> FileType
     {
         FileType ft = {};
-        ft.n_tag.Add(tag::kDir);
+        ft.n_tag |= tag::kDir;
 
         return ft;
     }
@@ -338,7 +334,7 @@ private:
     static constexpr auto mkblkdev() noexcept -> FileType
     {
         FileType ft = {};
-        ft.n_tag.Add(tag::kBlkDev);
+        ft.n_tag |= tag::kBlkDev;
 
         return ft;
     }
@@ -346,7 +342,7 @@ private:
     static constexpr auto mkchardev() noexcept -> FileType
     {
         FileType ft = {};
-        ft.n_tag.Add(tag::kCharDev);
+        ft.n_tag |= tag::kCharDev;
 
         return ft;
     }
@@ -354,7 +350,7 @@ private:
     static constexpr auto mkfifo() noexcept -> FileType
     {
         FileType ft = {};
-        ft.n_tag.Add(tag::kFIFO);
+        ft.n_tag |= tag::kFIFO;
 
         return ft;
     }
@@ -362,7 +358,7 @@ private:
     static constexpr auto mksocket() noexcept -> FileType
     {
         FileType ft = {};
-        ft.n_tag.Add(tag::kSocket);
+        ft.n_tag |= tag::kSocket;
 
         return ft;
     }

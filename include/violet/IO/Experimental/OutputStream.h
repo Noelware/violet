@@ -19,52 +19,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#pragma once
+
+#include <violet/IO/Error.h>
 #include <violet/Violet.h>
 
-#ifdef VIOLET_LINUX
+namespace violet::io::experimental {
 
-#include <violet/Filesystem.h>
-#include <violet/Filesystem/File.h>
-#include <violet/Filesystem/Path.h>
+struct OutputStream {
+    virtual ~OutputStream() = default;
 
-#include <unistd.h>
-
-using violet::UInt64;
-using violet::filesystem::OpenOptions;
-using violet::filesystem::PathRef;
-
-auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
-{
-    auto in = VIOLET_TRY(File::Open(src, OpenOptions().Read()));
-    auto out = VIOLET_TRY(File::Open(dest, OpenOptions().Write().Create().Truncate().Mode(0644)));
-
-    ssize_t bytes = 0;
-    ssize_t total = 0;
-    while (true) {
-        bytes = copy_file_range(
-            /*infd=*/in.Descriptor(),
-            /*pinoff=*/nullptr,
-            /*outfd=*/out.Descriptor(),
-            /*poutoff=*/nullptr,
-            /*length=*/1 << 20, // TODO(@auguwu): is 1MiB/chunk ok or should this be customizable?
-            /*flags=*/0);
-
-        if (bytes == 0) {
-            break;
-        }
-
-        if (bytes < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-
-            return Err(io::Error::OSError());
-        }
-
-        total += bytes;
+    virtual auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> = 0;
+    virtual auto Flush() noexcept -> io::Result<void>
+    {
+        return {};
     }
+};
 
-    return total;
-}
-
-#endif
+} // namespace violet::io::experimental

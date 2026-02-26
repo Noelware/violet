@@ -19,52 +19,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#pragma once
+
+#include <violet/IO/Error.h>
+#include <violet/IO/Experimental/OutputStream.h>
 #include <violet/Violet.h>
 
-#ifdef VIOLET_LINUX
+namespace violet::io::experimental {
 
-#include <violet/Filesystem.h>
-#include <violet/Filesystem/File.h>
-#include <violet/Filesystem/Path.h>
-
-#include <unistd.h>
-
-using violet::UInt64;
-using violet::filesystem::OpenOptions;
-using violet::filesystem::PathRef;
-
-auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
-{
-    auto in = VIOLET_TRY(File::Open(src, OpenOptions().Read()));
-    auto out = VIOLET_TRY(File::Open(dest, OpenOptions().Write().Create().Truncate().Mode(0644)));
-
-    ssize_t bytes = 0;
-    ssize_t total = 0;
-    while (true) {
-        bytes = copy_file_range(
-            /*infd=*/in.Descriptor(),
-            /*pinoff=*/nullptr,
-            /*outfd=*/out.Descriptor(),
-            /*poutoff=*/nullptr,
-            /*length=*/1 << 20, // TODO(@auguwu): is 1MiB/chunk ok or should this be customizable?
-            /*flags=*/0);
-
-        if (bytes == 0) {
-            break;
-        }
-
-        if (bytes < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-
-            return Err(io::Error::OSError());
-        }
-
-        total += bytes;
+struct BufferedOutputStream final: public OutputStream {
+    VIOLET_IMPLICIT BufferedOutputStream(SharedPtr<OutputStream> stream, UInt capacity = 8192) noexcept
+        : n_source(VIOLET_MOVE(stream))
+        , n_capacity(capacity)
+    {
+        this->n_buffer.reserve(capacity);
     }
 
-    return total;
-}
+    template<typename Stream>
+        requires(std::is_base_of_v<OutputStream, std::remove_cvref_t<Stream>>)
+    VIOLET_IMPLICIT BufferedOutputStream(Stream&& source, UInt capacity = 8192) noexcept
+        : n_source(std::make_shared<std::remove_cvref_t<Stream>>(VIOLET_FWD(Stream, source)))
+        , n_capacity(capacity)
+    {
+        this->n_buffer.reserve(capacity);
+    }
 
-#endif
+    auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
+    auto Flush() noexcept -> io::Result<void> override;
+
+private:
+    SharedPtr<OutputStream> n_source;
+    Vec<UInt8> n_buffer;
+    UInt n_capacity;
+
+    auto doFlush() noexcept -> io::Result<UInt>;
+};
+
+} // namespace violet::io::experimental

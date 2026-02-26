@@ -1338,20 +1338,18 @@ struct std::formatter<violet::Result<T, E>> final: public std::formatter<std::st
         VIOLET_MOVE(variable.Value());                                                                                 \
     })
 
+#define VIOLET_TRY(expr) __violet_try_impl__(expr, VIOLET_UNIQUE_NAME(__violet_try_expr_))
+#endif
+
 #define __violet_try_void_impl__(expr, variable)                                                                       \
-    VIOLET_DIAGNOSTIC_PUSH                                                                                             \
-    VIOLET_DIAGNOSTIC_IGNORE("-Wgnu-statement-expression-from-macro-expansion")                                        \
-    ({                                                                                                                 \
+    do {                                                                                                               \
         auto variable = (expr);                                                                                        \
         static_assert(::violet::is_result_v<decltype(variable)>, "expression didn't return a violet::Result");         \
         static_assert(                                                                                                 \
             ::std::is_void_v<::violet::result_value_type_t<decltype(variable)>>, "result value type must be `void`");  \
-                                                                                                                       \
         if ((variable).Err()) {                                                                                        \
             return ::violet::Err(VIOLET_MOVE((variable).Error()));                                                     \
         }                                                                                                              \
-    }) VIOLET_DIAGNOSTIC_POP
+    } while (false);
 
-#define VIOLET_TRY(expr) __violet_try_impl__(expr, VIOLET_UNIQUE_NAME(__violet_try_expr_))
 #define VIOLET_TRY_VOID(expr) __violet_try_void_impl__(expr, VIOLET_UNIQUE_NAME(__violet_try_void_expr_))
-#endif

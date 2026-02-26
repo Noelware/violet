@@ -95,12 +95,7 @@ auto ReadToString(Stream& src) noexcept -> Result<String>
 
     UInt8 buf[4096];
     while (true) {
-        auto read = src.Read(Span<UInt8>{ buf, sizeof(buf) });
-        if (read.Err()) {
-            return Err(VIOLET_MOVE(read.Error()));
-        }
-
-        const UInt8 bytes = read.Unwrap();
+        const UInt8 bytes = VIOLET_TRY(src.Read(Span<UInt8>{ buf, sizeof(buf) }));
         if (bytes == 0) {
             break;
         }

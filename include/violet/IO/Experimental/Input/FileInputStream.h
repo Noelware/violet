@@ -64,12 +64,8 @@ struct FileInputStream final: public InputStream {
     template<std::convertible_to<filesystem::PathRef> Path>
     static auto Open(Path&& path) noexcept -> Result<FileInputStream>
     {
-        auto file = filesystem::OpenOptions{}.Read(true).Open(VIOLET_FWD(Path, path));
-        if (file.Err()) {
-            return Err(VIOLET_MOVE(file.Error()));
-        }
-
-        return FileInputStream(VIOLET_MOVE(file.Value()));
+        filesystem::File file = VIOLET_TRY(filesystem::OpenOptions{}.Read(true).Open(VIOLET_FWD(Path, path)));
+        return FileInputStream(VIOLET_MOVE(file));
     }
 
     /// @inheritdoc violet::io::experimental::InputStream::Read(violet::Span<violet::UInt8>)

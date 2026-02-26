@@ -82,10 +82,6 @@ auto BufferedInputStream::Skip(UInt bytes) noexcept -> Result<void>
         return {};
     }
 
-    auto res = this->n_src->Skip(bytes);
-    if (res.Err()) {
-        return Err(VIOLET_MOVE(res.Error()));
-    }
-
+    VIOLET_TRY_VOID(this->n_src->Skip(bytes));
     return {};
 }

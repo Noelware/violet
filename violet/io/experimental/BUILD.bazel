@@ -61,7 +61,7 @@ cc_test(
 
 cc_library(
     name = "buffered_input_stream",
-    srcs = ["//src/io/experimental:buffered.cc"],
+    srcs = ["//src/io/experimental/input:buffered.cc"],
     hdrs = ["//include/violet/IO/Experimental:BufferedInputStream.h"],
     visibility = ["//visibility:public"],
     deps = [
@@ -159,75 +159,122 @@ cc_library(
     ],
 )
 
-# cc_library(
-#     name = "output_stream",
-#     hdrs = ["//include/violet/IO/Experimental:OutputStream.h"],
-#     visibility = ["//visibility:public"],
-#     deps = [
-#         "//violet",
-#         "//violet/io:error",
-#     ],
-# )
+cc_library(
+    name = "output_stream",
+    hdrs = ["//include/violet/IO/Experimental:OutputStream.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/io:error",
+    ],
+)
 
-# cc_library(
-#     name = "byte_array_output_stream",
-#     srcs = ["//src/io/experimental/output:bytearray.cc"],
-#     hdrs = ["//include/violet/IO/Experimental/Output:ByteArrayOutputStream.h"],
-#     visibility = ["//visibility:public"],
-#     deps = [
-#         ":output_stream",
-#         "//violet",
-#         "//violet/io:error",
-#     ],
-# )
+cc_library(
+    name = "buffered_output_stream",
+    srcs = ["//src/io/experimental/output:buffered.cc"],
+    hdrs = ["//include/violet/IO/Experimental:BufferedOutputStream.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":output_stream",
+        "//violet",
+        "//violet/io:error",
+    ],
+)
 
-# cc_library(
-#     name = "file_output_stream",
-#     srcs = ["//src/io/experimental/output:file.cc"],
-#     hdrs = ["//include/violet/IO/Experimental/Output:FileOutputStream.h"],
-#     visibility = ["//visibility:public"],
-#     deps = [
-#         ":input_stream",
-#         "//violet",
-#         "//violet/filesystem:file",
-#         "//violet/io:error",
-#     ],
-# )
+cc_library(
+    name = "byte_array_output_stream",
+    srcs = ["//src/io/experimental/output:bytearray.cc"],
+    hdrs = ["//include/violet/IO/Experimental/Output:ByteArrayOutputStream.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":output_stream",
+        "//violet",
+        "//violet/io:error",
+    ],
+)
 
-# cc_library(
-#     name = "stderr_output_stream",
-#     srcs = ["//src/io/experimental/output:stderr.cc"],
-#     hdrs = ["//include/violet/IO/Experimental/Output:StderrOutputStream.h"],
-#     visibility = ["//visibility:public"],
-#     deps = [
-#         ":output_stream",
-#         "//violet",
-#         "//violet/io:descriptor",
-#         "//violet/io:error",
-#     ],
-# )
+cc_library(
+    name = "file_output_stream",
+    srcs = ["//src/io/experimental/output:file.cc"],
+    hdrs = ["//include/violet/IO/Experimental/Output:FileOutputStream.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":output_stream",
+        "//violet",
+        "//violet/filesystem:file",
+        "//violet/io:error",
+    ],
+)
 
-# cc_library(
-#     name = "stdout_output_stream",
-#     srcs = ["//src/io/experimental/output:stdout.cc"],
-#     hdrs = ["//include/violet/IO/Experimental/Output:StdoutOutputStream.h"],
-#     visibility = ["//visibility:public"],
-#     deps = [
-#         ":output_stream",
-#         "//violet",
-#         "//violet/io:descriptor",
-#         "//violet/io:error",
-#     ],
-# )
+cc_library(
+    name = "stderr_output_stream",
+    srcs = ["//src/io/experimental/output:stderr.cc"] + select({
+        "@platforms//os:linux": ["//src/io/experimental/output/stderr:unix.cc"],
+        "@platforms//os:macos": ["//src/io/experimental/output/stderr:unix.cc"],
+        "@platforms//os:windows": ["//src/io/experimental/output/stderr:windows.cc"],
+        "//conditions:default": ["//src/io/experimental/output/stderr:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/IO/Experimental/Output:StderrOutputStream.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":output_stream",
+        "//violet",
+        "//violet/io:descriptor",
+        "//violet/io:error",
+    ],
+)
 
-# cc_library(
-#     name = "string_output_stream",
-#     srcs = ["//src/io/experimental/output:string.cc"],
-#     hdrs = ["//include/violet/IO/Experimental/Output:StringOutputStream.h"],
-#     visibility = ["//visibility:public"],
-#     deps = [
-#         ":output_stream",
-#         "//violet",
-#         "//violet/io:error",
-#     ],
-# )
+cc_library(
+    name = "stdout_output_stream",
+    srcs = ["//src/io/experimental/output:stdout.cc"] + select({
+        "@platforms//os:linux": ["//src/io/experimental/output/stdout:unix.cc"],
+        "@platforms//os:macos": ["//src/io/experimental/output/stdout:unix.cc"],
+        "@platforms//os:windows": ["//src/io/experimental/output/stdout:windows.cc"],
+        "//conditions:default": ["//src/io/experimental/output/stdout:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/IO/Experimental/Output:StdoutOutputStream.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":output_stream",
+        "//violet",
+        "//violet/io:descriptor",
+        "//violet/io:error",
+    ],
+)
+
+cc_library(
+    name = "string_output_stream",
+    srcs = ["//src/io/experimental/output:string.cc"],
+    hdrs = ["//include/violet/IO/Experimental/Output:StringOutputStream.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":output_stream",
+        "//violet",
+        "//violet/io:error",
+    ],
+)
+
+cc_test(
+    name = "buffered_output_stream_test",
+    srcs = ["//tests/io/experimental/output:BufferedOutputStream.test.cc"],
+    deps = [
+        ":buffered_output_stream",
+        ":byte_array_output_stream",
+    ],
+)
+
+cc_test(
+    name = "byte_array_output_stream_test",
+    srcs = ["//tests/io/experimental/output:ByteArrayOutputStream.test.cc"],
+    deps = [":byte_array_output_stream"],
+)
+
+cc_test(
+    name = "file_output_stream_test",
+    srcs = ["//tests/io/experimental/output:FileOutputStream.test.cc"],
+    deps = [
+        ":file_output_stream",
+        "//violet/filesystem",
+        "//violet/filesystem:temporary",
+    ],
+)

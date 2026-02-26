@@ -161,37 +161,37 @@ struct Style final {
 
     constexpr auto Bold() noexcept -> Style&
     {
-        this->populate(tag::kBold);
+        this->n_tag = this->n_tag.Apply(tag::kBold);
         return *this;
     }
 
     constexpr auto Italic() noexcept -> Style&
     {
-        this->populate(tag::kItalic);
+        this->n_tag = this->n_tag.Apply(tag::kItalic);
         return *this;
     }
 
     constexpr auto Dim() noexcept -> Style&
     {
-        this->populate(tag::kDim);
+        this->n_tag = this->n_tag.Apply(tag::kDim);
         return *this;
     }
 
     constexpr auto Underline() noexcept -> Style&
     {
-        this->populate(tag::kUnderline);
+        this->n_tag = this->n_tag.Apply(tag::kUnderline);
         return *this;
     }
 
     constexpr auto Inverse() noexcept -> Style&
     {
-        this->populate(tag::kInverse);
+        this->n_tag = this->n_tag.Apply(tag::kInverse);
         return *this;
     }
 
     constexpr auto Strikethrough() noexcept -> Style&
     {
-        this->populate(tag::kStrikethrough);
+        this->n_tag = this->n_tag.Apply(tag::kStrikethrough);
         return *this;
     }
 
@@ -218,17 +218,7 @@ private:
     // clang-format on
 
     std::variant<std::monostate, bg, fg, struct RGB> n_style;
-    Bitflags<tag> n_tag{};
-
-    /// Adds or removes a tag based on the boolean `yes`.
-    constexpr void populate(tag tag, bool yes = true) noexcept
-    {
-        if (yes && !this->n_tag.Contains(tag)) {
-            this->n_tag.Add(tag);
-        } else if (!yes && this->n_tag.Contains(tag)) {
-            this->n_tag.Remove(tag);
-        }
-    }
+    Bitflags<tag> n_tag = 0;
 
     [[nodiscard]] auto createStream() const noexcept -> std::ostringstream;
 };

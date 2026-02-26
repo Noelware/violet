@@ -54,12 +54,7 @@ auto genRandomBytes(UInt32 bits) -> Result<String>
         auto* ptr = out.data() + read;
         auto remaining = bits - read;
 
-        auto bytes = file->Read({ ptr, remaining });
-        if (bytes.Err()) {
-            return Err(VIOLET_MOVE(bytes.Error()));
-        }
-
-        read += bytes.Value();
+        read += VIOLET_TRY(file->Read({ ptr, remaining }));
     }
 
     String name;
@@ -90,18 +85,10 @@ auto violet::filesystem::SystemTempDirectory() -> io::Result<Path>
 
 auto TempBuilder::MkDir() const noexcept -> io::Result<TempDir>
 {
-    auto sys = SystemTempDirectory();
-    if (sys.Err()) {
-        return Err(VIOLET_MOVE(sys.Error()));
-    }
-
+    auto sys = VIOLET_TRY(SystemTempDirectory());
     for (;;) {
-        auto name = genRandomBytes(this->n_randomness);
-        if (name.Err()) {
-            return Err(VIOLET_MOVE(name.Error()));
-        }
-
-        auto path = sys->Join(std::format("{}{}{}", this->n_prefix, name.Value(), this->n_suffix));
+        auto name = VIOLET_TRY(genRandomBytes(this->n_randomness));
+        auto path = sys.Join(std::format("{}{}{}", this->n_prefix, name, this->n_suffix));
         auto dir = filesystem::CreateDirectory(path);
         if (dir.Err()) {
             auto err = dir.Error();
@@ -118,18 +105,10 @@ auto TempBuilder::MkDir() const noexcept -> io::Result<TempDir>
 
 auto TempBuilder::MkFile() const noexcept -> io::Result<TempFile>
 {
-    auto sys = SystemTempDirectory();
-    if (sys.Err()) {
-        return Err(VIOLET_MOVE(sys.Error()));
-    }
-
+    auto sys = VIOLET_TRY(SystemTempDirectory());
     for (;;) {
-        auto name = genRandomBytes(this->n_randomness);
-        if (name.Err()) {
-            return Err(VIOLET_MOVE(name.Error()));
-        }
-
-        auto path = sys->Join(std::format("{}{}{}", this->n_prefix, name.Value(), this->n_suffix));
+        auto name = VIOLET_TRY(genRandomBytes(this->n_randomness));
+        auto path = sys.Join(std::format("{}{}{}", this->n_prefix, name, this->n_suffix));
         auto file = OpenOptions().CreateNew().Mode(this->n_mode).Open(path);
         if (file.Err()) {
             auto err = file.Error();

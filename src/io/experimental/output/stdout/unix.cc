@@ -21,50 +21,17 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_LINUX
+#ifdef VIOLET_UNIX
 
-#include <violet/Filesystem.h>
-#include <violet/Filesystem/File.h>
-#include <violet/Filesystem/Path.h>
+#include <violet/IO/Experimental/Output/StdoutOutputStream.h>
 
 #include <unistd.h>
 
-using violet::UInt64;
-using violet::filesystem::OpenOptions;
-using violet::filesystem::PathRef;
+using violet::io::experimental::StdoutOutputStream;
 
-auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
+StdoutOutputStream::StdoutOutputStream() noexcept
+    : n_descriptor(STDOUT_FILENO)
 {
-    auto in = VIOLET_TRY(File::Open(src, OpenOptions().Read()));
-    auto out = VIOLET_TRY(File::Open(dest, OpenOptions().Write().Create().Truncate().Mode(0644)));
-
-    ssize_t bytes = 0;
-    ssize_t total = 0;
-    while (true) {
-        bytes = copy_file_range(
-            /*infd=*/in.Descriptor(),
-            /*pinoff=*/nullptr,
-            /*outfd=*/out.Descriptor(),
-            /*poutoff=*/nullptr,
-            /*length=*/1 << 20, // TODO(@auguwu): is 1MiB/chunk ok or should this be customizable?
-            /*flags=*/0);
-
-        if (bytes == 0) {
-            break;
-        }
-
-        if (bytes < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-
-            return Err(io::Error::OSError());
-        }
-
-        total += bytes;
-    }
-
-    return total;
 }
 
 #endif

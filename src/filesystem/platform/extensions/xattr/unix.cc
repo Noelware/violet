@@ -94,12 +94,8 @@ struct Iter::Impl final {
 
         this->n_offset += len + 1;
 
-        auto result = Get(this->n_descriptor, name);
-        if (result.Err()) {
-            return Err(VIOLET_MOVE(result.Error()));
-        }
-
-        return std::make_pair(name, result->UnwrapOr({}));
+        auto result = VIOLET_TRY(Get(this->n_descriptor, name));
+        return std::make_pair(name, result.UnwrapOr({}));
     }
 
 private:

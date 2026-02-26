@@ -19,52 +19,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Violet.h>
+#include <gtest/gtest.h>
+#include <violet/IO/Experimental/Output/ByteArrayOutputStream.h>
 
-#ifdef VIOLET_LINUX
+// NOLINTBEGIN(google-build-using-namespace)
+using namespace violet::io::experimental;
+using namespace violet;
+// NOLINTEND(google-build-using-namespace)
 
-#include <violet/Filesystem.h>
-#include <violet/Filesystem/File.h>
-#include <violet/Filesystem/Path.h>
-
-#include <unistd.h>
-
-using violet::UInt64;
-using violet::filesystem::OpenOptions;
-using violet::filesystem::PathRef;
-
-auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
+TEST(ByteArrayOutputStream, WriteAndFlush)
 {
-    auto in = VIOLET_TRY(File::Open(src, OpenOptions().Read()));
-    auto out = VIOLET_TRY(File::Open(dest, OpenOptions().Write().Create().Truncate().Mode(0644)));
+    ByteArrayOutputStream baos;
 
-    ssize_t bytes = 0;
-    ssize_t total = 0;
-    while (true) {
-        bytes = copy_file_range(
-            /*infd=*/in.Descriptor(),
-            /*pinoff=*/nullptr,
-            /*outfd=*/out.Descriptor(),
-            /*poutoff=*/nullptr,
-            /*length=*/1 << 20, // TODO(@auguwu): is 1MiB/chunk ok or should this be customizable?
-            /*flags=*/0);
+    Span<const UInt8> data(reinterpret_cast<const UInt8*>("hello"), 5);
+    auto written = baos.Write(data);
+    ASSERT_TRUE(written) << "failed to write: " << written.Error();
+    EXPECT_EQ(written.Value(), 5);
 
-        if (bytes == 0) {
-            break;
-        }
-
-        if (bytes < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-
-            return Err(io::Error::OSError());
-        }
-
-        total += bytes;
-    }
-
-    return total;
+    ASSERT_TRUE(baos.Flush());
+    EXPECT_EQ(baos.Get().size(), 5);
+    EXPECT_EQ(String(baos.Get().begin(), baos.Get().end()), "hello");
 }
-
-#endif

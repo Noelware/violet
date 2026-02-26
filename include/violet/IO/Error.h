@@ -238,6 +238,10 @@ struct VIOLET_API PlatformError final {
 
     /// Returns the string representation of this platform's I/O error code.
     [[nodiscard]] auto ToString() const noexcept -> String;
+    friend auto operator<<(std::ostream& os, const PlatformError& self) noexcept -> std::ostream&
+    {
+        return os << self.ToString();
+    }
 
 private:
     friend struct violet::io::Error;
@@ -276,6 +280,10 @@ struct VIOLET_API Error final {
     [[nodiscard]] auto RawOSError() const noexcept -> violet::Optional<PlatformError::error_type>;
     [[nodiscard]] auto Kind() const noexcept -> ErrorKind;
     [[nodiscard]] auto ToString() const noexcept -> String;
+    friend auto operator<<(std::ostream& os, const Error& self) noexcept -> std::ostream&
+    {
+        return os << self.ToString();
+    }
 
 #if VIOLET_USE_RTTI
     template<typename T>
@@ -307,26 +315,17 @@ private:
         Str n_message;
     };
 
+    // clang-format off
+    std::variant<
+    std::monostate,      //< used for the private default constructor, considered invalid.
+    ErrorKind,           //< a error with just the error kind
+    simple_message,      //< a error kind with message
+    PlatformError,       //< a platform based error
 #if VIOLET_USE_RTTI
-    // clang-format off
-    std::variant<
-        std::monostate,      //< used for the private default constructor, considered invalid.
-        ErrorKind,           //< a error with just the error kind
-        simple_message,      //< a error kind with message
-        PlatformError,       //< a platform based error
         Pair<ErrorKind, Any> //< custom (if RTTI is enabled)
-    > n_repr;
-    // clang-format on
-#else
-    // clang-format off
-    std::variant<
-        std::monostate, //< used for the private default constructor, considered invalid.
-        ErrorKind,      //< a error with just the error kind
-        simple_message, //< a error kind with message
-        PlatformError   //< a platform based error
-    > n_repr;
-    // clang-format on
 #endif
+    > n_repr;
+    // clang-format on
 };
 
 template<typename T>

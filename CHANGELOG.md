@@ -7,11 +7,25 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.08...master>
+
+### 26.03.08
 #### Noelware.Violet
 - Add **violet::strings::SplitN** utility ([`@auguwu`])
 - Added **VIOLET_DEPRECATED** and **VIOLET_DEPRECATED_BECAUSE** macros ([`@auguwu`])
+- Fix `VIOLET_TRY_VOID` macro from expanding `#pragma`s ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.03.07...master>
+#### Noelware.Violet.Filesystem
+- Fix issues when using `Create`, `CreateNew`, and `Write` open flags ([`@auguwu`])
+
+#### Noelware.Violet.IO.Experimental
+- Add output stream support ([`@auguwu`])
+    - file
+    - stdout, stderr
+    - string
+    - byte array
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.07...26.03.08>
 
 ### 26.03.07
 #### Noelware.Violet
