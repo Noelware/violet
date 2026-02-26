@@ -315,17 +315,26 @@ private:
         Str n_message;
     };
 
+#if VIOLET_USE_RTTI
     // clang-format off
     std::variant<
-    std::monostate,      //< used for the private default constructor, considered invalid.
-    ErrorKind,           //< a error with just the error kind
-    simple_message,      //< a error kind with message
-    PlatformError,       //< a platform based error
-#if VIOLET_USE_RTTI
+        std::monostate,      //< used for the private default constructor, considered invalid.
+        ErrorKind,           //< a error with just the error kind
+        simple_message,      //< a error kind with message
+        PlatformError,       //< a platform based error
         Pair<ErrorKind, Any> //< custom (if RTTI is enabled)
-#endif
     > n_repr;
     // clang-format on
+#else
+    // clang-format off
+    std::variant<
+        std::monostate,      //< used for the private default constructor, considered invalid.
+        ErrorKind,           //< a error with just the error kind
+        simple_message,      //< a error kind with message
+        PlatformError,       //< a platform based error
+    > n_repr;
+    // clang-format on
+#endif
 };
 
 template<typename T>

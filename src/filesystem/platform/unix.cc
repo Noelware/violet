@@ -383,6 +383,10 @@ auto violet::filesystem::Exists(PathRef path) -> bool
 
 auto violet::filesystem::TryExists(PathRef path) -> io::Result<bool>
 {
+#if defined(VIOLET_APPLE_MACOS)
+#define O_PATH O_RDONLY
+#endif
+
     auto file = File::Open(path, OpenOptions().Flags(O_PATH | O_NOFOLLOW));
     if (file.Err()) {
         auto err = file.UnwrapErr();
@@ -396,14 +400,9 @@ auto violet::filesystem::TryExists(PathRef path) -> io::Result<bool>
 
     struct stat st{};
     if (::fstat(file->Descriptor(), &st) < 0) {
-        Int32 saved = errno;
-        auto _ = file->Close(); // NOLINT(readability-identifier-length)
-
-        errno = saved;
         return Err(io::Error::OSError());
     }
 
-    auto _ = VIOLET_MOVE(file.Value()).Close(); // NOLINT(readability-identifier-length)
     return true;
 }
 
