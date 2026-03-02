@@ -28,11 +28,15 @@
 
 #pragma once
 
+#include <violet/Container/Optional.h>
 #include <violet/Container/Result.h>
+#include <violet/Iterator.h>
 #include <violet/Violet.h>
 
 #if VIOLET_USE_RTTI
 #include <violet/Support/Demangle.h>
+
+#include <typeindex>
 #endif
 
 #include <source_location>
@@ -122,6 +126,10 @@ private:
         std::source_location Location;
         node_t* Next;
 
+#if VIOLET_USE_RTTI
+        std::type_index Type = typeid(node_t); // placeholder: use `node_t`'s type index
+#endif
+
         VIOLET_IMPLICIT node_t() noexcept;
         ~node_t() noexcept;
 
@@ -137,6 +145,10 @@ private:
             node->Object = new T(VIOLET_MOVE(object));
             node->Size = sizeof(T);
             node->Next = next;
+
+#if VIOLET_USE_RTTI
+            node->Type = typeid(T);
+#endif
 
             constexpr static vtable_t __vtable_for_object{
                 [](const void* ptr) -> String {
@@ -176,10 +188,88 @@ private:
         }
     };
 
+    friend struct Chain;
+
     node_t* n_node;
 };
 
 template<typename T = void>
 using Result = violet::Result<T, Error>;
+
+/// Lazy iterator over the frames of an [`Error`]'s context chain.
+///
+/// Yields one `Frame` per context node, from the most-recently-added
+/// context frame down to the root cause.
+///
+/// ## Example
+/// ```cpp
+/// auto err = violet::anyhow::Error("disk full").Context("writing config");
+/// for (auto frame : violet::anyhow::Chain(err)) {
+///     std::println("{} ({}:{})", frame.Message,
+///                  frame.Location.file_name(), frame.Location.line());
+/// }
+/// ```
+struct Chain final: public Iterator<Chain> {
+    struct Frame final {
+        String Message;
+        std::source_location Location;
+
+        VIOLET_DISALLOW_CONSTRUCTOR(Frame);
+
+#if VIOLET_USE_RTTI
+        template<typename T>
+        auto Downcast() const noexcept -> Optional<T>
+        {
+            if (this->n_type != typeid(T)) {
+                return Nothing;
+            }
+
+            return *static_cast<const T*>(this->n_object);
+        }
+#endif
+
+    private:
+        friend struct Chain;
+
+        VIOLET_IMPLICIT Frame(const Error::node_t* node)
+            : Location(node->Location)
+            , n_object(node->Object)
+#if VIOLET_USE_RTTI
+            , n_type(node->Type)
+#endif
+        {
+            VIOLET_ASSERT(node->VTable.Message != nullptr, "assumpting of `Message' vtable property to exist");
+
+            this->Message = node->VTable.Message(this->n_object);
+        }
+
+        const void* n_object;
+
+#if VIOLET_USE_RTTI
+        std::type_index n_type;
+#endif
+    };
+
+    VIOLET_IMPLICIT Chain() noexcept = default;
+    VIOLET_IMPLICIT Chain(const Error& error) noexcept
+        : n_current(error.n_node)
+    {
+    }
+
+    auto Next() noexcept -> Optional<Frame>
+    {
+        if (this->n_current == nullptr) {
+            return Nothing;
+        }
+
+        Frame frame(this->n_current);
+        this->n_current = this->n_current->Next;
+
+        return VIOLET_MOVE(frame);
+    }
+
+private:
+    const Error::node_t* n_current = nullptr;
+};
 
 } // namespace violet::anyhow

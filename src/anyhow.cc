@@ -59,6 +59,10 @@ Error::node_t::node_t(node_t&& other) noexcept
     , Size(std::exchange(other.Size, 0))
     , Location(std::exchange(other.Location, {}))
     , Next(std::exchange(other.Next, nullptr))
+
+#if VIOLET_USE_RTTI
+    , Type(std::exchange(other.Type, typeid(node_t)))
+#endif
 {
 }
 
@@ -76,6 +80,10 @@ auto Error::node_t::operator=(node_t&& other) noexcept -> node_t&
         this->VTable = std::exchange(other.VTable, {});
         this->Size = std::exchange(other.Size, 0);
         this->Next = std::exchange(other.Next, nullptr);
+
+#if VIOLET_USE_RTTI
+        this->Type = std::exchange(other.Type, typeid(node_t));
+#endif
     }
 
     return *this;

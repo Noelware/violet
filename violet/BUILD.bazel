@@ -65,8 +65,9 @@ cc_library(
     hdrs = ["//include/violet:anyhow.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":iterator",
         ":violet",
-        "//violet/container:result",
+        "//violet/container",
         "//violet/support:demangle",
         "//violet/support:terminal",
     ],
@@ -75,7 +76,10 @@ cc_library(
 cc_test(
     name = "anyhow_test",
     srcs = ["//tests:anyhow.test.cc"],
-    deps = [":anyhow"],
+    deps = [
+        ":anyhow",
+        "//violet/iterator:map",
+    ],
 )
 
 cc_library(

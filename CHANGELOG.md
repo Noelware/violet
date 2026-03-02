@@ -7,11 +7,15 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.09...master>
+
+### 26.03.09
 #### Noelware.Violet
 - Add `violet/Runtime/Info.h` header to provide version information about the **Noelware.Violet** framework ([`@auguwu`])
 - Add **SmolString** experimental primitive for small strings ([`@auguwu`])
+- Add **anyhow::Chain** iterator to iterate over a error's contextual frames ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.03.08...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.08...26.03.09>
 
 ### 26.03.08
 #### Noelware.Violet
