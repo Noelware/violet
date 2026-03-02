@@ -129,13 +129,12 @@ def cc_library(name, hdrs = [], **kwargs):
     # buildifier: disable=unused-variable
     _ = kwargs.pop("includes", [])
 
-    defines = OS_DEFINES + ARCH_DEFINES + COMPILER_DEFINES + [
+    local_defines = [
         "VIOLET_VERSION=%d" % encode_as_int(),
     ]
 
     if DEVBUILD:
-        # buildifier: disable=list-append
-        defines += ["VIOLET_DEVBUILD"]
+        local_defines.append("VIOLET_DEVBUILD")
 
     return cc_library_(
         name = name,
@@ -143,8 +142,8 @@ def cc_library(name, hdrs = [], **kwargs):
         copts = copts + SANITIZER_OPTS + COMPILER_COPTS,
         linkopts = linkopts + SANITIZER_OPTS,
         includes = ["include"],
-        defines = ["BAZEL"],
-        local_defines = defines,
+        defines = ["BAZEL"] + OS_DEFINES + ARCH_DEFINES + COMPILER_DEFINES,
+        local_defines = local_defines,
         deps = deps,
         **kwargs
     )
