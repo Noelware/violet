@@ -7,6 +7,10 @@ availableAt:
 ---
 
 ### unreleased
+#### Noelware.Violet
+- Add `violet/Runtime/Info.h` header to provide version information about the **Noelware.Violet** framework ([`@auguwu`])
+- Add **SmolString** experimental primitive for small strings ([`@auguwu`])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.03.08...master>
 
 ### 26.03.08

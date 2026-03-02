@@ -96,6 +96,16 @@ cc_test(
     deps = [":strings"],
 )
 
+cc_library(
+    name = "runtime_info",
+    hdrs = ["//include/violet/Runtime:Info.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":macros",
+        "//violet/experimental:smol_string",
+    ],
+)
+
 # A "uber" library that contains all base Noelware.Violet libraries and code
 cc_library(
     name = "base_uber",
