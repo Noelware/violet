@@ -43,3 +43,83 @@ cc_library(
     actual = "//buildsystem/bazel/flags:%s" % name,
     visibility = ["//visibility:public"],
 ) for name in BOOL_FLAGS]
+
+[cc_library(
+    name = framework,
+    srcs = ["dummy.cc"],
+    linkstatic = 0,
+    visibility = ["//visibility:public"],
+    deps = deps,
+) for (framework, deps) in [
+    (
+        "violet",
+        [
+            "//violet/container:result",
+            "//violet/container:optional",
+            "//violet/events:emitter",
+            "//violet/iterator:enumerate",
+            "//violet/iterator:filter",
+            "//violet/iterator:map",
+            "//violet/iterator:peekable",
+            "//violet/iterator:skip",
+            "//violet/iterator:take",
+            "//violet/support:bitflags",
+            "//violet/support:demangle",
+            "//violet/support:terminal",
+            "//violet/system",
+            "//violet/system:ci",
+            "//violet/system:which",
+        ],
+    ),
+    (
+        "experimental",
+        [
+            "//violet/experimental:smol_string",
+        ],
+    ),
+    (
+        "filesystem",
+        [
+            "//violet/filesystem",
+            "//violet/filesystem:file",
+            "//violet/filesystem:path",
+            "//violet/filesystem:permissions",
+            "//violet/filesystem:temporary",
+            "//violet/filesystem/extensions:xattr",
+        ],
+    ),
+    (
+        "io",
+        [
+            "//violet/io:descriptor",
+            "//violet/io:error",
+            "//violet/io:read",
+            "//violet/io:write",
+        ],
+    ),
+    (
+        "io_experimental",
+        [
+            "//violet/io/experimental:input_stream",
+            "//violet/io/experimental:buffered_input_stream",
+            "//violet/io/experimental:byte_array_input_stream",
+            "//violet/io/experimental:file_input_stream",
+            "//violet/io/experimental:stdin_input_stream",
+            "//violet/io/experimental:string_input_stream",
+            "//violet/io/experimental:output_stream",
+            "//violet/io/experimental:buffered_output_stream",
+            "//violet/io/experimental:byte_array_output_stream",
+            "//violet/io/experimental:file_output_stream",
+            "//violet/io/experimental:stdout_output_stream",
+            "//violet/io/experimental:stderr_output_stream",
+            "//violet/io/experimental:string_output_stream",
+        ],
+    ),
+    (
+        "testing",
+        [
+            "//violet/testing:runfiles",
+            "//violet/testing:capture_stream",
+        ],
+    ),
+]]

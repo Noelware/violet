@@ -22,9 +22,13 @@
 #include <gtest/gtest.h>
 #include <violet/Iterator/Map.h>
 #include <violet/Support/Terminal.h>
+#include <violet/Testing/CaptureStream.h>
 #include <violet/anyhow.h>
 
-using namespace violet; // NOLINT(google-build-using-namespace)
+// NOLINTBEGIN(google-build-using-namespace)
+using namespace violet;
+using namespace violet::testing;
+// NOLINTEND(google-build-using-namespace)
 
 struct dummy_t final {
     String Message;
@@ -47,15 +51,14 @@ TEST(Anyhow, ContextWithString)
     anyhow::Error error = anyhow::Error(dummy_t("hello world")).Context("additional context");
     error.Print();
 
-    std::ostringstream os;
-    auto* oldOs = std::cerr.rdbuf(os.rdbuf());
-    error.Print();
-    std::cerr.rdbuf(oldOs);
+    {
+        CaptureStream captured(std::cerr);
+        error.Print();
 
-    String output = os.str();
-    EXPECT_NE(output.find("additional context"), String::npos);
-    EXPECT_NE(output.find("hello world"), String::npos);
-    EXPECT_LT(output.find("hello world"), output.find("additional context"));
+        EXPECT_TRUE(captured.Contains("additional context"));
+        EXPECT_TRUE(captured.Contains("hello world"));
+        EXPECT_LT(captured.Find("hello world"), captured.Find("additional context"));
+    }
 }
 
 TEST(Anyhow, DanglingContextLeak)

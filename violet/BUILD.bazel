@@ -79,6 +79,7 @@ cc_test(
     deps = [
         ":anyhow",
         "//violet/iterator:map",
+        "//violet/testing:capture_stream",
     ],
 )
 
@@ -107,30 +108,5 @@ cc_library(
     deps = [
         ":macros",
         "//violet/experimental:smol_string",
-    ],
-)
-
-# A "uber" library that contains all base Noelware.Violet libraries and code
-cc_library(
-    name = "base_uber",
-    srcs = ["//:dummy.cc"],
-    linkstatic = 0,
-    visibility = ["//visibility:public"],
-    deps = [
-        ":macros",
-        ":violet",
-        "//violet/container",
-        "//violet/iterator:enumerate",
-        "//violet/iterator:filter",
-        "//violet/iterator:map",
-        "//violet/iterator:peekable",
-        "//violet/iterator:skip",
-        "//violet/iterator:take",
-        "//violet/support:bitflags",
-        "//violet/support:demangle",
-        "//violet/support:terminal",
-        "//violet/system",
-        "//violet/system:ci",
-        "//violet/system:which",
     ],
 )

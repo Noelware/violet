@@ -7,7 +7,23 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.03.09...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.04...master>
+
+### 26.04
+- Implement macOS-specific code ensuring that macOS is caught up ([`@auguwu`])
+- [Bazel] Add framework-specific "uber" libraries under `@violet` ([`@auguwu`])
+    - This will ensure that you can pick out which framework you want to use. I.e, `@violet` will point to Noelware.Violet, `@violet//:io` will point to all `@violet//violet/io`.
+
+#### Noelware.Violet
+- Fix **VIOLET_VERSION** not being defined in `violet/Runtime/Info.h` ([`@auguwu`])
+
+#### Noelware.Violet.Filesystem
+- Fix bug where `violet::filesystem::RemoveAllDirs` doesn't properly clean up and throws `I/o error (system error «20»): Not a directory` ([`@auguwu`])
+
+#### Noelware.Violet.Testing
+- Add **CaptureStream** RAII guard to capture a `std::ostream` for tests ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.03.09...26.04>
 
 ### 26.03.09
 #### Noelware.Violet

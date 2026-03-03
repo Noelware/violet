@@ -36,6 +36,17 @@ cc_library(
 )
 
 cc_library(
+    name = "capture_stream",
+    srcs = ["//src/testing:CaptureStream.cc"],
+    hdrs = ["//include/violet/Testing:CaptureStream.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet:macros",
+        "//violet:policy_checks",
+    ],
+)
+
+cc_library(
     name = "runfiles_main",
     srcs = ["//src/testing:Runfiles.main.cc"],
     visibility = ["//visibility:public"],

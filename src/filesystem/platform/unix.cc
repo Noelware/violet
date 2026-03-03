@@ -350,10 +350,18 @@ auto violet::filesystem::RemoveAllDirs(PathRef path) -> io::Result<void>
             return Err(metadata.Error());
         }
 
-        auto removed = filesystem::RemoveDirectory(static_cast<PathRef>(child));
-        if (removed.Err()) {
-            ::closedir(dir);
-            return Err(removed.Error());
+        if (metadata->Type.Dir()) {
+            auto removed = filesystem::RemoveDirectory(static_cast<PathRef>(child));
+            if (removed.Err()) {
+                ::closedir(dir);
+                return Err(removed.Error());
+            }
+        } else {
+            auto result = filesystem::RemoveFile(static_cast<PathRef>(child));
+            if (result.Err()) {
+                ::closedir(dir);
+                return Err(result.Error());
+            }
         }
     }
 
