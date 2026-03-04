@@ -68,7 +68,6 @@ cc_library(
             "//violet/support:terminal",
             "//violet/system",
             "//violet/system:ci",
-            "//violet/system:which",
         ],
     ),
     (

@@ -252,16 +252,6 @@ struct Infallible final {
 namespace violet::detail {
 
 /// @internal
-template<typename T>
-inline void PrintDebugVariable(CStr name, const T& value,
-    const std::source_location& loc = std::source_location::current(), std::ostream& os = std::cerr)
-{
-    os << '[' << loc.file_name() << ':' << loc.line() << ':' << loc.column() << "] ";
-    os << name << " = " << violet::ToString(value);
-    os << '\n';
-}
-
-/// @internal
 inline void DoAssertion(bool condition, CStr condStr, Str message,
     const std::source_location& loc = std::source_location::current(), std::ostream& os = std::cerr)
 {
@@ -274,32 +264,31 @@ inline void DoAssertion(bool condition, CStr condStr, Str message,
     }
 }
 
-[[noreturn]] inline void Unreachable() noexcept
-{
-#if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
-    std::unreachable();
-#elif defined(VIOLET_WINDOWS)
-    __assume(false);
-#elif defined(VIOLET_GCC) || defined(VIOLET_CLANG)
-    __builtin_unreachable();
-#else
-    for (;;)
-        ;
-#endif
-}
-
 } // namespace violet::detail
 
-#define VIOLET_DBG(var) ::violet::detail::PrintDebugVariable(var, #var)
 #define VIOLET_ASSERT(cond, message) ::violet::detail::DoAssertion(cond, #cond, message)
+#define VIOLET_ASSERT0(cond) ::violet::detail::DoAssertion(cond, #cond, "assertion failed")
 
 #define VIOLET_TODO_WITH(msg) ::violet::detail::DoAssertion(false, "todo!(" msg ")", msg)
 #define VIOLET_TODO() VIOLET_TODO_WITH("prototype not implemented")
 
-#define VIOLET_UNREACHABLE() ::violet::detail::Unreachable()
+#if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
+#define VIOLET_UNREACHABLE() ::std::unreachable()
+#elif defined(VIOLET_MSVC)
+#define VIOLET_UNREACHABLE() __assume(false)
+#elif defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#define VIOLET_UNREACHABLE() __builtin_unreachable()
+#else
+#define VIOLET_UNREACHABLE()                                                                                           \
+    do {                                                                                                               \
+        for (;;)                                                                                                       \
+            ;                                                                                                          \
+    } while (false)
+#endif
 
 #ifndef NDEBUG
 #define VIOLET_DEBUG_ASSERT(expr, message) ::violet::detail::DoAssertion(expr, #expr, message)
+#define VIOLET_DEBUG_ASSERT0(expr) ::violet::detail::DoAssertion(expr, #expr, "[debug] assertion failed")
 #else
 #define VIOLET_DEBUG_ASSERT(expr, message)
 #endif

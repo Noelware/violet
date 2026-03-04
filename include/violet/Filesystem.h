@@ -101,6 +101,9 @@ auto RemoveFile(PathRef path) -> io::Result<void>;
 auto Rename(PathRef old, PathRef path) -> io::Result<void>;
 auto SetPermissions(PathRef path, Permissions perms) -> io::Result<void>;
 
+/// Returns **true** if the given path is an executable file.
+auto Executable(PathRef path) -> io::Result<bool>;
+
 /// A entry from walking through a directory.
 struct VIOLET_API DirEntry final {
     /// The path of this entry.

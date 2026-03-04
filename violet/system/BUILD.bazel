@@ -46,16 +46,3 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [":system"],
 )
-
-cc_library(
-    name = "which",
-    srcs = ["//src/system:which.cc"],
-    hdrs = ["//include/violet/System:Which.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":system",
-        "//violet",
-        "//violet/filesystem:path",
-        "//violet/io:error",
-    ],
-)

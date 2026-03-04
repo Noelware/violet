@@ -441,4 +441,12 @@ auto violet::filesystem::Rename(PathRef old, PathRef newPath) -> io::Result<void
     return {};
 }
 
+auto violet::filesystem::Executable(PathRef path) -> io::Result<bool>
+{
+    auto metadata = VIOLET_TRY(Metadata(path, true));
+    auto permissions = metadata.Permissions;
+
+    return metadata.Type.File() && (static_cast<mode_t>(permissions.Mode()) & (S_IXUSR | S_IXGRP | S_IXOTH)) != 0;
+}
+
 #endif

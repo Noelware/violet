@@ -85,6 +85,7 @@ struct SmolString final {
     ///
     /// @param sv the string view itself
     template<std::convertible_to<std::string_view> Str>
+        requires(!std::same_as<std::decay_t<Str>, const char*>)
     constexpr VIOLET_IMPLICIT SmolString(Str sv) noexcept(noexcept(sv.size() < N))
         : n_size(sv.size())
     {
@@ -93,27 +94,40 @@ struct SmolString final {
         std::copy_n(sv.data(), this->n_size, this->n_data.begin());
     }
 
+    /// Returns the size of this string.
     [[nodiscard]] constexpr auto Size() const noexcept -> size_t
     {
         return this->n_size;
     }
 
+    /// Returns the capacity (excluding the null terminator) that this smol string can carry.
     [[nodiscard]] constexpr auto Capacity() const noexcept -> size_t
     {
         return N;
     }
 
+    /// Returns **true** if this smol string is empty.
     [[nodiscard]] constexpr auto Empty() const noexcept -> bool
     {
         return this->n_size == 0;
     }
 
+    /// Pushes a single character into this smol string.
+    ///
+    /// ## Panics (Debug)
+    /// This method will panic if the size of the string is greater than or equal
+    /// to the capacity.
     constexpr void Push(char ch)
     {
         assert(this->n_size <= N && "string is full");
         this->n_data[this->n_size++] = ch;
     }
 
+    /// Pushes a [`std::string_view`] into this smol string.
+    ///
+    /// ## Panics (Debug)
+    /// This method will panic if the size of the string plus the string itself is greater than or equal
+    /// to the capacity.
     constexpr auto Append(std::string_view sv) -> SmolString&
     {
         assert(this->n_size + sv.size() <= N && "overflow");
@@ -124,6 +138,13 @@ struct SmolString final {
         return *this;
     }
 
+    /// Appends a formatted string into this smol string.
+    ///
+    /// **Note**: This method *will always* allocate!
+    ///
+    /// ## Panics (Debug)
+    /// This method will panic if the size of the string plus the string itself is greater than or equal
+    /// to the capacity.
     template<typename... Args>
     constexpr auto AppendFormatted(std::format_string<Args...> fmt, Args&&... args) -> SmolString&
     {
@@ -136,21 +157,25 @@ struct SmolString final {
         return *this;
     }
 
+    /// Support for C++ iterators. Resolves to [`std::array<char, N>::data`].
     constexpr auto begin() noexcept -> char*
     {
         return this->n_data.data();
     }
 
+    /// Support for C++ iterators. Resolves to [`std::array<char, N>::data`] to the size of the string itself.
     constexpr auto end() noexcept -> char*
     {
         return this->n_data.data() + this->n_size;
     }
 
+    /// Support for C++ iterators. Resolves to [`std::array<char, N>::data`].
     [[nodiscard]] constexpr auto begin() const noexcept -> const char*
     {
         return this->n_data.data();
     }
 
+    /// Support for C++ iterators. Resolves to [`std::array<char, N>::data`] to the size of the string itself.
     [[nodiscard]] constexpr auto end() const noexcept -> const char*
     {
         return this->n_data.data() + this->n_size;
@@ -166,19 +191,25 @@ struct SmolString final {
         return { this->n_data.data(), this->n_size };
     }
 
+    /// ## Notes
+    /// You can disable assertions on the subscript operator with defining
+    /// `VIOLET_NO_ASSERT_SUBSCRIPT`. (GCC/Clang: `-DVIOLET_NO_ASSERT_SUBSCRIPT`, MSVC: `/DVIOLET_NO_ASSERT_SUBSCRIPT`)
     constexpr auto operator[](size_t idx) -> char&
     {
 #ifndef VIOLET_NO_ASSERT_SUBSCRIPT
-        assert(idx <= this->n_size);
+        assert(idx <= this->n_size && "out-of-bounds");
 #endif
 
         return this->n_data[idx];
     }
 
+    /// ## Notes
+    /// You can disable assertions on the subscript operator with defining
+    /// `VIOLET_NO_ASSERT_SUBSCRIPT`. (GCC/Clang: `-DVIOLET_NO_ASSERT_SUBSCRIPT`, MSVC: `/DVIOLET_NO_ASSERT_SUBSCRIPT`)
     constexpr auto operator[](size_t idx) const -> const char&
     {
 #ifndef VIOLET_NO_ASSERT_SUBSCRIPT
-        assert(idx <= this->n_size);
+        assert(idx <= this->n_size && "out-of-bounds");
 #endif
 
         return this->n_data[idx];
