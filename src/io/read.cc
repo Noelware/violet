@@ -26,6 +26,7 @@ auto violet::io::Read(Vec<UInt8>& data, Span<UInt8> buf) -> Result<UInt>
 {
     UInt minToCopy = std::min(buf.size(), data.size());
     std::copy_n(data.begin(), minToCopy, buf.begin());
+    data.erase(data.begin(), data.begin() + static_cast<std::ptrdiff_t>(minToCopy));
 
     return minToCopy;
 }

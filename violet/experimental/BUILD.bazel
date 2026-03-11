@@ -36,3 +36,19 @@ cc_test(
     srcs = ["//tests/experimental:SmolString.test.cc"],
     deps = [":smol_string"],
 )
+
+cc_library(
+    name = "oneof",
+    hdrs = ["//include/violet/Experimental:OneOf.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet",
+        "//violet/container:optional",
+    ],
+)
+
+cc_test(
+    name = "oneof_test",
+    srcs = ["//tests/experimental:OneOf.test.cc"],
+    deps = [":oneof"],
+)

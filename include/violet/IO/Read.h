@@ -63,48 +63,44 @@ template<typename T>
 inline auto Read(T& reader, Span<UInt8> buf) -> Result<UInt>
 {
     if constexpr (requires { reader.Read(buf); }) {
-        return reader.Read(reader, buf);
+        return reader.Read(buf);
     } else if constexpr (requires { ::violet::io::Read(reader, buf); }) {
         return ::violet::io::Read(reader, buf);
     } else {
-        static_assert([] -> bool { return false; }(), "`T` doesn't conform to `Readable` concept");
+        VIOLET_UNREACHABLE();
     }
 }
 
-// FIXME(@auguwu): causes infinite recursion (for some reason)
-// /// Reads all data from a readable source into a `String`.
-// ///
-// /// This function provides a convenient way to read all available data from
-// /// any object satisfying the `Readable` concept and accumulate it into a `String`.
-// ///
-// /// @tparam R A type that satisfies the `Readable` concept.
-// /// @param reader The readable source to read from.
-// /// @return I/O result containing the accumulated string data or an error.
-// template<Readable R>
-// inline auto ReadToString(R& reader) -> Result<String>
-// {
-//     String buf;
-//     constexpr static auto CHUNK_SIZE = 4096;
+/// Reads all data from a readable source into a `String`.
+///
+/// This function provides a convenient way to read all available data from
+/// any object satisfying the `Readable` concept and accumulate it into a `String`.
+///
+/// @tparam R A type that satisfies the `Readable` concept.
+/// @param reader The readable source to read from.
+/// @return I/O result containing the accumulated string data or an error.
+template<Readable R, typename StringType = String>
+    requires(requires(StringType str) {
+        typename StringType::value_type;
+        typename StringType::size_type;
 
-//     Vec<UInt8> chunk(CHUNK_SIZE);
-//     while (true) {
-//         std::cout << "at while loop\n";
-//         Result<UInt> res = io::Read(reader, chunk);
-//         std::cout << "read data\n";
-//         if (res.Err()) {
-//             return Err(res.Error());
-//         }
+        { str.append(std::declval<const String::value_type*>(), std::declval<typename StringType::size_type>()) };
+    } && !std::same_as<std::decay_t<StringType>, Str>)
+auto ReadToString(R& reader) -> Result<StringType>
+{
+    StringType out;
 
-//         if (res.Value() == 0) {
-//             break;
-//         }
+    Array<UInt8, 4096> buf;
+    while (true) {
+        const UInt bytes = VIOLET_TRY(violet::io::Read(reader, buf));
+        if (bytes == 0) {
+            break;
+        }
 
-//         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-//         buf.append({ reinterpret_cast<CStr>(chunk.data()), res.Value() });
-//     }
+        out.append(reinterpret_cast<const char*>(buf.data()), bytes);
+    }
 
-//     buf.shrink_to_fit();
-//     return VIOLET_MOVE(buf);
-// }
+    return out;
+}
 
 } // namespace violet::io

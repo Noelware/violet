@@ -78,6 +78,45 @@ struct instanceof<Template, Template<Args...>>: std::true_type {};
 template<template<class...> typename Template, typename T>
 inline constexpr bool instanceof_v = instanceof<Template, T>::value;
 
+/// A compile-type type-trait that retrieves the type at the zero-based index of type `I`
+/// in the template parameter pack `Ts...`.
+template<size_t I, typename T, typename... Ts>
+struct pack_element final {
+    using type = typename pack_element<I - 1, Ts...>::type;
+};
+
+template<typename T, typename... Ts>
+struct pack_element<0, T, Ts...> final {
+    using type = T;
+};
+
+#if VIOLET_REQUIRE_STL(202400L)
+template<size_t I, typename... Ts>
+using pack_element_t = Ts...[I];
+#else
+template<size_t I, typename... Ts>
+using pack_element_t = typename pack_element<I, Ts...>::type;
+#endif
+
+template<typename T, typename... Ts>
+struct pack_index;
+
+template<typename T, typename... Ts>
+struct pack_index<T, T, Ts...> final {
+    constexpr static size_t value = 0;
+};
+
+template<typename T, typename U, typename... Ts>
+struct pack_index<T, U, Ts...> {
+    constexpr static size_t value = 1 + pack_index<T, Ts...>::value;
+};
+
+template<typename T, typename... Ts>
+constexpr inline size_t pack_index_v = pack_index<T, Ts...>::value;
+
+template<typename T, typename... Ts>
+inline constexpr bool pack_contains_v = (std::is_same_v<T, Ts> || ...);
+
 template<typename Fun, typename... Args>
 concept callable = std::invocable<Fun, Args...>;
 

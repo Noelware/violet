@@ -28,12 +28,16 @@ using namespace violet::io; // NOLINT(google-build-using-namespace)
 TEST(Reads, AFullRead)
 {
     Vec<UInt8> data = { 'H', 'e', 'l', 'l', 'o' };
-    Vec<UInt8> buf(5);
+    Array<UInt8, 5> buf;
     auto result = io::Read(data, buf);
 
     ASSERT_TRUE(result);
-    EXPECT_EQ(result.Value(), 5);
-    EXPECT_EQ(buf, data);
+    EXPECT_EQ(*result, 5);
+    EXPECT_EQ(buf[0], 'H');
+    EXPECT_EQ(buf[1], 'e');
+    EXPECT_EQ(buf[2], 'l');
+    EXPECT_EQ(buf[3], 'l');
+    EXPECT_EQ(buf[4], 'o');
 }
 
 TEST(Reads, Partial)
@@ -47,11 +51,11 @@ TEST(Reads, Partial)
     EXPECT_EQ(buf, Vec<UInt8>({ 'A', 'B', 'C', 0, 0 }));
 }
 
-// TEST(Reads, ReadToString)
-// {
-//     Vec<UInt8> data = { 'H', 'e', 'l', 'l', 'o' };
-//     auto result = io::ReadToString(data);
+TEST(Reads, ReadToString)
+{
+    Vec<UInt8> data = { 'H', 'e', 'l', 'l', 'o' };
+    auto result = io::ReadToString(data);
 
-//     ASSERT_TRUE(result);
-//     EXPECT_EQ(result.Value(), "Hello");
-// }
+    ASSERT_TRUE(result);
+    EXPECT_EQ(result.Value(), "Hello");
+}

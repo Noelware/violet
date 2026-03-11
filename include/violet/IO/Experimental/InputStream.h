@@ -83,72 +83,33 @@ struct InputStream {
 /// @tparam Stream A type derived from `InputStream`.
 /// @param src input stream to read from.
 /// @note no character encoding is assumed; bytes are copied verbatim.
-template<typename Stream>
-    requires(std::is_base_of_v<InputStream, std::remove_cvref_t<Stream>>)
+template<typename Stream, typename StringType = String>
+    requires(std::is_base_of_v<InputStream, std::remove_cvref_t<Stream>> && requires(StringType str) {
+        typename StringType::value_type;
+        typename StringType::size_type;
+
+        { str.reserve(std::declval<typename StringType::size_type>()) };
+        { str.append(std::declval<const String::value_type*>(), std::declval<typename StringType::size_type>()) };
+    } && !std::same_as<std::decay_t<StringType>, Str>)
 auto ReadToString(Stream& src) noexcept -> Result<String>
 {
-    String out;
+    StringType out;
 
-    if (auto available = src.Available()) {
+    if (auto available = src.Available(); available.Ok() && *available > 0) {
         out.reserve(available.Value());
     }
 
-    UInt8 buf[4096];
+    Array<UInt8, 4096> buf;
     while (true) {
-        const UInt8 bytes = VIOLET_TRY(src.Read(Span<UInt8>{ buf, sizeof(buf) }));
+        const UInt bytes = VIOLET_TRY(src.Read(buf));
         if (bytes == 0) {
             break;
         }
 
-        out.append(reinterpret_cast<const char*>(buf), bytes);
+        out.append(reinterpret_cast<const char*>(buf.data()), bytes);
     }
 
     return out;
 }
-
-// /// Reads a single line from a stream.
-// ///
-// /// This will read bytes from the `src` stream until a line terminator is
-// /// encountered or EOF (end-of-stream) is reached and stores the result in `out`.
-// ///
-// /// Line terminators are implementation-defined, but are typically `'\n'` or
-// /// `"\r\n"`. The terminator itself is not included in `out`.
-// ///
-// /// @tparam Stream A type derived from `InputStream`.
-// /// @param src input stream to read from.
-// /// @param out destination string to receive the line contents.
-// /// @note no character encoding is assumed
-// /// @note if EOF is reached before any bytes are read, `out` may be left empty.
-// template<typename Stream>
-//     requires(std::is_base_of_v<InputStream, std::remove_cvref_t<Stream>>)
-// auto ReadLine(Stream& src, String out) noexcept -> Result<void>
-// {
-//     out.clear();
-
-//     UInt8 ch = '\0';
-//     bool hasSeenAnything = false;
-
-//     while (true) {
-//         auto read = src.Read(Span<UInt8>{ &ch, 1 });
-//         if (read.Err()) {
-//             return Err(VIOLET_MOVE(read.Error()));
-//         }
-
-//         if (read.Value() == 0) {
-//             return {};
-//         }
-
-//         hasSeenAnything = true;
-//         if (ch == '\n') {
-//             if (!out.empty() && out.back() == '\r') {
-//                 out.pop_back();
-//             }
-
-//             return {};
-//         }
-
-//         out.push_back(static_cast<char>(ch));
-//     }
-// }
 
 } // namespace violet::io::experimental

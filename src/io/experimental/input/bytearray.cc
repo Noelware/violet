@@ -39,7 +39,7 @@ auto ByteArrayInputStream::Read(Span<UInt8> buf) noexcept -> Result<UInt>
         return 0;
     }
 
-    const UInt8 toRead = std::min(remaining, buf.size());
+    const UInt toRead = std::min(remaining, buf.size());
     ::memcpy(buf.data(), this->n_buf.data() + this->n_pos, toRead);
 
     this->n_pos += toRead;

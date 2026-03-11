@@ -34,13 +34,10 @@ cc_library(
 cc_test(
     name = "input_stream_read_to_string_test",
     srcs = ["//tests/io/experimental/input:ReadToString.test.cc"],
-    deps = [":input_stream"],
-)
-
-cc_test(
-    name = "input_stream_read_lines_test",
-    srcs = ["//tests/io/experimental/input:ReadToString.test.cc"],
-    deps = [":input_stream"],
+    deps = [
+        ":byte_array_input_stream",
+        ":input_stream",
+    ],
 )
 
 cc_library(

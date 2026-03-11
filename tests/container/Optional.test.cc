@@ -24,6 +24,8 @@
 
 using namespace violet; // NOLINT(google-build-using-namespace)
 
+// NOLINTBEGIN(readability-identifier-length)
+
 TEST(Optionals, Basic)
 {
     const Optional<UInt32> opt{};
@@ -190,3 +192,193 @@ TEST(Optionals, SizeAndAlignmentRequirementsMustMatchRust)
     EXPECT_EQ(alignof(Optional<AlignTest>), alignof(AlignTest));
     EXPECT_GE(sizeof(Optional<AlignTest>), sizeof(AlignTest) + 1);
 }
+
+TEST(OptionalRefs, DefaultConstructsDisengaged)
+{
+    Optional<int&> opt;
+    EXPECT_FALSE(opt.HasValue());
+}
+
+TEST(OptionalRefs, NulloptConstructsDisengaged)
+{
+    Optional<int&> opt = Nothing;
+    EXPECT_FALSE(opt.HasValue());
+}
+
+TEST(OptionalRefs, ConstructFromLValue)
+{
+    Int32 fourty_two = 42;
+
+    Optional<Int32&> opt = fourty_two;
+    ASSERT_TRUE(opt.HasValue());
+    EXPECT_EQ(*opt, fourty_two);
+}
+
+TEST(OptionalRefs, BindsToOriginalObject)
+{
+    Int32 ten = 10;
+    Optional<Int32&> opt = ten;
+
+    ten = 99;
+    EXPECT_EQ(*opt, 99);
+}
+
+TEST(OptionalRef, MutationThroughOptionalAffectsOriginal)
+{
+    int five = 5;
+    Optional<int&> opt = five;
+
+    *opt = 100;
+    EXPECT_EQ(five, 100);
+}
+
+TEST(OptionalRef, CopyConstructorSharesReferent)
+{
+    int x = 7;
+    Optional<int&> a = x;
+    Optional<int&> b = a;
+    ASSERT_TRUE(b.HasValue());
+    EXPECT_EQ(*b, 7);
+
+    x = 77;
+    EXPECT_EQ(*b, 77); // b also sees the mutation
+}
+
+TEST(OptionalRef, AssignRebindsToNewObject)
+{
+    int x = 1;
+    int y = 2;
+
+    Optional<int&> opt = x;
+    opt = y;
+    ASSERT_TRUE(opt.HasValue());
+    EXPECT_EQ(*opt, 2);
+
+    // Mutating x no longer affects opt
+    x = 99;
+    EXPECT_EQ(*opt, 2);
+}
+
+TEST(OptionalRef, AssignNulloptDisengages)
+{
+    int x = 5;
+    Optional<int&> opt = x;
+    opt = std::nullopt;
+    EXPECT_FALSE(opt.HasValue());
+}
+
+TEST(OptionalRef, ResetDisengages)
+{
+    int x = 3;
+    Optional<int&> opt = x;
+    opt.Reset();
+    EXPECT_FALSE(opt.HasValue());
+}
+
+TEST(OptionalRef, ValueReturnsRef)
+{
+    int x = 42;
+    Optional<int&> opt = x;
+    EXPECT_EQ(opt.Value(), 42);
+}
+
+TEST(OptionalRef, ArrowOperator)
+{
+    struct S {
+        int n = 9;
+    };
+    S s;
+    Optional<S&> opt = s;
+    EXPECT_EQ(opt->n, 9);
+    opt->n = 42;
+    EXPECT_EQ(s.n, 42);
+}
+
+TEST(OptionalRef, UnwrapReturnsRef)
+{
+    int x = 55;
+    Optional<int&> opt = x;
+    EXPECT_EQ(opt.Unwrap(), 55);
+}
+
+TEST(OptionalRef, UnwrapOrReturnsDefaultWhenDisengaged)
+{
+    int fallback = 99;
+    Optional<int&> opt;
+    EXPECT_EQ(opt.UnwrapOr(fallback), 99);
+}
+
+TEST(OptionalRef, UnwrapOrReturnsValueWhenEngaged)
+{
+    int x = 7;
+    int fallback = 99;
+
+    Optional<int&> opt = x;
+    EXPECT_EQ(opt.UnwrapOr(fallback), 7);
+}
+
+TEST(OptionalRef, MapTransformsEngaged)
+{
+    int x = 4;
+    Optional<int&> opt = x;
+    auto result = opt.Map([](int& v) -> int { return v * v; });
+    ASSERT_TRUE(result.HasValue());
+    EXPECT_EQ(result.Unwrap(), 16);
+}
+
+TEST(OptionalRef, MapPropagatesDisengaged)
+{
+    Optional<int&> opt;
+    auto result = opt.Map([](int& v) -> int { return v * v; });
+    EXPECT_FALSE(result.HasValue());
+}
+
+TEST(OptionalRef, EqualityBothDisengaged)
+{
+    Optional<int&> a;
+    Optional<int&> b;
+
+    EXPECT_EQ(a, b);
+}
+
+TEST(OptionalRef, EqualityBothEngagedSameValue)
+{
+    int x = 5;
+    int y = 5;
+
+    Optional<int&> a = x;
+    Optional<int&> b = y;
+
+    EXPECT_EQ(a, b);
+}
+
+TEST(OptionalRef, InequalityDifferentValues)
+{
+    int x = 1;
+    int y = 2;
+
+    Optional<int&> a = x;
+    Optional<int&> b = y;
+
+    EXPECT_NE(a, b);
+}
+
+TEST(OptionalRef, EqualityWithNullopt)
+{
+    Optional<int&> opt;
+    EXPECT_EQ(opt, std::nullopt);
+
+    int x = 1;
+    opt = x;
+    EXPECT_NE(opt, std::nullopt);
+}
+
+TEST(OptionalRef, ConstRef)
+{
+    const int x = 123;
+    Optional<const int&> opt = x;
+    ASSERT_TRUE(opt.HasValue());
+    EXPECT_EQ(*opt, 123);
+}
+
+// NOLINTEND(readability-identifier-length)

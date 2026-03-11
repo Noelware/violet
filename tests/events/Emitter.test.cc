@@ -111,6 +111,12 @@ TEST(Events, EmitterThreadSafe)
     Mutex mu;
     Vec<UInt64> ids(1000);
 
+#if (defined(VIOLET_GCC) || defined(VIOLET_CLANG)) && (defined(_MSVC_LANG) && _MSVC_LANG <= 202002L)                   \
+    || __cplusplus <= 202002L
+    VIOLET_DIAGNOSTIC_PUSH
+    VIOLET_DIAGNOSTIC_IGNORE("-Wc++23-extensions")
+#endif // defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+
     auto worker = [&] -> void {
         while (!started.load()) {}
 
@@ -121,6 +127,10 @@ TEST(Events, EmitterThreadSafe)
             ids.push_back(guard.ID());
         }
     };
+
+#if (defined(VIOLET_GCC) || defined(VIOLET_CLANG)) && (defined(_MSVC_LANG) && _MSVC_LANG <= ver) || __cplusplus <= ver
+    VIOLET_DIAGNOSTIC_POP
+#endif // defined(VIOLET_GCC) || defined(VIOLET_CLANG)
 
     std::thread t1(worker);
     std::thread t2(worker);
