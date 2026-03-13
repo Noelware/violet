@@ -83,6 +83,9 @@ test:ci --test_output=all
 common:ci --noshow_progress
 common:ci --verbose_failures
 
+# Rust (for Minato)
+build --@rules_rust//rust/settings:experimental_use_cc_common_link=True
+
 ## ~ common configuration for sanitizers
 common:san --config=dbg
 common:san --strip=never
