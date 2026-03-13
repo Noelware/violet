@@ -7,17 +7,20 @@ availableAt:
 ---
 
 ### unreleased
-### Noelware.Violet
+**Git History**: <https://github.com/Noelware/violet/compare/26.04.01...master>
+
+### 26.04.01
+#### Noelware.Violet
 - Allow **violet::Optional** to hold references ([`@auguwu`])
 
-### Noelware.Violet.Experimental
+#### Noelware.Violet.Experimental
 - Introduce **violet::experimental::OneOf**, a experimental type to be used as a discriminated union. ([`@auguwu`])
 
-### Noelware.Violet.IO
+#### Noelware.Violet.IO
 - Reimplement **violet::io::ReadToString** for readable types ([`@auguwu`])
 - Fix issues within the `Vec<UInt8>` reader ([`@auguwu`])
 
-### Noelware.Violet.IO.Experimental
+#### Noelware.Violet.IO.Experimental
 - Fully implement **violet::io::experimental::ReadToString** for any input streams and allow a `String` type to be specified that implements the following constraints: ([`@auguwu`])
     - `type value_type = ...;` must be present
     - `type size_type  = ...;` must be present
@@ -25,7 +28,7 @@ availableAt:
     - `String::append(value_type*, size_type)` must be present
 - Fix bug in **ReadToString** and **ByteArrayInputStream** when reading will overflow a `UInt8` due to a dev issue ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.04...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.04...26.04.01>
 
 ### 26.04
 - [Bazel] Add framework-specific "uber" libraries under `@violet` ([`@auguwu`])
