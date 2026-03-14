@@ -28,7 +28,9 @@ exports_files(
     visibility = ["//:__subpackages__"],
 )
 
-minato(name = "rcc")
+minato(
+    name = "rcc",
+)
 
 cc_library(
     name = "include_hack",

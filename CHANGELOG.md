@@ -7,7 +7,13 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.04.01...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.04.02...master>
+
+### 26.04.02
+#### Noelware.Violet
+- Fix distribution tool from removing a needed `cc_library` rule ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.04.01...26.04.02>
 
 ### 26.04.01
 #### Noelware.Violet
