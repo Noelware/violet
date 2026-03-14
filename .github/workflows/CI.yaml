@@ -154,7 +154,7 @@ jobs:
                     /tmp/bazel/violet
 
             - run: |
-                sdkroot=$(xcrun --sdk macos --show-sdk-path)
+                sdkroot=$(xcrun --sdk macosx --show-sdk-path)
                 echo "BAZEL_COPTS=\"-isysroot$sdkroot\"" >> $GITHUB_ENV
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
