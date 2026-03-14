@@ -78,7 +78,9 @@ build:cxx26 --host_cxxopt=-std=c++26
 test --test_output=errors
 
 # CI-based configuration
-build:ci --nokeep_state_after_build
+common:ci --color=no
+common:ci --curses=no
+build:ci --disk_cache=/tmp/bazel/violet
 test:ci --test_output=all
 common:ci --noshow_progress
 common:ci --verbose_failures

@@ -182,7 +182,7 @@
   "moduleExtensions": {
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
-        "bzlTransitiveDigest": "rL/34P1aFDq2GqVC2zCFgQ8nTuOC6ziogocpvG50Qz8=",
+        "bzlTransitiveDigest": "nvW/NrBXlAmiQw99EMGKkLaD2KbNp2mQDlxdfpr+0Ls=",
         "usagesDigest": "QI2z8ZUR+mqtbwsf2fLqYdJAkPOHdOV+tF2yVAUgRzw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -246,7 +246,7 @@
     },
     "@@rules_python+//python/uv:uv.bzl%uv": {
       "general": {
-        "bzlTransitiveDigest": "8vT1ddXtljNxYD0tJkksqzeKE6xqx4Ix+tXthAppjTI=",
+        "bzlTransitiveDigest": "xfNZ/WmfkC9N/pNH0cmucTOrqBa966d9iMmmX54m1UM=",
         "usagesDigest": "WYhzIw9khRBy34H1GxV5+fI1yi07O90NmCXosPUdHWQ=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -287,7 +287,7 @@
     },
     "@@rules_rust+//crate_universe:extensions.bzl%crate": {
       "general": {
-        "bzlTransitiveDigest": "yy4waRPauGLpw2otYpsnuJ/GajDIVGlleiZLW0W6uZA=",
+        "bzlTransitiveDigest": "p2Zm9mRQP2hmYcNlLdDUF8QZeJE4jaUnRb4OLwXhMdA=",
         "usagesDigest": "vexykPmOdvDRAkrbppetj6G9Yhrla1h3Lc93dwK/2F0=",
         "recordedFileInputs": {
           "@@minato+//Cargo.lock": "0021ddcbb2a3a6c813fc97ba8976cf37350e35e6cead5f719f9711b47c9fd0d7",

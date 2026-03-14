@@ -65,7 +65,7 @@ jobs:
             fail-fast: false
             matrix:
                 compiler: [gcc-15, gcc-14, clang-21, clang-20]
-                bazel-version: ["7.7.1", "8.5.1"]
+                bazel-version: ["7.7.1", "8.6.0"]
                 cxx-standard: ["26", "23", "20"]
                 include:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: ""}
@@ -103,7 +103,7 @@ jobs:
             fail-fast: false
             matrix:
                 compiler: [clang-21, clang-20]
-                bazel-version: ["7.7.1", "8.5.1"]
+                bazel-version: ["7.7.1", "8.6.0"]
                 cxx-standard: ["26", "23", "20"]
                 include:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--config=libcxx"}
@@ -120,6 +120,7 @@ jobs:
                 path: |
                     ~/.cache/bazel
                     ~/.cache/bazelisk
+                    /tmp/bazel/violet
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
 
@@ -137,21 +138,12 @@ jobs:
             fail-fast: false
             matrix:
                 cxx-standard: [26, 23, 20]
-                bazel-version: ["7.7.1", "8.5.1"]
+                bazel-version: ["7.7.1", "8.6.0"]
         env:
             USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-            BAZELFLAGS: "--config=ci --action_env=CC=$(brew --prefix llvm@20)/bin/clang --action_env=CXX=$(brew --prefix llvm@20) --cxxopt=-std=c++${{matrix.cxx-standard}} --host_cxxopt=-std=c++${{matrix.cxx-standard}}"
+            BAZELFLAGS: "--config=ci --config=cxx${{matrix.cxx-standard}} --client_env=BAZEL_CXXOPTS=-std=c++${{matrix.cxx-standard}}"
         steps:
             - uses: actions/checkout@v6
-            - uses: actions/cache@v5
-              with:
-                path: /opt/homebrew/opt/llvm@20
-                key: macos-homebrew-llvm-20
-                restore-keys: |
-                    macos-homebrew-llvm-
-
-            - run: brew install llvm@20
-
             - uses: actions/cache@v5
               with:
                 key: bazel-cache-macos-${{hashFiles('MODULE.bazel', 'BUILD.bazel', '.bazelrc')}}
@@ -159,6 +151,9 @@ jobs:
                 path: |
                     ~/.cache/bazel
                     ~/.cache/bazelisk
+                    /tmp/bazel/violet
+
+            - run: echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> $GITHUB_ENV
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
 
@@ -209,7 +204,7 @@ jobs:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: " --test_env=ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
-            USE_BAZEL_VERSION: "8.5.1"
+            USE_BAZEL_VERSION: "8.6.0"
             BAZELFLAGS: "--config=ci --config=asan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
@@ -236,7 +231,7 @@ jobs:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=UBSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
-            USE_BAZEL_VERSION: "8.5.1"
+            USE_BAZEL_VERSION: "8.6.0"
             BAZELFLAGS: "--config=ci --config=ubsan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
@@ -263,7 +258,7 @@ jobs:
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=TSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21 "}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
-            USE_BAZEL_VERSION: "8.5.1"
+            USE_BAZEL_VERSION: "8.6.0"
             BAZELFLAGS: "--config=ci --config=tsan --cxxopt=-std=c++26 --host_cxxopt=-std=c++26 --client_env=BAZEL_CXXOPTS=-std=c++26 --action_env=CC=${{matrix.cc}} --action_env=CXX=${{matrix.cxx}} ${{matrix.flags}}"
         steps:
             - uses: actions/checkout@v6
