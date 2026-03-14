@@ -155,7 +155,7 @@ jobs:
 
             - run: |
                 sdkroot=$(xcrun --sdk macosx --show-sdk-path)
-                echo "BAZEL_COPTS=\"-isysroot$sdkroot\"" >> $GITHUB_ENV
+                echo "BAZEL_COPTS=\"-isysroot $sdkroot\"" >> $GITHUB_ENV
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
 
