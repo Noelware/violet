@@ -90,7 +90,7 @@ struct pack_element<0, T, Ts...> final {
     using type = T;
 };
 
-#if VIOLET_REQUIRE_STL(202400L)
+#ifdef __cpp_pack_indexing
 template<size_t I, typename... Ts>
 using pack_element_t = Ts...[I];
 #else

@@ -1203,10 +1203,11 @@ struct Optional<T&> final {
         return this->n_value;
     }
 
-    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const -> T&
+    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T&
     {
         VIOLET_LIKELY_IF(HasValue())
         {
@@ -1216,10 +1217,11 @@ struct Optional<T&> final {
         Optional<T>::panicUnexpectly("tried to unwrap nothing", loc);
     }
 
-    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const -> T&
+    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
+        -> T&
     {
         VIOLET_LIKELY_IF(HasValue())
         {
