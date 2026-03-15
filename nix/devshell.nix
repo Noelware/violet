@@ -46,7 +46,6 @@
   gtest,
   ## used for devshell
   bash,
-  ripgrep,
 }: let
   inherit
     (import ./lib/common.nix {
@@ -55,8 +54,13 @@
     llvm
     ;
 
+  appleSDK =
+    if stdenv.isDarwin
+    then apple-sdk_15
+    else null;
+
   darwinPackages = [
-    apple-sdk_15
+    appleSDK
     llvm.lld
   ];
 
@@ -101,21 +105,30 @@
   shellHook =
     builtins.replaceStrings [
       "@bash@"
-      "@ripgrep@"
       "@compiler-rt@"
       "@libcxx@"
       "@libcxx.dev@"
-    ] [
-      "${bash}"
-      "${ripgrep}"
-      "${llvm.compiler-rt.dev}"
-      "${llvm.libcxx}"
-      "${llvm.libcxx.dev}"
-    ]
+      "@apple.sdk@"
+    ] ([
+        "${bash}"
+        "${llvm.compiler-rt.dev}"
+        "${llvm.libcxx}"
+        "${llvm.libcxx.dev}"
+      ]
+      ++ [
+        (
+          if stdenv.isDarwin
+          then "${appleSDK}"
+          else ""
+        )
+      ])
     devshell;
 in
   mkShell' {
     inherit packages shellHook;
+
+    # Set the minimum deployment target for macOS builds to SDK 14+
+    MACOSX_DEPLOYMENT_TARGET = "14.0";
 
     name = "violet-dev";
   }

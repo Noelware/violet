@@ -153,9 +153,12 @@ jobs:
                     ~/.cache/bazelisk
                     /tmp/bazel/violet
 
-            - run: |
-                sdkroot=$(xcrun --sdk macosx --show-sdk-path)
-                echo "BAZEL_COPTS=\"-isysroot $sdkroot\"" >> $GITHUB_ENV
+            - uses: maxim-lobanov/setup-xcode@v1
+              with:
+                xcode-version: latest-stable
+
+            - name: Setup macOS SDK root
+              run: echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> $GITHUB_ENV
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
 

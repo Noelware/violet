@@ -1,0 +1,33 @@
+From a9cd15faa9df43c91281481beffaa73c26e348bb Mon Sep 17 00:00:00 2001
+From: Noel Towa <cutie@floofy.dev>
+Date: Sun, 15 Mar 2026 15:59:33 -0700
+Subject: [PATCH] Remove `-lresolv` in `darwin` and `macos` triple mappings In
+ macOS 15+, `-lresolv` is now available in `-lSystem` and linker errors arise
+ when we try to use a higher SDK.
+
+---
+ rust/platform/triple_mappings.bzl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/rust/platform/triple_mappings.bzl b/rust/platform/triple_mappings.bzl
+index 06866c52b..98d6985b4 100644
+--- a/rust/platform/triple_mappings.bzl
++++ b/rust/platform/triple_mappings.bzl
+@@ -243,7 +243,7 @@ _SYSTEM_TO_STDLIB_LINKFLAGS = {
+     # includes `-lunwind` but this might not actually be required.
+     # I am not sure which is the common configuration or how we encode it as a link flag.
+     "cloudabi": ["-lunwind", "-lc", "-lcompiler_rt"],
+-    "darwin": ["-lSystem", "-lresolv"],
++    "darwin": ["-lSystem"],
+     "dragonfly": ["-lpthread"],
+     "eabi": [],
+     "eabihf": [],
+@@ -266,7 +266,7 @@ _SYSTEM_TO_STDLIB_LINKFLAGS = {
+     "ios": ["-lSystem", "-lobjc", "-Wl,-framework,Security", "-Wl,-framework,Foundation", "-lresolv"],
+     # TODO: This ignores musl. Longer term what does Bazel think about musl?
+     "linux": ["-ldl", "-lpthread"],
+-    "macos": ["-lSystem", "-lresolv"],
++    "macos": ["-lSystem"],
+     "nacl": [],
+     "netbsd": ["-lpthread", "-lrt"],
+     "nixos": ["-ldl", "-lpthread"],  # Same as `linux`.

@@ -30,3 +30,10 @@ export BAZEL_CONLYOPTS="-xc"
 export BAZEL_COPTS="-I@compiler-rt@/include"
 export BAZEL_CXXOPTS="-xc++:-nostdinc++:-isystem@libcxx.dev@/include/c++/v1"
 export BAZEL_LINKOPTS="-L@libcxx@/lib"
+
+if [ -n "@apple.sdk@" ]; then
+    echo "[violet::devshell] Overriding \`\$SDKROOT\` -> @apple.sdk@"
+
+    unset SDKROOT
+    export SDKROOT="@apple.sdk@/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+fi
