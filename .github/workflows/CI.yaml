@@ -178,7 +178,9 @@ jobs:
             - name: Setup macOS SDK root
               run: |
                 sdkroot=$(xcrun --sdk macosx --show-sdk-path)
+
                 echo "SDKROOT=$sdkroot" >> $GITHUB_ENV
+                echo "build --linkopt=-fuse-ld=$(xcrun -f ld)" >> .usr.bazelrc
 
             - run: bazel build ${{env.BAZELFLAGS}} //...
 
