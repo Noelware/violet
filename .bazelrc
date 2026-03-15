@@ -81,6 +81,7 @@ test --test_output=errors
 common:ci --color=no
 common:ci --curses=no
 build:ci --disk_cache=/tmp/bazel/violet
+build:ci --spawn_strategy=local
 test:ci --test_output=all
 common:ci --noshow_progress
 common:ci --verbose_failures
