@@ -7,7 +7,15 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.04.02...master>
+
+### 26.04.03
+#### Noelware.Violet
+- Fix **missing `dummy.cc` file** when using any framework-specific targets like `@violet//:violet` ([`@auguwu`])
+
+#### Noelware.Violet.IO
+- Add **io::Error::FromOSError** to use a OS error instead of `errno` (on Unix) ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.04.02...26.04.03>
 
 ### 26.04.02
 #### Noelware.Violet

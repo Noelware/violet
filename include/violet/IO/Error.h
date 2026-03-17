@@ -247,6 +247,7 @@ private:
     friend struct violet::io::Error;
 
     VIOLET_EXPLICIT PlatformError();
+    VIOLET_EXPLICIT PlatformError(error_type error);
 
 #if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)
     error_type n_value;
@@ -265,6 +266,7 @@ struct VIOLET_API Error final {
     }
 
     static auto OSError() -> Error;
+    static auto FromOSError(PlatformError::error_type error) -> Error;
 
 #if VIOLET_USE_RTTI
     template<typename T, typename... Args>

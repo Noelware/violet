@@ -47,6 +47,7 @@ files=(
     "README.md"
     "LICENSE"
     "CHANGELOG.md"
+    "dummy.cc"
 )
 
 for dir in "${dirs[@]}"; do

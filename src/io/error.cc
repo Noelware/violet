@@ -35,6 +35,14 @@ auto Error::OSError() -> Error
     return error;
 }
 
+auto Error::FromOSError(PlatformError::error_type ecode) -> Error
+{
+    Error error;
+    error.n_repr = PlatformError(ecode);
+
+    return error;
+}
+
 auto Error::RawOSError() const noexcept -> Optional<PlatformError::error_type>
 {
     if (const auto* pat = std::get_if<PlatformError>(&this->n_repr)) {

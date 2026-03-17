@@ -38,6 +38,12 @@ PlatformError::PlatformError()
     VIOLET_DEBUG_ASSERT(errno > 0, "assumption of `errno` being set");
 }
 
+PlatformError::PlatformError(PlatformError::error_type error)
+    : n_value(error)
+{
+    VIOLET_DEBUG_ASSERT(error > 0, "assumption of `errno` being set");
+}
+
 auto PlatformError::AsErrorKind() const noexcept -> ErrorKind
 {
     switch (this->n_value) {
