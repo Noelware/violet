@@ -81,7 +81,14 @@ void Print(std::format_string<Args...> fmt, Args&&... args)
 /// @param fmt    A compile-time-checked format string.
 /// @param args   Arguments referenced by the format string.
 template<typename... Args>
-void Print(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args);
+void Print(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
+{
+#if VIOLET_REQUIRE_STL(202302L)
+    std::print(stream, fmt, VIOLET_FWD(Args, args)...);
+#else
+    stream << std::format(fmt, VIOLET_FWD(Args, args)...);
+#endif
+}
 
 /// Writes a formatted string followed by a newline (`'\n'`) to `stdout`.
 ///
@@ -119,7 +126,14 @@ void Println(std::format_string<Args...> fmt, Args&&... args)
 /// @param fmt    A compile-time-checked format string.
 /// @param args   Arguments referenced by the format string.
 template<typename... Args>
-void Println(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args);
+void Println(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
+{
+#if VIOLET_REQUIRE_STL(202302L)
+    std::println(stream, fmt, VIOLET_FWD(Args, args)...);
+#else
+    stream << std::format(fmt, VIOLET_FWD(Args, args)...) << '\n';
+#endif
+}
 
 /// Writes a formatted string to `stderr` (`std::cerr`).
 ///
@@ -160,33 +174,3 @@ void PrintErrln(std::format_string<Args...> fmt, Args&&... args)
 }
 
 } // namespace violet
-
-#if VIOLET_REQUIRE_STL(202302L)
-
-template<typename... Args>
-inline void Print(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
-{
-    return std::print(stream, fmt, VIOLET_FWD(Args, args)...);
-}
-
-template<typename... Args>
-inline void Println(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
-{
-    return std::println(stream, fmt, VIOLET_FWD(Args, args)...);
-}
-
-#else
-
-template<typename... Args>
-inline void Print(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
-{
-    stream << std::format(fmt, VIOLET_FWD(Args, args)...);
-}
-
-template<typename... Args>
-inline void Println(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
-{
-    stream << std::format(fmt, VIOLET_FWD(Args, args)...) << '\n';
-}
-
-#endif
