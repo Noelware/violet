@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <violet/Language/Assert.h> // IWYU pragma: export
 #include <violet/Language/Macros.h> // IWYU pragma: export
 #include <violet/Language/Policy.h> // IWYU pragma: export
 
@@ -30,9 +31,7 @@
 #include <condition_variable>
 #include <cstddef>
 #include <format>
-#include <iostream>
 #include <map>
-#include <source_location>
 #include <span>
 #include <string>
 #include <string_view>
@@ -78,8 +77,22 @@ struct instanceof<Template, Template<Args...>>: std::true_type {};
 template<template<class...> typename Template, typename T>
 inline constexpr bool instanceof_v = instanceof<Template, T>::value;
 
-/// A compile-type type-trait that retrieves the type at the zero-based index of type `I`
+/// A compile-time type trait that retrieves the type at the zero-based index `I`
 /// in the template parameter pack `Ts...`.
+///
+/// Recursively peels the head of the pack until `I` reaches zero, at which point
+/// the current head type is selected.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Violet.h>
+///
+/// using T = violet::pack_element<1, int, float, double>::type;
+/// static_assert(std::is_same_v<T, float>);
+/// ```
+///
+/// @note Prefer the [`violet::pack_element_t`] alias to avoid the trailing `::type`.
+/// @note Index `I` must be less than `sizeof...(Ts)`; out-of-range access is a compile error.
 template<size_t I, typename T, typename... Ts>
 struct pack_element final {
     using type = typename pack_element<I - 1, Ts...>::type;
@@ -91,13 +104,49 @@ struct pack_element<0, T, Ts...> final {
 };
 
 #ifdef __cpp_pack_indexing
+/// Convenience alias for [`violet::pack_element<I, Ts...>::type`].
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Violet.h>
+///
+/// static_assert(std::is_same_v<violet::pack_element_t<0, int, float, double>, int>);
+/// static_assert(std::is_same_v<violet::pack_element_t<2, int, float, double>, double>);
+/// ```
 template<size_t I, typename... Ts>
 using pack_element_t = Ts...[I];
 #else
+/// Convenience alias for [`violet::pack_element<I, Ts...>::type`].
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Violet.h>
+///
+/// static_assert(std::is_same_v<violet::pack_element_t<0, int, float, double>, int>);
+/// static_assert(std::is_same_v<violet::pack_element_t<2, int, float, double>, double>);
+/// ```
 template<size_t I, typename... Ts>
 using pack_element_t = typename pack_element<I, Ts...>::type;
 #endif
 
+/// A compile-time type trait that finds the zero-based index of type `T` in the
+/// parameter pack `Ts...`.
+///
+/// Scans the pack from left to right, counting how far it must recurse before
+/// reaching a head type that is the same as `T`. The result is stored in
+/// `pack_index<T, Ts...>::value`.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Violet.h>
+///
+/// static_assert(violet::pack_index<float, int, float, double>::value == 1);
+/// static_assert(violet::pack_index<int,   int, float, double>::value == 0);
+/// ```
+///
+/// @note Prefer the [`violet::pack_index_v`] variable template for brevity.
+/// @note If `T` does not appear in `Ts...`, instantiation produces an incomplete
+///       type and the program is ill-formed.
 template<typename T, typename... Ts>
 struct pack_index;
 
@@ -111,9 +160,31 @@ struct pack_index<T, U, Ts...> {
     constexpr static size_t value = 1 + pack_index<T, Ts...>::value;
 };
 
+/// Convenience variable template for [`violet::pack_index<T, Ts...>::value`].
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Violet.h>
+///
+/// constexpr size_t idx = violet::pack_index_v<double, int, float, double>;
+/// static_assert(idx == 2);
+/// ```
 template<typename T, typename... Ts>
 constexpr inline size_t pack_index_v = pack_index<T, Ts...>::value;
 
+/// Compile-time predicate that is `true` when type `T` is present in the
+/// parameter pack `Ts...`, and `false` otherwise.
+///
+/// Implemented as a fold expression over [`std::is_same_v`], so it compiles in
+/// O(N) template instantiations but requires no recursive helper struct.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Violet.h>
+///
+/// static_assert( violet::pack_contains_v<float, int, float, double>);
+/// static_assert(!violet::pack_contains_v<char,  int, float, double>);
+/// ```
 template<typename T, typename... Ts>
 inline constexpr bool pack_contains_v = (std::is_same_v<T, Ts> || ...);
 
@@ -287,47 +358,3 @@ struct Infallible final {
 };
 
 } // namespace violet
-
-namespace violet::detail {
-
-/// @internal
-inline void DoAssertion(bool condition, CStr condStr, Str message,
-    const std::source_location& loc = std::source_location::current(), std::ostream& os = std::cerr)
-{
-    VIOLET_UNLIKELY_IF(!condition)
-    {
-        os << '[' << loc.file_name() << ':' << loc.line() << ':' << loc.column() << "]: ";
-        os << "condition '" << condStr << "' failed: " << message << '\n';
-
-        std::abort();
-    }
-}
-
-} // namespace violet::detail
-
-#define VIOLET_ASSERT(cond, message) ::violet::detail::DoAssertion(cond, #cond, message)
-#define VIOLET_ASSERT0(cond) ::violet::detail::DoAssertion(cond, #cond, "assertion failed")
-
-#define VIOLET_TODO_WITH(msg) ::violet::detail::DoAssertion(false, "todo!(" msg ")", msg)
-#define VIOLET_TODO() VIOLET_TODO_WITH("prototype not implemented")
-
-#if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
-#define VIOLET_UNREACHABLE() ::std::unreachable()
-#elif defined(VIOLET_MSVC)
-#define VIOLET_UNREACHABLE() __assume(false)
-#elif defined(VIOLET_GCC) || defined(VIOLET_CLANG)
-#define VIOLET_UNREACHABLE() __builtin_unreachable()
-#else
-#define VIOLET_UNREACHABLE()                                                                                           \
-    do {                                                                                                               \
-        for (;;)                                                                                                       \
-            ;                                                                                                          \
-    } while (false)
-#endif
-
-#ifndef NDEBUG
-#define VIOLET_DEBUG_ASSERT(expr, message) ::violet::detail::DoAssertion(expr, #expr, message)
-#define VIOLET_DEBUG_ASSERT0(expr) ::violet::detail::DoAssertion(expr, #expr, "[debug] assertion failed")
-#else
-#define VIOLET_DEBUG_ASSERT(expr, message)
-#endif

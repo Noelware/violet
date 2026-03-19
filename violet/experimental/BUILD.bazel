@@ -26,6 +26,7 @@ cc_library(
     hdrs = ["//include/violet/Experimental:SmolString.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//violet:assert",
         "//violet:macros",
         "//violet:policy_checks",
     ],

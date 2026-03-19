@@ -19,31 +19,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <violet/Print.h>
 #include <violet/Support/Terminal.h>
 #include <violet/anyhow.h>
 
+using violet::PrintErr;
+using violet::PrintErrln;
 using violet::String;
 using violet::anyhow::Error;
 using violet::terminal::Style;
 using violet::terminal::Styled;
-
-#if VIOLET_REQUIRE_STL(202302L)
-namespace {
-
-template<typename... Args>
-inline void eprint(std::format_string<Args...> fmt, Args&&... args)
-{
-    std::print(std::cerr, fmt, VIOLET_FWD(Args, args)...);
-}
-
-template<typename... Args>
-inline void eprintln(std::format_string<Args...> fmt, Args&&... args)
-{
-    std::println(std::cerr, fmt, VIOLET_FWD(Args, args)...);
-}
-
-} // namespace
-#endif
 
 Error::node_t::node_t() noexcept
     : Object(nullptr)
@@ -144,7 +129,6 @@ auto Error::Context(Error&& context) && noexcept -> Error
     return out;
 }
 
-#if VIOLET_REQUIRE_STL(202302L)
 namespace {
 
 template<typename... Args>
@@ -152,12 +136,12 @@ void eprintColoured(
     bool colors, [[maybe_unused]] violet::terminal::Style style, std::format_string<Args...> fmt, Args&&... args)
 {
     if (!colors) {
-        eprint(fmt, VIOLET_FWD(Args, args)...);
+        PrintErr(fmt, VIOLET_FWD(Args, args)...);
         return;
     }
 
     auto styled = violet::terminal::Styled(std::format(fmt, VIOLET_FWD(Args, args)...), style);
-    eprint("{}", styled.Paint());
+    PrintErr("{}", styled.Paint());
 }
 
 template<typename... Args>
@@ -165,16 +149,15 @@ void eprintlnColoured(
     bool colors, [[maybe_unused]] violet::terminal::Style style, std::format_string<Args...> fmt, Args&&... args)
 {
     if (!colors) {
-        eprintln(fmt, VIOLET_FWD(Args, args)...);
+        PrintErrln(fmt, VIOLET_FWD(Args, args)...);
         return;
     }
 
     auto styled = violet::terminal::Styled(std::format(fmt, VIOLET_FWD(Args, args)...), style);
-    eprintln("{}", styled.Paint());
+    PrintErrln("{}", styled.Paint());
 }
 
 } // namespace
-#endif
 
 constexpr auto kRedBold = Style::RGB<91, 0, 0>().Bold();
 
@@ -182,15 +165,8 @@ void Error::Print() const noexcept
 {
     auto colors = violet::terminal::ColoursEnabled(terminal::StreamSource::Stderr);
     auto window = violet::terminal::QueryWindowInfo().UnwrapOr({ .Columns = 80, .Rows = 0 });
-
-#if VIOLET_REQUIRE_STL(202302L)
-    eprintln(
+    PrintErrln(
         "{:━^{}}", colors ? violet::terminal::Styled(" Error: ", kRedBold).Paint() : " Error: ", window.Columns + 25);
-#else
-    std::cerr << std::format(
-        "{:━^{}}", colors ? violet::terminal::Styled(" Error: ", kRedBold).Paint() : " Error: ", window.Columns + 25)
-              << '\n';
-#endif
 
     Vec<const node_t*> stack;
     for (auto* node = this->n_node; node != nullptr; node = node->Next) {
@@ -203,32 +179,17 @@ void Error::Print() const noexcept
         VIOLET_DEBUG_ASSERT(node != nullptr, "invalid invariant: `node` shouldn't be null");
         VIOLET_DEBUG_ASSERT(node->Object != nullptr,
             std::format("missing object in child node of {:p}", static_cast<const void*>(node)));
+
         VIOLET_DEBUG_ASSERT(node->VTable.Message != nullptr, "invalid invariant reached: vtable missing `Message()'");
 
-#if VIOLET_REQUIRE_STL(202302L)
         if (index == 0) {
-            eprintln("{} [{}:{}:{}]", node->VTable.Message(node->Object), node->Location.file_name(),
+            PrintErrln("{} [{}:{}:{}]", node->VTable.Message(node->Object), node->Location.file_name(),
                 node->Location.line(), node->Location.column());
         } else {
-            eprint("    ~> #");
+            PrintErr("    ~> #");
             eprintColoured(colors, Style{}.Bold(), "{}", index - 1);
 
-            eprintln(": {}", node->VTable.Message(node->Object));
+            PrintErrln(": {}", node->VTable.Message(node->Object));
         }
-#else
-        if (index == 0) {
-            std::cerr << node->VTable.Message(node->Object) << " [" << node->Location.file_name() << ':'
-                      << node->Location.line() << ':' << node->Location.column() << "]\n";
-        } else {
-            std::cerr << "    ~> #";
-            if (colors) {
-                std::cerr << Styled<UInt>(index - 1, Style{}.Bold());
-            } else {
-                std::cerr << index - 1;
-            }
-
-            std::cerr << ": " << node->VTable.Message(node->Object) << '\n';
-        }
-#endif
     }
 }

@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <violet/Language/Assert.h>
 #include <violet/Language/Macros.h>
 #include <violet/Language/Policy.h>
 
@@ -89,8 +90,7 @@ struct SmolString final {
     constexpr VIOLET_IMPLICIT SmolString(Str sv) noexcept(noexcept(sv.size() < N))
         : n_size(sv.size())
     {
-        assert(sv.size() < N);
-
+        VIOLET_ASSERT0(sv.size() < N);
         std::copy_n(sv.data(), this->n_size, this->n_data.begin());
     }
 
@@ -119,7 +119,7 @@ struct SmolString final {
     /// to the capacity.
     constexpr void Push(char ch)
     {
-        assert(this->n_size <= N && "string is full");
+        VIOLET_DEBUG_ASSERT(this->n_size <= N, "smol string at max capacity");
         this->n_data[this->n_size++] = ch;
     }
 
@@ -130,7 +130,7 @@ struct SmolString final {
     /// to the capacity.
     constexpr auto Append(std::string_view sv) -> SmolString&
     {
-        assert(this->n_size + sv.size() <= N && "overflow");
+        VIOLET_DEBUG_ASSERT(this->n_size + sv.size() <= N, "overflow would occur");
 
         std::copy_n(sv.data(), sv.size(), this->n_data.data() + this->n_size);
         this->n_size += sv.size();
@@ -151,7 +151,7 @@ struct SmolString final {
         auto remaining = N - this->n_size;
         auto result = std::format_to_n(this->n_data.data() + this->n_size, remaining, fmt, VIOLET_FWD(Args, args)...);
 
-        assert(this->n_size + result.size <= N && "formatted output exceeded capacity");
+        VIOLET_DEBUG_ASSERT(this->n_size + result.size <= N, "formatted output exceeded capacity");
         this->n_size += result.size;
 
         return *this;
@@ -197,7 +197,7 @@ struct SmolString final {
     constexpr auto operator[](size_t idx) -> char&
     {
 #ifndef VIOLET_NO_ASSERT_SUBSCRIPT
-        assert(idx <= this->n_size && "out-of-bounds");
+        VIOLET_DEBUG_ASSERT(idx <= this->n_size, "reached out of bounds");
 #endif
 
         return this->n_data[idx];
@@ -209,7 +209,7 @@ struct SmolString final {
     constexpr auto operator[](size_t idx) const -> const char&
     {
 #ifndef VIOLET_NO_ASSERT_SUBSCRIPT
-        assert(idx <= this->n_size && "out-of-bounds");
+        VIOLET_DEBUG_ASSERT(idx <= this->n_size, "reached out of bounds");
 #endif
 
         return this->n_data[idx];

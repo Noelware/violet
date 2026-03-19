@@ -343,3 +343,17 @@
 #define VIOLET_DEPRECATED(since)
 #define VIOLET_DEPRECATED_BECAUSE(since, message)
 #endif
+
+#if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
+#define VIOLET_UNREACHABLE() ::std::unreachable()
+#elif defined(VIOLET_MSVC)
+#define VIOLET_UNREACHABLE() __assume(false)
+#elif defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#define VIOLET_UNREACHABLE() __builtin_unreachable()
+#else
+#define VIOLET_UNREACHABLE()                                                                                           \
+    do {                                                                                                               \
+        for (;;)                                                                                                       \
+            ;                                                                                                          \
+    } while (false)
+#endif
