@@ -85,7 +85,7 @@ struct OneOf final {
 
     template<typename T>
         requires(pack_contains_v<std::decay_t<T>, Ts...>)
-    constexpr static UInt IndexOf = pack_index_v<T, Ts...>;
+    constexpr static UInt IndexOf = pack_index_v<std::decay_t<T>, Ts...>;
 
     template<typename T, typename... Args>
         requires(pack_contains_v<T, Ts...> && std::is_constructible_v<T, Args...>)

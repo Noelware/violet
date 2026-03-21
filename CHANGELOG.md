@@ -7,14 +7,19 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.04.04...master>
+
+### 26.04.04
 #### Noelware.Violet
 - Add **violet/Print.h** header to bridge the `<print>` header in C++23 that works in C++20 ([`@auguwu`])
 - Moved all assertion logic into `violet/Language/Assert.h` so that it doesn't have to depend on `violet/Violet.h` if it is not needed ([`@auguwu`])
+- Reworked **violet::Ok** into a structure that can be used to deduct type information ([`@auguwu`])
 
 #### Noelware.Violet.Experimental
 - **SmolString** now uses Violet's assertion logic rather than C's `assert` macro ([`@auguwu`])
+- Fix bug in **OneOf** where `OneOf<Ts...>::IndexOf<T>` doesn't remove cvref qualifiers and other magic stuff ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.04.03...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.04.03...26.04.04>
 
 ### 26.04.03
 #### Noelware.Violet
