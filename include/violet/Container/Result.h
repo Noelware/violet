@@ -35,65 +35,33 @@ namespace violet {
 template<typename T, typename E>
 struct Result;
 
-/// A success value wrapper used to construct a [`Result<T, E>`] in its `Ok` variant.
-///
-/// `Ok<T>` is a tagged wrapper around a value of type `T`. It exists so that
-/// constructing a [`Result`] from a success value is explicit and unambiguous —
-/// a plain `T` cannot be accidentally treated as an `Ok` result.
-///
-/// ## Example
-/// ```cpp
-/// #include <violet/Container/Result.h>
-///
-/// violet::Result<int, std::string> divide(int a, int b) {
-///     if (b == 0) return violet::Err("division by zero");
-///     return violet::Ok(a / b);
-/// }
-///
-/// auto res = divide(10, 2);
-/// if (res.Ok()) {
-///     std::println("result: {}", res.Unwrap());
-/// }
-/// ```
-template<typename T>
-struct Ok final {
-    static_assert(std::is_object_v<T>, "`Ok<T>` requires `T` to be a object type");
-    static_assert(!std::is_reference_v<T>, "`Ok<T>` must not wrap a reference type");
-    static_assert(!std::is_array_v<T>, "`Ok<T>` must not wrap an array type");
-    static_assert(std::is_destructible_v<T>, "`Ok<T>` requires T to be destructible");
+/// Creates a new `Result<T, E>` that contains a successful value.
+/// @tparam T The underlying success type to construct.
+/// @tparam E The underlying error type to pass.
+/// @tparam Args The arguments to pass to `T`'s constructor.
+/// @param args The arguments to pass to `T`'s constructor.
+/// @return An `Optional<T>` with the value constructed.
+template<typename T, typename E, typename... Args>
+constexpr static auto Ok(Args&&... args) -> Result<T, E>
+{
+    static_assert(std::is_object_v<T>, "`Result<T, E>` requires `T` to be a object type or `void`");
+    static_assert(std::is_object_v<E>, "`Result<T, E>` requires `E` to be an object type");
+    static_assert(!std::is_reference_v<T>, "`Result<T, E>` must not wrap a reference type");
+    static_assert(!std::is_reference_v<E>, "`Result<T, E>` must not wrap a reference type");
+    static_assert(!std::is_array_v<T>, "`Result<T, E>` must not wrap an array type");
+    static_assert(!std::is_array_v<E>, "`Result<T, E>` must not wrap an array type");
+    static_assert(
+        !std::is_const_v<E> && !std::is_volatile_v<E>, "`Result<T, E>` must not have a cv-qualified error type");
+    static_assert(std::is_destructible_v<T>, "`Result<T, E>` requires T to be destructible");
+    static_assert(std::is_destructible_v<E>, "`Result<T, E>` requires E to be destructible");
     static_assert(std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>,
-        "`Ok<T>` requires T to be movable or copyable");
+        "`Result<T, E>` requires T to be movable or copyable");
+    static_assert(std::is_move_constructible_v<E> || std::is_copy_constructible_v<E>,
+        "`Result<T, E>` requires E to be movable or copyable");
+    static_assert(sizeof(E) > 0, "`Result<T, E>` requires E to be a complete type");
 
-    constexpr VIOLET_IMPLICIT Ok(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        : n_value(value)
-    {
-    }
-
-    constexpr VIOLET_IMPLICIT Ok(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
-        : n_value(VIOLET_MOVE(value))
-    {
-    }
-
-    template<typename... Args>
-        requires(std::is_constructible_v<T, Args...>
-            && !(sizeof...(Args) == 1 && (std::same_as<std::decay_t<Args>, T> || ...)))
-    constexpr VIOLET_IMPLICIT Ok(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-        : n_value(VIOLET_FWD(Args, args)...)
-    {
-    }
-
-    template<typename E>
-    constexpr VIOLET_IMPLICIT operator Result<T, E>() const noexcept;
-
-private:
-    T n_value;
-};
-
-template<typename T>
-Ok(const T&) -> Ok<std::decay_t<T>>;
-
-template<typename T>
-Ok(T&&) -> Ok<std::decay_t<T>>;
+    return Result<T, E>(std::in_place_index<0>, VIOLET_FWD(Args, args)...);
+}
 
 /// Concept for detecting nested [`violet::Result`] types.
 ///
@@ -1343,13 +1311,6 @@ struct Result<void, E> final {
 private:
     violet::Err<E>* n_value = nullptr;
 };
-
-template<typename T>
-template<typename E>
-constexpr Ok<T>::operator Result<T, E>() const noexcept
-{
-    return Result(std::in_place_index<0>, this->n_value);
-}
 
 } // namespace violet
 

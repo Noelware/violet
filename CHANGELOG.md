@@ -13,7 +13,6 @@ availableAt:
 #### Noelware.Violet
 - Add **violet/Print.h** header to bridge the `<print>` header in C++23 that works in C++20 ([`@auguwu`])
 - Moved all assertion logic into `violet/Language/Assert.h` so that it doesn't have to depend on `violet/Violet.h` if it is not needed ([`@auguwu`])
-- Reworked **violet::Ok** into a structure that can be used to deduct type information ([`@auguwu`])
 
 #### Noelware.Violet.Experimental
 - **SmolString** now uses Violet's assertion logic rather than C's `assert` macro ([`@auguwu`])
