@@ -7,6 +7,10 @@ availableAt:
 ---
 
 ### unreleased
+#### Noelware.Violet
+- Fix GCC errors when **__builtin_COLUMN()** doesn't exist and `#pragma` errors as well ([`@auguwu`])
+- **Optional** and **Result** now use the infrastructure of **violet::SourceLocation** and **violet::PrintErrln** ([`@auguwu`])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.04.04...master>
 
 ### 26.04.05

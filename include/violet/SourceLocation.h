@@ -24,9 +24,23 @@
 #include <violet/Language/Macros.h>
 #include <violet/Language/Policy.h>
 
+#include <ostream>
+#include <source_location>
 #include <string_view>
 
 namespace violet {
+
+#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#define __violet_pretty_function__ __PRETTY_FUNCTION__
+#else
+#define __violet_pretty_function__ ""
+#endif
+
+#if defined(VIOLET_CLANG) || defined(VIOLET_MSVC)
+#define __violet_column__ __builtin_COLUMN()
+#else
+#define __violet_column__ 0
+#endif
 
 /// Represents a location within a source file, capturing the file path, line number,
 /// column number, and enclosing function name at the point of construction.
@@ -59,6 +73,18 @@ struct SourceLocation final {
     /// On GCC and Clang this is the full pretty-printed signature from `__PRETTY_FUNCTION__`.
     std::string_view Function;
 
+    /// Constructs a [`violet::SourceLocation`] from a [`std::source_location`] implicitly
+    constexpr SourceLocation(std::source_location loc) noexcept
+        : SourceLocation(SourceLocation::FromStd(loc))
+    {
+    }
+
+    constexpr auto operator=(std::source_location& loc) noexcept -> SourceLocation&
+    {
+        *this = SourceLocation::FromStd(loc);
+        return *this;
+    }
+
     /// Constructs a `SourceLocation` from the given source coordinates.
     ///
     /// All parameters have compiler-builtin defaults, so an empty brace-initialization
@@ -75,30 +101,55 @@ struct SourceLocation final {
     /// # Parameters
     /// @param file source file path; defaults to `__builtin_FILE()` at the call site.
     /// @param line line number; defaults to `__builtin_LINE()` at the call site.
-    /// @param column column number; defaults to `__builtin_COLUMN()` at the call site.
-    // clang-format off
-    constexpr SourceLocation(
-        std::string_view file = __builtin_FILE(),
-        uint32_t line = __builtin_LINE(),
-        uint32_t column = __builtin_COLUMN(),
-
+    /// @param column column number; defaults to `__builtin_COLUMN()` at the call site or `0` if not supported
+    /// @param func the function name; defaults to `__PRETTY_FUNCTION__` on GCC/Clang or `""` if not supported
 #if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wpredefined-identifier-outside-function")
-        std::string_view func = __PRETTY_FUNCTION__
-        VIOLET_DIAGNOSTIC_POP
+    VIOLET_DIAGNOSTIC_PUSH
+    VIOLET_DIAGNOSTIC_IGNORE("-Wpredefined-identifier-outside-function")
 #endif
-        ) noexcept
+    constexpr SourceLocation(std::string_view file = __builtin_FILE(), uint32_t line = __builtin_LINE(),
+        uint32_t column = __violet_column__, std::string_view func = __violet_pretty_function__) noexcept
         : File(file)
         , Line(line)
         , Column(column)
-
-#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
         , Function(func)
-#endif
     {
     }
-    // clang-format on
+
+#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+    VIOLET_DIAGNOSTIC_POP
+#endif
+
+    /// Converts a [`std::source_location`] object into [`violet::SourceLocation`].
+    /// @param loc the source location that was captured
+    constexpr static auto FromStd(std::source_location loc) noexcept -> SourceLocation
+    {
+        return { loc.file_name(), loc.line(), loc.column(), loc.function_name() };
+    }
+
+    [[nodiscard]] constexpr auto ToString() const noexcept -> std::string
+    {
+        return std::format("SourceLocation(.file={}, .line={}, .column={}, .function=\"{}\")", this->File, this->Line,
+            this->Column, this->Function);
+    }
+
+    friend auto operator<<(std::ostream& os, const SourceLocation& self) noexcept -> std::ostream&
+    {
+        if (!self.File.empty()) {
+            os << self.File;
+            if (self.Line > 0) {
+                os << ':' << self.Line;
+            }
+
+            if (self.Column > 0) {
+                os << ':' << self.Column;
+            }
+
+            return os;
+        }
+
+        return os;
+    }
 };
 
 } // namespace violet

@@ -36,7 +36,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//violet",
-        "//violet/support:demangle",
+        "//violet:print",
+        "//violet:source_location",
     ],
 )
 
@@ -52,7 +53,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//violet",
-        "//violet/support:demangle",
+        "//violet:print",
+        "//violet:source_location",
     ],
 )
 

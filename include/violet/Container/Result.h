@@ -21,7 +21,8 @@
 
 #pragma once
 
-#include <violet/Support/Demangle.h>
+#include <violet/Print.h>
+#include <violet/SourceLocation.h>
 #include <violet/Violet.h>
 
 #include <expected>
@@ -579,7 +580,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) &
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -606,7 +607,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) &&
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -633,7 +634,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -660,7 +661,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(std::source_location loc = std::source_location::current()) const&&
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -687,7 +688,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) &
+    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -714,7 +715,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) &&
+    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -741,7 +742,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const&
+    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -768,7 +769,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto UnwrapErr(std::source_location loc = std::source_location::current()) const&&
+    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -795,7 +796,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) &
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) &
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -822,7 +823,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) &&
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) &&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -849,7 +850,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -876,7 +877,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, std::source_location loc = std::source_location::current()) const&&
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const&&
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
@@ -1079,22 +1080,17 @@ private:
         }
     }
 
-    [[noreturn]] VIOLET_COLD static void panicUnexpectly(Str message, [[maybe_unused]] const std::source_location& loc)
+    [[noreturn]] VIOLET_COLD static void panicUnexpectly(Str message, [[maybe_unused]] violet::SourceLocation loc)
 #ifndef VIOLET_HAS_EXCEPTIONS
         noexcept
 #endif
     {
 #ifdef VIOLET_HAS_EXCEPTIONS
-        throw std::logic_error(std::format("panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(),
-            loc.column(), util::DemangleCXXName(loc.function_name()), message));
+        throw std::logic_error(std::format(
+            "[violet::Result<T, E>][{}:{}:{} ({})]: {}", loc.File, loc.Line, loc.Column, loc.Function, message));
 #else
-#if VIOLET_REQUIRE_STL(202302L)
-        std::println(std::cerr, "panic in `Result<T, E>` [{}:{}:{} ({})]: {}", loc.file_name(), loc.line(),
-            loc.column(), util::DemangleCXXName(loc.function_name()), message);
-#else
-        std::cerr << "panic in `Result<T, E>` [" << loc.file_name() << ':' << loc.line() << ':' << loc.column() << " ("
-                  << util::DemangleCXXName(loc.function_name()) << ")]: " << message;
-#endif
+        violet::PrintErrln(
+            "[violet::Result<T, E>][{}:{}:{} ({})]: {}", loc.File, loc.Line, loc.Column, loc.Function, message);
 
         VIOLET_UNREACHABLE();
 #endif
