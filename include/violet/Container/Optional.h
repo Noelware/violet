@@ -1124,8 +1124,8 @@ private:
         throw std::logic_error(std::format(
             "[violet::Optional][{}:{}:{} ({})]: panic: {}", loc.File, loc.Line, loc.Column, loc.Function, message));
 #else
-        violet::PrintErrln("[violet::Optional][{}:{}:{} ({})]: panic: {}", loc.File, loc.Line,
-            loc.Column, loc.Function, message;
+        violet::PrintErrln(
+            "[violet::Optional][{}:{}:{} ({})]: panic: {}", loc.File, loc.Line, loc.Column, loc.Function, message);
 
         VIOLET_UNREACHABLE();
 #endif

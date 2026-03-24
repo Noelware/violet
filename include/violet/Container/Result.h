@@ -1090,7 +1090,7 @@ private:
             "[violet::Result<T, E>][{}:{}:{} ({})]: {}", loc.File, loc.Line, loc.Column, loc.Function, message));
 #else
         violet::PrintErrln(
-            "[violet::Result<T, E>][{}:{}:{} ({})]: {}", loc.File, loc.Line, loc.Column, loc.Function, message);
+            "[violet::Result<T, E>][{}:{}:{} ({})]: panic: {}", loc.File, loc.Line, loc.Column, loc.Function, message);
 
         VIOLET_UNREACHABLE();
 #endif

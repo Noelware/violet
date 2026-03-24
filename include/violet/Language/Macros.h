@@ -120,20 +120,28 @@
 #define VIOLET_MSVC
 #endif
 
+#ifndef VIOLET_MSAN
 #if defined(VIOLET_CLANG) && VIOLET_HAS_FEATURE(memory_sanitizer)
 #define VIOLET_MSAN
 #endif
+#endif
 
+#ifndef VIOLET_ASAN
 #if VIOLET_HAS_FEATURE(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
 #define VIOLET_ASAN
 #endif
+#endif
 
+#ifndef VIOLET_TSAN
 #if VIOLET_HAS_FEATURE(thread_sanitizer) || defined(__SANITIZE_THREAD__)
 #define VIOLET_TSAN
 #endif
+#endif
 
+#ifndef VIOLET_UBSAN
 #if VIOLET_HAS_FEATURE(undefined_behavior_sanitizer)
 #define VIOLET_UBSAN
+#endif
 #endif
 
 #ifdef VIOLET_USE_RTTI
