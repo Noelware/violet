@@ -9,6 +9,12 @@ availableAt:
 ### unreleased
 **Git History**: <https://github.com/Noelware/violet/compare/26.04.04...master>
 
+### 26.04.05
+#### Noelware.Violet
+- Add **violet/SourceLocation.h** header to bridge **std::source_location** so it can be constructible ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.04.04...26.04.05>
+
 ### 26.04.04
 #### Noelware.Violet
 - Add **violet/Print.h** header to bridge the `<print>` header in C++23 that works in C++20 ([`@auguwu`])

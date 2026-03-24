@@ -133,3 +133,13 @@ cc_library(
         "//violet/experimental:smol_string",
     ],
 )
+
+cc_library(
+    name = "source_location",
+    hdrs = ["//include/violet:SourceLocation.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":macros",
+        ":policy_checks",
+    ],
+)
