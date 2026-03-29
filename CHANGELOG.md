@@ -7,6 +7,10 @@ availableAt:
 ---
 
 ### unreleased
+#### Noelware.Violet
+- Add **operator bool()** definition to `violet::Bitflags` ([`@auguwu`])
+- Make the default constructor for **violet::terminal::Style** be the "reset" marker (`\033[0m`) ([`@auguwu`])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.04.06...master>
 
 ### 26.04.06

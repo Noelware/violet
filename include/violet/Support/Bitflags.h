@@ -27,13 +27,37 @@
 
 namespace violet {
 
+/// A type-safe container over an unsigned enumeration type.
+///
+/// [`Bitflags<E>`](violet::Bitflags) wraps the underlying integer representation
+/// of enumeration `E` and provides a safe, expressive API for bitwise flag manipulation.
+///
+/// ## Implicit Conversions
+/// `Bitflags` can be implicitly constructible from both the raw underlying integer type
+/// and from the enumeration type itself. It allows expressing natural usage at callsites
+/// without verbose wrapping:
+///
+/// ```cpp
+/// #include <violet/Support/Bitflags.h>
+///
+/// enum struct Permissions: violet::UInt8 {
+///     Read = 1 << 0,
+///     Write = 1 << 1,
+///     Execute = 1 << 2
+/// };
+///
+/// violet::Bitflags<Permissions> flags = Permissions::Read | Permissions::Write;
+/// ```
 template<typename E>
     requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
 struct VIOLET_API Bitflags final {
+    /// Type alias for the underlying type of enumeration `E`.
     using underlying_type = std::underlying_type_t<E>;
 
+    /// Creates an empty [`Bitflags`] container.
     constexpr VIOLET_IMPLICIT Bitflags() noexcept = default;
 
+    /// Wraps the `bits` in this container.
     constexpr VIOLET_IMPLICIT Bitflags(underlying_type bits) noexcept
         : n_bits(bits)
     {
@@ -75,6 +99,11 @@ struct VIOLET_API Bitflags final {
     constexpr auto Get() const noexcept -> underlying_type
     {
         return this->n_bits;
+    }
+
+    constexpr VIOLET_EXPLICIT operator bool() const noexcept
+    {
+        return this->n_bits != 0;
     }
 
     constexpr auto operator|=(Bitflags other) noexcept -> Bitflags&

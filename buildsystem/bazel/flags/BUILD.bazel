@@ -32,3 +32,8 @@ load(":flags.bzl", "BOOL_FLAGS")
     name = "%s_enabled" % name,
     flag_values = {("//buildsystem/bazel/flags:%s" % name): "True"},
 ) for name in BOOL_FLAGS]
+
+[config_setting(
+    name = "%s_disabled" % name,
+    flag_values = {("//buildsystem/bazel/flags:%s" % name): "False"},
+) for name in BOOL_FLAGS]

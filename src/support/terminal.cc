@@ -46,6 +46,14 @@ auto RGB::ToString() const noexcept -> String
 auto Style::createStream() const noexcept -> std::ostringstream
 {
     std::ostringstream os;
+
+    // If `Style` was created without any constructor arguments or any binders (i.e, `Style{}`),
+    // then it is considered a "reset" and will return the reset tag.
+    if (!this->n_tag && std::holds_alternative<std::monostate>(this->n_style)) {
+        os << "\x1b[0m";
+        return os;
+    }
+
     if (this->n_tag.Contains(tag::kBold)) {
         os << "\x1b[1m";
     }
@@ -80,7 +88,7 @@ auto Style::Paint() const noexcept -> String
     // If a `std::monostate` is provided, it means no flags
     // were set, so we should just pass on the flags
     // that were probably set.
-    if (std::get_if<std::monostate>(&this->n_style) != nullptr) {
+    if (std::holds_alternative<std::monostate>(this->n_style)) {
         return os.str();
     }
 

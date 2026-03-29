@@ -70,7 +70,6 @@ public:
             , n_id(other.n_id)
             , n_persist(other.n_persist)
         {
-
             other.n_id = -1;
             other.n_persist = false;
         }
@@ -78,7 +77,7 @@ public:
         auto operator=(Guard&& other) noexcept -> Guard&
         {
             if (this != &other) {
-                Dispose();
+                this->Dispose();
 
                 this->n_emitter = VIOLET_MOVE(other.n_emitter);
                 this->n_persist = other.n_persist;
