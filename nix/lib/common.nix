@@ -26,7 +26,7 @@ pkgs: {
 
   llvm = let
     oldStdenv = pkgs.stdenv;
-    version = "21";
+    version = "22";
     package = pkgs."llvmPackages_${version}";
   in {
     inherit version package;

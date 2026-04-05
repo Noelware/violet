@@ -117,6 +117,52 @@ auto Trim(Str input, Fun&& fun = std::isspace) noexcept(
 /// @param delim delimiter character
 auto SplitOnce(Str input, char delim) noexcept -> Pair<Str, Optional<Str>>;
 
+/// Joins a collection of elements into a single string with a delimiter.
+///
+/// ## Example
+///
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// using namespace violet::strings;
+///
+/// auto basic = Join(Vec<String>{"Bob", "Alice"}, ", ");
+/// // => "Bob, Alice"
+///
+/// auto mapped = Join(Vec<String>{"Bob", "Alice"}, ", ", [](const String& name) -> String {
+///     return std::format("'{}'", name);
+/// });
+/// // => "'Bob', 'Alice'"
+/// ```
+template<std::ranges::input_range Range>
+    requires(violet::Stringify<std::ranges::range_value_t<Range>>)
+auto Join(const Range& range, Str delim) noexcept -> violet::String
+{
+    return Join(range, delim, [](const auto& value) -> String { return violet::ToString(value); });
+}
+
+/// Joins a collection of elements into a single string with a delimiter with a designated mapper.
+template<std::ranges::input_range Range, typename Fun>
+    requires(callable<Fun, const std::ranges::range_value_t<Range>&>,
+        callable_returns<Fun, violet::String, const std::ranges::range_value_t<Range>&>)
+auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> violet::String
+{
+    String result;
+    bool first = true;
+    auto onElement = VIOLET_FWD(Fun, mapper);
+
+    for (const auto& element: range) {
+        if (!first) {
+            result.append(delim);
+        }
+
+        result.append(std::invoke(onElement, element));
+        first = false;
+    }
+
+    return result;
+}
+
 /// An iterator that yields substrings of `input` separated by a delimiter.
 ///
 /// `Split` produces non-owning views into the original string. It does not
@@ -180,12 +226,6 @@ static_assert(Iterable<Split>, "`Split` is not a valid iterable");
 /// assert(b.HasValueAnd([](const Str& input) -> bool { return input == "b"; }));
 ///
 /// auto c = it.Next();
-/// assert(c.HasValueAnd([](const Str& input) -> bool { return input == "c"; }));
-///
-/// auto d = it.Next();
-/// assert(d.HasValueAnd([](const Str& input) -> bool { return input == "d"; }));
-///
-/// auto e = it.Next();
 /// assert(!e.HasValue());
 /// ```
 template<UInt N>
@@ -241,6 +281,90 @@ private:
     char n_delim;
     UInt n_pos = 0;
     UInt n_splits = 0;
+};
+
+/// A lazy, zero-copyable iterator over lines (`\n`, `\r`, `\r\n`) in a string.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// auto text = "hello\nworld\r\nfoo\rbar"sv;
+/// auto lines = violet::strings::Lines(text).Count();
+/// assert(lines == 4);
+/// ```
+struct Lines final: public Iterator<Lines> {
+    using Item = Str;
+
+    constexpr Lines() noexcept = default;
+    constexpr VIOLET_IMPLICIT Lines(Str text) noexcept
+        : n_remaining(text)
+    {
+    }
+
+    constexpr auto Next() noexcept -> Optional<Item>
+    {
+        if (this->n_done) {
+            return Nothing;
+        }
+
+        if (this->n_remaining.empty()) {
+            this->n_done = true;
+            if (this->n_hadTrailingNewline) {
+                return Str();
+            }
+
+            return Nothing;
+        }
+
+        auto pos = findNewline(this->n_remaining);
+        if (pos == Str::npos) {
+            auto line = this->n_remaining;
+            this->n_remaining = Str(this->n_remaining.data() + this->n_remaining.size(), 0);
+            this->n_done = true;
+
+            return line;
+        }
+
+        auto line = this->n_remaining.substr(0, pos);
+        if (this->n_remaining[pos] == '\r') {
+            pos++;
+            if (pos < this->n_remaining.size() && this->n_remaining[pos] == '\n') {
+                pos++; // \r\n
+            }
+        } else {
+            pos++;
+        }
+
+        this->n_hadTrailingNewline = true;
+        this->n_remaining = this->n_remaining.substr(pos);
+        return line;
+    }
+
+    [[nodiscard]] constexpr auto SizeHint() const noexcept -> violet::SizeHint
+    {
+        if (this->n_done) {
+            return { 0, Some<UInt>(0) };
+        }
+
+        return { 1, Nothing };
+    }
+
+private:
+    constexpr static auto findNewline(Str sv) noexcept -> UInt
+    {
+        for (UInt i = 0; i < sv.size(); i++) {
+            if (sv[i] == '\n' || sv[i] == '\r') {
+                return i;
+            }
+        }
+
+        return Str::npos;
+    }
+
+    Str n_remaining;
+    bool n_done = false;
+    bool n_hadTrailingNewline = false;
 };
 
 } // namespace violet::strings

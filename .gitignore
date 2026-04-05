@@ -190,7 +190,8 @@ build.ninja
 .ninja_logs
 
 **/.usr.bazelrc
-dist.tgz
+bazeldist.tgz
+.clangd
 
 !include/violet/Testing/
 

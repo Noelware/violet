@@ -10,6 +10,11 @@ availableAt:
 #### Noelware.Violet
 - Add **operator bool()** definition to `violet::Bitflags` ([`@auguwu`])
 - Make the default constructor for **violet::terminal::Style** be the "reset" marker (`\033[0m`) ([`@auguwu`])
+- Add **violet::Defer** and **violet::CancellableDefer** (and C-style macros) ([`@auguwu`])
+- Add **violet::strings::Join** and **violet::strings::Lines** utility ([`@auguwu`])
+
+#### Noelware.Violet.Experimental.Threading
+- Add thread cancellation (**CancellationToken**, **CancellationTokenSource**) ([`@auguwu`])
 
 **Git History**: <https://github.com/Noelware/violet/compare/26.04.06...master>
 

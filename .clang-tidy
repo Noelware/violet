@@ -22,36 +22,24 @@
 HeaderFilterRegex: "*violet/[^f].*"
 FormatStyle: webkit
 Checks: >
-  cppcoreguidelines-*,
-  performance-*,
-  modernize-*,
-  google-*,
-  misc-*,
-  readability-*,
-  clang-analyzer-*,
-  -readability-named-parameter,
+  cppcoreguidelines-*, performance-*, modernize-*, google-*, misc-*,
+  readability-*, clang-analyzer-*, -readability-named-parameter,
   -misc-non-private-member-variables-in-classes,
   -cppcoreguidelines-pro-type-vararg,
   -cppcoreguidelines-pro-bounds-constant-array-index,
-  -cppcoreguidelines-avoid-magic-numbers,
-  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers, -readability-magic-numbers,
   -cppcoreguidelines-macro-usage,
   -readability-convert-member-functions-to-static,
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -google-readability-braces-around-statements,
-  -readability-braces-around-statements,
-  -cppcoreguidelines-avoid-c-arrays,
-  -modernize-avoid-c-arrays,
-  -google-explicit-constructor,
-  -cppcoreguidelines-owning-memory,
-  -misc-no-recursion,
+  -readability-braces-around-statements, -cppcoreguidelines-avoid-c-arrays,
+  -modernize-avoid-c-arrays, -google-explicit-constructor,
+  -cppcoreguidelines-owning-memory, -misc-no-recursion,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -readability-inconsistent-declaration-parameter-name,
-  -readability-function-cognitive-complexity,
-  -misc-use-anonymous-namespace,
+  -readability-function-cognitive-complexity, -misc-use-anonymous-namespace,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
-  -cppcoreguidelines-avoid-do-while,
-  -readability-use-anyofallof,
+  -cppcoreguidelines-avoid-do-while, -readability-use-anyofallof,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-type-union-access
 
@@ -63,3 +51,4 @@ CheckOptions:
   - { key: readability-identifier-length.MinimumVariableNameLength, value: 2 }
   - { key: readability-identifier-length.MinimumParameterNameLength, value: 2 }
   - { key: cppcoreguidelines-pro-type-member-init.IgnoreArrays, value: true }
+  - { key: readability-identifier-length.IgnoredVariableNames, value: "^_$" }

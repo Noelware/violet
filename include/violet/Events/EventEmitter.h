@@ -57,8 +57,8 @@ public:
     /// the event from a [`Emitter<Args...>`] after the guard being destroyed or manually
     /// via [`Guard::Dispose`].
     struct Guard final {
-        VIOLET_DISALLOW_CONSTRUCTOR(Guard);
         VIOLET_DISALLOW_COPY(Guard);
+        VIOLET_IMPLICIT Guard() noexcept = default;
 
         ~Guard()
         {
@@ -130,9 +130,9 @@ public:
         {
         }
 
-        Emitter* n_emitter;
+        Emitter* n_emitter = nullptr;
         bool n_persist = false;
-        Int64 n_id;
+        Int64 n_id = -1;
     };
 
     /// Construct a new [`Emitter`].
