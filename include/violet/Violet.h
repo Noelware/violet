@@ -31,6 +31,7 @@
 #include <condition_variable>
 #include <cstddef>
 #include <format>
+#include <functional>
 #include <map>
 #include <span>
 #include <string>
