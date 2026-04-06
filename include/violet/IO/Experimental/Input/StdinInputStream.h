@@ -44,18 +44,18 @@ namespace violet::io::experimental {
 /// UInt8 buf[1024];
 /// auto action = stream.Read(buf);
 /// ```
-struct StdinInputStream final: public InputStream {
+struct VIOLET_API StdinInputStream final: public InputStream {
     /// Constructs a new stdin-based input stream.
     VIOLET_IMPLICIT StdinInputStream() noexcept;
 
     /// @inheritdoc violet::io::experimental::InputStream::Read(violet::Span<violet::UInt8>)
-    auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
+    VIOLET_API auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Available()
-    [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
+    [[nodiscard]] VIOLET_API auto Available() const noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Skip(violet::UInt8)
-    auto Skip(UInt bytes) noexcept -> Result<void> override;
+    VIOLET_API auto Skip(UInt bytes) noexcept -> Result<void> override;
 
 private:
     io::FileDescriptor n_descriptor;

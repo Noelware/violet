@@ -27,7 +27,7 @@
 
 namespace violet::io::experimental {
 
-struct BufferedOutputStream final: public OutputStream {
+struct VIOLET_API BufferedOutputStream final: public OutputStream {
     VIOLET_IMPLICIT BufferedOutputStream(SharedPtr<OutputStream> stream, UInt capacity = 8192) noexcept
         : n_source(VIOLET_MOVE(stream))
         , n_capacity(capacity)
@@ -44,8 +44,8 @@ struct BufferedOutputStream final: public OutputStream {
         this->n_buffer.reserve(capacity);
     }
 
-    auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
-    auto Flush() noexcept -> io::Result<void> override;
+    VIOLET_API auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
+    VIOLET_API auto Flush() noexcept -> io::Result<void> override;
 
 private:
     SharedPtr<OutputStream> n_source;

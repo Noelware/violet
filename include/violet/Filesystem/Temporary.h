@@ -32,10 +32,10 @@ struct TempFile;
 struct TempDir;
 
 /// Returns the system's temporary directory.
-auto SystemTempDirectory() -> io::Result<Path>;
+VIOLET_API auto SystemTempDirectory() -> io::Result<Path>;
 
 /// A builder that is used to build [`TempDir`] or [`TempFile`]s.
-struct TempBuilder final {
+struct VIOLET_API TempBuilder final {
     constexpr VIOLET_IMPLICIT TempBuilder() noexcept = default;
 
     constexpr auto WithRandomBytes(UInt32 bits) noexcept -> TempBuilder&
@@ -64,8 +64,8 @@ struct TempBuilder final {
     }
 #endif
 
-    [[nodiscard]] auto MkFile() const noexcept -> io::Result<TempFile>;
-    [[nodiscard]] auto MkDir() const noexcept -> io::Result<TempDir>;
+    [[nodiscard]] VIOLET_API auto MkFile() const noexcept -> io::Result<TempFile>;
+    [[nodiscard]] VIOLET_API auto MkDir() const noexcept -> io::Result<TempDir>;
 
 private:
     UInt32 n_randomness = 8;
@@ -79,11 +79,11 @@ private:
 
 /// Represents a directory that is temporarily avaliable. This also acts
 /// like a RAII guard where, on drop, it'll remove the directory from disk.
-struct TempDir final {
+struct VIOLET_API TempDir final {
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(TempDir);
     VIOLET_DISALLOW_CONSTEXPR_COPY(TempDir);
-
     ~TempDir();
+
     VIOLET_IMPLICIT TempDir(TempDir&& other) noexcept;
     auto operator=(TempDir&& other) noexcept -> TempDir&;
 
@@ -92,7 +92,7 @@ struct TempDir final {
         return this->n_path;
     }
 
-    auto Release() noexcept -> filesystem::Path;
+    VIOLET_API auto Release() noexcept -> filesystem::Path;
 
 private:
     friend struct TempBuilder;
@@ -103,17 +103,17 @@ private:
     filesystem::Path n_path;
 };
 
-struct TempFile final {
+struct VIOLET_API TempFile final {
     VIOLET_DISALLOW_CONSTEXPR_COPY(TempFile);
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(TempFile);
-
     ~TempFile();
+
     VIOLET_IMPLICIT TempFile(TempFile&& other) noexcept;
     auto operator=(TempFile&& other) noexcept -> TempFile&;
 
-    auto File() const noexcept -> const File&;
-    auto Path() const noexcept -> const Optional<Path>&;
-    auto Persist(PathRef dst) noexcept -> io::Result<struct File>;
+    VIOLET_API auto File() const noexcept -> const File&;
+    VIOLET_API auto Path() const noexcept -> const Optional<Path>&;
+    VIOLET_API auto Persist(PathRef dst) noexcept -> io::Result<struct File>;
 
 private:
     friend struct TempBuilder;

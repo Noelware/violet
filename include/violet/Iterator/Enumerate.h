@@ -21,14 +21,14 @@
 
 #pragma once
 
-#include "violet/Container/Optional.h"
-#include "violet/Iterator.h"
-#include "violet/Violet.h"
+#include <violet/Container/Optional.h>
+#include <violet/Iterator.h>
+#include <violet/Violet.h>
 
 namespace violet::iter {
 
 template<Iterable Impl>
-struct Enumerate final: public Iterator<Enumerate<Impl>> {
+struct VIOLET_API Enumerate final: public Iterator<Enumerate<Impl>> {
     using Item = Pair<UInt, TypeOf<Impl>>;
 
     VIOLET_DISALLOW_CONSTRUCTOR(Enumerate);

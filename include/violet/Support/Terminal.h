@@ -60,7 +60,7 @@ enum struct StreamSource : UInt8 {
 /// * Environment variables (e.g., `COLORTERM`)
 /// * `$TERM` values
 /// * Terminfo entries
-struct ColorLevel final {
+struct VIOLET_API ColorLevel final {
     bool SupportsBasic = false; ///< provides support for 4-bit (16-color) SGR codes
     bool Supports256Bit = false; ///< provides support for 256-bit ANSI colours
     bool Supports16M = false; ///< provides support for 16-million (RGB) ANSI colours
@@ -70,7 +70,7 @@ struct ColorLevel final {
 ///
 /// * `Columns` — width of the terminal in columns
 /// * `Rows` — height of the terminal in rows
-struct Window final {
+struct VIOLET_API Window final {
     UInt16 Columns = 0; ///< width of the terminal in columns
     UInt16 Rows = 0; ///< height of the terminal in rows
 };
@@ -79,7 +79,7 @@ struct Window final {
 ///
 /// Each component must lie in the range `[0.0, 1.0]`. The constructor
 /// accepting floats asserts this range in debug builds.
-struct RGB final {
+struct VIOLET_API RGB final {
     UInt8 Red = 0; ///< Red channel in a `[0.0, 1.0]` range
     UInt8 Green = 0; ///< Green channel in a `[0.0, 1.0]` range
     UInt8 Blue = 0; ///< Blue channel in a `[0.0, 1.0]` range
@@ -107,7 +107,7 @@ struct RGB final {
     }
 };
 
-struct Style final {
+struct VIOLET_API Style final {
     constexpr VIOLET_IMPLICIT Style() noexcept = default;
 
 #define MK_STYLE_FN(NAME, FG, BG)                                                                                      \
@@ -224,7 +224,7 @@ private:
 };
 
 template<typename T>
-struct Styled final {
+struct VIOLET_API Styled final {
     T Target;
     struct Style Style;
 
@@ -263,21 +263,21 @@ struct Styled final {
 ///
 /// @param source the source to enable virtual terminal processing
 /// @return the result of the operation, always check the error state before continuing.
-[[nodiscard("always check the error state")]] auto EnableVTMode(StreamSource source = StreamSource::Stdout)
+[[nodiscard("always check the error state")]] VIOLET_API auto EnableVTMode(StreamSource source = StreamSource::Stdout)
     -> IO::Result<void>;
 #endif
 
 /// Returns **true** if we are in a terminal process instead of a pipe or child process.
 /// @param source source to check, by default, stdout.
-auto IsTTY(StreamSource source = StreamSource::Stdout) noexcept -> bool;
+VIOLET_API auto IsTTY(StreamSource source = StreamSource::Stdout) noexcept -> bool;
 
 /// Queries information about the terminal window.
 /// @param source the stream source to check, by default, standard output.
-auto QueryWindowInfo(StreamSource source = StreamSource::Stdout) noexcept -> io::Result<Window>;
+VIOLET_API auto QueryWindowInfo(StreamSource source = StreamSource::Stdout) noexcept -> io::Result<Window>;
 
 /// Queries information about color displays for terminals.
 /// @param source the stream source to check, by default, standard output.
-auto ColourLevel(StreamSource source = StreamSource::Stdout) noexcept -> ColorLevel;
+VIOLET_API auto ColourLevel(StreamSource source = StreamSource::Stdout) noexcept -> ColorLevel;
 
 /// Sets the color choice.
 ///
@@ -285,11 +285,11 @@ auto ColourLevel(StreamSource source = StreamSource::Stdout) noexcept -> ColorLe
 /// depend on the terminal framework as well.
 ///
 /// @param choice the color choice to use
-void SetColorChoice(violet::terminal::ColorChoice choice = violet::terminal::ColorChoice::Auto) noexcept;
+VIOLET_API void SetColorChoice(violet::terminal::ColorChoice choice = violet::terminal::ColorChoice::Auto) noexcept;
 
 /// Returns **true** if the terminal framework is supported to use colors. This is usually determined
 /// either if a user has called [`SetColorChoice`] or by the [`ColourLevel`] function.
-auto ColoursEnabled(StreamSource source = StreamSource::Stdout) noexcept -> bool;
+VIOLET_API auto ColoursEnabled(StreamSource source = StreamSource::Stdout) noexcept -> bool;
 
 } // namespace violet::terminal
 

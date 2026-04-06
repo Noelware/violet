@@ -199,19 +199,21 @@
 #define VIOLET_IMPLICIT
 #define VIOLET_EXPLICIT explicit
 
-#if VIOLET_WINDOWS
+#ifndef VIOLET_API
+#ifdef VIOLET_WINDOWS
 #ifdef VIOLET_DLL_EXPORT
 #define VIOLET_API __declspec(dllexport)
 #else
 #define VIOLET_API __declspec(dllimport)
-#endif
-#else
-#if VIOLET_HAS_ATTRIBUTE(visibility)
+#endif // defined(VIOLET_DLL_EXPORT)
+#elif VIOLET_HAS_CPP_ATTRIBUTE(gnu::visibility)
+#define VIOLET_API [[gnu::visibility("default")]]
+#elif VIOLET_HAS_ATTRIBUTE(visibility)
 #define VIOLET_API __attribute__((visibility("default")))
 #else
 #define VIOLET_API
-#endif
-#endif
+#endif // defined(VIOLET_WINDOWS)
+#endif // !defined(VIOLET_API)
 
 #if VIOLET_HAS_CPP_ATTRIBUTE(likely)
 #define VIOLET_LIKELY [[likely]]
@@ -242,6 +244,34 @@
 #define VIOLET_HOT [[gnu::hot]]
 #else
 #define VIOLET_HOT
+#endif
+
+#if VIOLET_HAS_CPP_ATTRIBUTE(clang::lifetimebound)
+#define VIOLET_LIFETIMEBOUND [[clang::lifetimebound]]
+#elif VIOLET_HAS_CPP_ATTRIBUTE(msvc::lifetimebound)
+#define VIOLET_LIFETIMEBOUND [[msvc::lifetimebound]]
+#else
+#define VIOLET_LIFETIMEBOUND
+#endif
+
+#if VIOLET_HAS_CPP_ATTRIBUTE(gnu::pure)
+#define VIOLET_PURE [[gnu::pure]]
+#elif VIOLET_HAS_ATTRIBUTE(pure)
+#define VIOLET_PURE __attribute__((pure))
+#else
+#define VIOLET_PURE
+#endif
+
+#if VIOLET_HAS_CPP_ATTRIBUTE(clang::noescape)
+#define VIOLET_NOESCAPE [[clang::noescape]]
+#else
+#define VIOLET_NOESCAPE
+#endif
+
+#if VIOLET_HAS_CPP_ATTRIBUTE(clang::reinitializes)
+#define VIOLET_REINITIALIZES_MEMORY [[clang::reinitializes]]
+#else
+#define VIOLET_REINITIALIZES_MEMORY
 #endif
 
 #if defined(_CPPUNWIND) || defined(__EXCEPTIONS) || defined(__cpp_exceptions)

@@ -21,9 +21,11 @@
 
 #pragma once
 
+#include <violet/Violet.h>
+
 namespace violet::sys {
 
 /// Returns **true** if we are running in a CI system.
-auto ContinuousIntegration() noexcept -> bool;
+VIOLET_API auto ContinuousIntegration() noexcept -> bool;
 
 } // namespace violet::sys

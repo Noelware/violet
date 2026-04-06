@@ -53,7 +53,7 @@ namespace violet::io::experimental {
 /// ## Thread Safety
 /// This type is NOT thread-safe. External synchronization is required if used
 /// from multiple threads.
-struct BufferedInputStream final: public InputStream {
+struct VIOLET_API BufferedInputStream final: public InputStream {
     /// Constructs a new buffered stream that wraps over `src`.
     ///
     /// @param src underlying input stream
@@ -67,13 +67,13 @@ struct BufferedInputStream final: public InputStream {
     }
 
     /// @inheritdoc violet::io::experimental::InputStream::Read(violet::Span<violet::UInt8>)
-    auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
+    VIOLET_API auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Available()
-    [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
+    [[nodiscard]] VIOLET_API auto Available() const noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Skip(violet::UInt8)
-    auto Skip(UInt bytes) noexcept -> Result<void> override;
+    VIOLET_API auto Skip(UInt bytes) noexcept -> Result<void> override;
 
 private:
     violet::SharedPtr<InputStream> n_src;

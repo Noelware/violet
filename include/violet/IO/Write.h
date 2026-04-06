@@ -36,7 +36,7 @@ namespace violet::io {
 /// @param data The target string to append bytes to.
 /// @param buf The source buffer containing bytes to write.
 /// @returns A `Result` holding the number of bytes written, or an error code on failure.
-auto Write(String& data, Span<const UInt8> buf) -> Result<UInt>;
+VIOLET_API auto Write(String& data, Span<const UInt8> buf) -> Result<UInt>;
 
 /// Writes a byte buffer into a vector.
 ///
@@ -46,7 +46,7 @@ auto Write(String& data, Span<const UInt8> buf) -> Result<UInt>;
 /// @param data The target vector to append bytes to.
 /// @param buf The source buffer containing bytes to write.
 /// @returns A `Result` holding the number of bytes written.
-auto Write(Vec<UInt8>& data, Span<const UInt8> buf) -> Result<UInt>;
+VIOLET_API auto Write(Vec<UInt8>& data, Span<const UInt8> buf) -> Result<UInt>;
 
 /// Concept to ensure a type is "writable".
 ///
@@ -68,7 +68,7 @@ concept Writable = requires(T ty, Span<const UInt8> cnt) {
 };
 
 template<typename T>
-inline auto Write(T& writer, Span<const UInt8> data) -> Result<UInt>
+VIOLET_API inline auto Write(T& writer, Span<const UInt8> data) -> Result<UInt>
 {
     if constexpr (requires { writer.Write(data); }) {
         return writer.Write(data);

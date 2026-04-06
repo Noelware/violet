@@ -21,14 +21,14 @@
 
 #pragma once
 
-#include "violet/Container/Optional.h"
-#include "violet/Iterator.h"
-#include "violet/Violet.h"
+#include <violet/Container/Optional.h>
+#include <violet/Iterator.h>
+#include <violet/Violet.h>
 
 namespace violet::iter {
 
 template<Iterable Impl>
-struct Peekable final: public Iterator<Peekable<Impl>> {
+struct VIOLET_API Peekable final: public Iterator<Peekable<Impl>> {
     using Item = TypeOf<Impl>;
 
     VIOLET_DISALLOW_CONSTRUCTOR(Peekable);

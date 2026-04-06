@@ -58,7 +58,7 @@ namespace violet {
 /// @param fmt  A compile-time-checked format string.
 /// @param args Arguments referenced by the format string.
 template<typename... Args>
-void Print(std::format_string<Args...> fmt, Args&&... args)
+VIOLET_API void Print(std::format_string<Args...> fmt, Args&&... args)
 {
     return Print(fmt, VIOLET_FWD(Args, args)...);
 }
@@ -81,7 +81,7 @@ void Print(std::format_string<Args...> fmt, Args&&... args)
 /// @param fmt    A compile-time-checked format string.
 /// @param args   Arguments referenced by the format string.
 template<typename... Args>
-void Print(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
+VIOLET_API void Print(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
 {
 #if VIOLET_REQUIRE_STL(202302L)
     std::print(stream, fmt, VIOLET_FWD(Args, args)...);
@@ -105,7 +105,7 @@ void Print(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args
 /// @param fmt  A compile-time-checked format string.
 /// @param args Arguments referenced by the format string.
 template<typename... Args>
-void Println(std::format_string<Args...> fmt, Args&&... args)
+VIOLET_API void Println(std::format_string<Args...> fmt, Args&&... args)
 {
     return Println(fmt, VIOLET_FWD(Args, args)...);
 }
@@ -126,7 +126,7 @@ void Println(std::format_string<Args...> fmt, Args&&... args)
 /// @param fmt    A compile-time-checked format string.
 /// @param args   Arguments referenced by the format string.
 template<typename... Args>
-void Println(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
+VIOLET_API void Println(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
 {
 #if VIOLET_REQUIRE_STL(202302L)
     std::println(stream, fmt, VIOLET_FWD(Args, args)...);
@@ -149,7 +149,7 @@ void Println(std::ostream& stream, std::format_string<Args...> fmt, Args&&... ar
 /// @param fmt  A compile-time-checked format string.
 /// @param args Arguments referenced by the format string.
 template<typename... Args>
-void PrintErr(std::format_string<Args...> fmt, Args&&... args)
+VIOLET_API void PrintErr(std::format_string<Args...> fmt, Args&&... args)
 {
     return Print(std::cerr, fmt, VIOLET_FWD(Args, args)...);
 }
@@ -168,7 +168,7 @@ void PrintErr(std::format_string<Args...> fmt, Args&&... args)
 /// @param fmt  A compile-time-checked format string.
 /// @param args Arguments referenced by the format string.
 template<typename... Args>
-void PrintErrln(std::format_string<Args...> fmt, Args&&... args)
+VIOLET_API void PrintErrln(std::format_string<Args...> fmt, Args&&... args)
 {
     return Println(std::cerr, fmt, VIOLET_FWD(Args, args)...);
 }

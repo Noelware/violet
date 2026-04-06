@@ -21,15 +21,15 @@
 
 #pragma once
 
-#include "violet/Container/Optional.h"
-#include "violet/Iterator.h"
-#include "violet/Violet.h"
+#include <violet/Container/Optional.h>
+#include <violet/Iterator.h>
+#include <violet/Violet.h>
 
 namespace violet::iter {
 
 template<Iterable Impl, typename Pred>
     requires(callable<Pred, TypeOf<Impl>> && callable_returns<Pred, bool, TypeOf<Impl>>)
-struct Filter final: public Iterator<Filter<Impl, Pred>> {
+struct VIOLET_API Filter final: public Iterator<Filter<Impl, Pred>> {
     using Item = TypeOf<Impl>;
 
     VIOLET_DISALLOW_CONSTRUCTOR(Filter);
@@ -73,7 +73,7 @@ struct Filter final: public Iterator<Filter<Impl, Pred>> {
             return { 0, hint.High };
         }
 
-        return {};
+        return { };
     }
 
 private:

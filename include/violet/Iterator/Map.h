@@ -21,15 +21,15 @@
 
 #pragma once
 
-#include "violet/Container/Optional.h"
-#include "violet/Iterator.h"
-#include "violet/Violet.h"
+#include <violet/Container/Optional.h>
+#include <violet/Iterator.h>
+#include <violet/Violet.h>
 
 namespace violet::iter {
 
 template<Iterable Impl, typename Fun>
     requires callable<Fun, TypeOf<Impl>>
-struct Map final: public Iterator<Map<Impl, Fun>> {
+struct VIOLET_API Map final: public Iterator<Map<Impl, Fun>> {
     using Item = std::invoke_result_t<Fun, TypeOf<Impl>>;
 
     VIOLET_DISALLOW_CONSTRUCTOR(Map);

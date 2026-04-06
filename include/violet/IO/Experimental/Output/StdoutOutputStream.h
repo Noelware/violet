@@ -27,11 +27,11 @@
 
 namespace violet::io::experimental {
 
-struct StdoutOutputStream final: public OutputStream {
+struct VIOLET_API StdoutOutputStream final: public OutputStream {
     VIOLET_IMPLICIT StdoutOutputStream() noexcept;
 
-    auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
-    auto Flush() noexcept -> io::Result<void> override;
+    VIOLET_API auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
+    VIOLET_API auto Flush() noexcept -> io::Result<void> override;
 
 private:
     io::FileDescriptor n_descriptor;

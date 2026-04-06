@@ -50,28 +50,28 @@ struct VIOLET_API FileDescriptor final {
     ~FileDescriptor();
 
     /// Returns **true** if this file descriptor points to a valid handle.
-    [[nodiscard]] auto Valid() const noexcept -> bool;
+    [[nodiscard]] VIOLET_API auto Valid() const noexcept -> bool;
 
     /// Returns the raw value type of this file descriptor.
-    [[nodiscard]] auto Get() const noexcept -> value_type;
+    [[nodiscard]] VIOLET_API auto Get() const noexcept -> value_type;
 
     /// Closes this file descriptor.
-    void Close();
+    VIOLET_API void Close();
 
     /// Returns a text representation of this file descriptor.
     ///
     /// - Windows: `Descriptor(<hex of handle>)`
     /// - POSIX: `Descriptor(<id>)`
-    [[nodiscard]] auto ToString() const noexcept -> String;
+    [[nodiscard]] VIOLET_API auto ToString() const noexcept -> String;
 
     /// @see violet::io::Readable
-    [[nodiscard]] auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>;
+    [[nodiscard]] VIOLET_API auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>;
 
     /// @see violet::io::Writable
-    [[nodiscard]] auto Write(Span<const UInt8> buf) const noexcept -> io::Result<UInt>;
+    [[nodiscard]] VIOLET_API auto Write(Span<const UInt8> buf) const noexcept -> io::Result<UInt>;
 
     /// @see violet::io::Writable
-    [[nodiscard]] auto Flush() const noexcept -> io::Result<void>;
+    [[nodiscard]] VIOLET_API auto Flush() const noexcept -> io::Result<void>;
 
     VIOLET_EXPLICIT operator bool() const noexcept;
     VIOLET_EXPLICIT operator value_type() const noexcept;

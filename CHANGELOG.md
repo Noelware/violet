@@ -7,11 +7,25 @@ availableAt:
 ---
 
 ### unreleased
+- **Breaking**: All Bazel targets now use hidden visibility by default, public APIs will be marked with `VIOLET_API` ([`@auguwu`])
+    - On Windows, you can set the `win32_dllexport` flag to **True** (`--@violet//:win32_dllexport=[True|False]`) so that MSVC will see `__declspec(dllexport)` instead of `__declspec(dllimport)`.
+- There is now more annotations related to lifetime bounds and more. ([`@auguwu`])
+
 #### Noelware.Violet
 - Add **operator bool()** definition to `violet::Bitflags` ([`@auguwu`])
 - Make the default constructor for **violet::terminal::Style** be the "reset" marker (`\033[0m`) ([`@auguwu`])
 - Add **violet::Defer** and **violet::CancellableDefer** (and C-style macros) ([`@auguwu`])
 - Add **violet::strings::Join** and **violet::strings::Lines** utility ([`@auguwu`])
+- Fix return type errors in **violet::Result** ([`@auguwu`])
+- Improve iterators framework ([`@auguwu`])
+    - `MkIterable` now supports rvalues **correctly**
+    - Containers that have `.begin()` and `.end()` can resolve into `MkIterable` correctly
+
+#### Noelware.Violet.IO
+- Add implicit copy/move constructors for **Error** and **PlatformError** ([`@auguwu`])
+
+#### Noelware.Violet.Experimental
+- Delete copy constructors for **OneOf<Ts...>** if `<Ts...>` has one or more non-copyable constructors/copy assignments ([`@auguwu`])
 
 #### Noelware.Violet.Experimental.Threading
 - Add thread cancellation (**CancellationToken**, **CancellationTokenSource**) ([`@auguwu`])

@@ -41,7 +41,7 @@ namespace violet::strings {
 /// @returns view of `input` with leading whitespace removed
 template<typename Fun = int (*)(int)>
     requires(callable<Fun, unsigned char> && std::convertible_to<std::invoke_result_t<Fun&, unsigned char>, bool>)
-auto TrimStart(Str input, Fun&& fun = std::isspace) noexcept(
+VIOLET_API auto TrimStart(Str input, Fun&& fun = std::isspace) noexcept(
     noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<unsigned char>()))) -> Str
 {
     auto&& pred = VIOLET_FWD(Fun, fun);
@@ -66,7 +66,7 @@ auto TrimStart(Str input, Fun&& fun = std::isspace) noexcept(
 /// @returns view of `input` with leading whitespace removed
 template<typename Fun = int (*)(int)>
     requires(callable<Fun, unsigned char> && std::convertible_to<std::invoke_result_t<Fun&, unsigned char>, bool>)
-auto TrimEnd(Str input, Fun&& fun = std::isspace) noexcept(
+VIOLET_API auto TrimEnd(Str input, Fun&& fun = std::isspace) noexcept(
     noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<unsigned char>()))) -> Str
 {
     auto&& pred = VIOLET_FWD(Fun, fun);
@@ -87,7 +87,7 @@ auto TrimEnd(Str input, Fun&& fun = std::isspace) noexcept(
 /// @returns view of `input` with leading whitespace removed
 template<typename Fun = int (*)(int)>
     requires(callable<Fun, unsigned char> && std::convertible_to<std::invoke_result_t<Fun&, unsigned char>, bool>)
-auto Trim(Str input, Fun&& fun = std::isspace) noexcept(
+VIOLET_API auto Trim(Str input, Fun&& fun = std::isspace) noexcept(
     noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<unsigned char>()))) -> Str
 {
     auto&& pred = VIOLET_FWD(Fun, fun);
@@ -115,7 +115,7 @@ auto Trim(Str input, Fun&& fun = std::isspace) noexcept(
 ///
 /// @param input string view to split
 /// @param delim delimiter character
-auto SplitOnce(Str input, char delim) noexcept -> Pair<Str, Optional<Str>>;
+VIOLET_API auto SplitOnce(Str input, char delim) noexcept -> Pair<Str, Optional<Str>>;
 
 /// Joins a collection of elements into a single string with a delimiter.
 ///
@@ -136,7 +136,7 @@ auto SplitOnce(Str input, char delim) noexcept -> Pair<Str, Optional<Str>>;
 /// ```
 template<std::ranges::input_range Range>
     requires(violet::Stringify<std::ranges::range_value_t<Range>>)
-auto Join(const Range& range, Str delim) noexcept -> violet::String
+VIOLET_API auto Join(const Range& range, Str delim) noexcept -> violet::String
 {
     return Join(range, delim, [](const auto& value) -> String { return violet::ToString(value); });
 }
@@ -151,7 +151,7 @@ template<std::ranges::input_range Range, typename Fun>
     requires(callable<Fun, const std::ranges::range_value_t<Range>&>,
         callable_returns<Fun, violet::String, const std::ranges::range_value_t<Range>&>)
 #endif
-auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> violet::String
+VIOLET_API auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> violet::String
 {
     String result;
     bool first = true;
@@ -190,7 +190,7 @@ auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> violet::Strin
 ///
 /// Empty segments may be yielded if consecutive delimiters are present,
 /// depending on implementation semantics.
-struct Split final: public violet::Iterator<Split> {
+struct VIOLET_API Split final: public violet::Iterator<Split> {
     /// Creates a `Split` iterator over `input` using the default delimiter.
     /// @param input string view to iterate over
     VIOLET_IMPLICIT Split(Str input) noexcept;
@@ -202,7 +202,7 @@ struct Split final: public violet::Iterator<Split> {
 
     /// Advances the iterator and returns the next substring.
     /// @returns the next segement if available, or [`Nothing`] if iteration is complete.
-    auto Next() noexcept -> Optional<Str>;
+    VIOLET_API auto Next() noexcept -> Optional<Str>;
 
 private:
     Str n_input;
@@ -235,7 +235,7 @@ static_assert(Iterable<Split>, "`Split` is not a valid iterable");
 /// assert(!e.HasValue());
 /// ```
 template<UInt N>
-struct SplitN final: public Iterator<SplitN<N>> {
+struct VIOLET_API SplitN final: public Iterator<SplitN<N>> {
     /// Construct the iterator with a given input using the default delimiter (`' '`)
     VIOLET_IMPLICIT SplitN(Str input) noexcept
         : SplitN<N>(input, ' ')
@@ -253,7 +253,7 @@ struct SplitN final: public Iterator<SplitN<N>> {
 
     /// Advances the iterator and returns the next substring.
     /// @returns the next segement if available, or [`Nothing`] if iteration is complete.
-    auto Next() noexcept -> Optional<Str>
+    VIOLET_API auto Next() noexcept -> Optional<Str>
     {
         if (this->n_pos >= this->n_input.size()) {
             return Nothing;
@@ -299,7 +299,7 @@ private:
 /// auto lines = violet::strings::Lines(text).Count();
 /// assert(lines == 4);
 /// ```
-struct Lines final: public Iterator<Lines> {
+struct VIOLET_API Lines final: public Iterator<Lines> {
     using Item = Str;
 
     constexpr Lines() noexcept = default;
@@ -308,7 +308,7 @@ struct Lines final: public Iterator<Lines> {
     {
     }
 
-    constexpr auto Next() noexcept -> Optional<Item>
+    VIOLET_API constexpr auto Next() noexcept -> Optional<Item>
     {
         if (this->n_done) {
             return Nothing;

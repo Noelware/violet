@@ -108,6 +108,7 @@ struct OneOf final {
     }
 
     VIOLET_IMPLICIT OneOf(const OneOf& other)
+        requires(std::is_copy_constructible_v<Ts> && ...)
         : n_index(other.n_index)
     {
         other.Visit([&](const auto& value) -> void {
@@ -116,7 +117,12 @@ struct OneOf final {
         });
     }
 
+    VIOLET_IMPLICIT OneOf(const OneOf&)
+        requires(!(std::is_copy_constructible_v<Ts> && ...))
+    = delete;
+
     auto operator=(const OneOf& other) -> OneOf&
+        requires(std::is_copy_constructible_v<Ts> && ...)
     {
         if (this != &other) {
             OneOf tmp(other);
@@ -125,6 +131,10 @@ struct OneOf final {
 
         return *this;
     }
+
+    auto operator=(const OneOf&) noexcept -> OneOf&
+        requires(!(std::is_copy_constructible_v<Ts> && ...))
+    = delete;
 
     VIOLET_IMPLICIT OneOf(OneOf&& other) noexcept
         : n_index(other.n_index)
@@ -209,7 +219,7 @@ struct OneOf final {
         using return_type_t = std::common_type_t<std::invoke_result_t<Visitor, Ts&>...>;
 
         constexpr static auto DISPATCH_TABLE
-            = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{});
+            = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{ });
 
         return DISPATCH_TABLE[this->n_index](VIOLET_FWD(Visitor, visitor), this->n_storage);
     }
@@ -221,7 +231,7 @@ struct OneOf final {
         using return_type_t = std::common_type_t<std::invoke_result_t<Visitor, const Ts&>...>;
 
         constexpr static auto DISPATCH_TABLE
-            = detail::createVisitorTable<return_type_t, Visitor, const storage_t>(std::index_sequence_for<Ts...>{});
+            = detail::createVisitorTable<return_type_t, Visitor, const storage_t>(std::index_sequence_for<Ts...>{ });
 
         return DISPATCH_TABLE[this->n_index](VIOLET_FWD(Visitor, visitor), this->n_storage);
     }
@@ -234,7 +244,7 @@ struct OneOf final {
         using return_type_t = std::common_type_t<std::invoke_result_t<Visitor, Ts&&>...>;
 
         constexpr static auto DISPATCH_TABLE
-            = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{});
+            = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{ });
 
         return DISPATCH_TABLE[this->n_index](VIOLET_FWD(Visitor, visitor), this->n_storage);
     }
@@ -368,8 +378,8 @@ union valueless_storage<T, Ts...> final { // NOLINT(cppcoreguidelines-special-me
     T Head;
     valueless_storage<Ts...> Tail;
 
-    valueless_storage() {};
-    ~valueless_storage() {};
+    valueless_storage() { };
+    ~valueless_storage() { };
 };
 
 template<>
@@ -419,4 +429,5 @@ constexpr auto createVisitorTable(std::index_sequence<Is...>) -> Array<Ret (*)(V
         return vis(getElementInStorage<Is>(storage));
     }... };
 }
+
 } // namespace violet::experimental::detail

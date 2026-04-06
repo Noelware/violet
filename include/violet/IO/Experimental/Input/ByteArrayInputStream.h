@@ -45,7 +45,7 @@ namespace violet::io::experimental {
 /// Array<UInt8, 2> buf;
 /// auto action = stream.Read(buf); // reads 2 bytes
 /// ```
-struct ByteArrayInputStream final: public InputStream {
+struct VIOLET_API ByteArrayInputStream final: public InputStream {
     /// Creates an empty byte array input stream.
     VIOLET_IMPLICIT ByteArrayInputStream() noexcept = default;
 
@@ -54,24 +54,24 @@ struct ByteArrayInputStream final: public InputStream {
     VIOLET_IMPLICIT ByteArrayInputStream(Span<const UInt8> buf) noexcept;
 
     /// @inheritdoc violet::io::experimental::InputStream::Read(violet::Span<violet::UInt8>)
-    auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
+    VIOLET_API auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Available()
-    [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
+    [[nodiscard]] VIOLET_API auto Available() const noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Skip(violet::UInt8)
-    auto Skip(UInt bytes) noexcept -> Result<void> override;
+    VIOLET_API auto Skip(UInt bytes) noexcept -> Result<void> override;
 
     /// Resets the read position to the beginning of the buffer.
-    void Reset() noexcept;
+    VIOLET_API void Reset() noexcept;
 
     /// Returns the current read position within the buffer.
     ///
     /// This is the number of bytes already consumed from the beginning of the buffer.
-    [[nodiscard]] auto Position() const noexcept -> UInt;
+    [[nodiscard]] VIOLET_API auto Position() const noexcept -> UInt;
 
     /// Returns **true** if the stream has reached the end of the buffer.
-    [[nodiscard]] auto EOS() const noexcept -> bool;
+    [[nodiscard]] VIOLET_API auto EOS() const noexcept -> bool;
 
 private:
     Span<const UInt8> n_buf;

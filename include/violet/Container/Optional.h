@@ -49,13 +49,13 @@ constexpr static std::nullopt_t Nothing = std::nullopt;
 /// static_assert(!violet::is_optional_v<int>);
 /// ```
 template<typename T>
-struct is_optional: std::false_type {};
+struct is_optional: std::false_type { };
 
 template<typename T>
-struct is_optional<Optional<T>>: std::true_type {};
+struct is_optional<Optional<T>>: std::true_type { };
 
 template<typename T>
-struct is_optional<std::optional<T>>: std::true_type {};
+struct is_optional<std::optional<T>>: std::true_type { };
 
 template<typename T>
 static constexpr bool is_optional_v = is_optional<T>::value;
@@ -67,18 +67,18 @@ static constexpr bool is_optional_v = is_optional<T>::value;
 ///
 /// @tparam T The type from which to extract an inner value type.
 template<class T>
-struct optional_type;
+struct VIOLET_API optional_type;
 
 /// Specialization of [`optional_type`] for [`violet::Optional`].
 template<class U>
-struct optional_type<Optional<U>> {
+struct VIOLET_API optional_type<Optional<U>> {
     /// Extracted inner type from [`violet::Optional`]
     using type = U;
 };
 
 /// Specialization of [`optional_type`] for [`std::optional`].
 template<class U>
-struct optional_type<std::optional<U>> {
+struct VIOLET_API optional_type<std::optional<U>> {
     /// Extracted inner type from [`violet::Optional`]
     using type = U;
 };
@@ -156,7 +156,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     using value_type = T;
 
     /// Constructs a empty optional value.
-    constexpr VIOLET_IMPLICIT Optional() noexcept {}
+    constexpr VIOLET_IMPLICIT Optional() noexcept { }
 
     /// Constructs a empty optional value from [`std::nullopt`] or [`violet::Nothing`].
     constexpr VIOLET_IMPLICIT Optional(std::nullopt_t) noexcept
@@ -417,7 +417,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     }
 
     /// Returns `true` if a value is present.
-    constexpr auto HasValue() const noexcept -> bool
+    [[nodiscard]] constexpr auto HasValue() const noexcept -> bool
     {
         return this->n_engaged;
     }
@@ -426,7 +426,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if a value is present.
-    constexpr auto Value() & noexcept -> T&
+    [[nodiscard]] constexpr auto Value() & noexcept VIOLET_LIFETIMEBOUND -> T&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
         return this->getValueRef();
@@ -436,7 +436,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if a value is present.
-    constexpr auto Value() const& noexcept -> const T&
+    [[nodiscard]] constexpr auto Value() const& noexcept VIOLET_LIFETIMEBOUND -> const T&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
         return this->getValueRef();
@@ -446,7 +446,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if a value is present.
-    constexpr auto Value() && noexcept -> T&&
+    [[nodiscard]] constexpr auto Value() && noexcept VIOLET_LIFETIMEBOUND -> T&&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
         return VIOLET_MOVE(this->getValueRef());
@@ -456,7 +456,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if a value is present.
-    constexpr auto Value() const&& noexcept -> const T&&
+    [[nodiscard]] constexpr auto Value() const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
         return VIOLET_MOVE(this->getValueRef());
@@ -679,25 +679,25 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> T
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> T
     {
         return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> T
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
     {
         return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
     }
@@ -706,7 +706,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    constexpr auto UnwrapUnchecked(Unsafe) & noexcept -> T&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> T&
     {
         return this->getValueRef();
     }
@@ -715,7 +715,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> const T&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const T&
     {
         return this->getValueRef();
     }
@@ -724,7 +724,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    constexpr auto UnwrapUnchecked(Unsafe) && noexcept -> T&&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> T&&
     {
         return VIOLET_MOVE(this->getValueRef());
     }
@@ -733,7 +733,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept -> const T&&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
     {
         return VIOLET_MOVE(this->getValueRef());
     }
@@ -745,14 +745,14 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
     template<typename Fun>
         requires(callable<Fun, T&>)
-    constexpr auto Map(Fun&& fun) & -> Optional<std::invoke_result_t<Fun, T&>>
+    [[nodiscard]] constexpr auto Map(Fun&& fun) & -> Optional<std::invoke_result_t<Fun, T&>>
     {
         using Ret = std::invoke_result_t<Fun, T&>;
         if (this->HasValue()) {
             return Some<Ret>(std::invoke(VIOLET_FWD(Fun, fun), Value()));
         }
 
-        return decltype(Optional<Ret>{})(Nothing);
+        return decltype(Optional<Ret>{ })(Nothing);
     }
 
     /// Applies `fun` to the contained value if present.
@@ -762,15 +762,15 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
     template<typename Fun>
         requires(callable<Fun, const T&>)
-    constexpr auto Map(Fun&& fun) const& noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&>())))
-        -> Optional<std::invoke_result_t<Fun, const T&>>
+    [[nodiscard]] constexpr auto Map(Fun&& fun) const& noexcept(noexcept(
+        std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&>()))) -> Optional<std::invoke_result_t<Fun, const T&>>
     {
         using Ret = std::invoke_result_t<Fun, const T&>;
         if (this->HasValue()) {
             return Some<Ret>(std::invoke(VIOLET_FWD(Fun, fun), Value()));
         }
 
-        return decltype(Optional<Ret>{})(Nothing);
+        return decltype(Optional<Ret>{ })(Nothing);
     }
 
     /// Applies `fun` to the contained value if present.
@@ -780,15 +780,15 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
     template<typename Fun>
         requires(callable<Fun, T &&>)
-    constexpr auto Map(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>())))
-        -> Optional<std::invoke_result_t<Fun, T&&>>
+    [[nodiscard]] constexpr auto Map(Fun&& fun) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>()))) -> Optional<std::invoke_result_t<Fun, T&&>>
     {
         using Ret = std::invoke_result_t<Fun, T&&>;
         if (this->HasValue()) {
             return Some<Ret>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
         }
 
-        return decltype(Optional<Ret>{})(Nothing);
+        return decltype(Optional<Ret>{ })(Nothing);
     }
 
     /// Applies `fun` to the contained value if present.
@@ -798,7 +798,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
     template<typename Fun>
         requires(callable<Fun, const T &&>)
-    constexpr auto Map(Fun&& fun) const&& noexcept(noexcept(
+    [[nodiscard]] constexpr auto Map(Fun&& fun) const&& noexcept(noexcept(
         std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&&>()))) -> Optional<std::invoke_result_t<Fun, const T&&>>
     {
         using Ret = std::invoke_result_t<Fun, const T&&>;
@@ -806,7 +806,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             return Some<Ret>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
         }
 
-        return decltype(Optional<Ret>{})(Nothing);
+        return decltype(Optional<Ret>{ })(Nothing);
     }
 
     /// Returns `true` if a value is present and `fun(value)` returns `true`.
@@ -815,8 +815,8 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
     template<typename Fun>
         requires(callable<Fun, T&> && callable_returns<Fun, bool, T&>)
-    constexpr auto HasValueAnd(Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&>())))
-        -> bool
+    [[nodiscard]] constexpr auto HasValueAnd(Fun&& fun) & noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&>()))) -> bool
     {
         return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), Value());
     }
@@ -827,7 +827,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
     template<typename Fun>
         requires(callable<Fun, const T&> && callable_returns<Fun, bool, const T&>)
-    constexpr auto HasValueAnd(Fun&& fun) const& noexcept(
+    [[nodiscard]] constexpr auto HasValueAnd(Fun&& fun) const& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&>()))) -> bool
     {
         return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), Value());
@@ -839,8 +839,8 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
     template<typename Fun>
         requires(callable<Fun, T &&> && callable_returns<Fun, bool, T &&>)
-    constexpr auto HasValueAnd(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>())))
-        -> bool
+    [[nodiscard]] constexpr auto HasValueAnd(Fun&& fun) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>()))) -> bool
     {
         return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), Value());
     }
@@ -851,7 +851,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
     template<typename Fun>
         requires(callable<Fun, const T &&> && callable_returns<Fun, bool, const T &&>)
-    constexpr auto HasValueAnd(Fun&& fun) const&& noexcept(
+    [[nodiscard]] constexpr auto HasValueAnd(Fun&& fun) const&& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&&>()))) -> bool
     {
         return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), Value());
@@ -863,7 +863,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
     template<typename U, typename Fun>
         requires(callable<Fun, T&> && std::convertible_to<std::invoke_result_t<Fun, T&>, U>)
-    constexpr auto MapOr(U&& defaultValue, Fun&& fun) & noexcept(
+    [[nodiscard]] constexpr auto MapOr(U&& defaultValue, Fun&& fun) & noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&>()))) -> U
     {
         if (this->HasValue()) {
@@ -879,7 +879,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
     template<typename U, typename Fun>
         requires(callable<Fun, const T&> && std::convertible_to<std::invoke_result_t<Fun, const T&>, U>)
-    constexpr auto MapOr(U&& defaultValue, Fun&& fun) const& noexcept(
+    [[nodiscard]] constexpr auto MapOr(U&& defaultValue, Fun&& fun) const& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&>()))) -> U
     {
         if (this->HasValue()) {
@@ -895,7 +895,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
     template<typename U, typename Fun>
         requires(callable<Fun, T &&> && std::convertible_to<std::invoke_result_t<Fun, T &&>, U>)
-    constexpr auto MapOr(U&& defaultValue, Fun&& fun) && noexcept(
+    [[nodiscard]] constexpr auto MapOr(U&& defaultValue, Fun&& fun) && noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T&&>()))) -> U
     {
         if (this->HasValue()) {
@@ -911,7 +911,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
     template<typename U, typename Fun>
         requires(callable<Fun, const T &&> && std::convertible_to<std::invoke_result_t<Fun, const T &&>, U>)
-    constexpr auto MapOr(U&& defaultValue, Fun&& fun) const&& noexcept(
+    [[nodiscard]] constexpr auto MapOr(U&& defaultValue, Fun&& fun) const&& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const T&&>()))) -> U
     {
         if (this->HasValue()) {
@@ -925,10 +925,10 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     ///
     /// Equivalent to Rust's
     /// [`Option::take`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.take).
-    constexpr auto Take() noexcept -> Optional<T>
+    [[nodiscard]] constexpr auto Take() noexcept -> Optional<T>
     {
         if (!this->HasValue()) {
-            return {};
+            return { };
         }
 
         Optional tmp = Some<T>(VIOLET_MOVE(Value()));
@@ -944,7 +944,8 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// Equivalent to Rust's
     /// [`Option::replace`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.replace).
     template<typename... Args>
-    constexpr auto Replace(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>) -> T&
+    [[nodiscard]] VIOLET_REINITIALIZES_MEMORY constexpr auto Replace(Args&&... args) noexcept(
+        std::is_nothrow_constructible_v<T, Args...>) -> T&
     {
         if (this->HasValue()) {
             this->Reset();
@@ -957,7 +958,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     }
 
     /// Destroys the contained value and disengages the `Optional`.
-    auto Reset() noexcept(std::is_nothrow_destructible_v<T>)
+    VIOLET_REINITIALIZES_MEMORY void Reset() noexcept(std::is_nothrow_destructible_v<T>)
     {
         this->destroy();
     }
@@ -974,25 +975,25 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return std::addressof(this->getValueRef());
     }
 
-    constexpr auto operator*() & noexcept -> T&
+    constexpr auto operator*() & noexcept VIOLET_LIFETIMEBOUND->T&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
         return this->getValueRef();
     }
 
-    constexpr auto operator*() const& noexcept -> const T&
+    constexpr auto operator*() const& noexcept VIOLET_LIFETIMEBOUND->const T&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
         return this->getValueRef();
     }
 
-    constexpr auto operator*() && noexcept -> T&&
+    constexpr auto operator*() && noexcept VIOLET_LIFETIMEBOUND->T&&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
         return VIOLET_MOVE(this->getValueRef());
     }
 
-    constexpr auto operator*() const&& noexcept -> const T&&
+    constexpr auto operator*() const&& noexcept VIOLET_LIFETIMEBOUND->const T&&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
         return VIOLET_MOVE(this->getValueRef());

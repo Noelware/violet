@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "violet/Violet.h"
+#include <violet/Violet.h>
 
 #include <ostream>
 
@@ -176,16 +176,16 @@ struct VIOLET_API Permissions final {
     }
 #endif
 
-    [[nodiscard]] auto Readonly() const noexcept -> bool;
-    void SetReadonly(bool readonly) noexcept;
+    [[nodiscard]] VIOLET_API auto Readonly() const noexcept -> bool;
+    VIOLET_API void SetReadonly(bool readonly) noexcept;
 
 #ifdef VIOLET_WINDOWS
-    auto Attributes() const noexcept -> DWORD;
+    VIOLET_API auto Attributes() const noexcept -> DWORD;
 #elif defined(VIOLET_UNIX)
-    [[nodiscard]] auto Mode() const noexcept -> struct Mode;
+    [[nodiscard]] VIOLET_API auto Mode() const noexcept -> struct Mode;
 #endif
 
-    [[nodiscard]] auto ToString() const noexcept -> String;
+    [[nodiscard]] VIOLET_API auto ToString() const noexcept -> String;
     friend auto operator<<(std::ostream& os, const Permissions& self) noexcept -> std::ostream&
     {
         return os << self.ToString();

@@ -33,9 +33,9 @@ struct CancellationToken;
 /// Fired by a [`CancellationTokenSource::Cancel()`] callsite when cancellation is requested.
 ///
 /// Listeners registered via [`CancellationToken::OnCancelRequested()`] receive this event.
-struct CancellationRequestedEvent final {
+struct VIOLET_API CancellationRequestedEvent final {
     /// A stringified representation of this object that conforms to the [`violet::Stringify`] concept.
-    [[nodiscard]] auto ToString() const noexcept -> CStr;
+    [[nodiscard]] VIOLET_API auto ToString() const noexcept -> CStr;
     friend auto operator<<(std::ostream& os, const CancellationRequestedEvent& self) noexcept -> std::ostream&
     {
         return os << self.ToString();
@@ -75,7 +75,7 @@ private:
 /// ## A one-way street...
 /// Once [`Cancel()`] has been called it cannot be undone. If you need
 /// re-arming semantics, create a new `CancellationTokenSource`.
-struct CancellationTokenSource final {
+struct VIOLET_API CancellationTokenSource final {
     VIOLET_DISALLOW_COPY(CancellationTokenSource);
     VIOLET_IMPLICIT_MOVE(CancellationTokenSource);
 
@@ -89,10 +89,10 @@ struct CancellationTokenSource final {
     /// Produce a new [`CancellationToken`] that reflects the cancellation state
     /// of this source. Multiple tokens from the same source all share the same
     /// state.
-    [[nodiscard]] auto Token() const noexcept -> CancellationToken;
+    [[nodiscard]] VIOLET_API auto Token() const noexcept -> CancellationToken;
 
     /// Returns **true** if cancellation had been requested on this source.
-    [[nodiscard]] auto RequestsCancellation() const noexcept -> bool;
+    [[nodiscard]] VIOLET_API auto RequestsCancellation() const noexcept -> bool;
 
     /// Requests cancellation on this source.
     ///
@@ -101,7 +101,7 @@ struct CancellationTokenSource final {
     ///
     /// > [!NOTE]
     /// > Calling [`CancellationTokenSource::Cancel()`] more than once is a no-op.
-    void Cancel() const noexcept;
+    VIOLET_API void Cancel() const noexcept;
 
 private:
     friend struct CancellationToken;
@@ -144,26 +144,26 @@ private:
 /// // ...after a while
 /// cts.Cancel();
 /// ```
-struct CancellationToken final {
+struct VIOLET_API CancellationToken final {
     VIOLET_DISALLOW_CONSTRUCTOR(CancellationToken);
     VIOLET_DISALLOW_COPY(CancellationToken);
     VIOLET_IMPLICIT_MOVE(CancellationToken);
     ~CancellationToken() = default;
 
     /// Creates a dummy, non-reactive cancellation token.
-    static auto None() noexcept -> CancellationToken
+    VIOLET_API static auto None() noexcept -> CancellationToken
     {
         return CancellationToken(nullptr);
     }
 
     /// Returns **true** if cancellation has been requested from the source.
-    [[nodiscard]] auto RequestsCancellation() const noexcept -> bool;
+    [[nodiscard]] VIOLET_API auto RequestsCancellation() const noexcept -> bool;
 
     /// Blocks the calling thread until cancellation is requested.
     ///
     /// This is the equivalent to writing `while (token.RequestsCancellation()) {}` but without
     /// busy-waiting, it uses the source's condition variable internally.
-    void WaitForCancellation() const noexcept;
+    VIOLET_API void WaitForCancellation() const noexcept;
 
     template<typename Fun>
         requires(callable<Fun, const CancellationRequestedEvent&>

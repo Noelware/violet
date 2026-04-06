@@ -34,7 +34,7 @@ namespace violet::io::experimental {
 /// This stream provides sequential reading, skipping, and availability queries
 /// over a non-owning string ([`Str`]). It is useful for testing or processing
 /// data already in-memory without performing any file or system I/O.
-struct StringInputStream final: public InputStream {
+struct VIOLET_API StringInputStream final: public InputStream {
     /// Constructs an empty `StringInputStream`.
     VIOLET_IMPLICIT StringInputStream() noexcept = default;
 
@@ -47,24 +47,24 @@ struct StringInputStream final: public InputStream {
     }
 
     /// @inheritdoc violet::io::experimental::InputStream::Read(violet::Span<violet::UInt8>)
-    auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
+    VIOLET_API auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Available()
-    [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
+    [[nodiscard]] VIOLET_API auto Available() const noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Skip(violet::UInt8)
-    auto Skip(UInt bytes) noexcept -> Result<void> override;
+    VIOLET_API auto Skip(UInt bytes) noexcept -> Result<void> override;
 
     /// Resets the read position to the start of the string.
-    void Reset() noexcept;
+    VIOLET_API void Reset() noexcept;
 
     /// Returns the current read position within the buffer.
     ///
     /// This is the number of bytes already consumed from the beginning of the buffer.
-    [[nodiscard]] auto Position() const noexcept -> UInt;
+    [[nodiscard]] VIOLET_API auto Position() const noexcept -> UInt;
 
     /// Returns **true** if the stream has reached the end of the buffer.
-    [[nodiscard]] auto EOS() const noexcept -> bool;
+    [[nodiscard]] VIOLET_API auto EOS() const noexcept -> bool;
 
 private:
     Str n_data;

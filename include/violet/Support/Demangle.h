@@ -21,6 +21,9 @@
 
 #pragma once
 
+#include <violet/Language/Macros.h>
+#include <violet/Language/Policy.h>
+
 #include <string>
 
 namespace violet::util {
@@ -32,6 +35,9 @@ namespace violet::util {
 ///
 /// @param name The mangled C++ type to demangle
 /// @return the demangled name, or the name itself if unsupported
-auto DemangleCXXName(const char* name) -> std::string;
+VIOLET_API auto DemangleCXXName(const char* name) -> std::string;
+
+// VIOLET_API auto DemangleRustName(const char* name) -> std::string;
+// VIOLET_API auto DemangleMSVC(const char* name) -> std::string;
 
 } // namespace violet::util

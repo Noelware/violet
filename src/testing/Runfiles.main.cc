@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <violet/Testing/Runfiles.h>
 
-auto main(int argc, char* argv[]) -> int
+VIOLET_API auto main(int argc, char* argv[]) -> int
 {
     testing::InitGoogleTest(&argc, argv);
     violet::testing::runfiles::Init(argv[0]);

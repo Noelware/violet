@@ -58,4 +58,5 @@ cc_library(
         ":runfiles",
         "@googletest//:gtest",
     ],
+    alwayslink = True,
 )

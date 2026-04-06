@@ -61,29 +61,29 @@ struct Iter;
 /// @param fd the raw file descriptor
 /// @param key the key to append
 /// @param value the byte array that presents the value of this extended attribute
-auto Set(io::FileDescriptor::value_type fd, Str key, Span<const UInt8> value) noexcept -> io::Result<void>;
+VIOLET_API auto Set(io::FileDescriptor::value_type fd, Str key, Span<const UInt8> value) noexcept -> io::Result<void>;
 
 /// Retrieves the value of a file's extended attribute. Returns an error if the attribute
 /// doesn't exist depending on platform semantics.
 ///
 /// @param fd the raw file descriptor
 /// @param key the key to append
-auto Get(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<Optional<Vec<UInt8>>>;
+VIOLET_API auto Get(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<Optional<Vec<UInt8>>>;
 
 /// Removes an extended attribute for the file.
 /// @param fd the raw file descriptor
 /// @param key the key to remove
-auto Remove(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<void>;
+VIOLET_API auto Remove(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<void>;
 
 /// Returns a iterator that lists all extended attributes present on this file.
 /// @param fd the raw file descriptor
-auto List(io::FileDescriptor::value_type fd) noexcept -> io::Result<Iter>;
+VIOLET_API auto List(io::FileDescriptor::value_type fd) noexcept -> io::Result<Iter>;
 
 /// A iterator that provides a list of a file's extended attributes.
 ///
 /// If a platform doesn't support extended attributes, [`Next`] will always
 /// return [`violet::Nothing`].
-struct Iter final: public Iterator<Iter> {
+struct VIOLET_API Iter final: public Iterator<Iter> {
     VIOLET_DISALLOW_CONSTRUCTOR(Iter);
     ~Iter() noexcept;
 
@@ -91,7 +91,7 @@ struct Iter final: public Iterator<Iter> {
     using Item = io::Result<Pair<String, Vec<UInt8>>>;
 
     /// Returns the next entry in this iterator.
-    auto Next() noexcept -> Optional<Item>;
+    VIOLET_API auto Next() noexcept -> Optional<Item>;
 
 private:
     friend auto violet::filesystem::xattr::List(io::FileDescriptor::value_type) noexcept -> io::Result<Iter>;

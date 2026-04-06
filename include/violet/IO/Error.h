@@ -221,6 +221,9 @@ namespace violet::io {
 struct Error;
 
 struct VIOLET_API PlatformError final {
+    VIOLET_IMPLICIT_COPY_AND_MOVE(PlatformError);
+    ~PlatformError() = default;
+
 #ifdef VIOLET_WINDOWS
     /// The type that is represented of `GetLastError()` for Windows
     using error_type = UInt64;
@@ -232,11 +235,9 @@ struct VIOLET_API PlatformError final {
     [[nodiscard]] auto AsErrorKind() const noexcept -> ErrorKind;
 
 #if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)
-    /// Returns the raw error that this [`PlatformError`] stores.
     [[nodiscard]] auto Get() const noexcept -> error_type;
 #endif
 
-    /// Returns the string representation of this platform's I/O error code.
     [[nodiscard]] auto ToString() const noexcept -> String;
     friend auto operator<<(std::ostream& os, const PlatformError& self) noexcept -> std::ostream&
     {
@@ -255,6 +256,9 @@ private:
 };
 
 struct VIOLET_API Error final {
+    VIOLET_IMPLICIT_COPY_AND_MOVE(Error);
+    ~Error() = default;
+
     constexpr VIOLET_IMPLICIT Error(ErrorKind kind)
         : n_repr(kind)
     {
@@ -293,7 +297,7 @@ struct VIOLET_API Error final {
 #endif
 
 private:
-    constexpr Error() = default;
+    constexpr VIOLET_IMPLICIT Error() = default;
 
     struct simple_message {
         constexpr VIOLET_EXPLICIT simple_message(ErrorKind kind, Str message)

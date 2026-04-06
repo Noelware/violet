@@ -40,7 +40,7 @@ namespace violet::io::experimental {
 ///
 /// @note This interface doesn't impose buffering semantics. Use the [`BufferedInputStream`]
 ///       class to buffer input.
-struct InputStream {
+struct VIOLET_API InputStream {
     virtual ~InputStream() = default;
 
     /// Reads bytes from the stream into `buf` by attempting to read up to `buf.size()`

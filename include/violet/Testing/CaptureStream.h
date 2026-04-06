@@ -48,7 +48,7 @@ namespace violet::testing {
 ///     assert(stream.Get() == "hello, world!");
 /// } // original `std::cout` buffer is restored
 /// ```
-struct CaptureStream final {
+struct VIOLET_API CaptureStream final {
     VIOLET_DISALLOW_COPY_AND_MOVE(CaptureStream);
 
     /// Constructs a `CaptureStream` that redirects `stream` to an internal buffer.
@@ -63,10 +63,10 @@ struct CaptureStream final {
     ~CaptureStream();
 
     /// Returns the full contents captured from the stream so far as a [`std::string`].
-    auto Get() const noexcept(noexcept(std::declval<std::stringstream>().str())) -> std::string;
+    VIOLET_API auto Get() const noexcept(noexcept(std::declval<std::stringstream>().str())) -> std::string;
 
     /// Returns `true` if nothing has been written to the captured stream.
-    auto Empty() const noexcept(noexcept(std::declval<std::stringstream>().str())) -> bool;
+    VIOLET_API auto Empty() const noexcept(noexcept(std::declval<std::stringstream>().str())) -> bool;
 
     /// Returns `true` if the captured output contains `needle` as a substring.
     ///
@@ -81,8 +81,11 @@ struct CaptureStream final {
     /// assert(cap.Contains("world"));
     /// assert(!cap.Contains("goodbye"));
     /// ```
-    auto Contains(std::string_view needle) const noexcept(noexcept(std::declval<std::stringstream>().str())) -> bool;
-    auto Find(std::string_view needle) const noexcept(noexcept(std::declval<std::stringstream>().str())) -> size_t;
+    VIOLET_API auto Contains(std::string_view needle) const noexcept(noexcept(std::declval<std::stringstream>().str()))
+        -> bool;
+
+    VIOLET_API auto Find(std::string_view needle) const noexcept(noexcept(std::declval<std::stringstream>().str()))
+        -> size_t;
 
 private:
     std::ostream& n_stream;

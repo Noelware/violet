@@ -66,7 +66,7 @@ namespace violet::anyhow {
 /// auto ctx = error.Context("while trying to save `user_data.json`");
 /// std::println("{}", ctx);
 /// ```
-struct Error final {
+struct VIOLET_API Error final {
     VIOLET_DISALLOW_COPY(Error);
 
     VIOLET_IMPLICIT Error(Error&& other) noexcept;
@@ -80,7 +80,7 @@ struct Error final {
     {
     }
 
-    auto Context(Error&& error) && noexcept -> Error;
+    VIOLET_API auto Context(Error&& error) && noexcept -> Error;
 
     /// Produce a new `Error` that adds an additional context frame on top of the
     /// existing chain.
@@ -96,17 +96,17 @@ struct Error final {
     /// ```
     template<typename T>
         requires(!std::same_as<std::decay_t<T>, Error>)
-    auto Context(T object, std::source_location loc = std::source_location::current()) && noexcept -> Error
+    VIOLET_API auto Context(T object, std::source_location loc = std::source_location::current()) && noexcept -> Error
     {
         node_t* next = std::exchange(this->n_node, nullptr);
 
-        Error error{};
+        Error error{ };
         error.n_node = node_t::New(VIOLET_MOVE(object), loc, next);
         return error;
     }
 
     /// Print a human-readable representation of the error to the process' standard error.
-    void Print() const noexcept;
+    VIOLET_API void Print() const noexcept;
 
 private:
     VIOLET_IMPLICIT Error() noexcept = default;

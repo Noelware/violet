@@ -110,10 +110,22 @@ COMPILER_DEFINES = select({
 })
 
 COMPILER_COPTS = select({
-    "@rules_cc//cc/compiler:clang": ["-DNOMINMAX"],
+    "@rules_cc//cc/compiler:clang": [
+        "-DNOMINMAX",
+        "-fvisibility=hidden",
+        "-fvisibility-inlines-hidden",
+    ],
     "@rules_cc//cc/compiler:clang-cl": ["-DNOMINMAX"],
-    "@rules_cc//cc/compiler:gcc": ["-DNOMINMAX"],
-    "@rules_cc//cc/compiler:msvc-cl": ["/DNOMINMAX", "/DWIN32_LEAN_AND_MEAN"],
+    "@rules_cc//cc/compiler:gcc": [
+        "-DNOMINMAX",
+        "-fvisibility=hidden",
+        "-fvisibility-inlines-hidden",
+    ],
+    "@rules_cc//cc/compiler:msvc-cl": [
+        "/DNOMINMAX",
+        "/DWIN32_LEAN_AND_MEAN",
+        "/Zc:dllexportInlines-",
+    ],
     "//conditions:default": [],
 })
 
@@ -184,5 +196,13 @@ def cc_test(name, with_gtest_main = True, **kwargs):
         env = env | SANITIZER_ENV,
         visibility = ["//visibility:private"],
         size = size,
+        **kwargs
+    )
+
+def cc_runfile_test(name, **kwargs):
+    return cc_test(
+        name = name,
+        with_gtest_main = False,
+        srcs = [],
         **kwargs
     )

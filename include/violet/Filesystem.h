@@ -21,11 +21,11 @@
 
 #pragma once
 
-#include "violet/Filesystem/File.h"
-#include "violet/Filesystem/Path.h"
-#include "violet/Filesystem/Permissions.h"
-#include "violet/IO/Error.h"
-#include "violet/Violet.h"
+#include <violet/Filesystem/File.h>
+#include <violet/Filesystem/Path.h>
+#include <violet/Filesystem/Permissions.h>
+#include <violet/IO/Error.h>
+#include <violet/Violet.h>
 
 namespace violet::filesystem {
 
@@ -37,43 +37,43 @@ struct FileType;
 
 /// Creates a single directory at the specified `path`. Fails otherwise if the parent directories don't exist.
 /// @param path the directory to create
-auto CreateDirectory(PathRef path) -> io::Result<void>;
+VIOLET_API auto CreateDirectory(PathRef path) -> io::Result<void>;
 
 /// Recursively creates all directories along the specified `path`. This is equivalent to `mkdir -p`.
 /// @param path the directory to create
-auto CreateDirectories(PathRef path) -> io::Result<void>;
+VIOLET_API auto CreateDirectories(PathRef path) -> io::Result<void>;
 
 /// Removes an empty directory at `path`.
 /// @param path the directory to remove.
-auto RemoveDirectory(PathRef path) -> io::Result<void>;
+VIOLET_API auto RemoveDirectory(PathRef path) -> io::Result<void>;
 
 /// Recursively removes a directory and all of its content, including subdirectories and files.
 /// @param path the directory to remove.
-auto RemoveAllDirs(PathRef path) -> io::Result<void>;
+VIOLET_API auto RemoveAllDirs(PathRef path) -> io::Result<void>;
 
 /// Returns a Violet-style iterator over the entries of the directory in `path`.
 /// @param path the path to iterate over.
-auto ReadDir(PathRef path) -> io::Result<Dirs>;
+VIOLET_API auto ReadDir(PathRef path) -> io::Result<Dirs>;
 
 /// Returns a recursive Violet-style iterator over the entries of the directory in `path`.
 /// @param path the path to iterate over.
-auto WalkDir(PathRef path) -> io::Result<WalkDirs>;
+VIOLET_API auto WalkDir(PathRef path) -> io::Result<WalkDirs>;
 
 /// Creates a new, empty file at `path`. This can overwrite if the file already exists
 /// depending on platform semantics.
 ///
 /// @param path the file to create
-auto CreateFile(PathRef path) -> io::Result<File>;
+VIOLET_API auto CreateFile(PathRef path) -> io::Result<File>;
 
 /// Returns the canonical, absolute path of `path` while resolving symbolic links and relative components.
 /// @param path the file to canonicalize
-auto Canonicalize(PathRef path) -> io::Result<Path>;
+VIOLET_API auto Canonicalize(PathRef path) -> io::Result<Path>;
 
 /// Copies the contents of `srcs` into `dest`.
 /// @param src source file
 /// @param dest destination file
 /// @returns the number of bytes, or an error if any occurs.
-auto Copy(PathRef src, PathRef dest) -> io::Result<UInt64>;
+VIOLET_API auto Copy(PathRef src, PathRef dest) -> io::Result<UInt64>;
 
 /// Returns metadata in the specified `path`, which includes the file size, permissions,
 /// and timestamps.
@@ -81,7 +81,7 @@ auto Copy(PathRef src, PathRef dest) -> io::Result<UInt64>;
 /// @param path the path to retrieve metadata from
 /// @param followSymlinks if true, this will follow the symlink tree.
 /// @returns the metadata about this file, directory, etc. or an error if any occurs.
-auto Metadata(PathRef path, bool followSymlinks = true) -> io::Result<Metadata>;
+VIOLET_API auto Metadata(PathRef path, bool followSymlinks = true) -> io::Result<Metadata>;
 
 /// Returns **true** if the given path exists.
 ///
@@ -91,18 +91,18 @@ auto Metadata(PathRef path, bool followSymlinks = true) -> io::Result<Metadata>;
 /// instead.
 ///
 /// @param path the path to check the existence of.
-auto Exists(PathRef path) -> bool;
+VIOLET_API auto Exists(PathRef path) -> bool;
 
 /// Returns **true** if the given path exists.
 /// @param path the path to check the existence of.
-auto TryExists(PathRef path) -> io::Result<bool>;
+VIOLET_API auto TryExists(PathRef path) -> io::Result<bool>;
 
-auto RemoveFile(PathRef path) -> io::Result<void>;
-auto Rename(PathRef old, PathRef path) -> io::Result<void>;
-auto SetPermissions(PathRef path, Permissions perms) -> io::Result<void>;
+VIOLET_API auto RemoveFile(PathRef path) -> io::Result<void>;
+VIOLET_API auto Rename(PathRef old, PathRef path) -> io::Result<void>;
+VIOLET_API auto SetPermissions(PathRef path, Permissions perms) -> io::Result<void>;
 
 /// Returns **true** if the given path is an executable file.
-auto Executable(PathRef path) -> io::Result<bool>;
+VIOLET_API auto Executable(PathRef path) -> io::Result<bool>;
 
 /// A entry from walking through a directory.
 struct VIOLET_API DirEntry final {
@@ -122,7 +122,7 @@ struct VIOLET_API Dirs final {
     using Item = io::Result<DirEntry>;
 
     /// Returns the next entry in the filesystem directory.
-    auto Next() noexcept -> Optional<Item>;
+    VIOLET_API auto Next() noexcept -> Optional<Item>;
 
 private:
     friend auto violet::filesystem::ReadDir(PathRef) -> io::Result<Dirs>;
@@ -146,7 +146,7 @@ struct VIOLET_API WalkDirs final {
     using Item = io::Result<DirEntry>;
 
     /// Returns the next entry in the filesystem directory.
-    auto Next() noexcept -> Optional<Item>;
+    VIOLET_API auto Next() noexcept -> Optional<Item>;
 
 private:
     friend auto violet::filesystem::WalkDir(PathRef) -> io::Result<WalkDirs>;

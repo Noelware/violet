@@ -144,6 +144,42 @@ namespace iter {
     using TypeOf = optional_type_t<decltype(std::declval<T>().Next())>;
 
     namespace detail {
+        template<typename C>
+        concept __has_member_begin_end = requires(C& cnt) {
+            { cnt.begin() };
+            { cnt.end() };
+        };
+
+        template<typename C>
+        concept __has_adl_begin_end = requires(C& cnt) {
+            { std::begin(cnt) };
+            { std::end(cnt) };
+        };
+
+        template<typename C>
+        auto begin(C& cnt)
+        {
+            if constexpr (__has_member_begin_end<C>) {
+                return cnt.begin();
+            } else if constexpr (__has_adl_begin_end<C>) {
+                return std::begin(cnt);
+            } else {
+                VIOLET_UNREACHABLE();
+            }
+        }
+
+        template<typename C>
+        auto end(C& cnt)
+        {
+            if constexpr (__has_member_begin_end<C>) {
+                return cnt.end();
+            } else if constexpr (__has_adl_begin_end<C>) {
+                return std::end(cnt);
+            } else {
+                VIOLET_UNREACHABLE();
+            }
+        }
+
         /// Sentinel object used to mark the end of iteration when integrating a
         /// Violet iterator with C++ range-based for loops.
         ///
@@ -152,7 +188,7 @@ namespace iter {
         /// ```cpp
         /// for (auto x : my_iter) { ... }
         /// ```
-        struct sentinel final {};
+        struct sentinel final { };
 
         /// Adapter that exposes a Violet iterator as a C++ range iterator.
         ///
@@ -222,6 +258,45 @@ namespace iter {
             It n_current;
             It n_end;
         };
+
+        template<typename Container>
+        struct OwnedSTLIterator final: public Iterator<OwnedSTLIterator<Container>> {
+            VIOLET_DISALLOW_CONSTRUCTOR(OwnedSTLIterator);
+            VIOLET_DISALLOW_COPY(OwnedSTLIterator);
+            ~OwnedSTLIterator() = default;
+
+            using container_type = std::remove_cvref_t<Container>;
+            using iterator = decltype(std::declval<Container>().begin());
+            using Item = typename STLCompatibleIterator<iterator>::Item;
+
+            VIOLET_EXPLICIT OwnedSTLIterator(Container&& cnt) noexcept
+                : n_container(VIOLET_MOVE(cnt))
+            {
+                if constexpr (__has_member_begin_end<container_type>) {
+                    this->n_inner = STLCompatibleIterator(this->n_container.begin(), this->n_container.end());
+                } else if constexpr (__has_adl_begin_end<container_type>) {
+                    this->n_inner = STLCompatibleIterator(std::begin(this->n_container), std::end(this->n_container));
+                }
+            }
+
+            VIOLET_IMPLICIT OwnedSTLIterator(OwnedSTLIterator&& other) noexcept
+                : n_container(VIOLET_MOVE(other.n_container))
+                , n_inner(this->n_container.begin(), this->n_container.end())
+            {
+            }
+
+            auto operator=(OwnedSTLIterator&&) noexcept -> OwnedSTLIterator& = delete;
+
+            auto Next() noexcept -> Optional<Item>
+            {
+                return this->n_inner.Next();
+            }
+
+        private:
+            container_type n_container;
+            STLCompatibleIterator<iterator> n_inner;
+        };
+
     } // namespace detail
 
 } // namespace iter
@@ -238,7 +313,7 @@ namespace iter {
 /// violet::SizeHint h2(5, 10); // 5..Some(10)
 /// violet::SizeHint h3(3, Nothing); // 3..None
 /// ```
-struct SizeHint final {
+struct VIOLET_API SizeHint final {
     UInt Low = 0; ///< Minimum number of elements that are expected.
     Optional<UInt> High = Nothing; ///< An optional upper bound.
 
@@ -287,7 +362,7 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::peekable()`].
     ///
     /// [`Iterator::peekable()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.peekable
-    auto Peekable() & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Peekable() & noexcept;
 
     /// Adapter that allows inspecting the next element without consuming it.
     ///
@@ -298,13 +373,13 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::peekable()`].
     ///
     /// [`Iterator::peekable()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.peekable
-    auto Peekable() && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Peekable() && noexcept;
 
     /// Adapter that yields `(index, item)` pairs.
     ///
     /// The index starts at zero and increments for each value produced.
     /// Equivalent to Rust's `Iterator::enumerate()`.
-    auto Enumerate() & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Enumerate() & noexcept;
 
     /// Adapter that yields `(index, item)` pairs.
     ///
@@ -312,7 +387,7 @@ struct Iterator {
     /// Equivalent to Rust's `Iterator::enumerate()`.
     ///
     /// [`Iterator::enumerate()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.enumerate
-    auto Enumerate() && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Enumerate() && noexcept;
 
     /// Adapter that transforms items using a mapping function.
     ///
@@ -329,7 +404,7 @@ struct Iterator {
     /// [`Iterator::map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.map
     template<typename Fun>
         requires callable<Fun, iter::TypeOf<Impl>>
-    auto Map(Fun&&) & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Map(Fun&&) & noexcept;
 
     /// Adapter that transforms items using a mapping function.
     ///
@@ -346,7 +421,7 @@ struct Iterator {
     /// [`Iterator::map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.map
     template<typename Fun>
         requires callable<Fun, iter::TypeOf<Impl>>
-    auto Map(Fun&& fun) && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Map(Fun&& fun) && noexcept;
 
     /// Adapter that yields only items for which the predicate returns `true`.
     ///
@@ -355,7 +430,7 @@ struct Iterator {
     /// [`Iterator::filter()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter
     template<typename Pred>
         requires callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>
-    auto Filter(Pred&& pred) & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Filter(Pred&& pred) & noexcept;
 
     /// Adapter that yields only items for which the predicate returns `true`.
     ///
@@ -364,31 +439,31 @@ struct Iterator {
     /// [`Iterator::filter()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter
     template<typename Pred>
         requires callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>
-    auto Filter(Pred&& pred) && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Filter(Pred&& pred) && noexcept;
 
     /// Skips the first `skip` items.
     ///
     /// Equivalent to Rust's [`Iterator::skip()`].
     /// [`Iterator::skip()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.skip
-    auto Skip(UInt skip) & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Skip(UInt skip) & noexcept;
 
     /// Skips the first `skip` items.
     ///
     /// Equivalent to Rust's [`Iterator::skip()`].
     /// [`Iterator::skip()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.skip
-    auto Skip(UInt skip) && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Skip(UInt skip) && noexcept;
 
     /// Yields at most `take` items from the iterator.
     ///
     /// Equivalent to Rust's [`Iterator::take()`].
     /// [`Iterator::take()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.take
-    auto Take(UInt take) & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Take(UInt take) & noexcept;
 
     /// Yields at most `take` items from the iterator.
     ///
     /// Equivalent to Rust's [`Iterator::take()`].
     /// [`Iterator::take()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.take
-    auto Take(UInt take) && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Take(UInt take) && noexcept;
 
     /// Reduces the iterator to a single accumulated value.
     ///
@@ -401,8 +476,8 @@ struct Iterator {
     template<typename Acc, typename Fun>
         requires(callable<Fun, const Acc&, iter::TypeOf<Impl>>
             && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
-    auto Fold(Acc init, Fun&& fun) & noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Fold(Acc init,
+        Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
     {
         auto acc = VIOLET_MOVE(init);
         while (auto elem = getThisObject().Next()) {
@@ -423,8 +498,8 @@ struct Iterator {
     template<typename Acc, typename Fun>
         requires(callable<Fun, const Acc&, iter::TypeOf<Impl>>
             && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
-    auto Fold(Acc init, Fun&& fun) && noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Fold(Acc init,
+        Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
     {
         auto acc = VIOLET_MOVE(init);
         while (auto elem = getThisObject().Next()) {
@@ -441,8 +516,8 @@ struct Iterator {
     template<typename Acc, typename Fun>
         requires(DoubleEndedIterable<Impl> && callable<Fun, const Acc&, iter::TypeOf<Impl>>
             && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
-    auto RFold(Acc init, Fun&& fun) & noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto RFold(Acc init,
+        Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
     {
         auto acc = VIOLET_MOVE(init);
         while (auto elem = getThisObject().NextBack()) {
@@ -459,8 +534,8 @@ struct Iterator {
     template<typename Acc, typename Fun>
         requires(DoubleEndedIterable<Impl> && callable<Fun, const Acc&, iter::TypeOf<Impl>>
             && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
-    auto RFold(Acc init, Fun&& fun) && noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto RFold(Acc init,
+        Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
     {
         auto acc = VIOLET_MOVE(init);
         while (auto elem = getThisObject().NextBack()) {
@@ -477,8 +552,9 @@ struct Iterator {
     ///
     /// @returns Optional index of the item, or `Nothing` if no item matches.
     template<typename Pred>
-    auto Position(Pred&& pred) & noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()))) -> Optional<UInt>
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Position(
+        Pred&& pred) & noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+        -> Optional<UInt>
     {
         UInt pos = 0;
         while (auto value = getThisObject().Next()) {
@@ -499,8 +575,9 @@ struct Iterator {
     ///
     /// @returns Optional index of the item, or `Nothing` if no item matches.
     template<typename Pred>
-    auto Position(Pred&& pred) && noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>()))) -> Optional<UInt>
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Position(
+        Pred&& pred) && noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+        -> Optional<UInt>
     {
         UInt pos = 0;
         while (auto value = getThisObject().Next()) {
@@ -520,7 +597,8 @@ struct Iterator {
     /// [`Iterator::find()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.find
     template<typename Pred>
         requires(callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>)
-    auto Find(Pred&& pred) & noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Find(
+        Pred&& pred) & noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
@@ -528,7 +606,7 @@ struct Iterator {
             }
         }
 
-        return decltype(Optional<iter::TypeOf<Impl>>{})(Nothing);
+        return decltype(Optional<iter::TypeOf<Impl>>{ })(Nothing);
     }
 
     /// Finds the first item that satisfies the given predicate.
@@ -537,8 +615,8 @@ struct Iterator {
     /// [`Iterator::find()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.find
     template<typename Pred>
         requires(callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>)
-    auto Find(Pred&& pred) && noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Find(
+        Pred&& pred) && noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
@@ -546,7 +624,7 @@ struct Iterator {
             }
         }
 
-        return decltype(Optional<iter::TypeOf<Impl>>{})(Nothing);
+        return decltype(Optional<iter::TypeOf<Impl>>{ })(Nothing);
     }
 
     /// Applies a function that returns an `Optional` and returns the first `Some` value.
@@ -555,7 +633,8 @@ struct Iterator {
     /// [`Iterator::find_map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.find_map
     template<typename Fun>
         requires(callable<Fun, iter::TypeOf<Impl>> && is_optional_v<std::invoke_result_t<Fun, iter::TypeOf<Impl>>>)
-    auto FindMap(Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto FindMap(
+        Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
     {
         using Ret = std::invoke_result_t<Fun, iter::TypeOf<Impl>>;
         using U = optional_type_t<Ret>;
@@ -575,7 +654,8 @@ struct Iterator {
     /// [`Iterator::find_map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.find_map
     template<typename Fun>
         requires(callable<Fun, iter::TypeOf<Impl>> && is_optional_v<std::invoke_result_t<Fun, iter::TypeOf<Impl>>>)
-    auto FindMap(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto FindMap(
+        Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
     {
         using Ret = std::invoke_result_t<Fun, iter::TypeOf<Impl>>;
         using U = optional_type_t<Ret>;
@@ -595,7 +675,8 @@ struct Iterator {
     /// [`Iterator::any()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.any
     template<typename Pred>
         requires(callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>)
-    auto Any(Pred&& pred) & noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Any(
+        Pred&& pred) & noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value))
@@ -611,7 +692,8 @@ struct Iterator {
     /// [`Iterator::any()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.any
     template<typename Pred>
         requires(callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>)
-    auto Any(Pred&& pred) && noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Any(
+        Pred&& pred) && noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value))
@@ -627,7 +709,8 @@ struct Iterator {
     /// [`Iterator::inspect()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.inspect
     template<typename Fun>
         requires(callable<Fun, iter::TypeOf<Impl>> && callable_returns<Fun, void, iter::TypeOf<Impl>>)
-    auto Inspect(Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Inspect(
+        Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
     {
         while (auto value = getThisObject().Next()) {
             std::invoke(VIOLET_FWD(Fun, fun), *value);
@@ -642,7 +725,8 @@ struct Iterator {
     /// [`Iterator::inspect()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.inspect
     template<typename Fun>
         requires(callable<Fun, iter::TypeOf<Impl>> && callable_returns<Fun, void, iter::TypeOf<Impl>>)
-    auto Inspect(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Inspect(
+        Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<iter::TypeOf<Impl>>())))
     {
         while (auto value = getThisObject().Next()) {
             std::invoke(VIOLET_FWD(Fun, fun), *value);
@@ -656,7 +740,8 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::count()`].
     ///
     /// [`Iterator::count()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.count
-    auto Count() & noexcept -> UInt
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Count() & noexcept
+        -> UInt
     {
         UInt counter = 0;
         while (auto _ = getThisObject().Next()) { // NOLINT(readability-identifier-length)
@@ -671,7 +756,8 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::count()`].
     ///
     /// [`Iterator::count()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.count
-    auto Count() && noexcept -> UInt
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Count() && noexcept
+        -> UInt
     {
         UInt counter = 0;
         while (auto _ = getThisObject().Next()) { // NOLINT(readability-identifier-length)
@@ -686,7 +772,8 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::advance_by()`].
     ///
     /// [`Iterator::advance_by()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.advance_by
-    auto AdvanceBy(UInt nth) & noexcept -> Result<void, UInt>
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto AdvanceBy(
+        UInt nth) & noexcept -> Result<void, UInt>
     {
         for (UInt i = 0; i < nth; i++) {
             if (!getThisObject().Next()) {
@@ -694,7 +781,7 @@ struct Iterator {
             }
         }
 
-        return {};
+        return { };
     }
 
     /// Advances the iterator by `nth` elements.
@@ -702,7 +789,8 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::advance_by()`].
     ///
     /// [`Iterator::advance_by()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.advance_by
-    auto AdvanceBy(UInt nth) && noexcept -> Result<void, UInt>
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto AdvanceBy(
+        UInt nth) && noexcept -> Result<void, UInt>
     {
         for (UInt i = 0; i < nth; i++) {
             if (!getThisObject().Next()) {
@@ -710,7 +798,7 @@ struct Iterator {
             }
         }
 
-        return {};
+        return { };
     }
 
     /// Returns the `nth` element of the iterator.
@@ -718,7 +806,7 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::nth()`].
     ///
     /// [`Iterator::nth()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.nth
-    auto Nth(UInt nth) & noexcept
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Nth(UInt nth) & noexcept
     {
         if (this->AdvanceBy(nth)) {
             return getThisObject().Next();
@@ -732,7 +820,8 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::nth()`].
     ///
     /// [`Iterator::nth()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.nth
-    auto Nth(UInt nth) && noexcept
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Nth(
+        UInt nth) && noexcept
     {
         if (this->AdvanceBy(nth)) {
             return getThisObject().Next();
@@ -743,7 +832,7 @@ struct Iterator {
 
     /// Collects the iterator elements into a container.
     template<typename Container>
-    auto Collect()
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Collect()
     {
         if constexpr (collectable<Container, iter::TypeOf<Impl>>) {
             Container out;
@@ -756,10 +845,10 @@ struct Iterator {
             }
 
             return out;
-        } else if constexpr (requires { typename Container::value_type{}; } && (std::tuple_size_v<Container>) > 0) {
+        } else if constexpr (requires { typename Container::value_type{ }; } && (std::tuple_size_v<Container>) > 0) {
             constexpr UInt N = std::tuple_size_v<Container>; // NOLINT(readability-identifier-length)
 
-            Container out{};
+            Container out{ };
             UInt idx = 0;
             while (auto value = getThisObject().Next()) {
                 if (idx >= N) {
@@ -782,7 +871,7 @@ struct Iterator {
             return getThisObject().SizeHint();
         }
 
-        return {};
+        return { };
     }
 
     auto begin()
@@ -792,7 +881,7 @@ struct Iterator {
 
     auto end()
     {
-        return iter::detail::sentinel{};
+        return iter::detail::sentinel{ };
     }
 
 private:
@@ -809,8 +898,8 @@ private:
 
 /// Adapts a container into a Violet iterator.
 ///
-/// Backed by a `STLCompatibleIterator`, this allows bridging existing STL
-/// containers into Violet's iterator API.
+/// Backed by a STL-compatible C++ iterator, this allows bridging existing STL
+/// containers into Violet's Iterator framework.
 ///
 /// # Examples
 ///
@@ -821,15 +910,19 @@ private:
 /// for (auto x : it) { /* ... */ }
 /// ```
 template<typename Container>
-auto MkIterable(const Container& cnt)
+    requires(iter::detail::__has_adl_begin_end<Container> || iter::detail::__has_member_begin_end<Container>)
+inline auto MkIterable(const Container& cnt) -> decltype(auto)
 {
-    return iter::detail::STLCompatibleIterator(std::begin(cnt), std::end(cnt));
+    auto begin = iter::detail::begin(cnt);
+
+    using iterator = decltype(begin);
+    return iter::detail::STLCompatibleIterator<iterator>(begin, iter::detail::end(cnt));
 }
 
 /// Adapts a container into a Violet iterator.
 ///
-/// Backed by a `STLCompatibleIterator`, this allows bridging existing STL
-/// containers into Violet's iterator API.
+/// Backed by a STL-compatible C++ iterator, this allows bridging existing STL
+/// containers into Violet's Iterator framework.
 ///
 /// # Examples
 ///
@@ -840,9 +933,11 @@ auto MkIterable(const Container& cnt)
 /// for (auto x : it) { /* ... */ }
 /// ```
 template<typename Container>
-auto MkIterable(Container&& cnt) // NOLINT
+    requires(!std::is_lvalue_reference_v<Container>
+        && (iter::detail::__has_adl_begin_end<Container> || iter::detail::__has_member_begin_end<Container>))
+inline auto MkIterable(Container&& cnt) -> decltype(auto)
 {
-    return iter::detail::STLCompatibleIterator(std::begin(cnt), std::end(cnt));
+    return iter::detail::OwnedSTLIterator<std::remove_cvref_t<Container>>(VIOLET_FWD(Container, cnt));
 }
 
 } // namespace violet

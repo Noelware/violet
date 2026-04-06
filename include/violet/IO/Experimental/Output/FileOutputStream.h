@@ -28,19 +28,19 @@
 
 namespace violet::io::experimental {
 
-struct FileOutputStream final: public OutputStream {
+struct VIOLET_API FileOutputStream final: public OutputStream {
     VIOLET_DISALLOW_CONSTRUCTOR(FileOutputStream);
     VIOLET_IMPLICIT FileOutputStream(filesystem::File&& file) noexcept;
 
     template<std::convertible_to<filesystem::PathRef> Path>
     static auto Open(Path&& path) noexcept -> io::Result<FileOutputStream>
     {
-        filesystem::File file = VIOLET_TRY(filesystem::OpenOptions{}.Create().Write().Open(VIOLET_FWD(Path, path)));
+        filesystem::File file = VIOLET_TRY(filesystem::OpenOptions{ }.Create().Write().Open(VIOLET_FWD(Path, path)));
         return FileOutputStream(VIOLET_MOVE(file));
     }
 
-    auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
-    auto Flush() noexcept -> io::Result<void> override;
+    VIOLET_API auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
+    VIOLET_API auto Flush() noexcept -> io::Result<void> override;
 
 private:
     filesystem::File n_file;

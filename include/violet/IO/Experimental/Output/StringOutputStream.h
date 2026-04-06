@@ -26,15 +26,15 @@
 
 namespace violet::io::experimental {
 
-struct StringOutputStream final: public OutputStream {
+struct VIOLET_API StringOutputStream final: public OutputStream {
     VIOLET_IMPLICIT StringOutputStream() noexcept = default;
     VIOLET_IMPLICIT StringOutputStream(String buf) noexcept;
 
-    auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
-    auto Flush() noexcept -> io::Result<void> override;
+    VIOLET_API auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> override;
+    VIOLET_API auto Flush() noexcept -> io::Result<void> override;
 
-    [[nodiscard]] auto Get() const noexcept -> Str;
-    [[nodiscard]] auto Take() const&& noexcept -> String;
+    [[nodiscard]] VIOLET_API auto Get() const noexcept -> Str;
+    [[nodiscard]] VIOLET_API auto Take() const&& noexcept -> String;
 
 private:
     String n_buf;

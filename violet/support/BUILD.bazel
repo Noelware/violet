@@ -26,7 +26,10 @@ cc_library(
     srcs = ["//src/support:demangle.cc"],
     hdrs = ["//include/violet/Support:Demangle.h"],
     visibility = ["//visibility:public"],
-    deps = ["//violet:macros"],
+    deps = [
+        "//violet:macros",
+        "//violet:policy_checks",
+    ],
 )
 
 cc_library(

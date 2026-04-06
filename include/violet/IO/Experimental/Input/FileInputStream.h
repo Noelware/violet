@@ -49,7 +49,7 @@ namespace violet::io::experimental {
 /// UInt8 buf[1024];
 /// auto action = stream->Read(buf);
 /// ```
-struct FileInputStream final: public InputStream {
+struct VIOLET_API FileInputStream final: public InputStream {
     VIOLET_DISALLOW_CONSTRUCTOR(FileInputStream);
 
     /// Constructs a `FileInputStream` from a [`filesystem::File`].
@@ -64,18 +64,18 @@ struct FileInputStream final: public InputStream {
     template<std::convertible_to<filesystem::PathRef> Path>
     static auto Open(Path&& path) noexcept -> Result<FileInputStream>
     {
-        filesystem::File file = VIOLET_TRY(filesystem::OpenOptions{}.Read(true).Open(VIOLET_FWD(Path, path)));
+        filesystem::File file = VIOLET_TRY(filesystem::OpenOptions{ }.Read(true).Open(VIOLET_FWD(Path, path)));
         return FileInputStream(VIOLET_MOVE(file));
     }
 
     /// @inheritdoc violet::io::experimental::InputStream::Read(violet::Span<violet::UInt8>)
-    auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
+    VIOLET_API auto Read(Span<UInt8> buf) noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Available()
-    [[nodiscard]] auto Available() const noexcept -> Result<UInt> override;
+    [[nodiscard]] VIOLET_API auto Available() const noexcept -> Result<UInt> override;
 
     /// @inheritdoc violet::io::experimental::InputStream::Skip(violet::UInt8)
-    auto Skip(UInt bytes) noexcept -> Result<void> override;
+    VIOLET_API auto Skip(UInt bytes) noexcept -> Result<void> override;
 
 private:
     filesystem::File n_file;

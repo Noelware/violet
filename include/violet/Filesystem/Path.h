@@ -21,10 +21,10 @@
 
 #pragma once
 
-#include "violet/Container/Optional.h"
-#include "violet/IO/Descriptor.h"
-#include "violet/IO/Error.h"
-#include "violet/Violet.h"
+#include <violet/Container/Optional.h>
+#include <violet/IO/Descriptor.h>
+#include <violet/IO/Error.h>
+#include <violet/Violet.h>
 
 #include <ostream>
 
@@ -443,12 +443,12 @@ struct VIOLET_API PathRef final: public BasePath<PathRef, Str> {
     /// Constructs a [`Path`] from a file descriptor.
     /// @param descriptor file descriptor from a file that was passed down from the OS.
     /// @returns I/O result of the found path from the descriptor, or an error.
-    static auto FromFileDescriptor(const io::FileDescriptor& descriptor) -> io::Result<Path>;
+    VIOLET_API static auto FromFileDescriptor(const io::FileDescriptor& descriptor) -> io::Result<Path>;
 
     /// Canonicalizes this path by removing redundant `.` and `..` components, as well as consecutive path separators.
     ///
     /// ## Remarks
-    /// This ***will not** check the filesystem or resolve symlinks; it operates purely on the string representation.
+    /// This **will not** check the filesystem or resolve symlinks; it operates purely on the string representation.
     /// Use the [`violet::filesystem::Canonicalize`] method to check the filesystem or resolve symlinks instead.
     ///
     /// ## Example
@@ -467,7 +467,7 @@ struct VIOLET_API PathRef final: public BasePath<PathRef, Str> {
     /// * Consecutive slashes (//) are reduced to a single separator.
     /// * The method preserves the root directory and drive prefixes.
     /// * If the path is empty, it remains empty.
-    [[nodiscard]] auto Canonicalize() const noexcept -> Path;
+    [[nodiscard]] VIOLET_API auto Canonicalize() const noexcept -> Path;
 
     constexpr VIOLET_EXPLICIT operator Str() const noexcept
     {
@@ -529,7 +529,7 @@ struct VIOLET_API Path final: public BasePath<Path, String> {
     /// Constructs a [`Path`] from a file descriptor.
     /// @param descriptor file descriptor from a file that was passed down from the OS.
     /// @returns I/O result of the found path from the descriptor, or an error.
-    static auto FromFileDescriptor(const io::FileDescriptor& descriptor) -> io::Result<Path>;
+    VIOLET_API static auto FromFileDescriptor(const io::FileDescriptor& descriptor) -> io::Result<Path>;
 
     /// Canonicalizes this path by removing redundant `.` and `..` components, as well as consecutive path separators.
     ///
@@ -556,7 +556,7 @@ struct VIOLET_API Path final: public BasePath<Path, String> {
     /// * Consecutive slashes (//) are reduced to a single separator.
     /// * The method preserves the root directory and drive prefixes.
     /// * If the path is empty, it remains empty.
-    void Canonicalize() noexcept
+    VIOLET_API void Canonicalize() noexcept
     {
         this->n_path = detail::canonicalizeImpl(this->n_path);
     }
@@ -609,7 +609,7 @@ template<typename Derived, typename StringType>
 auto BasePath<Derived, StringType>::Filename() const noexcept -> String
 {
     if (Empty()) {
-        return {};
+        return { };
     }
 
     auto [pos, val] = detail::computeTrailingSlashPosition(getThisObject().storage());
@@ -720,7 +720,7 @@ auto BasePath<Derived, StringType>::WithExtension(Str ext) const noexcept -> Pat
 {
     String stem = this->Stem();
     if (stem.empty()) {
-        return {};
+        return { };
     }
 
     String final = String(ext);
@@ -735,7 +735,7 @@ template<typename Derived, typename StringType>
 auto BasePath<Derived, StringType>::Join(Str rhs) const noexcept -> Path
 {
     if (rhs.empty()) {
-        return {};
+        return { };
     }
 
     Path newPath(rhs);

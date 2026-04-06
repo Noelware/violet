@@ -40,11 +40,11 @@ namespace violet::testing::runfiles {
 
 /// Initializes the runfiles system, this is only useful when Bazel is the
 /// build system for running tests.
-void Init(CStr argv0);
+VIOLET_API void Init(CStr argv0);
 
 /// Returns the absolute path of a binary from the runfiles system.
 /// @param path the path to locate
 /// @returns absolute path, if any.
-auto Get(Str path) -> Optional<String>;
+VIOLET_API auto Get(Str path) -> Optional<String>;
 
 } // namespace violet::testing::runfiles

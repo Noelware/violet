@@ -94,10 +94,10 @@ concept nested_result = instanceof_v<Result, T> && std::same_as<typename T::erro
 /// static_assert(!violet::is_result_v<int>);
 /// ```
 template<typename T>
-struct is_result: std::false_type {};
+struct VIOLET_API is_result: std::false_type { };
 
 template<typename T, typename E>
-struct is_result<Result<T, E>>: std::true_type {};
+struct VIOLET_API is_result<Result<T, E>>: std::true_type { };
 
 template<typename T>
 static constexpr bool is_result_v = is_result<T>::value;
@@ -109,11 +109,11 @@ static constexpr bool is_result_v = is_result<T>::value;
 ///
 /// @tparam T The type from which to extract an inner value and error type.
 template<typename T>
-struct result_type;
+struct VIOLET_API result_type;
 
 /// Specialization of [`result_type`] for [`violet::Result`].
 template<typename U, typename E>
-struct result_type<Result<U, E>> final {
+struct VIOLET_API result_type<Result<U, E>> final {
     using value_type = U;
     using error_type = E;
 };
@@ -196,25 +196,25 @@ struct VIOLET_API Err final {
     }
 
     /// [**lvalue**] Access the contained error.
-    constexpr auto Error() & noexcept -> E&
+    constexpr auto Error() & noexcept VIOLET_LIFETIMEBOUND -> E&
     {
         return this->n_value;
     }
 
     /// [**rvalue**] Access the contained error.
-    constexpr auto Error() && noexcept -> E&&
+    constexpr auto Error() && noexcept VIOLET_LIFETIMEBOUND -> E&&
     {
         return VIOLET_MOVE(this->n_value);
     }
 
     /// [const **lvalue**] Access the contained error.
-    constexpr auto Error() const& noexcept -> const E&
+    constexpr auto Error() const& noexcept VIOLET_LIFETIMEBOUND -> const E&
     {
         return this->n_value;
     }
 
     /// [const **rvalue**] Access the contained error.
-    constexpr auto Error() const&& noexcept -> const E&&
+    constexpr auto Error() const&& noexcept VIOLET_LIFETIMEBOUND -> const E&&
     {
         return VIOLET_MOVE(this->n_value);
     }
@@ -435,7 +435,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Ok` variant.
-    constexpr auto Value() noexcept -> T&
+    [[nodiscard]] constexpr auto Value() noexcept VIOLET_LIFETIMEBOUND -> T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
         return this->n_storage.Value;
@@ -445,7 +445,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Ok` variant.
-    constexpr auto Value() const noexcept -> const T&
+    [[nodiscard]] constexpr auto Value() const noexcept VIOLET_LIFETIMEBOUND -> const T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
         return this->n_storage.Value;
@@ -455,7 +455,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Err` variant.
-    constexpr auto Error() & noexcept -> E&
+    [[nodiscard]] constexpr auto Error() & noexcept VIOLET_LIFETIMEBOUND -> E&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return this->n_storage.Error.Error();
@@ -465,7 +465,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Err` variant.
-    constexpr auto Error() const& noexcept -> const E&
+    [[nodiscard]] constexpr auto Error() const& noexcept VIOLET_LIFETIMEBOUND -> const E&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return this->n_storage.Error.Error();
@@ -475,7 +475,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Err` variant.
-    constexpr auto Error() const&& noexcept -> const E&&
+    [[nodiscard]] constexpr auto Error() const&& noexcept VIOLET_LIFETIMEBOUND -> const E&&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return VIOLET_MOVE(this->n_storage.Error.Error());
@@ -485,7 +485,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Err` variant.
-    constexpr auto Error() && noexcept -> E&&
+    [[nodiscard]] constexpr auto Error() && noexcept VIOLET_LIFETIMEBOUND -> E&&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return VIOLET_MOVE(this->n_storage.Error.Error());
@@ -497,7 +497,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// [`Result::transpose`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.transpose).
     template<typename U>
         requires(nested_result<Result<U, E>, E>)
-    constexpr auto Transpose() && -> Result<U, E>
+    [[nodiscard]] constexpr auto Transpose() && -> Result<U, E>
     {
         if (this->Ok()) {
             return VIOLET_MOVE(Value());
@@ -513,7 +513,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// [`Result::and_then`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.and_then).
     template<typename Fun>
         requires(callable<Fun>)
-    constexpr auto AndThen(Fun&& fun) && -> Result<std::invoke_result_t<Fun, T>, E>
+    [[nodiscard]] constexpr auto AndThen(Fun&& fun) && -> Result<std::invoke_result_t<Fun, T>, E>
     {
         using Ret = std::invoke_result_t<Fun, T>;
         if (this->Ok()) {
@@ -526,8 +526,8 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Invokes `fun` with the contained `Ok` value (if present) and returns `*this` unchanged.
     template<typename Fun>
         requires(callable<Fun> && callable_returns<Fun, void, const T&>)
-    constexpr auto Inspect(Fun&& fun) noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T>())))
-        -> Result&
+    [[nodiscard]] constexpr auto Inspect(Fun&& fun) noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T>()))) -> Result&
     {
         if (this->Ok()) {
             std::invoke(VIOLET_FWD(Fun, fun), Value());
@@ -539,8 +539,8 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Invokes `fun` with the contained `Err` value (if present) and returns `*this` unchanged.
     template<typename Fun>
         requires(callable<Fun> && callable_returns<Fun, void, const E&>)
-    constexpr auto InspectErr(Fun&& fun) noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<E>())))
-        -> Result&
+    [[nodiscard]] constexpr auto InspectErr(Fun&& fun) noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<E>()))) -> Result&
     {
         if (this->Ok()) {
             std::invoke(VIOLET_FWD(Fun, fun), Error());
@@ -552,8 +552,8 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Returns `true` if `Ok` and predicate returns `true`.
     template<typename Pred>
         requires(callable<Pred> && callable_returns<Pred, bool, const T&>)
-    constexpr auto OkAnd(Pred&& pred) const noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<T>())))
-        -> bool
+    [[nodiscard]] constexpr auto OkAnd(Pred&& pred) const
+        noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<T>()))) -> bool
     {
         return this->Ok() && std::invoke(VIOLET_FWD(Pred, pred), Value());
     }
@@ -561,8 +561,8 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Returns `true` if `Err` and predicate returns `true`.
     template<typename Pred>
         requires(callable<Pred> && callable_returns<Pred, bool, const E&>)
-    constexpr auto ErrAnd(Pred&& pred) const noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<E>())))
-        -> bool
+    [[nodiscard]] constexpr auto ErrAnd(Pred&& pred) const
+        noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<E>()))) -> bool
     {
         return this->Err() && std::invoke(VIOLET_FWD(Pred, pred), Error());
     }
@@ -892,25 +892,25 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> T
     {
         return this->Ok() ? this->n_storage.Value : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> T
     {
         return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> T
     {
         return this->Ok() ? this->n_storage.Value : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
     {
         return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
     }
@@ -919,7 +919,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    constexpr auto UnwrapUnchecked(Unsafe) & noexcept -> T&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> T&
     {
         return this->n_storage.Value;
     }
@@ -928,7 +928,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> const T&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const T&
     {
         return this->n_storage.Value;
     }
@@ -937,7 +937,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    constexpr auto UnwrapUnchecked(Unsafe) && noexcept -> T&&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> T&&
     {
         return VIOLET_MOVE(this->n_storage.Value);
     }
@@ -946,7 +946,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept -> const T&&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
     {
         return VIOLET_MOVE(this->n_storage.Value);
     }
@@ -955,7 +955,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no error is present.
-    constexpr auto UnwrapErrUnchecked(Unsafe) & noexcept -> T&
+    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> E&
     {
         return this->n_storage.Error.Error();
     }
@@ -964,16 +964,16 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no error is present.
-    constexpr auto UnwrapErrUnchecked(Unsafe) const& noexcept -> const T&
+    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const E&
     {
-        return this->n_storage.Value;
+        return this->n_storage.Error.Error();
     }
 
     /// Returns the contained error without checking its state.
     ///
     /// # Safety
     /// Undefined behavior if no error is present.
-    constexpr auto UnwrapErrUnchecked(Unsafe) && noexcept -> E&&
+    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> E&&
     {
         return VIOLET_MOVE(this->n_storage.Error.Error());
     }
@@ -982,30 +982,30 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no error is present.
-    constexpr auto UnwrapErrUnchecked(Unsafe) const&& noexcept -> const E&&
+    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const E&&
     {
         return VIOLET_MOVE(this->n_storage.Error.Error());
     }
 
-    constexpr auto operator*() & -> T&
+    constexpr auto operator*() & VIOLET_LIFETIMEBOUND->T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
         return this->n_storage.Value;
     }
 
-    constexpr auto operator*() && -> T&&
+    constexpr auto operator*() && VIOLET_LIFETIMEBOUND->T&&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
         return VIOLET_MOVE(this->n_storage.Value);
     }
 
-    constexpr auto operator*() const& -> const T&
+    constexpr auto operator*() const & VIOLET_LIFETIMEBOUND->const T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
         return this->n_storage.Value;
     }
 
-    constexpr auto operator*() const&& -> const T&&
+    constexpr auto operator*() const && VIOLET_LIFETIMEBOUND->const T&&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
         return VIOLET_MOVE(this->n_storage.Value);
@@ -1063,8 +1063,8 @@ private:
         T Value;
         violet::Err<E> Error;
 
-        constexpr storage_t() noexcept {}
-        ~storage_t() {}
+        constexpr storage_t() noexcept { }
+        ~storage_t() { }
     } n_storage;
 
     void destroy() noexcept(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<E>)
@@ -1147,7 +1147,10 @@ struct Result<void, E> final {
 
     ~Result()
     {
-        delete this->n_value;
+        if (this->n_value != nullptr) {
+            delete this->n_value;
+            this->n_value = nullptr;
+        }
     }
 
     constexpr VIOLET_IMPLICIT Result(const Result& other)
@@ -1192,19 +1195,19 @@ struct Result<void, E> final {
         return this->n_value != nullptr;
     }
 
-    constexpr auto Error() & noexcept -> E&
+    constexpr auto Error() & noexcept VIOLET_LIFETIMEBOUND -> E&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<void, E>` invariant reached");
         return this->n_value->Error();
     }
 
-    constexpr auto Error() const& noexcept -> const E&
+    constexpr auto Error() const& noexcept VIOLET_LIFETIMEBOUND -> const E&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<void, E>` invariant reached");
         return this->n_value->Error();
     }
 
-    constexpr auto Error() && noexcept -> E&&
+    constexpr auto Error() && noexcept VIOLET_LIFETIMEBOUND -> E&&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<void, E>` invariant reached");
         return VIOLET_MOVE(this->n_value->Error());
@@ -1343,6 +1346,7 @@ struct std::formatter<violet::Result<T, E>> final: public std::formatter<std::st
         static_assert(::violet::is_result_v<decltype(variable)>, "expression didn't return a violet::Result");         \
         static_assert(                                                                                                 \
             ::std::is_void_v<::violet::result_value_type_t<decltype(variable)>>, "result value type must be `void`");  \
+                                                                                                                       \
         if ((variable).Err()) {                                                                                        \
             return ::violet::Err(VIOLET_MOVE((variable).Error()));                                                     \
         }                                                                                                              \

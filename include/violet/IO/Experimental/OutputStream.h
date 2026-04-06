@@ -26,13 +26,13 @@
 
 namespace violet::io::experimental {
 
-struct OutputStream {
+struct VIOLET_API OutputStream {
     virtual ~OutputStream() = default;
 
     virtual auto Write(Span<const UInt8> data) noexcept -> io::Result<UInt> = 0;
     virtual auto Flush() noexcept -> io::Result<void>
     {
-        return {};
+        return { };
     }
 };
 

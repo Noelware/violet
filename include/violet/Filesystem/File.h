@@ -120,21 +120,21 @@ struct VIOLET_API OpenOptions final {
     }
 #elif defined(VIOLET_UNIX)
     /// Sets Unix permission mode bits.
-    auto Mode(mode_t mode) noexcept -> OpenOptions&
+    constexpr auto Mode(mode_t mode) noexcept -> OpenOptions&
     {
         this->n_mode = mode;
         return *this;
     }
 
     /// Sets Unix permission mode bits.
-    auto Mode(struct Mode mode) noexcept -> OpenOptions&
+    constexpr auto Mode(struct Mode mode) noexcept -> OpenOptions&
     {
         this->n_mode = mode;
         return *this;
     }
 
     /// Sets additional Unix open flags.
-    auto Flags(Int32 flags) noexcept -> OpenOptions&
+    constexpr auto Flags(Int32 flags) noexcept -> OpenOptions&
     {
         this->n_flags = flags;
         return *this;
@@ -142,7 +142,7 @@ struct VIOLET_API OpenOptions final {
 #endif
 
     /// Opens this file and returns a file handle, or an error if any occurs.
-    auto Open(PathRef path) -> io::Result<File>;
+    VIOLET_API auto Open(PathRef path) -> io::Result<File>;
 
 private:
     friend struct File;
@@ -308,7 +308,7 @@ private:
 
     static constexpr auto mksymlink() noexcept -> FileType
     {
-        FileType ft{};
+        FileType ft{ };
         ft.n_tag |= tag::kSymlink;
 
         return ft;
@@ -316,7 +316,7 @@ private:
 
     static constexpr auto mkfile() noexcept -> FileType
     {
-        FileType ft = {};
+        FileType ft = { };
         ft.n_tag |= tag::kFile;
 
         return ft;
@@ -324,7 +324,7 @@ private:
 
     static constexpr auto mkdir() noexcept -> FileType
     {
-        FileType ft = {};
+        FileType ft = { };
         ft.n_tag |= tag::kDir;
 
         return ft;
@@ -333,7 +333,7 @@ private:
 #ifdef VIOLET_UNIX
     static constexpr auto mkblkdev() noexcept -> FileType
     {
-        FileType ft = {};
+        FileType ft = { };
         ft.n_tag |= tag::kBlkDev;
 
         return ft;
@@ -341,7 +341,7 @@ private:
 
     static constexpr auto mkchardev() noexcept -> FileType
     {
-        FileType ft = {};
+        FileType ft = { };
         ft.n_tag |= tag::kCharDev;
 
         return ft;
@@ -349,7 +349,7 @@ private:
 
     static constexpr auto mkfifo() noexcept -> FileType
     {
-        FileType ft = {};
+        FileType ft = { };
         ft.n_tag |= tag::kFIFO;
 
         return ft;
@@ -357,7 +357,7 @@ private:
 
     static constexpr auto mksocket() noexcept -> FileType
     {
-        FileType ft = {};
+        FileType ft = { };
         ft.n_tag |= tag::kSocket;
 
         return ft;
@@ -395,13 +395,13 @@ private:
 /// as Access Control List (ACLs) rather than POSIX-style bits.
 struct VIOLET_API Metadata final {
     /// The file's permissions.
-    struct Permissions Permissions = {};
+    struct Permissions Permissions = { };
 
     /// Last modification timestamp (UNIX seconds since epoch)
     UInt64 ModifiedAt = 0;
 
     /// The file's type.
-    FileType Type = {};
+    FileType Type = { };
 
     /// The size of this file in bytes.
     UInt64 Size = 0;
@@ -440,7 +440,7 @@ struct VIOLET_API Metadata final {
 /// This struct uses RAII to manage the lifetime of the underlying, low-level file descriptor. The file
 /// is automatically closed either from destruction or from an explicit [`File::Close`] call. Move semantics
 /// are supported, but copying is not supported.
-struct File final {
+struct VIOLET_API File final {
     /// RAII helper that locks a file for the duration of a scope.
     ///
     /// Constructed via [`MkScopedLock`] or [`MkSharedScopedLock`] methods.
@@ -489,39 +489,39 @@ struct File final {
     /// Opens the file from a path and returns the opened [`File`].
     /// @param path the path to open
     /// @param opts the options to open this file
-    static auto Open(PathRef path, OpenOptions opts = {}) -> io::Result<File>;
+    VIOLET_API static auto Open(PathRef path, OpenOptions opts = { }) -> io::Result<File>;
 
     /// Returns the raw file descriptor that this file points to.
-    [[nodiscard]] auto Descriptor() const noexcept -> io::FileDescriptor::value_type;
+    [[nodiscard]] VIOLET_API auto Descriptor() const noexcept -> io::FileDescriptor::value_type;
 
     /// Returns a textual representation of this file object.
-    [[nodiscard]] auto ToString() const noexcept -> String;
+    [[nodiscard]] VIOLET_API auto ToString() const noexcept -> String;
 
     /// Closes the file and the file will be invalidated.
-    auto Close() noexcept -> io::Result<void>;
+    VIOLET_API auto Close() noexcept -> io::Result<void>;
 
     /// Returns **true** if this file is pointed to a valid descriptor.
-    [[nodiscard]] auto Valid() const noexcept -> bool;
+    [[nodiscard]] VIOLET_API auto Valid() const noexcept -> bool;
 
     /// Reads from this file and returns the amount of bytes read.
     /// @param buf buffer to read from.
-    [[nodiscard]] auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>;
+    [[nodiscard]] VIOLET_API auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>;
 
     /// Writes from this file and returns the amount of bytes written.
     /// @param buf buffer to read from.
-    [[nodiscard]] auto Write(Span<const UInt8> buf) const noexcept -> io::Result<UInt>;
+    [[nodiscard]] VIOLET_API auto Write(Span<const UInt8> buf) const noexcept -> io::Result<UInt>;
 
     /// Flushes buffered writes to the underlying filesystem.
-    [[nodiscard]] auto Flush() const noexcept -> io::Result<void>;
+    [[nodiscard]] VIOLET_API auto Flush() const noexcept -> io::Result<void>;
 
     /// Locks the file exclusively. Blocks until the lock is acquired.
-    [[nodiscard]] auto Lock() const noexcept -> io::Result<void>;
+    [[nodiscard]] VIOLET_API auto Lock() const noexcept -> io::Result<void>;
 
     /// Acquires a shared (read) lock on the file. Blocks until acquired.
-    [[nodiscard]] auto SharedLock() const noexcept -> io::Result<void>;
+    [[nodiscard]] VIOLET_API auto SharedLock() const noexcept -> io::Result<void>;
 
     /// Unlocks the file.
-    [[nodiscard]] auto Unlock() const noexcept -> io::Result<void>;
+    [[nodiscard]] VIOLET_API auto Unlock() const noexcept -> io::Result<void>;
 
     /// Checks whether if the file is currently locked by another process or thread.
     ///
@@ -540,35 +540,35 @@ struct File final {
     ///
     /// ## Windows
     /// This uses `LockFileEx` with `LOCKFILE_FAIL_IMMEDIATELY`.
-    [[nodiscard]] auto Locked() const noexcept -> io::Result<bool>;
+    [[nodiscard]] VIOLET_API auto Locked() const noexcept -> io::Result<bool>;
 
     /// Returns an RAII-scoped exclusive lock.
-    [[nodiscard]] auto MkScopedLock() const noexcept -> io::Result<ScopeLock>;
+    [[nodiscard]] VIOLET_API auto MkScopedLock() const noexcept -> io::Result<ScopeLock>;
 
     /// Returns an RAII-scoped shared lock.
-    [[nodiscard]] auto MkSharedScopedLock() const noexcept -> io::Result<ScopeLock>;
+    [[nodiscard]] VIOLET_API auto MkSharedScopedLock() const noexcept -> io::Result<ScopeLock>;
 
     /// Retrieves metadata about the file.
-    [[nodiscard]] auto Metadata() const noexcept -> io::Result<struct Metadata>;
+    [[nodiscard]] VIOLET_API auto Metadata() const noexcept -> io::Result<struct Metadata>;
 
     /// Returns a clone of this file, sharing the same descriptor.
     /// @param shareFlags whether if the cloned file should share the same flags
     /// as this file.
-    [[nodiscard]] auto Clone(bool shareFlags = false) const noexcept -> io::Result<File>;
+    [[nodiscard]] VIOLET_API auto Clone(bool shareFlags = false) const noexcept -> io::Result<File>;
 
     /// Returns an iterator that lists through this file's extended attributes.
-    [[nodiscard]] auto Attributes() const noexcept -> io::Result<xattr::Iter>;
+    [[nodiscard]] VIOLET_API auto Attributes() const noexcept -> io::Result<xattr::Iter>;
 
     /// Returns an extended attribute by `key`.
     /// @param key the attribute to fetch
-    [[nodiscard]] auto GetAttribute(Str key) const noexcept -> io::Result<Optional<Vec<UInt8>>>;
+    [[nodiscard]] VIOLET_API auto GetAttribute(Str key) const noexcept -> io::Result<Optional<Vec<UInt8>>>;
 
     /// Sets an extended attribute by `key` with the given `value`.
-    [[nodiscard]] auto SetAttribute(Str key, Span<const UInt8> value) const noexcept -> io::Result<void>;
+    [[nodiscard]] VIOLET_API auto SetAttribute(Str key, Span<const UInt8> value) const noexcept -> io::Result<void>;
 
     /// Removes an extended attribute.
     /// @param key the attribute to remove
-    [[nodiscard]] auto RemoveAttribute(Str key) const noexcept -> io::Result<void>;
+    [[nodiscard]] VIOLET_API auto RemoveAttribute(Str key) const noexcept -> io::Result<void>;
 
     VIOLET_EXPLICIT operator bool() const noexcept;
     VIOLET_EXPLICIT operator io::FileDescriptor::value_type() const noexcept;
