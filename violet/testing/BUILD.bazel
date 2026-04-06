@@ -25,6 +25,10 @@ cc_library(
     name = "runfiles",
     srcs = ["//src/testing/impls/runfiles:bazel.cc"],
     hdrs = ["//include/violet/Testing:Runfiles.h"],
+    local_defines = select({
+        "//buildsystem/bazel/flags:runfiles_logs_enabled": ["VIOLET_RUNFILES_LOGS"],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         "//violet",

@@ -111,7 +111,7 @@ auto detectWorkspaceName() -> String
         auto canon = Canonicalize(repoMappingPath);
         VIOLET_ASSERT(canon.Ok(), "failed to canoncalize (and resolve symlinks) of `_repo_mapping`");
 
-        auto runfilesRepoMapping = File::Open(canon.Value(), OpenOptions{}.Read());
+        auto runfilesRepoMapping = File::Open(canon.Value(), OpenOptions{ }.Read());
         if (runfilesRepoMapping.Ok()) {
             Vec<UInt8> buf(8192);
 
@@ -139,7 +139,7 @@ auto detectWorkspaceName() -> String
                     auto element = *it;
                     workspaceName = String(element.begin(), element.end());
 
-#ifndef VIOLET_RUNFILES_LOGS
+#ifdef VIOLET_RUNFILES_LOGS
                     std::cout << "[violet/testing/runfiles@init] using workspace name '" << workspaceName << "'\n";
                     std::cout << "if this is the wrong workspace, either submit an issue at "
                                  "https://github.com/Noelware/violet/issues/new";
@@ -152,7 +152,7 @@ auto detectWorkspaceName() -> String
                     auto tws = *it;
                     n_testWorkspace = String(tws.begin(), tws.end());
 
-#ifndef VIOLET_RUNFILES_LOGS
+#ifdef VIOLET_RUNFILES_LOGS
                     std::cout << "[violet/testing/runfiles@init] $TEST_WORKSPACE = " << n_testWorkspace << '\n';
 #endif
 
@@ -160,7 +160,7 @@ auto detectWorkspaceName() -> String
                 }
             }
         } else {
-#ifndef VIOLET_RUNFILES_LOGS
+#ifdef VIOLET_RUNFILES_LOGS
             std::cerr << "[violet/testing/runfiles@error] failed to open file '" << canon.Value()
                       << "' (tests might fail): " << VIOLET_MOVE(runfilesRepoMapping.Error()).ToString() << '\n';
 #endif
@@ -168,7 +168,7 @@ auto detectWorkspaceName() -> String
     } else if (auto name = GetEnv(kWorkspaceOverrideEnv)) {
         workspaceName = VIOLET_MOVE(name.Value());
     } else {
-#ifndef VIOLET_RUNFILES_LOGS
+#ifdef VIOLET_RUNFILES_LOGS
         std::cerr << "[violet/testing/runfiles@warning] unable to collect `$" << kRunfilesDirEnv << "' or `$"
                   << kWorkspaceEnv
                   << "' environment variables, cannot detect workspace name (you can override this with the `$"

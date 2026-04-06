@@ -32,7 +32,7 @@ auto CancellationRequestedEvent::ToString() const noexcept -> CStr
 
 auto CancellationTokenSource::Token() const noexcept -> CancellationToken
 {
-    return CancellationToken(this->n_state.get());
+    return CancellationToken(this->n_state);
 }
 
 auto CancellationTokenSource::RequestsCancellation() const noexcept -> bool

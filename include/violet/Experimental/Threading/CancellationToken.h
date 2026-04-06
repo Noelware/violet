@@ -194,12 +194,12 @@ struct CancellationToken final {
 private:
     friend struct CancellationTokenSource;
 
-    VIOLET_EXPLICIT CancellationToken(CancellationTokenSource::state_t* state) noexcept
-        : n_state(state)
+    VIOLET_EXPLICIT CancellationToken(SharedPtr<CancellationTokenSource::state_t> state) noexcept
+        : n_state(VIOLET_MOVE(state))
     {
     }
 
-    CancellationTokenSource::state_t* n_state = nullptr;
+    SharedPtr<CancellationTokenSource::state_t> n_state = nullptr;
 };
 
 } // namespace violet::experimental::threading

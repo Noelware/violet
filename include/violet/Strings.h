@@ -143,8 +143,14 @@ auto Join(const Range& range, Str delim) noexcept -> violet::String
 
 /// Joins a collection of elements into a single string with a delimiter with a designated mapper.
 template<std::ranges::input_range Range, typename Fun>
+#if defined(VIOLET_GCC)
+    requires(requires(Fun fn, const std::ranges::range_value_t<Range>& v) {
+        { std::invoke(fn, v) } -> std::convertible_to<violet::String>;
+    })
+#else
     requires(callable<Fun, const std::ranges::range_value_t<Range>&>,
         callable_returns<Fun, violet::String, const std::ranges::range_value_t<Range>&>)
+#endif
 auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> violet::String
 {
     String result;

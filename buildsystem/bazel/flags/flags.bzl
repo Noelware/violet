@@ -35,6 +35,9 @@ BOOL_FLAGS = [
     ## on MSVC toolchains instead of the default `__declspec(dllimport)`.
     "win32_dllexport",
 
+    ## ## `@violet//buildsystem/bazel/flags:runfiles_logs=[True|False]`
+    "runfiles_logs",
+
     ## ## `@violet//bazel/flags:ubsan=[True|False]`
     ## Enables the **Undefined Behaviour Sanitizer** on each Violet build. Usually,
     ## this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions,
