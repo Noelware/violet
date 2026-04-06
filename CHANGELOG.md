@@ -7,6 +7,9 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.05...master>
+
+### 26.05
 - **Breaking**: All Bazel targets now use hidden visibility by default, public APIs will be marked with `VIOLET_API` ([`@auguwu`])
     - On Windows, you can set the `win32_dllexport` flag to **True** (`--@violet//:win32_dllexport=[True|False]`) so that MSVC will see `__declspec(dllexport)` instead of `__declspec(dllimport)`.
 - There is now more annotations related to lifetime bounds and more. ([`@auguwu`])
@@ -30,7 +33,7 @@ availableAt:
 #### Noelware.Violet.Experimental.Threading
 - Add thread cancellation (**CancellationToken**, **CancellationTokenSource**) ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.04.06...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.04.06...26.05>
 
 ### 26.04.06
 #### Noelware.Violet
