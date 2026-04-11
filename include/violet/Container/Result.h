@@ -640,7 +640,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     {
         using Ret = std::invoke_result_t<Fun, T>;
         if (this->Ok()) {
-            return Ok<Ret, E>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
+            return Ok<Ret>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
         }
 
         return Err<E>(VIOLET_MOVE(Error()));
@@ -1348,7 +1348,7 @@ struct Result<void, E> final {
     {
         using Ret = std::invoke_result_t<Fun>;
         if (this->Ok()) {
-            return Ok<Ret, E>(std::invoke(VIOLET_FWD(Fun, fun)));
+            return Ok<Ret>(std::invoke(VIOLET_FWD(Fun, fun)));
         }
 
         return Err<E>(VIOLET_MOVE(Error()));

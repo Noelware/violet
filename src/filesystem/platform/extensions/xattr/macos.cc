@@ -37,7 +37,7 @@ auto violet::filesystem::xattr::Get(value_type fd, Str key) noexcept -> io::Resu
     ssize_t size = ::fgetxattr(fd, key.data(), nullptr, 0, 0, 0);
     if (size == -1) {
         if (errno == ENODATA) {
-            return Ok<Optional<Vec<UInt8>>, io::Error>(Nothing);
+            return Nothing;
         }
 
         return Err(io::Error::OSError());
@@ -49,7 +49,7 @@ auto violet::filesystem::xattr::Get(value_type fd, Str key) noexcept -> io::Resu
         return Err(io::Error::OSError());
     }
 
-    return Some<Vec<UInt8>>(buf);
+    return buf;
 }
 
 auto violet::filesystem::xattr::Set(value_type fd, Str key, Span<const UInt8> value) noexcept -> io::Result<void>
@@ -58,7 +58,7 @@ auto violet::filesystem::xattr::Set(value_type fd, Str key, Span<const UInt8> va
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto violet::filesystem::xattr::Remove(value_type fd, Str key) noexcept -> io::Result<void>
@@ -67,7 +67,7 @@ auto violet::filesystem::xattr::Remove(value_type fd, Str key) noexcept -> io::R
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto violet::filesystem::xattr::List(value_type) noexcept -> io::Result<Iter>
