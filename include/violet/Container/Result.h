@@ -258,7 +258,8 @@ private:
 /// A tagged, explicit ok variant for [`violet::Result`].
 template<typename T>
 struct Ok final {
-    static_assert(std::is_object_v<T> || std::is_void_v<T>, "`Ok<T>` requires `T` to be a object type");
+    static_assert(std::is_object_v<T>, "`Ok<T>` requires `T` to be a object type");
+    static_assert(!std::is_void_v<T>, "`Ok<void>` is ill-formed");
     static_assert(!std::is_array_v<T>, "`Ok<T>` must wrap an array type");
     static_assert(std::is_destructible_v<T>, "`Ok<T>` requires `T` to be destructible");
     static_assert(std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>,
@@ -335,11 +336,13 @@ struct Ok final {
         return Result<T, E>(std::in_place_index<0L>, this->Value());
     }
 
+#if VIOLET_REQUIRE_STL(202302L)
     template<typename E>
     constexpr VIOLET_EXPLICIT operator std::expected<T, E>() const noexcept
     {
         return std::expected<T, E>(this->Value());
     }
+#endif
 
     [[nodiscard]] auto ToString() const noexcept -> String
     {
