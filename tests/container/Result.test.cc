@@ -28,11 +28,17 @@ using namespace violet; // NOLINT(google-build-using-namespace)
 
 TEST(Result, Ok)
 {
-    auto result = Ok<String, UInt32>("hello");
+    Result<String, UInt32> result = Ok("hello");
     ASSERT_TRUE(result.Ok());
     ASSERT_FALSE(result.Err());
 
     EXPECT_EQ(result.Value(), "hello");
+}
+
+TEST(Result, ExperimentalOk)
+{
+    Result<String, UInt32> result = Ok("hello");
+    ASSERT_TRUE(result);
 }
 
 TEST(Result, Err)
@@ -47,7 +53,7 @@ TEST(Result, Err)
 #if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
 TEST(Result, ToStdExpected)
 {
-    auto ok = Ok<String, UInt32>("hello");
+    auto ok = Ok<String>("hello");
     auto okStd = static_cast<std::expected<String, UInt32>>(ok);
     ASSERT_TRUE(okStd.has_value());
     EXPECT_EQ(okStd.value(), "hello");
@@ -90,13 +96,10 @@ TEST(Result, VoidToStdExpected)
 
 TEST(Result, CopyConstructOk)
 {
-    auto r1 = Ok<String, UInt32>("value");
+    auto r1 = Ok<String>("value");
     auto r2 = r1; // NOLINT(performance-unnecessary-copy-initialization)
 
-    ASSERT_TRUE(r1.Ok());
     EXPECT_EQ(r1.Value(), "value");
-
-    ASSERT_TRUE(r2.Ok());
     EXPECT_EQ(r2.Value(), "value");
 }
 
@@ -114,10 +117,9 @@ TEST(Result, CopyConstructErr)
 
 TEST(Result, MoveConstructOk)
 {
-    auto r1 = Ok<String, UInt32>("value");
+    auto r1 = Ok<String>("value");
     auto r2 = VIOLET_MOVE(r1);
 
-    ASSERT_TRUE(r2.Ok());
     EXPECT_EQ(r2.Value(), "value");
 }
 
@@ -132,7 +134,7 @@ TEST(Result, MoveConstructErr)
 
 TEST(Result, CopyAssignOk)
 {
-    auto r1 = Ok<String, UInt32>("value");
+    Result<String, UInt32> r1 = Ok<String>("value");
     Result<String, UInt32> r2 = Err<UInt32>(456);
     r2 = r1;
 
@@ -145,7 +147,7 @@ TEST(Result, CopyAssignOk)
 TEST(Result, CopyAssignErr)
 {
     Result<String, UInt32> r1 = Err<UInt32>(123);
-    auto r2 = Ok<String, UInt32>("value");
+    Result<String, UInt32> r2 = Ok<String>("value");
     r2 = r1;
 
     ASSERT_TRUE(r1.Err());
@@ -157,7 +159,7 @@ TEST(Result, CopyAssignErr)
 
 TEST(Result, MoveAssignOk)
 {
-    auto r1 = Ok<String, UInt32>("value");
+    Result<String, UInt32> r1 = Ok<String>("value");
     Result<String, UInt32> r2 = Err<UInt32>(456);
     r2 = std::move(r1);
 
@@ -168,7 +170,7 @@ TEST(Result, MoveAssignOk)
 TEST(Result, MoveAssignErr)
 {
     Result<String, UInt32> r1 = Err<UInt32>(123);
-    auto r2 = Ok<String, UInt32>("value");
+    Result<String, UInt32> r2 = Ok<String>("value");
     r2 = VIOLET_MOVE(r1);
 
     ASSERT_TRUE(r2.Err());

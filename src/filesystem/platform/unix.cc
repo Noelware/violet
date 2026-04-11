@@ -87,7 +87,7 @@ struct Dirs::Impl final {
         }
 
         DirEntry direntry = { .Path = path, .Metadata = VIOLET_MOVE(metadata.Value()) };
-        return Some<io::Result<DirEntry>>(Ok<DirEntry, io::Error>(direntry));
+        return Some<io::Result<DirEntry>>(Ok(direntry));
     }
 
 private:
@@ -250,20 +250,20 @@ auto violet::filesystem::Metadata::FromPosix(struct stat st) noexcept -> Metadat
 
 auto violet::filesystem::Metadata(PathRef path, bool followSymlinks) -> io::Result<struct Metadata>
 {
-    struct stat st{};
+    struct stat st{ };
     if (followSymlinks) {
         if (::stat(static_cast<CStr>(path), &st) < 0) {
             return Err(io::Error::OSError());
         }
 
-        return Ok<struct Metadata, io::Error>(violet::filesystem::Metadata::FromPosix(st));
+        return violet::filesystem::Metadata::FromPosix(st);
     }
 
     if (::lstat(static_cast<CStr>(path), &st) < 0) {
         return Err(io::Error::OSError());
     }
 
-    return Ok<struct Metadata, io::Error>(violet::filesystem::Metadata::FromPosix(st));
+    return violet::filesystem::Metadata::FromPosix(st);
 }
 
 auto violet::filesystem::CreateDirectory(PathRef path) -> io::Result<void>
@@ -276,7 +276,7 @@ auto violet::filesystem::CreateDirectory(PathRef path) -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto violet::filesystem::CreateDirectories(PathRef path) -> io::Result<void>
@@ -313,7 +313,7 @@ auto violet::filesystem::CreateDirectories(PathRef path) -> io::Result<void>
         }
     }
 
-    return {};
+    return { };
 }
 
 auto violet::filesystem::RemoveDirectory(PathRef path) -> io::Result<void>
@@ -322,7 +322,7 @@ auto violet::filesystem::RemoveDirectory(PathRef path) -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto violet::filesystem::RemoveAllDirs(PathRef path) -> io::Result<void>
@@ -336,7 +336,7 @@ auto violet::filesystem::RemoveAllDirs(PathRef path) -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    struct dirent* ent{};
+    struct dirent* ent{ };
     while ((ent = ::readdir(dir)) != nullptr) {
         CStr name = ent->d_name;
         if (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) {
@@ -406,7 +406,7 @@ auto violet::filesystem::TryExists(PathRef path) -> io::Result<bool>
         return Err(err);
     }
 
-    struct stat st{};
+    struct stat st{ };
     if (::fstat(file->Descriptor(), &st) < 0) {
         return Err(io::Error::OSError());
     }
@@ -420,7 +420,7 @@ auto violet::filesystem::RemoveFile(PathRef path) -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto violet::filesystem::SetPermissions(PathRef path, Permissions perms) -> io::Result<void>
@@ -429,7 +429,7 @@ auto violet::filesystem::SetPermissions(PathRef path, Permissions perms) -> io::
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto violet::filesystem::Rename(PathRef old, PathRef newPath) -> io::Result<void>
@@ -438,7 +438,7 @@ auto violet::filesystem::Rename(PathRef old, PathRef newPath) -> io::Result<void
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto violet::filesystem::Executable(PathRef path) -> io::Result<bool>

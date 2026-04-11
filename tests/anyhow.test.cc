@@ -30,6 +30,8 @@ using namespace violet;
 using namespace violet::testing;
 // NOLINTEND(google-build-using-namespace)
 
+namespace {
+
 struct dummy_t final {
     String Message;
 
@@ -43,6 +45,8 @@ struct dummy_t final {
         return this->Message;
     }
 };
+
+} // namespace
 
 TEST(Anyhow, ContextWithString)
 {
@@ -138,8 +142,8 @@ TEST(Anyhow, ChainSourceLocationsPopulated)
     auto frame = anyhow::Chain(error).Next();
 
     ASSERT_TRUE(frame.HasValue());
-    EXPECT_NE(frame->Location.file_name(), nullptr);
-    EXPECT_GT(frame->Location.line(), 0U);
+    EXPECT_FALSE(frame->Location.File.empty());
+    EXPECT_GT(frame->Location.Line, 0U);
 }
 
 TEST(Anyhow, ChainMovedFromError)
@@ -166,6 +170,8 @@ TEST(Anyhow, ChainRangeFor)
 
 #if VIOLET_USE_RTTI
 
+namespace {
+
 struct other_error_t final {
     int Code;
 
@@ -179,6 +185,8 @@ struct other_error_t final {
         return std::format("error code {}", Code);
     }
 };
+
+} // namespace
 
 TEST(Anyhow, DowncastSuccess)
 {

@@ -40,9 +40,9 @@ Error::node_t::node_t() noexcept
 
 Error::node_t::node_t(node_t&& other) noexcept
     : Object(std::exchange(other.Object, nullptr))
-    , VTable(std::exchange(other.VTable, {}))
+    , VTable(std::exchange(other.VTable, { }))
     , Size(std::exchange(other.Size, 0))
-    , Location(std::exchange(other.Location, {}))
+    , Location(std::exchange(other.Location, { }))
     , Next(std::exchange(other.Next, nullptr))
 
 #if VIOLET_USE_RTTI
@@ -60,9 +60,9 @@ auto Error::node_t::operator=(node_t&& other) noexcept -> node_t&
 
         delete this->Next;
 
-        this->Location = std::exchange(other.Location, {});
+        this->Location = std::exchange(other.Location, { });
         this->Object = std::exchange(other.Object, nullptr);
-        this->VTable = std::exchange(other.VTable, {});
+        this->VTable = std::exchange(other.VTable, { });
         this->Size = std::exchange(other.Size, 0);
         this->Next = std::exchange(other.Next, nullptr);
 
@@ -183,11 +183,11 @@ void Error::Print() const noexcept
         VIOLET_DEBUG_ASSERT(node->VTable.Message != nullptr, "invalid invariant reached: vtable missing `Message()'");
 
         if (index == 0) {
-            PrintErrln("{} [{}:{}:{}]", node->VTable.Message(node->Object), node->Location.file_name(),
-                node->Location.line(), node->Location.column());
+            PrintErrln("{} [{}:{}:{}]", node->VTable.Message(node->Object), node->Location.File, node->Location.Line,
+                node->Location.Column);
         } else {
             PrintErr("    ~> #");
-            eprintColoured(colors, Style{}.Bold(), "{}", index - 1);
+            eprintColoured(colors, Style{ }.Bold(), "{}", index - 1);
 
             PrintErrln(": {}", node->VTable.Message(node->Object));
         }

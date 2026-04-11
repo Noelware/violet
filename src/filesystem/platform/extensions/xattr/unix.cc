@@ -40,7 +40,7 @@ auto violet::filesystem::xattr::Get(value_type fd, Str key) noexcept -> io::Resu
     ssize_t size = ::fgetxattr(fd, key.data(), nullptr, 0);
     if (size == -1) {
         if (errno == ENODATA) {
-            return Ok<Optional<Vec<UInt8>>, io::Error>(Nothing);
+            return Ok(Nothing);
         }
 
         return Err(io::Error::OSError());
@@ -61,7 +61,7 @@ auto violet::filesystem::xattr::Set(value_type fd, Str key, Span<const UInt8> va
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto violet::filesystem::xattr::Remove(value_type fd, Str key) noexcept -> io::Result<void>
@@ -70,7 +70,7 @@ auto violet::filesystem::xattr::Remove(value_type fd, Str key) noexcept -> io::R
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 struct Iter::Impl final {
@@ -95,7 +95,7 @@ struct Iter::Impl final {
         this->n_offset += len + 1;
 
         auto result = VIOLET_TRY(Get(this->n_descriptor, name));
-        return std::make_pair(name, result.UnwrapOr({}));
+        return std::make_pair(name, result.UnwrapOr({ }));
     }
 
 private:

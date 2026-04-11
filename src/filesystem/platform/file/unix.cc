@@ -124,7 +124,7 @@ auto File::Close() noexcept -> io::Result<void>
         this->n_fd = -1;
     }
 
-    return {};
+    return { };
 }
 
 auto File::Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
@@ -146,7 +146,7 @@ auto File::MkScopedLock() const noexcept -> io::Result<ScopeLock>
 {
     auto result = this->Lock();
     if (result) {
-        return Ok<ScopeLock, io::Error>(
+        return Ok(
             // Safety: `ScopeLock` doesn't affect the data inside of `this`, so it is ok
             // in this context and `File::Unlock` doesn't modify data either.
             ScopeLock(const_cast<File*>(this))); // NOLINT(cppcoreguidelines-pro-type-const-cast)
@@ -159,7 +159,7 @@ auto File::MkSharedScopedLock() const noexcept -> io::Result<ScopeLock>
 {
     auto result = this->SharedLock();
     if (result) {
-        return Ok<ScopeLock, io::Error>(
+        return Ok(
             // Safety: `ScopeLock` doesn't affect the data inside of `this`, so it is ok
             // in this context and `File::Unlock` doesn't modify data either.
             ScopeLock(const_cast<File*>(this))); // NOLINT(cppcoreguidelines-pro-type-const-cast)

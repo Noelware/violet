@@ -26,8 +26,6 @@
 #include <violet/Violet.h>
 
 #include <expected>
-#include <functional>
-#include <source_location>
 #include <type_traits>
 #include <utility>
 
@@ -35,34 +33,6 @@ namespace violet {
 
 template<typename T, typename E>
 struct Result;
-
-/// Creates a new `Result<T, E>` that contains a successful value.
-/// @tparam T The underlying success type to construct.
-/// @tparam E The underlying error type to pass.
-/// @tparam Args The arguments to pass to `T`'s constructor.
-/// @param args The arguments to pass to `T`'s constructor.
-/// @return An `Optional<T>` with the value constructed.
-template<typename T, typename E, typename... Args>
-constexpr static auto Ok(Args&&... args) -> Result<T, E>
-{
-    static_assert(std::is_object_v<T>, "`Result<T, E>` requires `T` to be a object type or `void`");
-    static_assert(std::is_object_v<E>, "`Result<T, E>` requires `E` to be an object type");
-    static_assert(!std::is_reference_v<T>, "`Result<T, E>` must not wrap a reference type");
-    static_assert(!std::is_reference_v<E>, "`Result<T, E>` must not wrap a reference type");
-    static_assert(!std::is_array_v<T>, "`Result<T, E>` must not wrap an array type");
-    static_assert(!std::is_array_v<E>, "`Result<T, E>` must not wrap an array type");
-    static_assert(
-        !std::is_const_v<E> && !std::is_volatile_v<E>, "`Result<T, E>` must not have a cv-qualified error type");
-    static_assert(std::is_destructible_v<T>, "`Result<T, E>` requires T to be destructible");
-    static_assert(std::is_destructible_v<E>, "`Result<T, E>` requires E to be destructible");
-    static_assert(std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>,
-        "`Result<T, E>` requires T to be movable or copyable");
-    static_assert(std::is_move_constructible_v<E> || std::is_copy_constructible_v<E>,
-        "`Result<T, E>` requires E to be movable or copyable");
-    static_assert(sizeof(E) > 0, "`Result<T, E>` requires E to be a complete type");
-
-    return Result<T, E>(std::in_place_index<0>, VIOLET_FWD(Args, args)...);
-}
 
 /// Concept for detecting nested [`violet::Result`] types.
 ///
@@ -172,6 +142,27 @@ struct VIOLET_API Err final {
 
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Err);
 
+    template<typename Other>
+        requires(!std::same_as<E, std::decay_t<Other>> && std::constructible_from<E, std::decay_t<Other>>)
+    constexpr VIOLET_IMPLICIT Err(Err<std::decay_t<E>>& other) = delete;
+
+    /// Implicitly convert a [`Err<Other>`](violet::Err) into an [`Err<E>`](violet::Err) when `E`
+    /// is constructible from `Other`.
+    ///
+    /// This is meant to be the C++ equivalent of Rust's [`std::convert::From`] or [`std::convert::Into`] blanket
+    /// implementations for error propagation, enabling the [`VIOLET_TRY`]/[`VIOLET_TRY_VOID`] macros to propagate
+    /// concrete error types (like [`violet::io::Error`]) into a type-erased container (e.g., [`violet::anyhow::Error`])
+    /// without explicit conversion at each callsite.
+    ///
+    /// [`std::convert::From`]: https://doc.rust-lang.org/1.94.1/std/convert/trait.From.html
+    /// [`std::convert::Into`]: https://doc.rust-lang.org/1.94.1/std/convert/trait.Into.html
+    template<typename Other>
+        requires(!std::same_as<E, std::decay_t<Other>> && std::constructible_from<E, std::decay_t<Other>>)
+    constexpr VIOLET_IMPLICIT Err(Err<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<E>)
+        : n_value(E(VIOLET_MOVE(other).Error()))
+    {
+    }
+
     /// Constructs from a const lvalue error.
     constexpr VIOLET_EXPLICIT Err(const E& error) noexcept(std::is_nothrow_copy_constructible_v<E>)
         : n_value(error)
@@ -264,6 +255,115 @@ private:
     E n_value;
 };
 
+/// A tagged, explicit ok variant for [`violet::Result`].
+template<typename T>
+struct Ok final {
+    static_assert(std::is_object_v<T> || std::is_void_v<T>, "`Ok<T>` requires `T` to be a object type");
+    static_assert(!std::is_array_v<T>, "`Ok<T>` must wrap an array type");
+    static_assert(std::is_destructible_v<T>, "`Ok<T>` requires `T` to be destructible");
+    static_assert(std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>,
+        "`Ok<T>` requires `T` to be movable or copyable");
+    static_assert(!std::same_as<T, Ok<T>>, "`Ok<Ok<T>>` is ill-formed");
+    static_assert(!std::same_as<T, std::in_place_t>, "`Ok<T>` must not wrap `std::in_place_t`");
+
+    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Ok);
+
+    template<typename Other>
+        requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
+    constexpr VIOLET_IMPLICIT Ok(Ok<std::decay_t<Other>>&) = delete;
+
+    template<typename Other>
+        requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
+    constexpr VIOLET_IMPLICIT Ok(Ok<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
+        : n_value(T(VIOLET_MOVE(other).Value()))
+    {
+    }
+
+    constexpr VIOLET_EXPLICIT Ok(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        : n_value(value)
+    {
+    }
+
+    constexpr VIOLET_EXPLICIT Ok(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
+        : n_value(VIOLET_MOVE(value))
+    {
+    }
+
+    template<typename... Args>
+        requires(std::constructible_from<T, Args...>
+            && !(sizeof...(Args) == 1 && (std::same_as<std::decay_t<Args>, T> || ...)))
+    constexpr VIOLET_EXPLICIT Ok(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        : n_value(VIOLET_FWD(Args, args)...)
+    {
+    }
+
+    constexpr auto Value() & noexcept VIOLET_LIFETIMEBOUND -> T&
+    {
+        return this->n_value;
+    }
+
+    constexpr auto Value() && noexcept VIOLET_LIFETIMEBOUND -> T&&
+    {
+        return VIOLET_MOVE(this->n_value);
+    }
+
+    constexpr auto Value() const& noexcept VIOLET_LIFETIMEBOUND -> const T&
+    {
+        return this->n_value;
+    }
+
+    constexpr auto Value() const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
+    {
+        return this->n_value;
+    }
+
+    constexpr auto operator==(const Ok& other) const noexcept -> bool
+        requires(requires { this->Value() == other.Value(); })
+    {
+        return this->Value() == other.Value();
+    }
+
+    constexpr auto operator!=(const Ok& other) const noexcept -> bool
+        requires(requires { this->Value() == other.Value(); })
+    {
+        return this->Value() != other.Value();
+    }
+
+    template<typename E>
+    constexpr VIOLET_EXPLICIT operator violet::Result<T, E>() const noexcept
+    {
+        return Result<T, E>(std::in_place_index<0L>, this->Value());
+    }
+
+    template<typename E>
+    constexpr VIOLET_EXPLICIT operator std::expected<T, E>() const noexcept
+    {
+        return std::expected<T, E>(this->Value());
+    }
+
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        return violet::ToString(this->Value());
+    }
+
+    friend auto operator<<(std::ostream& os, const Ok& self) noexcept -> std::ostream&
+    {
+        return os << self.ToString();
+    }
+
+private:
+    T n_value;
+};
+
+template<typename T, std::size_t N>
+Ok(T (&)[N]) -> Ok<const T*>;
+
+template<typename T>
+Ok(const T&) -> Ok<std::decay_t<T>>;
+
+template<typename T>
+Ok(T&&) -> Ok<std::decay_t<T>>;
+
 /// Representation of a successful or failed state, analgous of Rust's [`std::result::Result`].
 ///
 /// [`std::result::Result`]: https://doc.rust-lang.org/1.90.0/std/result/enum.Result.html
@@ -280,7 +380,6 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     static_assert(
         std::is_object_v<T> || std::is_void_v<T>, "`Result<T, E>` requires `T` to be a object type or `void`");
     static_assert(std::is_object_v<E>, "`Result<T, E>` requires `E` to be an object type");
-    static_assert(!std::is_reference_v<T>, "`Result<T, E>` must not wrap a reference type");
     static_assert(!std::is_reference_v<E>, "`Result<T, E>` must not wrap a reference type");
     static_assert(!std::is_array_v<T>, "`Result<T, E>` must not wrap an array type");
     static_assert(!std::is_array_v<E>, "`Result<T, E>` must not wrap an array type");
@@ -300,17 +399,38 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Result);
 
     /// Constructs an `Ok` variant by copying `ok`.
-    constexpr VIOLET_IMPLICIT Result(const T& ok)
+    template<typename U = T>
+        requires(!std::same_as<std::remove_cvref_t<U>, Result<T, E>> && !std::same_as<std::remove_cvref_t<U>, Ok<T>>
+            && !std::same_as<std::remove_cvref_t<U>, Err<E>> && std::constructible_from<T, const U&>)
+    constexpr VIOLET_IMPLICIT Result(const U& ok) noexcept(std::is_nothrow_constructible_v<T, const U&>)
         : n_ok(true)
     {
         ::new (&this->n_storage.Value) T(ok);
     }
 
     /// Constructs an `Ok` variant by moving `ok`.
-    constexpr VIOLET_IMPLICIT Result(T&& ok) noexcept(std::is_nothrow_move_constructible_v<T>)
+    template<typename U = T>
+        requires(!std::same_as<std::remove_cvref_t<U>, Result<T, E>> && !std::same_as<std::remove_cvref_t<U>, Ok<T>>
+            && !std::same_as<std::remove_cvref_t<U>, Err<E>> && std::constructible_from<T, U &&>)
+    constexpr VIOLET_IMPLICIT Result(T&& ok) noexcept(
+        std::is_nothrow_constructible_v<T, U&&> && std::is_nothrow_move_constructible_v<U>)
         : n_ok(true)
     {
         ::new (&this->n_storage.Value) T(VIOLET_MOVE(ok));
+    }
+
+    template<typename U>
+        requires(std::is_convertible_v<const U&, T>)
+    constexpr VIOLET_IMPLICIT Result(const Ok<U>& ok)
+        : Result(ok.Value())
+    {
+    }
+
+    template<typename U>
+        requires(std::is_convertible_v<U &&, T>)
+    constexpr VIOLET_IMPLICIT Result(Ok<U>&& ok)
+        : Result(VIOLET_MOVE(ok).Value())
+    {
     }
 
     /// Constructs the `Ok` variant in-place.
@@ -1314,6 +1434,7 @@ private:
 } // namespace violet
 
 VIOLET_FORMATTER_TEMPLATE(violet::Err<E>, typename E);
+VIOLET_FORMATTER_TEMPLATE(violet::Ok<T>, typename T);
 
 template<typename T, typename E>
 struct std::formatter<violet::Result<T, E>> final: public std::formatter<std::string> {

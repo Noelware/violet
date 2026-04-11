@@ -31,6 +31,7 @@
 #include <violet/Container/Optional.h>
 #include <violet/Container/Result.h>
 #include <violet/Iterator.h>
+#include <violet/SourceLocation.h>
 #include <violet/Violet.h>
 
 #if VIOLET_USE_RTTI
@@ -74,9 +75,10 @@ struct VIOLET_API Error final {
 
     ~Error() noexcept;
 
-    template<typename T>
-    VIOLET_IMPLICIT Error(T object, std::source_location loc = std::source_location::current()) noexcept
-        : n_node(node_t::New(object, loc))
+    template<typename E>
+        requires(!std::same_as<std::decay_t<E>, Error>)
+    VIOLET_IMPLICIT Error(E&& error, violet::SourceLocation loc = std::source_location::current())
+        : n_node(node_t::New(VIOLET_FWD(E, error), loc))
     {
     }
 
@@ -123,7 +125,7 @@ private:
         void* Object;
         vtable_t VTable;
         UInt Size;
-        std::source_location Location;
+        violet::SourceLocation Location;
         node_t* Next;
 
 #if VIOLET_USE_RTTI
@@ -137,7 +139,7 @@ private:
         auto operator=(node_t&& other) noexcept -> node_t&;
 
         template<typename T>
-        static auto New(T object, std::source_location loc, node_t* next = nullptr) noexcept(
+        static auto New(T object, violet::SourceLocation loc, node_t* next = nullptr) noexcept(
             std::is_move_constructible_v<T>) -> node_t*
         {
             auto* node = new node_t();
@@ -212,7 +214,7 @@ using Result = violet::Result<T, Error>;
 struct Chain final: public Iterator<Chain> {
     struct Frame final {
         String Message;
-        std::source_location Location;
+        violet::SourceLocation Location;
 
         VIOLET_DISALLOW_CONSTRUCTOR(Frame);
 
