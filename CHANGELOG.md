@@ -7,13 +7,16 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.01...master>
+
+### 26.05.01
 #### Noelware.Violet
 - Make `violet::Ok` as a struct instead of a constexpr function ([`@auguwu`])
 - Added an implicit converting constructor from `violet::Err<Other>` -> `violet::Err<E>` when `E`
   is constructible from `Other`, which fixes issues with `VIOLET_TRY` on `violet::io::Error` ([`@auguwu`])
 - Replaced the unconstrained `T` constructor in **violet::anyhow::Error** that conflicted with the new forwarding, constrained `E&&` overload ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.05...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.05...26.05.01>
 
 ### 26.05
 - **Breaking**: All Bazel targets now use hidden visibility by default, public APIs will be marked with `VIOLET_API` ([`@auguwu`])
