@@ -26,5 +26,5 @@ project(
     license: 'MIT',
     meson_version: '>=1.1',
     version: files('.violet-version'),
-    default_options: ['cpp_std=c++26', 'default_library=static', 'warning_level=3']
+    default_options: ['cpp_std=c++26', 'default_library=static', 'warning_level=3'],
 )

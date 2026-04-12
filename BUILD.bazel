@@ -74,6 +74,13 @@ cc_library(
         "experimental",
         [
             "//violet/experimental:smol_string",
+            "//violet/experimental:oneof",
+        ],
+    ),
+    (
+        "experimental_threading",
+        [
+            "//violet/experimental/threading:cancellation_token",
         ],
     ),
     (
