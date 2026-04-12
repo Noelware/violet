@@ -39,7 +39,7 @@ jobs:
                 integrity=$(openssl dgst -sha256 -binary "$GITHUB_WORKSPACE/bazeldist.tgz" | openssl base64 -A | sed 's/^/sha256-/')
                 echo "integrity=$integrity" >> $GITHUB_OUTPUT
 
-            - uses: softprops/action-gh-release@v2
+            - uses: softprops/action-gh-release@v3
               with:
                 files: ${{github.workspace}}/bazeldist.tgz
 
