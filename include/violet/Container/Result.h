@@ -257,7 +257,7 @@ private:
 
 /// A tagged, explicit ok variant for [`violet::Result`].
 template<typename T>
-struct Ok final {
+struct VIOLET_API Ok final {
     static_assert(std::is_object_v<T>, "`Ok<T>` requires `T` to be a object type");
     static_assert(!std::is_void_v<T>, "`Ok<void>` is ill-formed");
     static_assert(!std::is_array_v<T>, "`Ok<T>` must wrap an array type");
