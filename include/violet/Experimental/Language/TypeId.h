@@ -126,35 +126,21 @@ private:
     std::string_view n_name;
 
     template<typename T>
-    constexpr static auto getRawTypeName() noexcept -> std::string_view
+    constexpr static auto getTypeNameOf() noexcept -> std::string_view
     {
 #if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
-        return __PRETTY_FUNCTION__;
+        constexpr std::string_view sv = __PRETTY_FUNCTION__;
+        constexpr auto start = sv.rfind('=') + 2;
+        constexpr auto end = sv.rfind(']');
+        return sv.substr(start, end - start);
 #elif defined(VIOLET_MSVC)
-        return __FUNCSIG__;
+        constexpr std::string_view sv = __FUNCSIG__;
+        constexpr auto start = sv.rfind("getTypeNameOf<") + 14; // len("getTypeNameOf<")
+        constexpr auto end = sv.rfind('>');
+        return sv.substr(start, end - start);
 #else
         return "(unknown)";
 #endif
-    }
-
-    template<typename T>
-    constexpr static auto getTypeNameOf() noexcept -> std::string_view
-    {
-        constexpr auto sv = getRawTypeName<T>();
-        if (sv == "(unknown)") {
-            return sv;
-        }
-
-#ifdef VIOLET_MSVC
-        constexpr auto start = sv.find('<') + 1;
-        constexpr auto end = sv.rfind('>');
-#else
-        constexpr auto eq = sv.rfind('=') + 2;
-        constexpr auto start = eq;
-        constexpr auto end = sv.rfind(']');
-#endif
-
-        return sv.substr(start, end - start);
     }
 };
 
