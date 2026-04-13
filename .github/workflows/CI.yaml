@@ -65,10 +65,11 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                compiler: [gcc-15, gcc-14, clang-21, clang-20]
+                compiler: [gcc-15, gcc-14, clang-22, clang-21, clang-20]
                 bazel-version: ["7.7.1", "8.6.0"]
                 cxx-standard: ["26", "23", "20"]
                 include:
+                    - {compiler: clang-22, cc: "clang-22", cxx: "clang++-22", flags: ""}
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: ""}
                     - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: ""}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
@@ -103,10 +104,11 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                compiler: [clang-21, clang-20]
+                compiler: [clang-22, clang-21, clang-20]
                 bazel-version: ["7.7.1", "8.6.0"]
                 cxx-standard: ["26", "23", "20"]
                 include:
+                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-22", flags: "--config=libcxx"}
                     - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--config=libcxx"}
                     - {compiler: clang-20, cc: "clang-20", cxx: "clang++-20", flags: "--config=libcxx"}
         env:
@@ -233,9 +235,9 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                compiler: [gcc-15, clang-21]
+                compiler: [gcc-15, clang-22]
                 include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: " --test_env=ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
+                    - {compiler: clang-22, cc: "clang-22", cxx: "clang++-22", flags: " --test_env=ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-22"}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
             USE_BAZEL_VERSION: "8.6.0"
@@ -260,9 +262,9 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                compiler: [gcc-15, clang-21]
+                compiler: [gcc-15, clang-22]
                 include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=UBSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21"}
+                    - {compiler: clang-22, cc: "clang-22", cxx: "clang++-22", flags: "--test_env=UBSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-22"}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
             USE_BAZEL_VERSION: "8.6.0"
@@ -289,7 +291,7 @@ jobs:
             matrix:
                 compiler: [gcc-15, clang-21]
                 include:
-                    - {compiler: clang-21, cc: "clang-21", cxx: "clang++-21", flags: "--test_env=TSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-21 "}
+                    - {compiler: clang-22, cc: "clang-22", cxx: "clang++-22", flags: "--test_env=TSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-22 "}
                     - {compiler: gcc-15, cc: "gcc", cxx: "g++", flags: ""}
         env:
             USE_BAZEL_VERSION: "8.6.0"

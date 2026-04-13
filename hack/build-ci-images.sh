@@ -29,10 +29,10 @@ set -eu pipefail
 declare -A gccimages
 
 # renovate: ref=gcc:15.2-trixie
-gccimages["gcc-15"]="gcc@sha256:9cc747b141fb69baaff237936f742f579fe6439e5b3b533b1c40d82374d220a0"
+gccimages["gcc-15"]="gcc@sha256:1b8e87c57408eecb774f3e92f1ac6e580438f0d1a0addf541ec686d0474d8c21"
 
 # renovate: ref=gcc:14.3-trixie
-gccimages["gcc-14"]="gcc@sha256:f88e7ca701db4c4e5a0c12cec72e9bd06f392fcce240760b356ed55d9c21c174"
+gccimages["gcc-14"]="gcc@sha256:09304e332517ea93b9927e72d2f85cf505753240e850e5779565f8076a2c40bf"
 
 if ! command -v docker >/dev/null; then
     echo "~> missing \`docker\` command :: exiting"
@@ -44,7 +44,7 @@ DOCKERFLAGS=${DOCKERFLAGS:-"--load"}
 IMAGE_REGISTRY="ghcr.io/noelware/violet/ci" # TODO(@auguwu): once cr.noelware.cloud is ready, switch to `cr.noelware.cloud/private/violet/ci`
 
 ## START: LLVM Clang
-for clangVersion in "21" "20"; do
+for clangVersion in "22" "21" "20"; do
     echo "~> START: $IMAGE_REGISTRY:clang-$clangVersion"
 
     time docker buildx build . \
