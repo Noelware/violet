@@ -19,32 +19,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION = "26.05.02"
-DEVBUILD = False
+load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
 
-def encode_as_int():
-    parts = VERSION.split(".")
-    if len(parts) == 2:
-        yy, mm = parts
-        if mm.endswith("-dev"):
-            mm = mm[:2]
+package(
+    default_visibility = ["//visibility:public"],
+)
 
-        dd = "00"
-        patch = "00"
-    elif len(parts) == 3:
-        yy, mm, dd = parts
-        if dd.endswith("-dev"):
-            dd = dd[:2]
+cc_library(
+    name = "typeid",
+    hdrs = ["//include/violet/Experimental/Language:TypeId.h"],
+    deps = [
+        "//violet:macros",
+        "//violet:policy_checks",
+    ],
+)
 
-        patch = "00"
-    elif len(parts) == 4:
-        yy, mm, dd, patch = parts
-        if dd.endswith("-dev"):
-            dd = dd[:2]
-    else:
-        fail("invalid version format: %s" % VERSION)
-
-    return (int(yy) * 1000000 +
-            int(mm) * 10000 +
-            int(dd) * 100 +
-            int(patch))
+cc_test(
+    name = "typeid_test",
+    srcs = ["//tests/experimental/language:TypeId.test.cc"],
+    deps = [":typeid"],
+)

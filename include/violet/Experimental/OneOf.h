@@ -24,7 +24,6 @@
 #pragma once
 
 #include <violet/Container/Optional.h>
-#include <violet/Violet.h>
 
 namespace violet::experimental {
 
@@ -73,10 +72,34 @@ namespace detail {
 
 } // namespace detail
 
+/// A well-behaved, empty type that is usable as a placeholder alternative in
+/// a [`OneOf`] object to represent the absense of a value.
+///
+/// **Mono** is comparable, hashable, and trivally copyable. All comparisons between two **Mono**
+/// objects are equal.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Experimental/OneOf.h>
+///
+/// violet::experimental::OneOf<violet::experimental::Mono, int> x;
+/// ```
+struct VIOLET_API Mono final {
+    constexpr auto operator<=>(Mono) const noexcept -> std::strong_ordering
+    {
+        return std::strong_ordering::equal;
+    }
+
+    constexpr auto operator==(Mono) const noexcept -> bool
+    {
+        return true;
+    }
+};
+
 /// A discriminated union similar to [`std::visit`] but possess no valueless_by_exception state,
 /// O(1) jump-table visitation, and much more.
 template<typename... Ts>
-struct OneOf final {
+struct VIOLET_API OneOf final {
     static_assert(sizeof...(Ts) > 0, "`OneOf` requires atleast one type to be present");
     static_assert((std::is_destructible_v<Ts> && ...), "`OneOf` requires all types to be destructible");
 
@@ -314,7 +337,7 @@ struct OneOf final {
             o1.Visit([&](auto& av) -> void {
                 using T = std::decay_t<decltype(av)>;
 
-                // Move through a temporary — requires only move-constructibility,
+                // Move through a temporary; requires only move-constructibility,
                 // not move-assignability, so types like tracked_object work fine.
                 T tmp(VIOLET_MOVE(av));
                 ::new (std::addressof(av)) T(VIOLET_MOVE(*o2.template Get<T>()));
@@ -431,3 +454,11 @@ constexpr auto createVisitorTable(std::index_sequence<Is...>) -> Array<Ret (*)(V
 }
 
 } // namespace violet::experimental::detail
+
+template<>
+struct std::hash<violet::experimental::Mono> final {
+    constexpr auto operator()(violet::experimental::Mono) const noexcept -> violet::UInt
+    {
+        return 0;
+    }
+};

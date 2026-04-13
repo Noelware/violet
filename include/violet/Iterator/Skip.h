@@ -64,7 +64,7 @@ struct VIOLET_API Skip final: public Iterator<Skip<Impl>> {
             Optional<UInt> hi;
 
             if (hint.High) {
-                hi = *hint.High > this->n_skip ? Some<UInt>(*hint.High - this->n_skip) : Some<UInt>();
+                hi = *hint.High > this->n_skip ? (*hint.High - this->n_skip) : 0;
             }
 
             return { lo, hi };

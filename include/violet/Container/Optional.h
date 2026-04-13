@@ -91,16 +91,82 @@ struct VIOLET_API optional_type<std::optional<U>> {
 template<class T>
 using optional_type_t = typename optional_type<T>::type;
 
-/// Constructs an [`Optional`] containing a value.
-///
-/// @tparam T value type to store
-/// @tparam Args argument types that are forwarded to `T`'s constructor
-/// @param args arguments that are forwarded to `T`'s constructor
-template<typename T, typename... Args>
-constexpr static auto Some(Args&&... args) -> Optional<T>
-{
-    return Optional<T>(std::in_place, VIOLET_FWD(Args, args)...);
-}
+template<typename T>
+struct VIOLET_API Some final {
+    static_assert(std::is_object_v<T>, "`Some<T>` requires `T` to be a object type");
+    static_assert(!std::is_void_v<T>, "`Some<void>` is ill-formed");
+    static_assert(!std::is_array_v<T>, "`Some<T>` must wrap an array type");
+    static_assert(std::is_destructible_v<T>, "`Some<T>` requires `T` to be destructible");
+    static_assert(std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>,
+        "`Some<T>` requires `T` to be movable or copyable");
+    static_assert(!std::same_as<T, Some<T>>, "`Some<Some<T>>` is ill-formed");
+
+    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Some);
+
+    template<typename Other>
+        requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
+    constexpr VIOLET_IMPLICIT Some(Some<std::decay_t<Other>>&) = delete;
+
+    template<typename Other>
+        requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
+    constexpr VIOLET_IMPLICIT Some(Some<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
+        : n_value(T(VIOLET_MOVE(other).n_value))
+    {
+    }
+
+    constexpr VIOLET_EXPLICIT Some(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        : n_value(value)
+    {
+    }
+
+    constexpr VIOLET_EXPLICIT Some(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
+        : n_value(VIOLET_MOVE(value))
+    {
+    }
+
+    template<typename... Args>
+        requires(std::constructible_from<T, Args...>
+            && !(sizeof...(Args) == 1 && (std::same_as<std::decay_t<Args>, T> || ...)))
+    constexpr VIOLET_EXPLICIT Some(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        : n_value(VIOLET_FWD(Args, args)...)
+    {
+    }
+
+    [[nodiscard]] auto ToString() const noexcept -> String
+    {
+        return violet::ToString(this->n_value);
+    }
+
+    friend auto operator<<(std::ostream& os, const Some& self) noexcept -> std::ostream&
+    {
+        return os << self.ToString();
+    }
+
+    constexpr VIOLET_EXPLICIT operator violet::Optional<T>() const noexcept
+    {
+        return violet::Optional<T>(std::in_place, VIOLET_MOVE(this->n_value));
+    }
+
+    constexpr VIOLET_EXPLICIT operator std::optional<T>() const noexcept
+    {
+        return std::optional<T>(std::in_place, VIOLET_MOVE(this->n_value));
+    }
+
+private:
+    template<typename>
+    friend struct Optional;
+
+    T n_value;
+};
+
+template<typename T, std::size_t N>
+Some(T (&)[N]) -> Some<const T*>;
+
+template<typename T>
+Some(const T&) -> Some<std::decay_t<T>>;
+
+template<typename T>
+Some(T&&) -> Some<std::decay_t<T>>;
 
 // NOLINTBEGIN(cppcoreguidelines-pro-type-union-access)
 
@@ -255,6 +321,20 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         if (other.n_engaged) {
             ::new (&this->n_value) T(other.n_value);
         }
+    }
+
+    template<typename U>
+        requires(std::is_convertible_v<const U&, T>)
+    constexpr VIOLET_IMPLICIT Optional(const Some<U>& some)
+        : Optional(some.n_value)
+    {
+    }
+
+    template<typename U>
+        requires(std::is_convertible_v<U &&, T>)
+    constexpr VIOLET_IMPLICIT Optional(Some<U>&& some)
+        : Optional(VIOLET_MOVE(some).n_value)
+    {
     }
 
     /// Copy-assigns from another `Optional`.

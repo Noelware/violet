@@ -75,6 +75,7 @@ cc_library(
         [
             "//violet/experimental:smol_string",
             "//violet/experimental:oneof",
+            "//violet/experimental/language:typeid",
         ],
     ),
     (

@@ -640,7 +640,11 @@ auto BasePath<Derived, StringType>::Extension() const noexcept -> Optional<Strin
         }
     }
 
-    return pos == -1 || pos == 0 ? Nothing : Some<String>(filename.substr(pos + 1));
+    if (pos == -1 || pos == 0) {
+        return Nothing;
+    }
+
+    return Some(filename.substr(pos + 1));
 }
 
 template<typename Derived, typename StringType>

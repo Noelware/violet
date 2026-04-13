@@ -203,17 +203,17 @@
 #ifdef VIOLET_WINDOWS
 #ifdef VIOLET_DLL_EXPORT
 #define VIOLET_API __declspec(dllexport)
-#else
+#elif defined(VIOLET_DLL_IMPORT)
 #define VIOLET_API __declspec(dllimport)
-#endif // defined(VIOLET_DLL_EXPORT)
-#elif VIOLET_HAS_CPP_ATTRIBUTE(gnu::visibility)
-#define VIOLET_API [[gnu::visibility("default")]]
+#else
+#define VIOLET_API
+#endif
 #elif VIOLET_HAS_ATTRIBUTE(visibility)
 #define VIOLET_API __attribute__((visibility("default")))
 #else
 #define VIOLET_API
-#endif // defined(VIOLET_WINDOWS)
-#endif // !defined(VIOLET_API)
+#endif
+#endif
 
 #if VIOLET_HAS_CPP_ATTRIBUTE(likely)
 #define VIOLET_LIKELY [[likely]]

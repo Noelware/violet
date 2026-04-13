@@ -28,7 +28,7 @@ using namespace violet; // NOLINT(google-build-using-namespace)
 
 TEST(Optionals, Basic)
 {
-    const Optional<UInt32> opt{};
+    const Optional<UInt32> opt;
     ASSERT_FALSE(opt.HasValue());
 }
 
@@ -41,7 +41,7 @@ TEST(Optionals, Nothing)
 TEST(Optionals, InPlaceConstructor)
 {
     const Optional<String> opt(std::in_place, "hello, world!");
-    const Optional<String> opt2 = Some<String>("hello, world!");
+    const Optional<String> opt2 = Some("hello, world!");
 
     ASSERT_TRUE(opt.HasValue());
     ASSERT_TRUE(opt2.HasValue());
@@ -51,8 +51,8 @@ TEST(Optionals, InPlaceConstructor)
 
 TEST(Optionals, CopyConstructor)
 {
-    const auto opt1 = Some<String>("hello");
-    const auto opt2 = opt1; // NOLINT(performance-unnecessary-copy-initialization)
+    const Optional<String> opt1 = Some<String>("hello");
+    const Optional<String> opt2 = opt1; // NOLINT(performance-unnecessary-copy-initialization)
 
     ASSERT_TRUE(opt1.HasValue());
     ASSERT_TRUE(opt2.HasValue());
@@ -62,7 +62,7 @@ TEST(Optionals, CopyConstructor)
 
 TEST(Optionals, MoveConstructor)
 {
-    auto opt1 = Some<String>("hello");
+    Optional<String> opt1 = Some<String>("hello");
     auto opt2 = VIOLET_MOVE(opt1);
 
     ASSERT_FALSE(opt1.HasValue());
@@ -72,7 +72,7 @@ TEST(Optionals, MoveConstructor)
 
 TEST(Optionals, CopyAssignment)
 {
-    const auto opt1 = Some<String>("hello");
+    const Optional<String> opt1 = Some<String>("hello");
     Optional<String> opt2;
 
     opt2 = opt1;
@@ -85,7 +85,7 @@ TEST(Optionals, CopyAssignment)
 
 TEST(Optionals, MoveAssignment)
 {
-    auto opt1 = Some<String>("hello");
+    Optional<String> opt1 = Some<String>("hello");
     Optional<String> opt2;
 
     opt2 = VIOLET_MOVE(opt1);
@@ -97,8 +97,8 @@ TEST(Optionals, MoveAssignment)
 
 TEST(Optionals, HasValue)
 {
-    const Optional<UInt32> opt1{};
-    const auto opt2 = Some<UInt32>(1);
+    const Optional<UInt32> opt1{ };
+    const Optional<UInt32> opt2 = Some<UInt32>(1);
 
     ASSERT_FALSE(opt1.HasValue());
     ASSERT_TRUE(opt2.HasValue());
@@ -106,19 +106,19 @@ TEST(Optionals, HasValue)
 
 TEST(Optionals, Value)
 {
-    const auto opt = Some<String>("world");
+    const Optional<String> opt = Some<String>("world");
     ASSERT_EQ(opt.Value(), "world");
 }
 
 TEST(Optionals, Unwrap)
 {
-    auto opt = Some<String>("world");
+    Optional<String> opt = Some<String>("world");
     ASSERT_EQ(VIOLET_MOVE(opt).Unwrap(), "world");
 }
 
 TEST(Optionals, UnwrapOr)
 {
-    auto opt1 = Some<String>("world");
+    Optional<String> opt1 = Some<String>("world");
     Optional<String> opt2;
 
     ASSERT_EQ(VIOLET_MOVE(opt1).UnwrapOr("hello"), "world");
@@ -127,7 +127,7 @@ TEST(Optionals, UnwrapOr)
 
 TEST(Optionals, Map)
 {
-    const auto opt1 = Some<String>("hello");
+    const Optional<String> opt1 = Some<String>("hello");
     const auto opt2 = Optional<String>();
 
     const auto res1 = opt1.Map([](const String& value) -> UInt { return value.length(); });
@@ -140,7 +140,7 @@ TEST(Optionals, Map)
 
 TEST(Optionals, MapOr)
 {
-    const auto opt1 = Some<String>("hello");
+    const Optional<String> opt1 = Some<String>("hello");
     const auto opt2 = Optional<String>();
 
     const auto res1 = opt1.MapOr(0, [](const String& value) -> UInt { return value.length(); });
@@ -152,8 +152,8 @@ TEST(Optionals, MapOr)
 
 TEST(Optionals, HasValueAnd)
 {
-    const auto opt1 = Some<UInt32>(2);
-    const auto opt2 = Some<UInt32>(3);
+    const Optional<UInt32> opt1 = Some<UInt32>(2);
+    const Optional<UInt32> opt2 = Some<UInt32>(3);
     const auto opt3 = Optional<UInt32>();
 
     ASSERT_TRUE(opt1.HasValueAnd([](UInt32 value) -> bool { return value % 2 == 0; }));
@@ -163,7 +163,7 @@ TEST(Optionals, HasValueAnd)
 
 TEST(Optionals, Take)
 {
-    auto opt1 = Some<String>("hello");
+    Optional<String> opt1 = Some<String>("hello");
     const auto opt2 = opt1.Take();
 
     ASSERT_FALSE(opt1.HasValue());
@@ -173,7 +173,7 @@ TEST(Optionals, Take)
 
 TEST(Optionals, Reset)
 {
-    auto opt = Some<String>("hello");
+    Optional<String> opt = Some<String>("hello");
     ASSERT_TRUE(opt.HasValue());
 
     opt.Reset();

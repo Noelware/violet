@@ -602,7 +602,7 @@ struct Iterator {
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
-                return Some<iter::TypeOf<Impl>>(*value);
+                return decltype(Optional<iter::TypeOf<Impl>>{ })(Some<iter::TypeOf<Impl>>(*value));
             }
         }
 
@@ -620,7 +620,7 @@ struct Iterator {
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
-                return Some<iter::TypeOf<Impl>>(*value);
+                return decltype(Optional<iter::TypeOf<Impl>>{ })(Some<iter::TypeOf<Impl>>(*value));
             }
         }
 
@@ -641,7 +641,7 @@ struct Iterator {
 
         while (auto value = getThisObject().Next()) {
             if (Optional<U> mapped = std::invoke(VIOLET_FWD(Fun, fun), *value)) {
-                return Some<U>(*mapped);
+                return decltype(Optional<U>{ })(Some<U>(*mapped));
             }
         }
 
@@ -662,7 +662,7 @@ struct Iterator {
 
         while (auto value = getThisObject().Next()) {
             if (Optional<U> mapped = std::invoke(VIOLET_FWD(Fun, fun), *value)) {
-                return Some<U>(*mapped);
+                return decltype(Optional<U>{ })(Some<U>(*mapped));
             }
         }
 

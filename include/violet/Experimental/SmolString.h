@@ -60,7 +60,7 @@ namespace violet::experimental {
 /// VIOLET_ASSERT(hello.Size() == 13, "size failure");
 /// ```
 template<size_t N>
-struct SmolString final {
+struct VIOLET_API SmolString final {
     /// Construct a empty smol string.
     constexpr VIOLET_IMPLICIT SmolString() noexcept = default;
 
@@ -238,7 +238,7 @@ struct SmolString final {
     constexpr auto operator<=>(const SmolString&) const noexcept -> std::strong_ordering = default;
 
 private:
-    std::array<char, N> n_data{};
+    std::array<char, N> n_data{ };
     size_t n_size = 0;
 };
 
