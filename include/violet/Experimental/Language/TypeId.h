@@ -74,7 +74,12 @@ struct VIOLET_API TypeId final {
     template<typename T>
     constexpr static auto Of() -> TypeId
     {
+#if VIOLET_REQUIRE_STL(202302L)
         constexpr static char kTypeId = 0;
+#else
+        constexpr auto kTypeId = sentinel_t<T>::kValue;
+#endif
+
         return TypeId(&kTypeId, getTypeNameOf<T>());
     }
 
@@ -121,6 +126,13 @@ private:
         , n_name(name)
     {
     }
+
+#if VIOLET_REQUIRE_STL(202302L) == 0
+    template<typename T>
+    struct sentinel_t final {
+        constexpr static char kValue = 0;
+    };
+#endif
 
     const void* n_id;
     std::string_view n_name;
