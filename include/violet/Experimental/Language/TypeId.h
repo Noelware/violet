@@ -29,7 +29,6 @@
 #include <cstddef>
 #include <format>
 #include <string>
-#include <string_view>
 
 namespace violet::experimental {
 
@@ -90,16 +89,6 @@ struct VIOLET_API TypeId final {
         return reinterpret_cast<size_t>(this->n_id);
     }
 
-    /// Returns a human-readable name for the type, derived from compiler extensions.
-    ///
-    /// ## Warning
-    /// The format of the result of calling this function is **compiler-dependent and *NOT STABLE*** across
-    /// compiler versions. It is intended for diagnostics and logging output only.
-    [[nodiscard]] constexpr auto Name() const noexcept -> std::string_view
-    {
-        return this->n_name;
-    }
-
     [[nodiscard]] auto ToString() const noexcept -> std::string
     {
         return std::format("TypeId(0x{:x})", this->HashCode());
@@ -121,9 +110,8 @@ struct VIOLET_API TypeId final {
     }
 
 private:
-    constexpr VIOLET_EXPLICIT TypeId(const void* ptr, std::string_view name) noexcept
+    constexpr VIOLET_EXPLICIT TypeId(const void* ptr) noexcept
         : n_id(ptr)
-        , n_name(name)
     {
     }
 
@@ -135,25 +123,6 @@ private:
 #endif
 
     const void* n_id;
-    std::string_view n_name;
-
-    template<typename T>
-    constexpr static auto getTypeNameOf() noexcept -> std::string_view
-    {
-#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
-        constexpr std::string_view sv = __PRETTY_FUNCTION__;
-        constexpr auto start = sv.rfind('=') + 2;
-        constexpr auto end = sv.rfind(']');
-        return sv.substr(start, end - start);
-#elif defined(VIOLET_MSVC)
-        constexpr std::string_view sv = __FUNCSIG__;
-        constexpr auto start = sv.rfind("getTypeNameOf<") + 14; // len("getTypeNameOf<")
-        constexpr auto end = sv.rfind('>');
-        return sv.substr(start, end - start);
-#else
-        return "(unknown)";
-#endif
-    }
 };
 
 } // namespace violet::experimental
