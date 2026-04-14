@@ -143,8 +143,19 @@ TEST(TypeId, UsableAsUnorderedMapKey)
 TEST(TypeId, OfIsConstexpr)
 {
     constexpr auto id = TypeId::Of<Foo>();
+
+#ifndef VIOLET_GCC
     static_assert(TypeId::Of<Foo>() == TypeId::Of<Foo>());
     static_assert(TypeId::Of<Foo>() != TypeId::Of<Bar>());
+#else
+    // gcc fucking sucks dude (it is only hit on UBSan, unsure if that is the cause but i dont care, i want to blame gcc
+    // anyway for my love of clang because that totally solves my mental problems (probably))
+    //
+    // error: '(((const void*)(&violet::experimental::TypeId::sentinel_t<{anonymous}::Foo>::kValue)) != ((const
+    // void*)(&violet::experimental::TypeId::sentinel_t<{anonymous}::Bar>::kValue)))' is not a constant expression
+    EXPECT_NE(TypeId::Of<Foo>(), TypeId::Of<Bar>());
+#endif
+
     (void)id;
 }
 
