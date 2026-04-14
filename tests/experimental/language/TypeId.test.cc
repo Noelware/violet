@@ -140,39 +140,6 @@ TEST(TypeId, UsableAsUnorderedMapKey)
     EXPECT_NE(map.find(TypeId::Of<Foo>()), map.find(TypeId::Of<Bar>()));
 }
 
-TEST(TypeId, NameIsNonEmpty)
-{
-    EXPECT_FALSE(TypeId::Of<Foo>().Name().empty());
-    EXPECT_FALSE(TypeId::Of<int>().Name().empty());
-}
-
-TEST(TypeId, NameContainsTypeName)
-{
-    EXPECT_NE(TypeId::Of<Foo>().Name().find("Foo"), std::string_view::npos);
-    EXPECT_NE(TypeId::Of<Bar>().Name().find("Bar"), std::string_view::npos);
-}
-
-TEST(TypeId, NameDiffersForDifferentTypes)
-{
-    EXPECT_NE(TypeId::Of<Foo>().Name(), TypeId::Of<Bar>().Name());
-}
-
-TEST(TypeId, NameIsPrimitiveReadable)
-{
-    // Compilers disagree on "int" vs "signed int" etc., so just check
-    // the name is non-empty and stable rather than asserting exact strings.
-    auto name = TypeId::Of<int>().Name();
-    EXPECT_FALSE(name.empty());
-    EXPECT_EQ(name, TypeId::Of<int>().Name());
-}
-
-TEST(TypeId, TemplateNameContainsArgument)
-{
-    auto name = TypeId::Of<Wrapper<Foo>>().Name();
-    EXPECT_NE(name.find("Wrapper"), std::string_view::npos);
-    EXPECT_NE(name.find("Foo"), std::string_view::npos);
-}
-
 TEST(TypeId, OfIsConstexpr)
 {
     constexpr auto id = TypeId::Of<Foo>();

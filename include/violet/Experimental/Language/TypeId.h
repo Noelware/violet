@@ -79,7 +79,7 @@ struct VIOLET_API TypeId final {
         constexpr auto kTypeId = sentinel_t<T>::kValue;
 #endif
 
-        return TypeId(&kTypeId, getTypeNameOf<T>());
+        return TypeId(&kTypeId);
     }
 
     /// Returns a hash-suitable representation of this token.
