@@ -7,6 +7,9 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.02...master>
+
+### 26.05.02
 #### Noelware.Violet
 - Add **violet::Some**, which acts like **violet::Ok** but for optional values ([`@auguwu`])
 
@@ -14,7 +17,7 @@ availableAt:
 - Add **TypeId** for safe, no-RTTI-enabled type indexes ([`@auguwu`])
 - Add **Mono** for a replacement for `std::monostate` ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.05.01...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.01...26.05.02>
 
 ### 26.05.01
 #### Noelware.Violet
