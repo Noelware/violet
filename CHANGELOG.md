@@ -10,6 +10,8 @@ availableAt:
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.03...master>
 
 ### 26.05.03
+- (breaking) Violet will now require the MSVC flag `/Zc:preprocessor` to be present
+
 #### Noelware.Violet
 - (breaking) Remove **violet::Optional<T&>** in favour of **violet::Optional\<std::reference_wrapper\<T\>\>** ([`@auguwu`])
 

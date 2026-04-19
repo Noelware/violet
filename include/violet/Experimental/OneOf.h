@@ -214,25 +214,27 @@ struct VIOLET_API OneOf final {
     /// it is not. Never throws.
     template<typename T>
         requires(pack_contains_v<T, Ts...>)
-    constexpr auto Get() noexcept -> Optional<T&>
+    constexpr auto Get() noexcept -> Optional<std::reference_wrapper<T>>
     {
         if (this->n_index != IndexOf<T>) {
             return Nothing;
         }
 
-        return Optional<T&>(*std::addressof(detail::getElementInStorage<IndexOf<T>>(this->n_storage)));
+        auto* ptr = std::addressof(detail::getElementInStorage<IndexOf<T>>(this->n_storage));
+        return Some(std::ref(*ptr));
     }
 
-    /// Const overload of [`Get`]. Returns `Optional<const T&>`.
+    /// Const overload of [`Get`]. Returns `Optional<std::reference_wrapper<const T>>`.
     template<typename T>
         requires(pack_contains_v<T, Ts...>)
-    constexpr auto Get() const noexcept -> Optional<const T&>
+    constexpr auto Get() const noexcept -> Optional<std::reference_wrapper<const T>>
     {
         if (this->n_index != IndexOf<T>) {
             return Nothing;
         }
 
-        return Optional<const T&>(*std::addressof(detail::getElementInStorage<IndexOf<T>>(this->n_storage)));
+        const auto* ptr = std::addressof(detail::getElementInStorage<IndexOf<T>>(this->n_storage));
+        return Some(std::cref(*ptr));
     }
 
     /// Dispatches a visitor implementation to the active element via a constexpr jump table.
@@ -366,7 +368,7 @@ struct VIOLET_API OneOf final {
                 // not move-assignability, so types like tracked_object work fine.
                 T tmp(VIOLET_MOVE(av));
                 ::new (std::addressof(av)) T(VIOLET_MOVE(*o2.template Get<T>()));
-                ::new (std::addressof(*o2.template Get<T>())) T(VIOLET_MOVE(tmp));
+                ::new (std::addressof(detail::getElementInStorage<IndexOf<T>>(o2.n_storage))) T(VIOLET_MOVE(tmp));
             });
         } else {
             OneOf tmp(VIOLET_MOVE(o1));
