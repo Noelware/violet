@@ -50,7 +50,7 @@ TEST(Result, Err)
     EXPECT_EQ(result.Error(), 404);
 }
 
-#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
+#if VIOLET_REQUIRE_STL(202302L)
 TEST(Result, ToStdExpected)
 {
     auto ok = Ok<String>("hello");
@@ -80,7 +80,7 @@ TEST(Result, VoidErr)
     EXPECT_EQ(result.Error(), 500);
 }
 
-#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L) || __cplusplus >= 202302L
+#if VIOLET_REQUIRE_STL(202302L)
 TEST(Result, VoidToStdExpected)
 {
     Result<void, UInt32> ok;

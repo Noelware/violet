@@ -47,7 +47,7 @@
  *
  * This macro defines the minimum GCC version that Violet supports
  */
-#define VIOLET_MIN_GCC_MAJOR_SUPPORTED 13
+#define VIOLET_MIN_GCC_MAJOR_SUPPORTED 14
 
 /**
  * @macro VIOLET_MIN_MSVC_VERSION
@@ -74,4 +74,9 @@
 #endif
 #elif defined(__cplusplus) && __cplusplus < VIOLET_MIN_CPP_VERSION
 #error "Violet aims to only support C++ 20 or higher"
+#endif
+
+// Use the new conforming preprocessor on MSVC
+#if defined(_MSC_VER) && !defined(__clang__) && (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL)
+#error "Violet requires the use of the new conforming preprocessor enabled by the `/Zc:preprocessor` flag"
 #endif

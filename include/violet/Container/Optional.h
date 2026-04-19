@@ -1049,10 +1049,24 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return std::addressof(this->getValueRef());
     }
 
+    constexpr auto operator->() noexcept VIOLET_LIFETIMEBOUND
+        requires violet::instanceof_v<std::reference_wrapper, T>
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return std::addressof(this->getValueRef().get());
+    }
+
     constexpr auto operator->() const noexcept -> const T*
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
         return std::addressof(this->getValueRef());
+    }
+
+    constexpr auto operator->() const noexcept VIOLET_LIFETIMEBOUND
+        requires violet::instanceof_v<std::reference_wrapper, T>
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return std::addressof(this->getValueRef().get());
     }
 
     constexpr auto operator*() & noexcept VIOLET_LIFETIMEBOUND->T&
@@ -1061,10 +1075,24 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return this->getValueRef();
     }
 
+    constexpr auto operator*() & noexcept VIOLET_LIFETIMEBOUND
+        requires violet::instanceof_v<std::reference_wrapper, T>
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return this->getValueRef().get();
+    }
+
     constexpr auto operator*() const& noexcept VIOLET_LIFETIMEBOUND->const T&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
         return this->getValueRef();
+    }
+
+    constexpr auto operator*() const& noexcept VIOLET_LIFETIMEBOUND
+        requires violet::instanceof_v<std::reference_wrapper, T>
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return this->getValueRef().get();
     }
 
     constexpr auto operator*() && noexcept VIOLET_LIFETIMEBOUND->T&&
@@ -1073,10 +1101,24 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return VIOLET_MOVE(this->getValueRef());
     }
 
+    constexpr auto operator*() && noexcept VIOLET_LIFETIMEBOUND
+        requires violet::instanceof_v<std::reference_wrapper, T>
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return VIOLET_MOVE(this->getValueRef().get());
+    }
+
     constexpr auto operator*() const&& noexcept VIOLET_LIFETIMEBOUND->const T&&
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
         return VIOLET_MOVE(this->getValueRef());
+    }
+
+    constexpr auto operator*() const&& noexcept VIOLET_LIFETIMEBOUND
+        requires violet::instanceof_v<std::reference_wrapper, T>
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return VIOLET_MOVE(this->getValueRef().get());
     }
 
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
@@ -1211,171 +1253,6 @@ private:
         VIOLET_UNREACHABLE();
 #endif
     }
-};
-
-template<typename T>
-struct Optional<T&> final {
-    using value_type = T&;
-
-    VIOLET_IMPLICIT_CONSTEXPR_COPY_AND_MOVE(Optional);
-    ~Optional() = default;
-
-    constexpr VIOLET_IMPLICIT Optional() noexcept = default;
-    constexpr VIOLET_IMPLICIT Optional(std::nullopt_t) noexcept
-        : Optional()
-    {
-    }
-
-    constexpr VIOLET_IMPLICIT Optional(std::nullopt_t&) noexcept
-        : Optional()
-    {
-    }
-
-    constexpr VIOLET_IMPLICIT Optional(T& value) noexcept
-        : n_value(std::addressof(value))
-    {
-    }
-
-    VIOLET_IMPLICIT Optional(T&&) noexcept = delete;
-
-    constexpr auto operator=(T& value) noexcept -> Optional&
-    {
-        this->n_value = std::addressof(value);
-        return *this;
-    }
-
-    constexpr auto operator=(std::nullopt_t) noexcept -> Optional&
-    {
-        this->n_value = nullptr;
-        return *this;
-    }
-
-    auto operator=(T&&) -> Optional& = delete;
-
-    [[nodiscard]] constexpr auto HasValue() const noexcept -> bool
-    {
-        return this->n_value != nullptr;
-    }
-
-    constexpr VIOLET_EXPLICIT operator bool() const noexcept
-    {
-        return this->HasValue();
-    }
-
-    constexpr auto Value() const noexcept -> T&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T&>` represents nothing");
-        return *this->n_value;
-    }
-
-    constexpr auto operator*() const noexcept -> T&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
-        return *this->n_value;
-    }
-
-    constexpr auto operator->() const noexcept -> T*
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
-        return this->n_value;
-    }
-
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T&
-    {
-        VIOLET_LIKELY_IF(HasValue())
-        {
-            return *this->n_value;
-        }
-
-        Optional<T>::panicUnexpectly("tried to unwrap nothing", loc);
-    }
-
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T&
-    {
-        VIOLET_LIKELY_IF(HasValue())
-        {
-            return *this->n_value;
-        }
-
-        Optional<T>::panicUnexpectly(message, loc);
-    }
-
-    constexpr auto UnwrapOr(T& defaultRef) const noexcept -> T&
-    {
-        return HasValue() ? Value() : defaultRef;
-    }
-
-    constexpr auto UnwrapUnchecked(Unsafe) const noexcept -> T&
-    {
-        return Value();
-    }
-
-    template<typename Fun>
-        requires callable<Fun, T&>
-    constexpr auto Map(Fun&& fun) const -> Optional<std::invoke_result_t<Fun, T&>>
-    {
-        if (HasValue()) {
-            return Some<std::invoke_result_t<Fun, T&>>(std::invoke(VIOLET_FWD(Fun, fun), *this->n_value));
-        }
-
-        return Nothing;
-    }
-
-    constexpr void Reset() noexcept
-    {
-        if (this->n_value != nullptr) {
-            this->n_value = nullptr;
-        }
-    }
-
-    constexpr auto operator==(const Optional& other) const noexcept -> bool
-        requires std::equality_comparable<T>
-    {
-        if (HasValue() != other.HasValue()) {
-            return false;
-        }
-
-        if (!HasValue()) {
-            return true;
-        }
-
-        return *this->n_value == *other.n_value;
-    }
-
-    constexpr auto operator==(std::nullopt_t) const noexcept -> bool
-    {
-        return !HasValue();
-    }
-
-    constexpr auto operator!=(std::nullopt_t) const noexcept -> bool
-    {
-        return HasValue();
-    }
-
-    [[nodiscard]] auto ToString() const noexcept -> String
-    {
-        if (!HasValue()) {
-            return "«no value»";
-        }
-
-        return violet::ToString(*this->n_value);
-    }
-
-    friend auto operator<<(std::ostream& os, const Optional<T&>& self) -> std::ostream&
-    {
-        return os << self.ToString();
-    }
-
-private:
-    T* n_value = nullptr;
 };
 
 // NOLINTEND(cppcoreguidelines-pro-type-union-access)

@@ -10,6 +10,9 @@ availableAt:
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.03...master>
 
 ### 26.05.03
+#### Noelware.Violet
+- (breaking) Remove **violet::Optional<T&>** in favour of **violet::Optional\<std::reference_wrapper\<T\>\>** ([`@auguwu`])
+
 #### Noelware.Violet.Experimental
 - Don't decay return types in `OneOf::Visit` ([`@auguwu`])
 - Add default constructor for `OneOf` if the first type is default constructible ([`@auguwu`])
