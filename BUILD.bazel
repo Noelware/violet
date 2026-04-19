@@ -21,11 +21,11 @@
 
 load("@minato//:rcc.bzl", "minato")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("//buildsystem/bazel/flags:flags.bzl", "BOOL_FLAGS")
+load("//buildsystem/bazel/flags:flags.bzl", "BOOL_FLAGS", "STRING_FLAGS")
 
 exports_files(
     ["dummy.cc"],
-    visibility = ["//:__subpackages__"],
+    visibility = [":__subpackages__"],
 )
 
 minato(
@@ -35,14 +35,20 @@ minato(
 cc_library(
     name = "include_hack",
     includes = ["include"],
-    visibility = ["//:__subpackages__"],
+    visibility = [":__subpackages__"],
 )
 
 [alias(
     name = "%s" % name,
     actual = "//buildsystem/bazel/flags:%s" % name,
     visibility = ["//visibility:public"],
-) for name in BOOL_FLAGS]
+) for name in BOOL_FLAGS.keys()]
+
+[alias(
+    name = "%s" % name,
+    actual = "//buildsystem/bazel/flags:%s" % name,
+    visibility = ["//visibility:public"],
+) for name in STRING_FLAGS.keys()]
 
 [cc_library(
     name = framework,

@@ -19,46 +19,84 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-BOOL_FLAGS = [
-    ## ## `@violet//bazel/flags:bitflags_free_function_impls=[True|False]`
-    ## If provided, this will disable the free-functions for the following operators
-    ## when using the `violet::Bitflags` class:
-    ##
-    ## * `operator|`
-    ## * `operator&`
-    ## * `operator^`
-    ## * `operator~`
-    "bitflags_free_function_impls",
+BOOL_FLAGS = {
+    "asan": {
+        "default": False,
+        "doc": "Enables the **Address** Sanitizer on each C++ target. Usually, this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions.",
+    },
+    "bitflags_free_function_impls": {
+        "default": False,
+        "doc": """Disables the free-functions for the following operators when using the `violet::Bitflags` class:
 
-    ## ## `@violet//bazel/flags:win32_dllexport=[True|False]`
-    ## If set to **true**, this will make every public-access API set to `__declspec(dllexport)`
-    ## on MSVC toolchains instead of the default `__declspec(dllimport)`.
-    "win32_dllexport",
+        * `operator|`
+        * `operator&`
+        * `operator^`
+        * `operator~`
+        """,
+    },
+    "msan": {
+        "default": False,
+        "doc": """Enables the **Memory** Sanitizer on each C++ target. Usually, this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions.
 
-    ## ## `@violet//buildsystem/bazel/flags:runfiles_logs=[True|False]`
-    "runfiles_logs",
+        When invoked on `cc_test`s, the C++ standard library implementation will require to be compiled with MemorySanitizer. This will always fail in libstdc++, but libc++
+        has MSan support, but you will need to compile it yourself; default toolchains of libc++ don't compile with MSan by default.""",
+    },
+    "runfiles_logs": {
+        "default": True,
+        "doc": "Enables verbose logs in the console on each test that uses the Runfiles framework.",
+    },
+    "tsan": {
+        "default": False,
+        "doc": "Enables the **Thread** Sanitizer on each C++ target. Usually, this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions.",
+    },
+    "ubsan": {
+        "default": False,
+        "doc": "Enables the **Undefined Behaviour** Sanitizer on each C++ target. Usually, this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions.",
+    },
+    "win32_dllexport": {
+        "default": False,
+        "doc": "When set to **true**, this will use `__declspec(dllexport)` on MSVC toolchains instead of `__declspec(dllimport)`. This is a no-op on non-MSVC toolchains.",
+    },
+}
 
-    ## ## `@violet//bazel/flags:ubsan=[True|False]`
-    ## Enables the **Undefined Behaviour Sanitizer** on each Violet build. Usually,
-    ## this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions,
-    ## like library code.
-    "ubsan",
+STRING_FLAGS = {
+    "dwarf_backend": {
+        "default": "libdwarf",
+        "doc": """The backend to use when parsing DWARF object files, primarily used in Linux. This is mainly used by the `Noelware.Violet.Experimental.Debugging`
+        framework. When you don't have dependents on any target inside of `//violet/experimental/debugging`, this is disabled.
 
-    ## ## `@violet//bazel/flags:tsan=[True|False]`
-    ## Enables the **ThreadSanitizer** on each Violet build. Usually,
-    ## this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions,
-    ## like library code.
-    "tsan",
+        By default, this will use the **elfutils** `libdw` library.
 
-    ## ## `@violet//bazel/flags:msan=[True|False]`
-    ## Enables **MemorySanitizer** on each Violet build. Usually,
-    ## this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions,
-    ## like library code.
-    "msan",
+        * `libdwarf`: Uses **elfutils**' `libdw` library to parse DWARF object files. Recommended
+                      on most instances.
+        * `llvm`: Uses LLVM's machinery to parse DWARF object files. Only recommended if you want
+                  strong support, but at the cost of more compilation time as libLLVM is a huge
+                  project.
+        * `violet` (EXPERIMENTAL): Uses Noelware's implementation for parsing DWARF object files. Not recommended
+                                   at the slightest; this is VERY experimental and things are subject to break. We're
+                                   not sure if we want to do this.
+        * `none`: Allows you to build your own DWARF object-file backend. Very not recommended unless you want to have
+                  full control over the parsing yourself.""",
+        "values": ["libdwarf", "llvm", "violet", "none"],
+    },
+    "mach-o_backend": {
+        "default": "llvm",
+        "doc": """The backend to use when parsing Mach-O binaries on macOS. This is mainly used by the `Noelware.Violet.Experimental.Debugging`
+        framework. When you don't have dependents on any target inside of `//violet/experimental/debugging`, this is disabled.
 
-    ## ## `@violet//bazel/flags:asan=[True|False]`
-    ## Enables **AddressSanitizer** on each Violet build. Usually,
-    ## this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions,
-    ## like library code.
-    "asan",
-]
+        By default, it'll use `libLLVM` to parse Mach-O binaries. Unfortunately, `libLLVM` is VERY large, so that is the penalty right now unless
+        you want to use very experimental machinery that the Violet team implements theirselves.
+
+        * `llvm`: Uses LLVM's machinery to parse DWARF object files. Only recommended if you want
+                  strong support, but at the cost of more compilation time as libLLVM is a huge
+                  project.
+        * `violet` (EXPERIMENTAL): Uses Noelware's implementation for parsing DWARF object files. Not recommended
+                                   at the slightest; this is VERY experimental and things are subject to break. We're
+                                   not sure if we want to do this.
+        * `disable`: Disables parsing Mach-O binaries alltogether. The implementation won't resolve line numbers or function names
+                   if disabled.
+        * `none`: Allows you to build your own Mach-O backend. Very not recommended unless you want to have
+                  full control over the parsing yourself.""",
+        "values": ["llvm", "violet", "disable", "none"],
+    },
+}
