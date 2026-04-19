@@ -173,18 +173,18 @@ TEST(OneOf, ConstGetReturnsNullptrOnMismatch)
 
 TEST(OneOf, CopyConstructor)
 {
-    OneOf<int, std::string> a = std::string{ "hello" };
+    OneOf<int, String> a = String{ "hello" };
     auto b = a;
-    ASSERT_TRUE(b.Holds<std::string>());
-    EXPECT_EQ(*b.Get<std::string>(), "hello");
+    ASSERT_TRUE(b.Holds<String>());
+    EXPECT_EQ(*b.Get<String>(), "hello");
 }
 
 TEST(OneOf, CopyDoesNotAliasStorage)
 {
-    OneOf<std::string, int> a = std::string{ "abc" };
+    OneOf<String, int> a = String{ "abc" };
     auto b = a;
-    *b.Get<std::string>() = "xyz";
-    EXPECT_EQ(*a.Get<std::string>(), "abc"); // a is unaffected
+    *b.Get<String>() = "xyz";
+    EXPECT_EQ(*a.Get<String>(), "abc"); // a is unaffected
 }
 
 TEST(OneOf, MoveConstructor)
@@ -248,7 +248,7 @@ TEST(OneOf, DestructorCalledOnReassignment)
 
 TEST(OneOf, VisitLvalue)
 {
-    OneOf<int, std::string> v = 7;
+    OneOf<int, String> v = 7;
     int result = v.Visit([](auto& val) -> int {
         if constexpr (std::is_same_v<std::decay_t<decltype(val)>, int>)
             return val * 2;
@@ -281,9 +281,9 @@ TEST(OneOf, VisitRvalue)
 
 TEST(OneOf, MatchExhaustive)
 {
-    OneOf<int, float, std::string> v = std::string("hi");
-    std::string result = v.Match([](int) -> std::string { return std::string{ "int" }; },
-        [](float) -> std::string { return std::string{ "float" }; }, [](std::string& s) -> std::string { return s; });
+    OneOf<int, float, String> v = String("hi");
+    String result = v.Match([](int) -> String { return String{ "int" }; },
+        [](float) -> String { return String{ "float" }; }, [](String& s) -> String { return s; });
 
     EXPECT_EQ(result, "hi");
 }
@@ -371,7 +371,7 @@ struct throw_on_copy_t final {
 TEST(OneOfs, CopyAssignmentLeavesLhsIntactOnThrow)
 {
     OneOf<throw_on_copy_t, int> a = 42;
-    OneOf<throw_on_copy_t, int> b = throw_on_copy_t{};
+    OneOf<throw_on_copy_t, int> b = throw_on_copy_t{ };
 
     EXPECT_THROW({ a = b; }, std::runtime_error);
 
@@ -388,6 +388,284 @@ TEST(OneOf, SingleType)
     EXPECT_TRUE(v.Holds<int>());
     EXPECT_EQ(*v.Get<int>(), 7);
     EXPECT_EQ(v.Index(), 0U);
+}
+
+TEST(OneOfVisit, LvalueVoidReturn)
+{
+    OneOf<Mono, int, double> o;
+    o = 42;
+
+    int seen_int = 0;
+    double seen_double = 0.0;
+    o.Visit([&](auto& x) -> void {
+        using T = std::decay_t<decltype(x)>;
+        if constexpr (std::is_same_v<T, int>) {
+            seen_int = x;
+        } else if constexpr (std::is_same_v<T, double>) {
+            seen_double = x;
+        }
+    });
+
+    EXPECT_EQ(seen_int, 42);
+    EXPECT_EQ(seen_double, 0.0);
+}
+
+TEST(OneOfVisit, LvalueValueReturn)
+{
+    OneOf<int, double> o;
+    o = 42;
+
+    auto doubled = o.Visit([](auto& x) -> int { return static_cast<int>(x) * 2; });
+
+    EXPECT_EQ(doubled, 84);
+    static_assert(std::is_same_v<decltype(doubled), int>);
+}
+
+TEST(OneOfVisit, LvalueAllowsMutation)
+{
+    OneOf<Mono, int, double> o;
+    o = 10;
+
+    o.Visit([](auto& x) -> void {
+        using T = std::decay_t<decltype(x)>;
+        if constexpr (std::is_same_v<T, int>) {
+            x += 5;
+        }
+    });
+
+    auto stored = o.template Get<int>();
+    ASSERT_TRUE(stored.HasValue());
+    EXPECT_EQ(*stored, 15);
+}
+
+TEST(OneOfVisit, ConstLvalueVoidReturn)
+{
+    OneOf<Mono, int, double> o;
+    o = 3.14;
+    const auto& co = o;
+
+    int seen_int = 0;
+    double seen_double = 0.0;
+    co.Visit([&](const auto& x) -> void {
+        using T = std::decay_t<decltype(x)>;
+        if constexpr (std::is_same_v<T, int>) {
+            seen_int = x;
+        } else if constexpr (std::is_same_v<T, double>) {
+            seen_double = x;
+        }
+    });
+
+    EXPECT_EQ(seen_int, 0);
+    EXPECT_DOUBLE_EQ(seen_double, 3.14);
+}
+
+TEST(OneOfVisit, ConstLvalueRejectsMutation)
+{
+    // Primarily a compile-time check: visitor takes `const auto&`,
+    // so attempting to mutate should be a compile error. We verify at
+    // runtime that the visitor runs and sees the expected type.
+    OneOf<Mono, int> o;
+    o = 42;
+    const auto& co = o;
+
+    bool const_ref_observed = false;
+    co.Visit([&](const auto& x) -> void {
+        using Ref = decltype(x);
+        const_ref_observed = std::is_const_v<std::remove_reference_t<Ref>>;
+    });
+
+    EXPECT_TRUE(const_ref_observed);
+}
+
+TEST(OneOfVisit, RvalueVoidReturn)
+{
+    OneOf<Mono, int, String> o;
+    o = String{ "hello" };
+
+    String seen;
+    VIOLET_MOVE(o).Visit([&](auto&& x) -> void {
+        using T = std::decay_t<decltype(x)>;
+        if constexpr (std::is_same_v<T, String>) {
+            seen = VIOLET_MOVE(x);
+        }
+    });
+
+    EXPECT_EQ(seen, "hello");
+}
+
+TEST(OneOfVisit, RvalueValueReturn)
+{
+    OneOf<int, double> o;
+    o = 21;
+
+    auto doubled = VIOLET_MOVE(o).Visit([](auto&& x) -> int { return static_cast<int>(x) * 2; });
+
+    EXPECT_EQ(doubled, 42);
+}
+
+TEST(OneOfVisit, RvalueMovesMoveOnlyValue)
+{
+    // This test would've been broken by using `std::common_type_t` if any branch
+    // returned a `std::unique_ptr`
+    OneOf<std::unique_ptr<int>, String> o(std::make_unique<int>(42));
+    auto ptr = VIOLET_MOVE(o).Visit([](auto&& x) -> std::unique_ptr<int> {
+        using T = std::decay_t<decltype(x)>;
+        if constexpr (std::is_same_v<T, std::unique_ptr<int>>) {
+            return VIOLET_MOVE(x);
+        } else {
+            return nullptr;
+        }
+    });
+
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(*ptr, 42);
+}
+
+TEST(OneOfVisit, DecayedReturnTypeInt)
+{
+    OneOf<int, double> o;
+    o = 10;
+
+    int sum = o.Visit([](auto& x) -> int { return static_cast<int>(x) + 1; });
+    EXPECT_EQ(sum, 11);
+}
+
+TEST(OneOfVisit, DecayedReturnTypeString)
+{
+    OneOf<int, double> o;
+    o = 42;
+
+    String s = o.Visit([](auto& x) -> String { return std::format("value={}", x); });
+    EXPECT_EQ(s, "value=42");
+}
+
+TEST(OneOfVisit, DecayedReturnTypeBool)
+{
+    OneOf<int, double> o;
+    o = 3.14;
+
+    bool is_double = o.Visit([](auto& x) -> bool { return std::is_same_v<std::decay_t<decltype(x)>, double>; });
+
+    EXPECT_TRUE(is_double);
+}
+
+TEST(OneOfVisit, DecayedReturnTypeMoveOnlyValue)
+{
+    OneOf<int, double> o;
+    o = 7;
+
+    auto ptr = o.Visit([](auto& x) -> std::unique_ptr<int> { return std::make_unique<int>(static_cast<int>(x)); });
+
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(*ptr, 7);
+}
+
+TEST(OneOfVisit, DispatchesToCorrectAlternativeInt)
+{
+    OneOf<Mono, int, double, String> o;
+    o = 42;
+
+    auto tag = o.Visit([](auto& x) -> int {
+        using T = std::decay_t<decltype(x)>;
+        if constexpr (std::is_same_v<T, int>)
+            return 1;
+        else if constexpr (std::is_same_v<T, double>)
+            return 2;
+        else if constexpr (std::is_same_v<T, String>)
+            return 3;
+        else
+            return 0;
+    });
+
+    EXPECT_EQ(tag, 1);
+}
+
+TEST(OneOfVisit, DispatchesToCorrectAlternativeDouble)
+{
+    OneOf<Mono, int, double, String> o;
+    o = 3.14;
+
+    auto tag = o.Visit([](auto& x) -> int {
+        using T = std::decay_t<decltype(x)>;
+        if constexpr (std::is_same_v<T, int>)
+            return 1;
+        else if constexpr (std::is_same_v<T, double>)
+            return 2;
+        else if constexpr (std::is_same_v<T, String>)
+            return 3;
+        else
+            return 0;
+    });
+
+    EXPECT_EQ(tag, 2);
+}
+
+TEST(OneOfVisit, DispatchesToCorrectAlternativeString)
+{
+    OneOf<Mono, int, double, String> o;
+    o = String{ "hi" };
+
+    auto tag = o.Visit([](auto& x) -> int {
+        using T = std::decay_t<decltype(x)>;
+        if constexpr (std::is_same_v<T, int>)
+            return 1;
+        else if constexpr (std::is_same_v<T, double>)
+            return 2;
+        else if constexpr (std::is_same_v<T, String>)
+            return 3;
+        else
+            return 0;
+    });
+
+    EXPECT_EQ(tag, 3);
+}
+
+TEST(OneOfVisit, StatefulFunctorIsInvoked)
+{
+    struct Counter {
+        int calls = 0;
+        auto operator()(int&) -> int
+        {
+            return ++calls;
+        }
+        auto operator()(double&) -> int
+        {
+            return ++calls;
+        }
+    };
+
+    OneOf<int, double> o;
+    o = 1;
+
+    Counter c;
+    auto r1 = o.Visit(std::ref(c));
+    EXPECT_EQ(r1, 1);
+
+    auto r2 = o.Visit(std::ref(c));
+    EXPECT_EQ(r2, 2);
+}
+
+TEST(OneOfVisit, TypeTaggedDispatch)
+{
+    // Simulate a message-dispatch pattern — each alternative has its
+    // own handler, and the visitor picks the right one at runtime.
+    OneOf<Mono, int, String, double> msg;
+    msg = String{ "hello" };
+
+    String out = msg.Visit([](auto& m) -> String {
+        using T = std::decay_t<decltype(m)>;
+        if constexpr (std::is_same_v<T, int>) {
+            return std::format("int({})", m);
+        } else if constexpr (std::is_same_v<T, double>) {
+            return std::format("double({})", m);
+        } else if constexpr (std::is_same_v<T, String>) {
+            return std::format("str(\"{}\")", m);
+        } else {
+            return "mono";
+        }
+    });
+
+    EXPECT_EQ(out, "str(\"hello\")");
 }
 
 // NOLINTEND(readability-identifier-length,google-build-using-namespace)

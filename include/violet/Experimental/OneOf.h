@@ -121,6 +121,10 @@ struct VIOLET_API OneOf final {
         return result;
     }
 
+    VIOLET_IMPLICIT OneOf() noexcept
+        requires(std::is_default_constructible_v<TypeAt<0>>)
+    = default;
+
     template<typename T>
         requires(pack_contains_v<std::decay_t<T>, Ts...> && (!std::is_same_v<std::decay_t<T>, OneOf>))
     VIOLET_IMPLICIT OneOf(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
@@ -239,7 +243,9 @@ struct VIOLET_API OneOf final {
     template<typename Visitor>
     auto Visit(Visitor&& visitor) & -> decltype(auto)
     {
-        using return_type_t = std::common_type_t<std::invoke_result_t<Visitor, Ts&>...>;
+        using return_type_t = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&>;
+        static_assert((std::is_same_v<return_type_t, std::invoke_result_t<Visitor, Ts&>> && ...),
+            "all OneOf::Visit alternatives must return the same type");
 
         constexpr static auto DISPATCH_TABLE
             = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{ });
@@ -251,7 +257,9 @@ struct VIOLET_API OneOf final {
     template<typename Visitor>
     auto Visit(Visitor&& visitor) const& -> decltype(auto)
     {
-        using return_type_t = std::common_type_t<std::invoke_result_t<Visitor, const Ts&>...>;
+        using return_type_t = std::invoke_result_t<Visitor, std::tuple_element_t<0, const std::tuple<Ts...>>&>;
+        static_assert((std::is_same_v<return_type_t, std::invoke_result_t<Visitor, const Ts&>> && ...),
+            "all OneOf::Visit alternatives must return the same type");
 
         constexpr static auto DISPATCH_TABLE
             = detail::createVisitorTable<return_type_t, Visitor, const storage_t>(std::index_sequence_for<Ts...>{ });
@@ -264,7 +272,24 @@ struct VIOLET_API OneOf final {
     template<typename Visitor>
     auto Visit(Visitor&& visitor) && -> decltype(auto)
     {
-        using return_type_t = std::common_type_t<std::invoke_result_t<Visitor, Ts&&>...>;
+        using return_type_t = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&&>;
+        static_assert((std::is_same_v<return_type_t, std::invoke_result_t<Visitor, Ts&&>> && ...),
+            "all OneOf::Visit alternatives must return the same type");
+
+        constexpr static auto DISPATCH_TABLE
+            = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{ });
+
+        return DISPATCH_TABLE[this->n_index](VIOLET_FWD(Visitor, visitor), this->n_storage);
+    }
+
+    /// Rvalue overload of [`Visit`]. Passes `const T&&` to the visitor, enabling
+    /// move-only types to be consumed.
+    template<typename Visitor>
+    auto Visit(Visitor&& visitor) const&& -> decltype(auto)
+    {
+        using return_type_t = std::invoke_result_t<Visitor, std::tuple_element_t<0, const std::tuple<Ts...>>&&>;
+        static_assert((std::is_same_v<return_type_t, std::invoke_result_t<Visitor, const Ts&&>> && ...),
+            "all OneOf::Visit alternatives must return the same type");
 
         constexpr static auto DISPATCH_TABLE
             = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{ });
@@ -370,8 +395,6 @@ struct VIOLET_API OneOf final {
     }
 
 private:
-    VIOLET_IMPLICIT OneOf() noexcept = default;
-
     using storage_t = detail::valueless_storage<Ts...>;
 
     template<UInt Index, typename U>
