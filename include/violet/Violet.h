@@ -104,8 +104,12 @@ struct pack_element<0, T, Ts...> final {
     using type = T;
 };
 
-#ifdef __cpp_pack_indexing
-/// Convenience alias for [`violet::pack_element<I, Ts...>::type`].
+// As 18/04/26, GCC doesn't implement mangle pack indexing, so for now, we only
+// enable using the pack indexing operator on Clang or if a compiler (that isn't
+// GCC) has `__cpp_pack_indexing`
+#if (defined(__cpp_pack_indexing) && !defined(VIOLET_GCC)) || defined(VIOLET_CLANG)
+/// Convenience alias for using the pack indexing operator on newer compiler
+/// versions that support it
 ///
 /// ## Example
 /// ```cpp
