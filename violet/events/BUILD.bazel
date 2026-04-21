@@ -19,16 +19,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "emitter",
     hdrs = ["//include/violet/Events:EventEmitter.h"],
-    visibility = ["//visibility:public"],
     deps = ["//violet"],
 )
 
-cc_test(
+violet_cc_test(
     name = "emitter_test",
     srcs = ["//tests/events:Emitter.test.cc"],
     deps = [":emitter"],

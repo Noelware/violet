@@ -19,13 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
 )
 
-cc_library(
+violet_cc_library(
     name = "typeid",
     hdrs = ["//include/violet/Experimental/Language:TypeId.h"],
     deps = [
@@ -34,7 +34,7 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "typeid_test",
     srcs = ["//tests/experimental/language:TypeId.test.cc"],
     deps = [":typeid"],

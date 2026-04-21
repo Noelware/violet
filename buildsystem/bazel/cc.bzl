@@ -19,190 +19,61 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("@rules_cc//cc:defs.bzl", cc_library_ = "cc_library", cc_test_ = "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc/defs.bzl", "defines", "sanitizer")
 load(":version.bzl", "DEVBUILD", "encode_as_int")
 
-SANITIZER_OPTS = select({
-    "//buildsystem/bazel/flags:asan_enabled": ["-fsanitize=address"],
-    "//buildsystem/bazel/flags:msan_enabled": [
-        "-fsanitize=memory",
-        "-fsanitize-memory-track-origins",
-        "-fsanitize-memory-use-after-dtor",
-    ],
-    "//buildsystem/bazel/flags:tsan_enabled": ["-fsanitize=thread"],
-    "//buildsystem/bazel/flags:ubsan_enabled": ["-fsanitize=undefined"],
-    "//conditions:default": [],
-})
+def violet_cc_library(name, deps = [], copts = [], linkopts = [], local_defines = [], **kwargs):
+    if "includes" in kwargs:
+        fail("`violet_cc_library`(%s) defined `includes` but it is not allowed" % name)
 
-UBSAN_OPTIONS = [
-    "halt_on_error=1",
-    "print_summary=1",
-    "print_stacktrace=1",
-]
-
-TSAN_OPTIONS = [
-    "halt_on_error=1",
-    "print_summary=1",
-    "second_deadlock_state=1",
-    "report_atomic_races=0",
-]
-
-MSAN_OPTIONS = [
-    "poison_in_dtor=1",
-]
-
-LSAN_OPTIONS = [
-    "report_objects=1",
-    "print_summary=1",
-]
-
-ASAN_OPTIONS = [
-    "detect_leaks=1",
-    "color=always",
-    "print_summary=1",
-]
-
-SANITIZER_ENV = select({
-    "//buildsystem/bazel/flags:ubsan_enabled": {
-        "UBSAN_OPTIONS": ":".join(UBSAN_OPTIONS),
-    },
-    "//conditions:default": {},
-}) | select({
-    "//buildsystem/bazel/flags:asan_enabled": {
-        "ASAN_OPTIONS": ":".join(ASAN_OPTIONS),
-        "LSAN_OPTIONS": ":".join(LSAN_OPTIONS),
-    },
-    "//conditions:default": {},
-}) | select({
-    "//buildsystem/bazel/flags:tsan_enabled": {
-        "TSAN_OPTIONS": ":".join(TSAN_OPTIONS),
-    },
-    "//conditions:default": {},
-}) | select({
-    "//buildsystem/bazel/flags:tsan_enabled": {
-        "MSAN_OPTIONS": ":".join(MSAN_OPTIONS),
-    },
-    "//conditions:default": {},
-})
-
-OS_DEFINES = select({
-    "@platforms//os:linux": ["VIOLET_UNIX", "VIOLET_LINUX", "_GNU_SOURCE"],
-    "@platforms//os:macos": ["VIOLET_UNIX", "VIOLET_APPLE_MACOS"],
-    "@platforms//os:windows": ["VIOLET_WINDOWS"],
-    "//conditions:default": [],
-})
-
-ARCH_DEFINES = select({
-    "@platforms//cpu:aarch64": ["VIOLET_AARCH64"],
-    "@platforms//cpu:x86_64": ["VIOLET_X86_64"],
-    "//conditions:default": [],
-})
-
-COMPILER_DEFINES = select({
-    "@rules_cc//cc/compiler:clang": ["VIOLET_CLANG"],
-    "@rules_cc//cc/compiler:clang-cl": ["VIOLET_CLANG"],
-    "@rules_cc//cc/compiler:gcc": ["VIOLET_GCC"],
-    "@rules_cc//cc/compiler:msvc-cl": ["VIOLET_MSVC"],
-    "//conditions:default": [],
-}) + select({
-    "//buildsystem/bazel/flags:win32_dllexport_enabled": ["VIOLET_DLL_EXPORT"],
-    "//conditions:default": [],
-})
-
-COMPILER_COPTS = select({
-    "@rules_cc//cc/compiler:clang": [
-        "-DNOMINMAX",
-        "-fvisibility=hidden",
-        "-fvisibility-inlines-hidden",
-    ],
-    "@rules_cc//cc/compiler:clang-cl": ["-DNOMINMAX"],
-    "@rules_cc//cc/compiler:gcc": [
-        "-DNOMINMAX",
-        "-fvisibility=hidden",
-        "-fvisibility-inlines-hidden",
-    ],
-    "@rules_cc//cc/compiler:msvc-cl": [
-        "/DNOMINMAX",
-        "/DWIN32_LEAN_AND_MEAN",
-        "/Zc:dllexportInlines-",
-    ],
-    "//conditions:default": [],
-})
-
-def cc_library(name, hdrs = [], **kwargs):
-    copts = kwargs.pop("copts", [])
-    linkopts = kwargs.pop("linkopts", [])
-    deps = kwargs.pop("deps", [])
-
-    # buildifier: disable=list-append
-    deps += ["//:include_hack"]
-
-    # Remove `includes` from any `cc_library` definition.
-    # buildifier: disable=unused-variable
-    _ = kwargs.pop("includes", [])
-
-    defines = [
-        "VIOLET_VERSION=%d" % encode_as_int(),
-    ]
-
-    if DEVBUILD:
-        defines.append("VIOLET_DEVBUILD")
-
-    return cc_library_(
+    return cc_library(
         name = name,
-        hdrs = hdrs,
-        copts = copts + SANITIZER_OPTS + COMPILER_COPTS,
-        linkopts = linkopts + SANITIZER_OPTS,
-        includes = ["include"],
-        defines = ["BAZEL"] + OS_DEFINES + ARCH_DEFINES + COMPILER_DEFINES + defines,
-        deps = deps,
+        deps = ["//:include_hack"] + deps,
+        copts = copts + sanitizer["copts"],
+        linkopts = linkopts + sanitizer["linkopts"],
+        includes = ["includes"],
+        local_defines = local_defines + ["VIOLET_BUILDING"],
+        defines = defines + [
+            # deprecated define; use `VIOLET_BUILDSYSTEM_BAZEL` or `VIOLET_BUILDSYSTEM(<system>)`
+            # to detect what buildsystem what we are under
+            "BAZEL",
+
+            # new flag as of 26.05.05
+            "VIOLET_BUILDSYSTEM_BAZEL",
+            ("VIOLET_VERSION=%d" % encode_as_int()),
+            ("VIOLET_DEVBUILD=%d" % (1 if DEVBUILD else 0)),
+        ],
         **kwargs
     )
 
-def cc_test(name, with_gtest_main = True, **kwargs):
-    deps = kwargs.pop("deps", [])
-    deps.append("@googletest//:gtest")
+def violet_cc_test(
+        name,
+        deps = [],
+        size = "small",
+        copts = [],
+        linkopts = [],
+        env = {},
+        with_gtest_main = True,
+        **kwargs):
+    if "visibility" in kwargs:
+        fail("`violet_cc_test`(%s) defined `visibility` but all tests are marked as private")
 
-    if with_gtest_main:
-        deps.append("@googletest//:gtest_main")
-
-    # remove `visibility` in `cc_test` and make them private
-    kwargs.pop("visibility", [])
-
-    # set `size` if it is not defined
-    size = kwargs.pop("size", "small")
-
-    copts = kwargs.pop("copts", [])
-    linkopts = kwargs.pop("linkopts", [])
-    env = kwargs.pop("env", {})
-
-    return cc_test_(
+    return cc_test(
         name = name,
-        deps = deps,
-        copts = copts + select({
-            "//buildsystem/bazel/flags:asan_enabled": ["-fsanitize=address"],
-            "//buildsystem/bazel/flags:msan_enabled": ["-fno-sanitize=memory"],
-            "//buildsystem/bazel/flags:tsan_enabled": ["-fsanitize=thread"],
-            "//buildsystem/bazel/flags:ubsan_enabled": ["-fsanitize=undefined"],
-            "//conditions:default": [],
-        }),
-        linkopts = linkopts + select({
-            "//buildsystem/bazel/flags:asan_enabled": ["-fsanitize=address"],
-            "//buildsystem/bazel/flags:msan_enabled": ["-fno-sanitize=memory"],
-            "//buildsystem/bazel/flags:tsan_enabled": ["-fsanitize=thread"],
-            "//buildsystem/bazel/flags:ubsan_enabled": ["-fsanitize=undefined"],
-            "//conditions:default": [],
-        }),
-        env = env | SANITIZER_ENV,
+        deps = deps + ["@googletest//:gtest"] + (["@googletest//:gtest_main"] if with_gtest_main else []),
+        copts = copts + sanitizer["copts"],
+        linkopts = linkopts + sanitizer["copts"],
+        env = env | sanitizer["env"],
         visibility = ["//visibility:private"],
         size = size,
         **kwargs
     )
 
-def cc_runfile_test(name, **kwargs):
-    return cc_test(
+def violet_cc_runfile_test(name, deps = [], **kwargs):
+    return violet_cc_test(
         name = name,
         with_gtest_main = False,
-        srcs = [],
+        deps = deps + ["//violet/testing:runfiles", "//violet/testing:runfiles_main"],
         **kwargs
     )

@@ -10,8 +10,11 @@ availableAt:
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.04...master>
 
 ### 26.05.04
+- **Bazel**: Allow to use sanitizer flags together rather than exclusively ([`@auguwu`])
+
 #### Noelware.Violet
 - Fix `violet::Println(fmt, args...)` and `violet::Print(fmt, args...)` from recursively calling itself ([`@auguwu`])
+- Cleanup the macros header file (which is Violet's `config.h` equivalent) ([`@auguwu`])
 
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.03...26.05.04>
 

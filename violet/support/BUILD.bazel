@@ -19,27 +19,29 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "demangle",
     srcs = ["//src/support:demangle.cc"],
     hdrs = ["//include/violet/Support:Demangle.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet:macros",
         "//violet:policy_checks",
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "bitflags",
     hdrs = ["//include/violet/Support:Bitflags.h"],
-    visibility = ["//visibility:public"],
     deps = ["//violet"],
 )
 
-cc_library(
+violet_cc_library(
     name = "terminal",
     srcs = ["//src/support:terminal.cc"] + select({
         "@platforms//os:linux": ["//src/support/platform/terminal:unix.cc"],
@@ -48,7 +50,6 @@ cc_library(
         "//conditions:default": ["//src/support/platform/terminal:unsupported.cc"],
     }),
     hdrs = ["//include/violet/Support:Terminal.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":bitflags",
         "//violet",
@@ -58,7 +59,7 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "terminal_test",
     srcs = ["//tests/support:Terminal.test.cc"],
     deps = [":terminal"],

@@ -19,9 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "runfiles",
     srcs = ["//src/testing/impls/runfiles:bazel.cc"],
     hdrs = ["//include/violet/Testing:Runfiles.h"],
@@ -29,7 +33,6 @@ cc_library(
         "//buildsystem/bazel/flags:runfiles_logs_enabled": ["VIOLET_RUNFILES_LOGS"],
         "//conditions:default": [],
     }),
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet/container:optional",
@@ -39,21 +42,19 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "capture_stream",
     srcs = ["//src/testing:CaptureStream.cc"],
     hdrs = ["//include/violet/Testing:CaptureStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet:macros",
         "//violet:policy_checks",
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "runfiles_main",
     srcs = ["//src/testing:Runfiles.main.cc"],
-    visibility = ["//visibility:public"],
     deps = [
         ":runfiles",
         "@googletest//:gtest",

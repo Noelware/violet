@@ -19,19 +19,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_runfile_test", "violet_cc_test")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "input_stream",
     hdrs = ["//include/violet/IO/Experimental:InputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet/io:error",
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "input_stream_read_to_string_test",
     srcs = ["//tests/io/experimental/input:ReadToString.test.cc"],
     deps = [
@@ -40,11 +43,10 @@ cc_test(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "buffered_input_stream",
     srcs = ["//src/io/experimental/input:buffered.cc"],
     hdrs = ["//include/violet/IO/Experimental:BufferedInputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":input_stream",
         "//violet",
@@ -52,7 +54,7 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "buffered_input_stream_test",
     srcs = ["//tests/io/experimental/input:BufferedInputStream.test.cc"],
     deps = [
@@ -61,11 +63,10 @@ cc_test(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "byte_array_input_stream",
     srcs = ["//src/io/experimental/input:bytearray.cc"],
     hdrs = ["//include/violet/IO/Experimental/Input:ByteArrayInputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":input_stream",
         "//violet",
@@ -73,13 +74,13 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "byte_array_input_stream_test",
     srcs = ["//tests/io/experimental/input:ByteArrayInputStream.test.cc"],
     deps = [":byte_array_input_stream"],
 )
 
-cc_library(
+violet_cc_library(
     name = "file_input_stream",
     srcs = ["//src/io/experimental/input:file.cc"] + select({
         "@platforms//os:linux": ["//src/io/experimental/input/file:unix.cc"],
@@ -88,7 +89,6 @@ cc_library(
         "//conditions:default": ["//src/io/experimental/input/file:unsupported.cc"],
     }),
     hdrs = ["//include/violet/IO/Experimental/Input:FileInputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":input_stream",
         "//violet",
@@ -97,19 +97,14 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_runfile_test(
     name = "file_input_stream_test",
     srcs = ["//tests/io/experimental/input:FileInputStream.test.cc"],
     data = ["//tests/io/experimental/input:runfiles/loveletter.txt"],
-    with_gtest_main = False,
-    deps = [
-        ":file_input_stream",
-        "//violet/testing:runfiles",
-        "//violet/testing:runfiles_main",
-    ],
+    deps = [":file_input_stream"],
 )
 
-cc_library(
+violet_cc_library(
     name = "stdin_input_stream",
     srcs = ["//src/io/experimental/input:stdin.cc"] + select({
         "@platforms//os:linux": ["//src/io/experimental/input/stdin:unix.cc"],
@@ -118,7 +113,6 @@ cc_library(
         "//conditions:default": ["//src/io/experimental/input/stdin:unsupported.cc"],
     }),
     hdrs = ["//include/violet/IO/Experimental/Input:StdinInputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":input_stream",
         "//violet",
@@ -127,11 +121,10 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "string_input_stream",
     srcs = ["//src/io/experimental/input:string.cc"],
     hdrs = ["//include/violet/IO/Experimental/Input:StringInputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":input_stream",
         "//violet",
@@ -140,21 +133,19 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "output_stream",
     hdrs = ["//include/violet/IO/Experimental:OutputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet/io:error",
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "buffered_output_stream",
     srcs = ["//src/io/experimental/output:buffered.cc"],
     hdrs = ["//include/violet/IO/Experimental:BufferedOutputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":output_stream",
         "//violet",
@@ -162,11 +153,10 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "byte_array_output_stream",
     srcs = ["//src/io/experimental/output:bytearray.cc"],
     hdrs = ["//include/violet/IO/Experimental/Output:ByteArrayOutputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":output_stream",
         "//violet",
@@ -174,11 +164,10 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "file_output_stream",
     srcs = ["//src/io/experimental/output:file.cc"],
     hdrs = ["//include/violet/IO/Experimental/Output:FileOutputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":output_stream",
         "//violet",
@@ -187,7 +176,7 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "stderr_output_stream",
     srcs = ["//src/io/experimental/output:stderr.cc"] + select({
         "@platforms//os:linux": ["//src/io/experimental/output/stderr:unix.cc"],
@@ -196,7 +185,6 @@ cc_library(
         "//conditions:default": ["//src/io/experimental/output/stderr:unsupported.cc"],
     }),
     hdrs = ["//include/violet/IO/Experimental/Output:StderrOutputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":output_stream",
         "//violet",
@@ -205,7 +193,7 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "stdout_output_stream",
     srcs = ["//src/io/experimental/output:stdout.cc"] + select({
         "@platforms//os:linux": ["//src/io/experimental/output/stdout:unix.cc"],
@@ -214,7 +202,6 @@ cc_library(
         "//conditions:default": ["//src/io/experimental/output/stdout:unsupported.cc"],
     }),
     hdrs = ["//include/violet/IO/Experimental/Output:StdoutOutputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":output_stream",
         "//violet",
@@ -223,11 +210,10 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "string_output_stream",
     srcs = ["//src/io/experimental/output:string.cc"],
     hdrs = ["//include/violet/IO/Experimental/Output:StringOutputStream.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":output_stream",
         "//violet",
@@ -235,7 +221,7 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "buffered_output_stream_test",
     srcs = ["//tests/io/experimental/output:BufferedOutputStream.test.cc"],
     deps = [
@@ -244,13 +230,13 @@ cc_test(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "byte_array_output_stream_test",
     srcs = ["//tests/io/experimental/output:ByteArrayOutputStream.test.cc"],
     deps = [":byte_array_output_stream"],
 )
 
-cc_test(
+violet_cc_test(
     name = "file_output_stream_test",
     srcs = ["//tests/io/experimental/output:FileOutputStream.test.cc"],
     deps = [

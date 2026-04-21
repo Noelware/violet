@@ -19,9 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "system",
     srcs = select({
         "@platforms//os:linux": ["//src/system/platform:unix.cc"],
@@ -30,7 +34,6 @@ cc_library(
         "//conditions:default": ["//src/system/platform:unsupported.cc"],
     }),
     hdrs = ["//include/violet:System.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet/container",
@@ -39,10 +42,9 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "ci",
     srcs = ["//src/system:ci.cc"],
     hdrs = ["//include/violet/System:CI.h"],
-    visibility = ["//visibility:public"],
     deps = [":system"],
 )

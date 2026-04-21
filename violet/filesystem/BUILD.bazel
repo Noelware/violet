@@ -19,9 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "filesystem",
     srcs = select({
         "@platforms//os:linux": [
@@ -36,7 +40,6 @@ cc_library(
         "//conditions:default": ["//src/filesystem/platform:unsupported.cc"],
     }),
     hdrs = ["//include/violet:Filesystem.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":file",
         ":path",
@@ -46,7 +49,7 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "path",
     srcs = select({
         "@platforms//os:linux": ["//src/filesystem/platform/path:linux.cc"],
@@ -55,7 +58,6 @@ cc_library(
         "//conditions:default": ["//src/filesystem/platform/path:unsupported.cc"],
     }),
     hdrs = ["//include/violet/Filesystem:Path.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet/container:optional",
@@ -64,13 +66,13 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "path_test",
     srcs = ["//tests/filesystem:Path.test.cc"],
     deps = [":path"],
 )
 
-cc_library(
+violet_cc_library(
     name = "permissions",
     srcs = select({
         "@platforms//os:linux": ["//src/filesystem/platform/permissions:unix.cc"],
@@ -79,17 +81,16 @@ cc_library(
         "//conditions:default": ["//src/filesystem/platform/permissions:unsupported.cc"],
     }),
     hdrs = ["//include/violet/Filesystem:Permissions.h"],
-    visibility = ["//visibility:public"],
     deps = ["//violet"],
 )
 
-cc_test(
+violet_cc_test(
     name = "permissions_test",
     srcs = ["//tests/filesystem:Permissions.test.cc"],
     deps = [":permissions"],
 )
 
-cc_library(
+violet_cc_library(
     name = "file",
     srcs = select({
         "@platforms//os:linux": [
@@ -104,7 +105,6 @@ cc_library(
         "//conditions:default": ["//src/filesystem/platform/file:unsupported.cc"],
     }),
     hdrs = ["//include/violet/Filesystem:File.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":path",
         ":permissions",
@@ -115,7 +115,7 @@ cc_library(
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "temporary",
     srcs = select({
         "@platforms//os:linux": ["//src/filesystem/platform/temporary:unix.cc"],
@@ -124,7 +124,6 @@ cc_library(
         "//conditions:default": ["//src/filesystem/platform/temporary:unix.cc"],
     }),
     hdrs = ["//include/violet/Filesystem:Temporary.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":filesystem",
         "//violet",
@@ -132,7 +131,7 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "temporary_test",
     srcs = ["//tests/filesystem:Temporary.test.cc"],
     deps = [":temporary"],

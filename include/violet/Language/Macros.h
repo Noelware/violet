@@ -32,6 +32,10 @@
 
 #pragma once
 
+#ifndef VIOLET_VERSION
+#error "missing `VIOLET_VERSION` define"
+#endif
+
 #if !defined(VIOLET_HAS_ATTRIBUTE) && defined(__has_attribute)
 #define VIOLET_HAS_ATTRIBUTE(x) __has_attribute(x)
 #else
@@ -59,10 +63,66 @@
 // We need to fill in the following defines if they weren't defined before
 // from foreign build systems that we don't support or they were stubbed out.
 //
-// * VIOLET_{LINUX,APPLE_MACOS,WINDOWS}
-// * VIOLET_{X86_64,AARCH64}
-// * VIOLET_{CLANG|MSVC|GCC}
+// * VIOLET_PLATFORM_{LINUX,APPLE_MACOS,WINDOWS}
+// * VIOLET_ARCH_{X86_64,AARCH64}
+// * VIOLET_COMPILER_{CLANG|MSVC|GCC}
+// * VIOLET_BUILDSYSTEM_{BAZEL|CMAKE|MESON|GN} - new as of 26.05.05
+#if VIOLET_VERSION >= 26050500
+#ifndef VIOLET_PLATFORM_LINUX
+#if defined(__linux__) && !defined(__ANDROID__)
+#define VIOLET_PLATFORM_UNIX
+#endif
+#endif // !defined(VIOLET_PLATFORM_LINUX)
 
+#if !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
+#include <TargetConditionals.h>
+#if TARGET_OS_MAC && TARGET_OS_OSX
+#define VIOLET_PLATFORM_APPLE_MACOS
+#endif
+#endif // !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
+
+#if !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
+#define VIOLET_PLATFORM_WINDOWS
+#endif // !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
+
+#if !defined(VIOLET_ARCH_X86_64)                                                                                       \
+    && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) || defined(__x86_64) || defined(_M_AMD64))
+#define VIOLET_ARCH_VIOLET_ARCH_X86_64
+#endif // !defined(VIOLET_ARCH_X86_64) && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) ||
+       // defined(__x86_64) || defined(_M_AMD64))
+
+#if !defined(VIOLET_ARCH_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
+#define VIOLET_ARCH_AARCH64
+#endif
+
+#if !defined(VIOLET_COMPILER_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
+#define VIOLET_COMPILER_CLANG
+#endif // !defined(VIOLET_COMPILER_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
+
+#if !defined(VIOLET_COMPILER_CLANG_CL) && (defined(__clang__) && defined(_MSC_VER))
+#define VIOLET_COMPILER_CLANG_CL
+#endif // !defined(VIOLET_COMPILER_CLANG_CL) && (defined(__clang__) && defined(_MSC_VER))
+
+#if !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
+#define VIOLET_COMPILER_GCC
+#endif // !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
+
+#if !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
+#define VIOLET_COMPILER_MSVC
+#endif // !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
+
+#if !defined(VIOLET_BUILDSYSTEM_BAZEL) && !defined(VIOLET_BUILDSYSTEM_CMAKE) && !defined(VIOLET_BUILDSYSTEM_MESON)     \
+    && !defined(VIOLET_BUILDSYSTEM_GN)
+#warning                                                                                                               \
+    "Neither `VIOLET_BUILDSYSTEM_{BAZEL|CMAKE|MESON|GN}` are not set, this is a foreign buildsystem we don't have full support on!"
+#define VIOLET_BUILDSYSTEM_FOREIGN
+#endif
+
+#define VIOLET_PLATFORM(platform) defined(VIOLET_PLATFORM_##platform)
+#define VIOLET_ARCH(arch) defined(VIOLET_ARCH_##arch)
+#define VIOLET_COMPILER(compiler) defined(VIOLET_COMPILER_##compiler)
+#define VIOLET_BUILDSYSTEM(system) defined(VIOLET_BUILDSYSTEM_##system)
+#else
 #ifndef VIOLET_LINUX
 #if defined(__linux__) && !defined(__ANDROID__)
 #define VIOLET_LINUX
@@ -119,6 +179,53 @@
 #if !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
 #define VIOLET_MSVC
 #endif
+#endif
+
+#ifndef VIOLET_API
+#if VIOLET_VERSION >= 26050500
+#if VIOLET_COMPILER(MSVC) || VIOLET_COMPILER(CLANG_CL)
+#define VIOLET_API_EXPORT __declspec(dllexport)
+#define VIOLET_API_IMPORT __declspec(dllimport)
+#define VIOLET_LOCAL
+#elif VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
+#define VIOLET_API_EXPORT __attribute__((visibility("default")))
+#define VIOLET_API_IMPORT __attribute__((visibility("default")))
+#define VIOLET_LOCAL __attribute__((visibility("hidden")))
+#else
+#define VIOLET_API_EXPORT
+#define VIOLET_API_IMPORT
+#define VIOLET_LOCAL
+#endif
+#else
+#ifdef VIOLET_MSVC
+#define VIOLET_API_EXPORT __declspec(dllexport)
+#define VIOLET_API_IMPORT __declspec(dllimport)
+#define VIOLET_LOCAL
+#elif defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+#define VIOLET_API_EXPORT __attribute__((visibility("default")))
+#define VIOLET_API_IMPORT __attribute__((visibility("default")))
+#define VIOLET_LOCAL __attribute__((visibility("hidden")))
+#else
+#define VIOLET_API_EXPORT
+#define VIOLET_API_IMPORT
+#define VIOLET_LOCAL
+#endif
+#endif // VIOLET_VERSION >= 26050500
+#endif // !defined(VIOLET_API)
+
+#ifdef VIOLET_BUILDING
+#define VIOLET_API
+#undef VIOLET_LOCAL
+#define VIOLET_LOCAL
+#elif defined(VIOLET_BUILD_SHARED)
+#define VIOLET_API VIOLET_API_EXPORT
+#elif defined(VIOLET_SHARED)
+#define VIOLET_API VIOLET_API_IMPORT
+#else
+#define VIOLET_API
+#undef VIOLET_LOCAL
+#define VIOLET_LOCAL
+#endif // defined(VIOLET_BUILDING)
 
 #ifndef VIOLET_MSAN
 #if defined(VIOLET_CLANG) && VIOLET_HAS_FEATURE(memory_sanitizer)
@@ -198,22 +305,6 @@
 
 #define VIOLET_IMPLICIT
 #define VIOLET_EXPLICIT explicit
-
-#ifndef VIOLET_API
-#ifdef VIOLET_WINDOWS
-#ifdef VIOLET_DLL_EXPORT
-#define VIOLET_API __declspec(dllexport)
-#elif defined(VIOLET_DLL_IMPORT)
-#define VIOLET_API __declspec(dllimport)
-#else
-#define VIOLET_API
-#endif
-#elif VIOLET_HAS_ATTRIBUTE(visibility)
-#define VIOLET_API __attribute__((visibility("default")))
-#else
-#define VIOLET_API
-#endif
-#endif
 
 #if VIOLET_HAS_CPP_ATTRIBUTE(likely)
 #define VIOLET_LIKELY [[likely]]

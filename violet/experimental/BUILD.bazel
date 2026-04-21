@@ -19,9 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "smol_string",
     hdrs = ["//include/violet/Experimental:SmolString.h"],
     visibility = ["//visibility:public"],
@@ -32,13 +36,13 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "smol_string_test",
     srcs = ["//tests/experimental:SmolString.test.cc"],
     deps = [":smol_string"],
 )
 
-cc_library(
+violet_cc_library(
     name = "oneof",
     hdrs = ["//include/violet/Experimental:OneOf.h"],
     visibility = ["//visibility:public"],
@@ -48,7 +52,7 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "oneof_test",
     srcs = ["//tests/experimental:OneOf.test.cc"],
     deps = [":oneof"],

@@ -19,20 +19,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
 )
 
-cc_library(
+violet_cc_library(
     name = "cancellation_token",
     srcs = ["//src/experimental/threading:CancellationToken.cc"],
     hdrs = ["//include/violet/Experimental/Threading:CancellationToken.h"],
     deps = ["//violet/events:emitter"],
 )
 
-cc_test(
+violet_cc_test(
     name = "cancellation_token_test",
     srcs = ["//tests/experimental/threading:CancellationToken.test.cc"],
     deps = [":cancellation_token"],

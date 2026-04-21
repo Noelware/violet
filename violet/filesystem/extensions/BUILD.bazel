@@ -19,9 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "xattr",
     srcs = select({
         "@platforms//os:linux": ["//src/filesystem/platform/extensions/xattr:unix.cc"],
@@ -29,7 +33,6 @@ cc_library(
         "//conditions:default": ["//src/filesystem/platform/extensions/xattr:unsupported.cc"],
     }),
     hdrs = ["//include/violet/Filesystem/Extensions:XAttr.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet:iterator",
@@ -38,7 +41,7 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "xattr_test",
     srcs = ["//tests/filesystem/extensions:XAttr.test.cc"],
     deps = [":xattr"],

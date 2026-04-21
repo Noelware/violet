@@ -19,12 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "enumerate",
     hdrs = ["//include/violet/Iterator:Enumerate.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet:iterator",
@@ -32,16 +35,15 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "enumerate_test",
     srcs = ["//tests/iterator:Enumerate.test.cc"],
     deps = [":enumerate"],
 )
 
-cc_library(
+violet_cc_library(
     name = "filter",
     hdrs = ["//include/violet/Iterator:Filter.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet:iterator",
@@ -49,16 +51,15 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "filter_test",
     srcs = ["//tests/iterator:Filter.test.cc"],
     deps = [":filter"],
 )
 
-cc_library(
+violet_cc_library(
     name = "map",
     hdrs = ["//include/violet/Iterator:Map.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet:iterator",
@@ -66,16 +67,15 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "map_test",
     srcs = ["//tests/iterator:Map.test.cc"],
     deps = [":map"],
 )
 
-cc_library(
+violet_cc_library(
     name = "peekable",
     hdrs = ["//include/violet/Iterator:Peekable.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet:iterator",
@@ -83,16 +83,15 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "peekable_test",
     srcs = ["//tests/iterator:Peekable.test.cc"],
     deps = [":peekable"],
 )
 
-cc_library(
+violet_cc_library(
     name = "skip",
     hdrs = ["//include/violet/Iterator:Skip.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet:iterator",
@@ -100,16 +99,15 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "skip_test",
     srcs = ["//tests/iterator:Skip.test.cc"],
     deps = [":skip"],
 )
 
-cc_library(
+violet_cc_library(
     name = "take",
     hdrs = ["//include/violet/Iterator:Take.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet:iterator",
@@ -117,7 +115,7 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "take_test",
     srcs = ["//tests/iterator:Take.test.cc"],
     deps = [":take"],

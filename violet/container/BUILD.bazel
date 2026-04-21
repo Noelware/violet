@@ -19,21 +19,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "cc_library", "cc_test")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
-cc_library(
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
     name = "container",
-    visibility = ["//visibility:public"],
     deps = [
         ":optional",
         ":result",
     ],
 )
 
-cc_library(
+violet_cc_library(
     name = "optional",
     hdrs = ["//include/violet/Container:Optional.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet:print",
@@ -41,16 +43,15 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "optional_test",
     srcs = ["//tests/container:Optional.test.cc"],
     deps = [":optional"],
 )
 
-cc_library(
+violet_cc_library(
     name = "result",
     hdrs = ["//include/violet/Container:Result.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet:print",
@@ -58,7 +59,7 @@ cc_library(
     ],
 )
 
-cc_test(
+violet_cc_test(
     name = "result_test",
     srcs = ["//tests/container:Result.test.cc"],
     deps = [
