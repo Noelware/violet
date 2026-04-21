@@ -60,7 +60,7 @@ namespace violet {
 template<typename... Args>
 VIOLET_API void Print(std::format_string<Args...> fmt, Args&&... args)
 {
-    return Print(fmt, VIOLET_FWD(Args, args)...);
+    return Print(std::cout, fmt, VIOLET_FWD(Args, args)...);
 }
 
 /// Writes a formatted string to `stream`.
@@ -107,7 +107,7 @@ VIOLET_API void Print(std::ostream& stream, std::format_string<Args...> fmt, Arg
 template<typename... Args>
 VIOLET_API void Println(std::format_string<Args...> fmt, Args&&... args)
 {
-    return Println(fmt, VIOLET_FWD(Args, args)...);
+    return Println(std::cout, fmt, VIOLET_FWD(Args, args)...);
 }
 
 /// Writes a formatted string followed by a newline (`'\n'`) to `stream`.

@@ -1,0 +1,74 @@
+# 🌺💜 Violet: Extended C++ standard library
+# Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+name: macOS / Setup
+description: "Sets up CI with macOS runners"
+inputs:
+  llvm-version:
+    description: "LLVM version to install (and cache) from Homebrew"
+    default: "21"
+    required: false
+  xcode-version:
+    description: What Xcode version to install when setting up the macOS SDK
+    default: "latest-stable"
+    required: false
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v5
+      with:
+        key: homebrew-llvm${{inputs.llvm-version}}-${{hashFiles('.github/actions/setup-macos/action.yml')}}
+        restore-keys: homebrew-llvm${{inputs.llvm-version}}
+        path: |
+          ~/Library/Caches/Homebrew
+    - env:
+        HOMEBREW_NO_AUTO_UPDATE: 1
+        HOMEBREW_NO_INSTALL_DEPENDENTS_CHECK: 1
+      shell: bash
+      run: |
+        echo "::group::== LLVM ${{inputs.llvm-version}} via Homebrew =="
+        brew install llvm@${{inputs.llvm-version}} 2>/dev/null || brew install llvm@${{inputs.llvm-version}}
+        echo "::endgroup::"
+
+        prefix=$(brew --prefix llvm@${{inputs.llvm-version}})
+        echo "CC=$prefix/bin/clang" >> $GITHUB_ENV
+        echo "CXX=$prefix/bin/clang++" >> $GITHUB_ENV
+        echo "$prefix/bin" >> $GITHUB_PATH
+
+        echo "--> LLVM ${{inputs.llvm-version}} installed on runner"
+        echo "    --> \`clang\`:   $CC"
+        echo "    --> \`clang++\`: $CXX"
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{inputs.xcode-version}}
+    - name: Setup SDK for Bazel
+      shell: bash
+      run: |
+        sdkroot=$(xcrun --sdk macosx --show-sdk-path)
+        ld=$(xcrun -f ld)
+
+        echo "SDKROOT=$sdkroot" >> $GITHUB_ENV
+        echo "build --linkopt=-fuse-ld=$ld" >> "$GITHUB_WORKSPACE/.usr.bazelrc"
+        echo "build --@rules_rust//:extra_rustc_flags=-Clink-arg=-fuse-ld=$ld"
+        echo "build --@rules_rust//:extra_exec_rustc_flags=-Clink-arg=-fuse-ld=$ld" >> "$GITHUB_WORKSPACE/.usr.bazelrc"
+
+        echo "::group::== .usr.bazelrc configuration =="
+        cat "$GITHUB_WORKSPACE/.usr.bazelrc"

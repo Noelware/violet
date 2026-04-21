@@ -9,6 +9,10 @@ availableAt:
 ### unreleased
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.03...master>
 
+### 26.05.04
+#### Noelware.Violet
+- Fix `violet::Println(fmt, args...)` and `violet::Print(fmt, args...)` from recursively calling itself ([`@auguwu`])
+
 ### 26.05.03
 - (breaking) Violet will now require the MSVC flag `/Zc:preprocessor` to be present
 

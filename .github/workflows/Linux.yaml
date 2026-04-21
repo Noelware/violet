@@ -1,0 +1,217 @@
+# 🌺💜 Violet: Extended C++ standard library
+# Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+name: "Linux / CI"
+on:
+    workflow_dispatch: {}
+    push:
+        branches:
+            - 'issues/gh-**'
+            - 'feat/**'
+            - master
+
+        paths-ignore:
+            - '.github/**'
+            - '.vscode/**'
+            - 'hack/**'
+            - '.ci/**'
+            - 'nix/**'
+
+            - 'tools/bazeldist'
+            - 'tools/hotpatch-release.py'
+
+            - CHANGELOG.md
+            - renovate.json
+            - flake.lock
+            - .*ignore
+            - .clangd
+            - .envrc
+    pull_request:
+        types: [opened, synchronize]
+        branches:
+            - 'issues/gh-**'
+            - 'noel/**'
+            - 'feat/**'
+            - master
+        paths:
+            - '**'
+permissions:
+    contents: read
+    checks: write
+concurrency:
+    group: ${{github.workflow}}-${{github.ref}}
+    cancel-in-progress: true
+jobs:
+    # This will exhaustively test Violet with Exceptions (-fno-exceptions/-fexceptions) and RTTI (-fno-rtti/-frtti) so that
+    # if anything breaks, we know where and why.
+    bazel-configuration:
+        name: "Bazel / Feature Configuration [exceptions=${{matrix.exceptions}} rtti=${{matrix.rtti}}]"
+        runs-on: ubuntu-24.04
+        container:
+            image: ghcr.io/noelware/violet/ci:clang-22
+        strategy:
+            fail-fast: false
+            matrix:
+                exceptions: ["yes", "no"]
+                rtti: ["yes", "no"]
+        env:
+            USE_BAZEL_VERSION: "8.6.0"
+            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=CC --action_env=CXX --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}}"
+            CXX: "clang++-22"
+            CC: "clang-22"
+        steps:
+            - uses: actions/checkout@v6
+            - uses: bazel-contrib/setup-bazel@0.19.0
+              with:
+                bazelisk-cache: true # avoid installing Bazel each time
+                repository-cache: true # cache repositories in `MODULE.bazel`
+                disk-cache: linux-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.rtti == 'yes' && 'rtti' || 'nortti'}}
+
+            - run: bazel test //... ${{env.BAZELFLAGS}}
+
+    # This will test compatibility between different compilers.
+    bazel-compiler-support:
+        name: "Bazel / Compiler Compatibility [compiler=${{matrix.compiler}}]"
+        runs-on: ubuntu-24.04
+        container:
+            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+        strategy:
+            fail-fast: false
+            matrix:
+                compiler:
+                    - gcc-15
+                    - gcc-14
+                    - clang-22
+                    - clang-21
+                    - clang-20
+                include:
+                    - compiler: gcc-15
+                      flags: ""
+                      cxx: g++
+                      cc: gcc
+                    - compiler: gcc-14
+                      flags: ""
+                      cxx: g++
+                      cc: gcc
+                    - compiler: clang-22
+                      flags: ""
+                      cxx: clang++-22
+                      cc: clang-22
+                    - compiler: clang-21
+                      flags: ""
+                      cxx: clang++-21
+                      cc: clang-21
+                    - compiler: clang-20
+                      flags: ""
+                      cxx: clang++-20
+                      cc: clang-20
+        env:
+            USE_BAZEL_VERSION: "8.6.0"
+            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=CC --action_env=CXX ${{matrix.flags}}"
+            CXX: ${{matrix.cxx}}
+            CC: ${{matrix.cc}}
+        steps:
+            - uses: actions/checkout@v6
+            - uses: bazel-contrib/setup-bazel@0.19.0
+              with:
+                bazelisk-cache: true # avoid installing Bazel each time
+                repository-cache: true # cache repositories in `MODULE.bazel`
+                disk-cache: linux-cxx-compiler-support-${{matrix.compiler}}
+
+            - run: bazel test //... ${{env.BAZELFLAGS}}
+
+    # Test C++20 and C++23 with builds as well. We exclude C++26 as that is the default
+    # for most jobs that don't test this.
+    bazel-cxx-standard:
+        name: "Bazel / C++ Standard [compiler=${{matrix.compiler}} standard=${{matrix.cxx-standard}}]"
+        runs-on: ubuntu-24.04
+        container:
+            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+        strategy:
+            fail-fast: false
+            matrix:
+                cxx-standard: [20, 23]
+                compiler:
+                    - gcc-15
+                    - gcc-14
+                    - clang-22
+                    - clang-21
+                    - clang-20
+                include:
+                    - compiler: gcc-15
+                      flags: ""
+                      cxx: g++
+                      cc: gcc
+                    - compiler: gcc-14
+                      flags: ""
+                      cxx: g++
+                      cc: gcc
+                    - compiler: clang-22
+                      flags: ""
+                      cxx: clang++-22
+                      cc: clang-22
+                    - compiler: clang-21
+                      flags: ""
+                      cxx: clang++-21
+                      cc: clang-21
+                    - compiler: clang-20
+                      flags: ""
+                      cxx: clang++-20
+                      cc: clang-20
+        env:
+            USE_BAZEL_VERSION: "8.6.0"
+            BAZELFLAGS: "--config=ci --config=cxx${{matrix.cxx-standard}} --action_env=CC --action_env=CXX ${{matrix.flags}}"
+            CXX: ${{matrix.cxx}}
+            CC: ${{matrix.cc}}
+        steps:
+            - uses: actions/checkout@v6
+            - uses: bazel-contrib/setup-bazel@0.19.0
+              with:
+                bazelisk-cache: true # avoid installing Bazel each time
+                repository-cache: true # cache repositories in `MODULE.bazel`
+                disk-cache: linux-cxx-standard-${{matrix.compiler}}-cxx${{matrix.cxx-standard}}
+
+            - run: bazel test //... ${{env.BAZELFLAGS}}
+
+    # Run both ASan and UBSan to detect common errors that could've occurred
+    asan-ubsan:
+        name: "AddressSanitizer / UndefinedBehaviourSanitizer"
+        runs-on: ubuntu-24.04
+        container:
+            image: ghcr.io/noelware/violet/ci:clang-22
+        env:
+            USE_BAZEL_VERSION: "8.6.0"
+            BAZELFLAGS: "--config=ci --config=cxx26 --config=asan --config=ubsan --action_env=CC --action_env=CXX --test_env=ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-22 --test_env=UBSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-22"
+            CXX: "clang++-22"
+            CC: "clang-22"
+        steps:
+            - uses: actions/checkout@v6
+            - uses: bazel-contrib/setup-bazel@0.19.0
+              with:
+                bazelisk-cache: true # avoid installing Bazel each time
+                repository-cache: true # cache repositories in `MODULE.bazel`
+                disk-cache: linux-asan-ubsan
+
+            - run: bazel test //... ${{env.BAZELFLAGS}}
+
+    # cmake:
+    # meson:
+    # gn:
