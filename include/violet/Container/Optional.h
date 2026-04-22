@@ -750,10 +750,6 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
-            if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return VIOLET_MOVE(this->getValueRef()).get();
-            }
-
             return VIOLET_MOVE(this->getValueRef());
         }
 
