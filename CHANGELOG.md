@@ -15,6 +15,7 @@ availableAt:
 #### Noelware.Violet
 - Fix `violet::Println(fmt, args...)` and `violet::Print(fmt, args...)` from recursively calling itself ([`@auguwu`])
 - Cleanup the macros header file (which is Violet's `config.h` equivalent) ([`@auguwu`])
+- Improve **Optional\<T\>**'s interface for `std::reference_wrapper` types, they work for all methods and functions ([`@auguwu`])
 
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.03...26.05.04>
 

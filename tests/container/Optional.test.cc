@@ -201,9 +201,10 @@ TEST(Optionals, ReferenceWrapperWorks)
     };
 
     Hello lucky{ .Lucky = true, .Fortune = "hello, world" };
-    Optional<std::reference_wrapper<Hello>> x(lucky);
+    Optional<std::reference_wrapper<Hello>> x(std::ref(lucky));
 
     ASSERT_TRUE(x);
+
     EXPECT_TRUE(x->Lucky);
     EXPECT_EQ(x->Fortune, "hello, world");
 }
