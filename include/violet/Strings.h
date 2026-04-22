@@ -143,7 +143,7 @@ VIOLET_API auto Join(const Range& range, Str delim) noexcept -> violet::String
 
 /// Joins a collection of elements into a single string with a delimiter with a designated mapper.
 template<std::ranges::input_range Range, typename Fun>
-#if defined(VIOLET_GCC)
+#if VIOLET_COMPILER(GCC)
     requires(requires(Fun fn, const std::ranges::range_value_t<Range>& v) {
         { std::invoke(fn, v) } -> std::convertible_to<violet::String>;
     })

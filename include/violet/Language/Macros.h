@@ -67,66 +67,20 @@
 // * VIOLET_ARCH_{X86_64,AARCH64}
 // * VIOLET_COMPILER_{CLANG|MSVC|GCC}
 // * VIOLET_BUILDSYSTEM_{BAZEL|CMAKE|MESON|GN} - new as of 26.05.05
-#if VIOLET_VERSION >= 26050500
+#if defined(VIOLET_LINUX) && !defined(VIOLET_PLATFORM_LINUX)
+#warning "`VIOLET_LINUX` is a deprecated define, use `VIOLET_PLATFORM_LINUX` instead"
+#define VIOLET_PLATFORM_LINUX
+#endif // defined(VIOLET_LINUX) && !defined(VIOLET_PLATFORM_LINUX)
+
 #ifndef VIOLET_PLATFORM_LINUX
 #if defined(__linux__) && !defined(__ANDROID__)
-#define VIOLET_PLATFORM_UNIX
+#define VIOLET_PLATFORM_LINUX
 #endif
 #endif // !defined(VIOLET_PLATFORM_LINUX)
 
-#if !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
-#include <TargetConditionals.h>
-#if TARGET_OS_MAC && TARGET_OS_OSX
+#if defined(VIOLET_APPLE_MACOS) && !defined(VIOLET_PLATFORM_APPLE_MACOS)
+#warning "`VIOLET_APPLE_MACOS` is a deprecated define, use `VIOLET_PLATFORM_APPLE_MACOS` instead"
 #define VIOLET_PLATFORM_APPLE_MACOS
-#endif
-#endif // !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
-
-#if !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
-#define VIOLET_PLATFORM_WINDOWS
-#endif // !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
-
-#if !defined(VIOLET_ARCH_X86_64)                                                                                       \
-    && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) || defined(__x86_64) || defined(_M_AMD64))
-#define VIOLET_ARCH_VIOLET_ARCH_X86_64
-#endif // !defined(VIOLET_ARCH_X86_64) && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) ||
-       // defined(__x86_64) || defined(_M_AMD64))
-
-#if !defined(VIOLET_ARCH_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
-#define VIOLET_ARCH_AARCH64
-#endif
-
-#if !defined(VIOLET_COMPILER_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
-#define VIOLET_COMPILER_CLANG
-#endif // !defined(VIOLET_COMPILER_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
-
-#if !defined(VIOLET_COMPILER_CLANG_CL) && (defined(__clang__) && defined(_MSC_VER))
-#define VIOLET_COMPILER_CLANG_CL
-#endif // !defined(VIOLET_COMPILER_CLANG_CL) && (defined(__clang__) && defined(_MSC_VER))
-
-#if !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
-#define VIOLET_COMPILER_GCC
-#endif // !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
-
-#if !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
-#define VIOLET_COMPILER_MSVC
-#endif // !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
-
-#if !defined(VIOLET_BUILDSYSTEM_BAZEL) && !defined(VIOLET_BUILDSYSTEM_CMAKE) && !defined(VIOLET_BUILDSYSTEM_MESON)     \
-    && !defined(VIOLET_BUILDSYSTEM_GN)
-#warning                                                                                                               \
-    "Neither `VIOLET_BUILDSYSTEM_{BAZEL|CMAKE|MESON|GN}` are not set, this is a foreign buildsystem we don't have full support on!"
-#define VIOLET_BUILDSYSTEM_FOREIGN
-#endif
-
-#define VIOLET_PLATFORM(platform) defined(VIOLET_PLATFORM_##platform)
-#define VIOLET_ARCH(arch) defined(VIOLET_ARCH_##arch)
-#define VIOLET_COMPILER(compiler) defined(VIOLET_COMPILER_##compiler)
-#define VIOLET_BUILDSYSTEM(system) defined(VIOLET_BUILDSYSTEM_##system)
-#else
-#ifndef VIOLET_LINUX
-#if defined(__linux__) && !defined(__ANDROID__)
-#define VIOLET_LINUX
-#endif
 #endif
 
 // If we ever have plans on adding iOS/tvOS/watchOS/visionOS support for this library,
@@ -148,41 +102,86 @@
 // | |     | | +-----------------+ +----+ +-------+ +--------+ +--------+ | |           | |
 // | +-----+ +------------------------------------------------------------+ +-----------+ |
 // +--------------------------------------------------------------------------------------+
-#if !defined(VIOLET_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
+#if !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
 #include <TargetConditionals.h>
 #if TARGET_OS_MAC && TARGET_OS_OSX
-#define VIOLET_APPLE_MACOS
+#define VIOLET_PLATFORM_APPLE_MACOS
 #endif
+#endif // !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
+
+#if defined(VIOLET_WINDOWS) && !defined(VIOLET_PLATFORM_WINDOWS)
+#warning "`VIOLET_WINDOWS` is a deprecated define, use `VIOLET_PLATFORM_WINDOWS` instead"
+#define VIOLET_PLATFORM_WINDOWS
 #endif
 
-#if !defined(VIOLET_WINDOWS) && defined(_WIN32)
-#define VIOLET_WINDOWS
+#if !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
+#define VIOLET_PLATFORM_WINDOWS
+#endif // !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
+
+#if defined(VIOLET_X86_64) && !defined(VIOLET_ARCH_X86_64)
+#warning "`VIOLET_X86_64` is a deprecated define, use `VIOLET_ARCH_X86_64` instead"
+#define VIOLET_ARCH_X86_64
 #endif
 
-#if !defined(VIOLET_X86_64)                                                                                            \
+#if !defined(VIOLET_ARCH_X86_64)                                                                                       \
     && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) || defined(__x86_64) || defined(_M_AMD64))
-#define VIOLET_X86_64
+#define VIOLET_ARCH_VIOLET_ARCH_X86_64
+#endif // !defined(VIOLET_ARCH_X86_64) && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) ||
+       // defined(__x86_64) || defined(_M_AMD64))
+
+#if defined(VIOLET_AARCH64) && !defined(VIOLET_ARCH_AARCH64)
+#warning "`VIOLET_AARCH64` is a deprecated define, use `VIOLET_ARCH_AARCH64` instead"
+#define VIOLET_ARCH_AARCH64
 #endif
 
-#if !defined(VIOLET_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
-#define VIOLET_AARCH64
+#if !defined(VIOLET_ARCH_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
+#define VIOLET_ARCH_AARCH64
+#endif // !defined(VIOLET_ARCH_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
+
+#if defined(VIOLET_CLANG) && !defined(VIOLET_COMPILER_CLANG)
+#warning "`VIOLET_CLANG` is a deprecated define, use `VIOLET_COMPILER_CLANG` instead"
+#define VIOLET_COMPILER_CLANG
 #endif
 
-#if !defined(VIOLET_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
-#define VIOLET_CLANG
+#if !defined(VIOLET_COMPILER_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
+#define VIOLET_COMPILER_CLANG
+#endif // !defined(VIOLET_COMPILER_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
+
+#if !defined(VIOLET_COMPILER_CLANG_CL) && (defined(__clang__) && defined(_MSC_VER))
+#define VIOLET_COMPILER_CLANG_CL
+#endif // !defined(VIOLET_COMPILER_CLANG_CL) && (defined(__clang__) && defined(_MSC_VER))
+
+#if defined(VIOLET_GCC) && !defined(VIOLET_COMPILER_GCC)
+#warning "`VIOLET_GCC` is a deprecated define, use `VIOLET_COMPILER_GCC` instead"
+#define VIOLET_COMPILER_GCC
 #endif
 
 #if !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
-#define VIOLET_GCC
+#define VIOLET_COMPILER_GCC
+#endif // !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
+
+#if defined(VIOLET_MSVC) && !defined(VIOLET_COMPILER_MSVC)
+#warning "`VIOLET_MSVC` is a deprecated define, use `VIOLET_COMPILER_MSVC` instead"
+#define VIOLET_COMPILER_MSVC
 #endif
 
 #if !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
-#define VIOLET_MSVC
-#endif
+#define VIOLET_COMPILER_MSVC
+#endif // !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
+
+#if !defined(VIOLET_BUILDSYSTEM_BAZEL) && !defined(VIOLET_BUILDSYSTEM_CMAKE) && !defined(VIOLET_BUILDSYSTEM_MESON)     \
+    && !defined(VIOLET_BUILDSYSTEM_GN)
+#warning                                                                                                               \
+    "Neither `VIOLET_BUILDSYSTEM_{BAZEL|CMAKE|MESON|GN}` are not set, this is a foreign buildsystem we don't have full support on!"
+#define VIOLET_BUILDSYSTEM_FOREIGN
 #endif
 
+#define VIOLET_PLATFORM(platform) defined(VIOLET_PLATFORM_##platform)
+#define VIOLET_ARCH(arch) defined(VIOLET_ARCH_##arch)
+#define VIOLET_COMPILER(compiler) defined(VIOLET_COMPILER_##compiler)
+#define VIOLET_BUILDSYSTEM(system) defined(VIOLET_BUILDSYSTEM_##system)
+
 #ifndef VIOLET_API
-#if VIOLET_VERSION >= 26050500
 #if VIOLET_COMPILER(MSVC) || VIOLET_COMPILER(CLANG_CL)
 #define VIOLET_API_EXPORT __declspec(dllexport)
 #define VIOLET_API_IMPORT __declspec(dllimport)
@@ -196,21 +195,6 @@
 #define VIOLET_API_IMPORT
 #define VIOLET_LOCAL
 #endif
-#else
-#ifdef VIOLET_MSVC
-#define VIOLET_API_EXPORT __declspec(dllexport)
-#define VIOLET_API_IMPORT __declspec(dllimport)
-#define VIOLET_LOCAL
-#elif defined(VIOLET_CLANG) || defined(VIOLET_GCC)
-#define VIOLET_API_EXPORT __attribute__((visibility("default")))
-#define VIOLET_API_IMPORT __attribute__((visibility("default")))
-#define VIOLET_LOCAL __attribute__((visibility("hidden")))
-#else
-#define VIOLET_API_EXPORT
-#define VIOLET_API_IMPORT
-#define VIOLET_LOCAL
-#endif
-#endif // VIOLET_VERSION >= 26050500
 #endif // !defined(VIOLET_API)
 
 #ifdef VIOLET_BUILDING
@@ -228,7 +212,7 @@
 #endif // defined(VIOLET_BUILDING)
 
 #ifndef VIOLET_MSAN
-#if defined(VIOLET_CLANG) && VIOLET_HAS_FEATURE(memory_sanitizer)
+#if VIOLET_COMPILER(CLANG) && VIOLET_HAS_FEATURE(memory_sanitizer)
 #define VIOLET_MSAN
 #endif
 #endif
@@ -372,15 +356,15 @@
 #define __stringify_helper(x) #x
 #define __stringify(x) __stringify_helper(x)
 
-#if defined(VIOLET_CLANG)
+#if VIOLET_COMPILER(CLANG)
 #define VIOLET_DIAGNOSTIC_PUSH _Pragma("clang diagnostic push")
 #define VIOLET_DIAGNOSTIC_POP _Pragma("clang diagnostic pop")
 #define VIOLET_DIAGNOSTIC_IGNORE(x) _Pragma(__stringify(clang diagnostic ignored x))
-#elif defined(VIOLET_GCC)
+#elif VIOLET_COMPILER(GCC)
 #define VIOLET_DIAGNOSTIC_PUSH _Pragma("GCC diagnostic push")
 #define VIOLET_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
 #define VIOLET_DIAGNOSTIC_IGNORE(x) _Pragma(__stringify(GCC diagnostic ignored x))
-#elif defined(VIOLET_MSVC)
+#elif VIOLET_COMPILER(MSVC)
 #define VIOLET_DIAGNOSTIC_PUSH __pragma(warning(push))
 #define VIOLET_DIAGNOSTIC_POP __pragma(warning(pop))
 #define VIOLET_DIAGNOSTIC_IGNORE(x) __pragma(warning(disable : x))
@@ -475,9 +459,9 @@
 
 #if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
 #define VIOLET_UNREACHABLE() ::std::unreachable()
-#elif defined(VIOLET_MSVC)
+#elif VIOLET_COMPILER(MSVC)
 #define VIOLET_UNREACHABLE() __assume(false)
-#elif defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#elif VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)
 #define VIOLET_UNREACHABLE() __builtin_unreachable()
 #else
 #define VIOLET_UNREACHABLE()                                                                                           \
@@ -485,4 +469,12 @@
         for (;;)                                                                                                       \
             ;                                                                                                          \
     } while (false)
+#endif
+
+#if __cpp_if_consteval >= 202106L
+#define VIOLET_IF_CONSTEVAL if consteval
+#define VIOLET_IF_NOT_CONSTEVAL if not consteval
+#else
+#define VIOLET_IF_CONSTEVAL if (std::is_constant_evaluated())
+#define VIOLET_IF_NOT_CONSTEVAL if (!std::is_constant_evaluated())
 #endif

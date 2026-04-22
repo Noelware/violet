@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 
 #include <violet/IO/Experimental/Input/StdinInputStream.h>
 

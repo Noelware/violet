@@ -29,7 +29,7 @@ namespace violet::io {
 
 /// A zero-cost, tiny abstraction around OS-related file descriptors.
 struct VIOLET_API FileDescriptor final {
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
     /// Value type on POSIX (macOS, Linux) that wraps a file descriptor.
     using value_type = Int32;
 #else

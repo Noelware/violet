@@ -21,10 +21,6 @@
 
 #include <violet/Violet.h>
 
-#if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX) || defined(VIOELT_LINUX) || defined(VIOLET_APPLE_MACOS)
-#else
-#warning "This platform doesn't support the Noelware.Violet.Filesystem library"
-
 #include <violet/Filesystem.h>
 #include <violet/Filesystem/File.h>
 #include <violet/Filesystem/Path.h>
@@ -81,5 +77,3 @@ MK_UNSUPPORTED_OP(SetPermissions, io::Result<void>, PathRef, Permissions);
 MK_UNSUPPORTED_OP(Rename, io::Result<void>, PathRef, PathRef);
 
 #undef MK_UNSUPPORTED_OP
-
-#endif

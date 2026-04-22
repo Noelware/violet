@@ -28,19 +28,16 @@ package(
 violet_cc_library(
     name = "macros",
     hdrs = ["//include/violet/Language:Macros.h"],
-    visibility = ["//visibility:public"],
 )
 
 violet_cc_library(
     name = "policy_checks",
     hdrs = ["//include/violet/Language:Policy.h"],
-    visibility = ["//visibility:public"],
 )
 
 violet_cc_library(
     name = "assert",
     hdrs = ["//include/violet/Language:Assert.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":macros",
         ":policy_checks",
@@ -51,7 +48,6 @@ violet_cc_library(
 violet_cc_library(
     name = "print",
     hdrs = ["//include/violet:Print.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":macros",
         ":policy_checks",
@@ -61,7 +57,6 @@ violet_cc_library(
 violet_cc_library(
     name = "violet",
     hdrs = ["//include/violet:Violet.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":assert",
         ":macros",
@@ -72,7 +67,6 @@ violet_cc_library(
 violet_cc_library(
     name = "iterator",
     hdrs = ["//include/violet:Iterator.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//violet",
         "//violet/container",
@@ -89,7 +83,6 @@ violet_cc_library(
     name = "anyhow",
     srcs = ["//src:anyhow.cc"],
     hdrs = ["//include/violet:anyhow.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":iterator",
         ":print",
@@ -114,7 +107,6 @@ violet_cc_library(
     name = "strings",
     srcs = ["//src:strings.cc"],
     hdrs = ["//include/violet:Strings.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":iterator",
         ":violet",
@@ -131,7 +123,6 @@ violet_cc_test(
 violet_cc_library(
     name = "runtime_info",
     hdrs = ["//include/violet/Runtime:Info.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":macros",
         "//violet/experimental:smol_string",
@@ -141,9 +132,14 @@ violet_cc_library(
 violet_cc_library(
     name = "source_location",
     hdrs = ["//include/violet:SourceLocation.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":macros",
         ":policy_checks",
     ],
+)
+
+violet_cc_library(
+    name = "defer",
+    hdrs = ["//include/violet:Defer.h"],
+    deps = [":violet"],
 )

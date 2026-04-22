@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_LINUX
+#if VIOLET_PLATFORM(LINUX)
 
 #include <violet/Filesystem/File.h>
 
@@ -51,7 +51,7 @@ auto File::Lock() const noexcept -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto File::SharedLock() const noexcept -> io::Result<void>
@@ -64,7 +64,7 @@ auto File::SharedLock() const noexcept -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto File::Unlock() const noexcept -> io::Result<void>
@@ -78,7 +78,7 @@ auto File::Unlock() const noexcept -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto File::Locked() const noexcept -> io::Result<bool>
@@ -94,7 +94,7 @@ auto File::Locked() const noexcept -> io::Result<bool>
 
 auto File::Metadata() const noexcept -> io::Result<struct Metadata>
 {
-    struct statx sx{};
+    struct statx sx{ };
     if (::statx(this->n_fd.Get(), "", AT_EMPTY_PATH, STATX_BASIC_STATS | STATX_BTIME, &sx) != -1) {
         struct Metadata mt;
         mt.Size = sx.stx_size;

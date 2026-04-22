@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 
 #include <violet/IO/Error.h>
 #include <violet/Support/Terminal.h>
@@ -46,7 +46,7 @@ auto violet::terminal::IsTTY(StreamSource src) noexcept -> bool
 
 auto violet::terminal::QueryWindowInfo(StreamSource src) noexcept -> io::Result<Window>
 {
-    struct winsize win{};
+    struct winsize win{ };
     int fd = -1;
 
     switch (src) {

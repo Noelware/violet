@@ -30,7 +30,7 @@
 
 namespace violet::filesystem {
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
 constexpr static auto PathSeparator = '\\';
 #else
 constexpr static auto PathSeparator = '/';
@@ -163,7 +163,7 @@ struct VIOLET_API BasePath {
         }
 
         StringType storage = Data();
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
         // drive letter (i.e, `C:\`)
         if (storage.size() >= 2 && std::isalpha(static_cast<UInt8>(storage[0])) && storage[0] == ':') {
             return true;
@@ -195,7 +195,7 @@ struct VIOLET_API BasePath {
     {
         StringType storage = getThisObject().storage();
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
         return storage.size() == 2 && std::isalpha(storage[0]) && storage[1] == ':';
 #else
         return storage == "/";
@@ -325,7 +325,7 @@ struct VIOLET_API BasePath {
     /// ```
     [[nodiscard]] auto Join(Str rhs) const noexcept -> Path;
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
     /// Allows converting this UTF-8 path into a UTF-16 wide string for Win32 APIs.
     ///
     /// ## Example
@@ -683,7 +683,7 @@ auto BasePath<Derived, StringType>::Parent() const noexcept -> Optional<Path>
         return Nothing;
     }
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
     if (pos == 2 && val[1] == ':') {
         return Some<Path>(val.substr(0, pos + 1));
     }
@@ -707,7 +707,7 @@ auto BasePath<Derived, StringType>::WithFilename(Str filename) const noexcept ->
         return parent->Join(filename);
     }
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
     // edge case: `n_value` == '/' (indicating that we are root on Unix) and
     // intentionally, `this->Parent()` will return `Nothing` if we are root
     // regardless.

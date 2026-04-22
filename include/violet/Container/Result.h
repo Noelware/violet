@@ -1450,7 +1450,7 @@ struct std::formatter<violet::Result<T, E>> final: public std::formatter<std::st
     }
 };
 
-#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#if VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)
 #define __violet_try_impl__(expr, variable)                                                                            \
     ({                                                                                                                 \
         auto variable = (expr);                                                                                        \

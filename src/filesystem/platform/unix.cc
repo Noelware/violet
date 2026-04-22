@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 
 #include <violet/Filesystem.h>
 #include <violet/Filesystem/File.h>
@@ -211,7 +211,7 @@ auto WalkDirs::Next() noexcept -> Optional<WalkDirs::Item>
 auto violet::filesystem::Metadata::FromPosix(struct stat st) noexcept -> Metadata
 {
 
-#ifdef VIOLET_APPLE_MACOS
+#if VIOLET_PLATFORM(APPLE_MACOS)
 #define ST_MTIM st.st_mtimespec
 #define ST_ATIM st.st_atimespec
 #else
@@ -225,7 +225,7 @@ auto violet::filesystem::Metadata::FromPosix(struct stat st) noexcept -> Metadat
     mt.AccessedAt = Some<UInt64>(getMillisecondsFromTimespec(ST_ATIM));
     mt.Permissions = static_cast<struct Permissions>(st.st_mode);
 
-#ifdef VIOLET_APPLE_MACOS
+#if VIOLET_PLATFORM(APPLE_MACOS)
     mt.CreatedAt = Some<UInt64>(getMillisecondsFromTimespec(st.st_birthtimespec));
 #endif
 
@@ -391,7 +391,7 @@ auto violet::filesystem::Exists(PathRef path) -> bool
 
 auto violet::filesystem::TryExists(PathRef path) -> io::Result<bool>
 {
-#if defined(VIOLET_APPLE_MACOS)
+#if VIOLET_PLATFORM(APPLE_MACOS)
 #define O_PATH O_RDONLY
 #endif
 

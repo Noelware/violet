@@ -1184,38 +1184,82 @@ private:
 
     constexpr auto getValueRef() & noexcept -> value_type&
     {
-        if constexpr (instanceof_v<std::reference_wrapper, T>) {
-            return std::launder(reinterpret_cast<T*>(&this->n_value))->get();
+        VIOLET_IF_CONSTEVAL
+        {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return this->n_value.get();
+            } else {
+                return this->n_value;
+            }
         }
+        else
+        {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return std::launder(reinterpret_cast<T*>(&this->n_value))->get();
+            }
 
-        return *std::launder(reinterpret_cast<value_type*>(&this->n_value));
+            return *std::launder(reinterpret_cast<value_type*>(&this->n_value));
+        }
     }
 
     constexpr auto getValueRef() const& noexcept -> const value_type&
     {
-        if constexpr (instanceof_v<std::reference_wrapper, T>) {
-            return std::launder(reinterpret_cast<const T*>(&this->n_value))->get();
+        VIOLET_IF_CONSTEVAL
+        {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return this->n_value.get();
+            } else {
+                return this->n_value;
+            }
         }
+        else
+        {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return std::launder(reinterpret_cast<const T*>(&this->n_value))->get();
+            }
 
-        return *std::launder(reinterpret_cast<const value_type*>(&this->n_value));
+            return *std::launder(reinterpret_cast<const value_type*>(&this->n_value));
+        }
     }
 
     constexpr auto getValueRef() && noexcept -> value_type&&
     {
-        if constexpr (instanceof_v<std::reference_wrapper, T>) {
-            return VIOLET_MOVE(std::launder(reinterpret_cast<T*>(&this->n_value))->get());
+        VIOLET_IF_CONSTEVAL
+        {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return this->n_value.get();
+            } else {
+                return this->n_value;
+            }
         }
+        else
+        {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return VIOLET_MOVE(std::launder(reinterpret_cast<T*>(&this->n_value))->get());
+            }
 
-        return VIOLET_MOVE(*std::launder(reinterpret_cast<value_type*>(&this->n_value)));
+            return VIOLET_MOVE(*std::launder(reinterpret_cast<value_type*>(&this->n_value)));
+        }
     }
 
     constexpr auto getValueRef() const&& noexcept -> const value_type&&
     {
-        if constexpr (instanceof_v<std::reference_wrapper, T>) {
-            return VIOLET_MOVE(std::launder(reinterpret_cast<const T*>(&this->n_value))->get());
+        VIOLET_IF_CONSTEVAL
+        {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return this->n_value.get();
+            } else {
+                return this->n_value;
+            }
         }
+        else
+        {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return VIOLET_MOVE(std::launder(reinterpret_cast<const T*>(&this->n_value))->get());
+            }
 
-        return VIOLET_MOVE(*std::launder(reinterpret_cast<const value_type*>(&this->n_value)));
+            return VIOLET_MOVE(*std::launder(reinterpret_cast<const value_type*>(&this->n_value)));
+        }
     }
 
     [[noreturn]] VIOLET_COLD static void panicUnexpectly(Str message, [[maybe_unused]] violet::SourceLocation loc)

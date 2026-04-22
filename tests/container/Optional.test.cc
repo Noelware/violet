@@ -209,4 +209,16 @@ TEST(Optionals, ReferenceWrapperWorks)
     EXPECT_EQ(x->Fortune, "hello, world");
 }
 
+namespace {
+
+constexpr auto getLuckyNumber() -> Optional<Int32>
+{
+    return 42;
+}
+
+} // namespace
+
+// A static-test to ensure that `getValueRef()` (internals for unwrapping) is constexpr-safe
+static_assert(getLuckyNumber().Unwrap() == 42);
+
 // NOLINTEND(readability-identifier-length)

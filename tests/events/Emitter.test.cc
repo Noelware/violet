@@ -111,26 +111,26 @@ TEST(Events, EmitterThreadSafe)
     Mutex mu;
     Vec<UInt64> ids(1000);
 
-#if (defined(VIOLET_GCC) || defined(VIOLET_CLANG)) && (defined(_MSVC_LANG) && _MSVC_LANG <= 202002L)                   \
-    || __cplusplus <= 202002L
+#if (VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG))                                                                   \
+    && ((defined(_MSVC_LANG) && _MSVC_LANG <= 202002L) || __cplusplus <= 202002L)
     VIOLET_DIAGNOSTIC_PUSH
     VIOLET_DIAGNOSTIC_IGNORE("-Wc++23-extensions")
-#endif // defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#endif // VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)
 
     auto worker = [&] -> void {
-        while (!started.load()) {}
+        while (!started.load()) { }
 
         for (Int32 i = 0; i < 100; i++) {
-            auto guard = event([&](UInt32) -> void {});
+            auto guard = event([&](UInt32) -> void { });
             std::scoped_lock lk(mu);
 
             ids.push_back(guard.ID());
         }
     };
 
-#if (defined(VIOLET_GCC) || defined(VIOLET_CLANG)) && (defined(_MSVC_LANG) && _MSVC_LANG <= ver) || __cplusplus <= ver
+#if (VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)) && (defined(_MSVC_LANG) && _MSVC_LANG <= ver) || __cplusplus <= ver
     VIOLET_DIAGNOSTIC_POP
-#endif // defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#endif // VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)
 
     std::thread t1(worker);
     std::thread t2(worker);

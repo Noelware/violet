@@ -9,6 +9,16 @@ availableAt:
 ### unreleased
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.04...master>
 
+### 26.05.05
+- (breaking) Deprecate the `VIOLET_{COMPILER|ARCH|OS}` macros with `VIOLET_{PLATFORM|COMPILER|ARCH}_` prefix and add `VIOLET_BUILDSYSTEM_`-set of macros that are defined by the build system. ([`@auguwu`])
+    - If no `VIOLET_BUILDSYSTEM_{<name>}` is set or if it's not Bazel, CMake, Meson, or GN, then a warning is emitted
+    - The deprecated macros will still be available but will be removed in a 26.06 release.
+
+#### Noelware.Violet
+- Fix unwrapping a `Optional` not being constexpr-safe ([`@auguwu`])
+- Add **VIOLET_IF_CONSTEVAL**/**VIOLET_IF_NOT_CONSTEVAL** for `if consteval {}` ([`@auguwu`])
+- Move `Defer` and `CancellableDefer` to `violet/Defer.h` (`//violet:defer` Bazel target) ([`@auguwu`])
+
 ### 26.05.04
 - **Bazel**: Allow to use sanitizer flags together rather than exclusively ([`@auguwu`])
 

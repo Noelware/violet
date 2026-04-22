@@ -29,7 +29,7 @@
 
 #include <sstream>
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 #include <sys/stat.h>
 #endif
 
@@ -111,14 +111,14 @@ struct VIOLET_API OpenOptions final {
         return *this;
     }
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
     /// Sets Windows-specific file attributes.
     constexpr auto Attributes(DWORD attrs) noexcept -> OpenOptions&
     {
         this->n_attributes = attrs;
         return *this;
     }
-#elif defined(VIOLET_UNIX)
+#elif VIOLET_PLATFORM(UNIX)
     /// Sets Unix permission mode bits.
     constexpr auto Mode(mode_t mode) noexcept -> OpenOptions&
     {
@@ -159,9 +159,9 @@ private:
 
     Bitflags<flag> n_bits;
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
     DWORD n_attributes;
-#elif defined(VIOLET_UNIX)
+#elif VIOLET_PLATFORM(UNIX)
     struct Mode n_mode;
     Int32 n_flags;
 #endif
@@ -244,7 +244,7 @@ struct VIOLET_API FileType final {
             os << "directory";
         } else if (self.n_tag.Contains(tag::kSymlink)) {
             os << "symbolic link";
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
         } else if (self.n_tag.Contains(tag::kBlkDev)) {
             os << "block device";
         } else if (self.n_tag.Contains(tag::kCharDev)) {
@@ -261,7 +261,7 @@ struct VIOLET_API FileType final {
         return os << ')';
     }
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
     /// Returns **true** if this represents a block device.
     [[nodiscard]] constexpr auto BlockDevice() const noexcept -> bool
     {
@@ -296,7 +296,7 @@ private:
         kDir = 1 << 1, ///< this is a directory
         kSymlink = 1 << 2, ///< this is a symlink
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
         kBlkDev = 1 << 3, ///< this is a character device
         kCharDev = 1 << 4, ///< this is a character device
         kFIFO = 1 << 5, ///< this is a named pipe (FIFO).
@@ -330,7 +330,7 @@ private:
         return ft;
     }
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
     static constexpr auto mkblkdev() noexcept -> FileType
     {
         FileType ft = { };
@@ -412,7 +412,7 @@ struct VIOLET_API Metadata final {
     /// The accessed timestamp, if avaliable.
     Optional<UInt64> AccessedAt;
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
     /// Translates a POSIX [`stat`] call into this [`Metadata`] struct.
     static auto FromPosix(struct stat st) noexcept -> Metadata;
 #endif

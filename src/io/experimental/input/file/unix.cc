@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 
 #include <violet/IO/Experimental/Input/FileInputStream.h>
 
@@ -39,7 +39,7 @@ auto FileInputStream::Available() const noexcept -> Result<UInt>
         return num;
     }
 
-    struct stat st{};
+    struct stat st{ };
     if (::fstat(fd, &st) > 0) {
         return Err(io::Error::OSError());
     }

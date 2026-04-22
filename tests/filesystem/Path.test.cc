@@ -35,7 +35,7 @@ TEST(Paths, Empty)
     EXPECT_TRUE(path.Relative());
 }
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
 TEST(Paths, Absolute)
 {
     PathRef system32 = "C:\\Windows\\System32";

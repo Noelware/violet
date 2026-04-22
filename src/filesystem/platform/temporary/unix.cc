@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 
 #include <violet/Filesystem.h>
 #include <violet/Filesystem/Temporary.h>
@@ -133,7 +133,7 @@ TempDir::TempDir(TempDir&& other) noexcept
     : n_released(other.n_released)
     , n_path(VIOLET_MOVE(other.n_path))
 {
-    other.n_path = {};
+    other.n_path = { };
     other.n_released = true;
 }
 
@@ -147,7 +147,7 @@ TempDir::~TempDir()
 
         VIOLET_DIAGNOSTIC_POP
 
-        this->n_path = {};
+        this->n_path = { };
     }
 }
 

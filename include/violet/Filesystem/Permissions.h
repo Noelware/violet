@@ -25,16 +25,16 @@
 
 #include <ostream>
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 #include <sys/stat.h>
 #include <sys/types.h>
-#elif defined(VIOLET_WINDOWS)
+#elif VIOLET_PLATFORM(WINDOWS)
 #include <windows.h>
 #endif
 
 namespace violet::filesystem {
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 /// Represents a Unix file mode's permissions.
 ///
 /// This is a lightweight wrapper around the `mode_t` type that provides:
@@ -162,14 +162,14 @@ private:
 struct VIOLET_API Permissions final {
     constexpr VIOLET_IMPLICIT Permissions() noexcept = default;
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
     /// Constructs a [`Permissions`] object from a `DWORD` representing the file attributes.
     /// @param attrs the attributes that this file sets (i.e, `FILE_ATTRIBUTE_READONLY`).
     constexpr VIOLET_EXPLICIT Permissions(DWORD attrs) noexcept
         : n_attrs(attrs)
     {
     }
-#elif defined(VIOLET_UNIX)
+#elif VIOLET_PLATFORM(UNIX)
     constexpr VIOLET_EXPLICIT Permissions(struct Mode mode) noexcept
         : n_mode(mode)
     {
@@ -179,9 +179,9 @@ struct VIOLET_API Permissions final {
     [[nodiscard]] VIOLET_API auto Readonly() const noexcept -> bool;
     VIOLET_API void SetReadonly(bool readonly) noexcept;
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
     VIOLET_API auto Attributes() const noexcept -> DWORD;
-#elif defined(VIOLET_UNIX)
+#elif VIOLET_PLATFORM(UNIX)
     [[nodiscard]] VIOLET_API auto Mode() const noexcept -> struct Mode;
 #endif
 
@@ -195,9 +195,9 @@ struct VIOLET_API Permissions final {
     constexpr auto operator==(const Permissions&) const noexcept -> bool = default;
 
 private:
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
     DWORD n_attrs;
-#elif defined(VIOLET_UNIX)
+#elif VIOLET_PLATFORM(UNIX)
     violet::filesystem::Mode n_mode;
 #endif
 };
@@ -206,6 +206,6 @@ private:
 
 VIOLET_FORMATTER(violet::filesystem::Permissions);
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 VIOLET_FORMATTER(violet::filesystem::Mode);
 #endif

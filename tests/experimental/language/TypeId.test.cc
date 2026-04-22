@@ -144,7 +144,7 @@ TEST(TypeId, OfIsConstexpr)
 {
     constexpr auto id = TypeId::Of<Foo>();
 
-#ifndef VIOLET_GCC
+#if !VIOLET_COMPILER(GCC)
     static_assert(TypeId::Of<Foo>() == TypeId::Of<Foo>());
     static_assert(TypeId::Of<Foo>() != TypeId::Of<Bar>());
 #else

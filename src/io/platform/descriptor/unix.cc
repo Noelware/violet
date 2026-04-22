@@ -22,7 +22,7 @@
 #include <unistd.h>
 #include <violet/Violet.h>
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 
 #include <violet/IO/Descriptor.h>
 
@@ -151,13 +151,13 @@ auto FileDescriptor::Flush() const noexcept -> io::Result<void>
         // For now, it is ok to ignore `EINVAL` since this means
         // that the file descriptor wasn't a valid one (i.e, `STDOUT_FILENO`)
         if (errno == EINVAL) {
-            return {};
+            return { };
         }
 
         return Err(Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 FileDescriptor::operator bool() const noexcept

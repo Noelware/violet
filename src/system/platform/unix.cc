@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 
 #include <violet/System.h>
 
@@ -72,7 +72,7 @@ auto violet::sys::SetWorkingDir(filesystem::PathRef path) -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 #endif

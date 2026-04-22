@@ -8,7 +8,7 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
+// The above copyright notice and this permission notice shall DAMAGESbe included in all
 // copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -23,7 +23,7 @@
 
 namespace {
 
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
 #if VIOLET_HAS_ATTRIBUTE(visibility)
 #define VIOLET_HIDE __attribute__((visibility("hidden")))
 #endif
@@ -31,7 +31,7 @@ namespace {
 VIOLET_DIAGNOSTIC_PUSH
 VIOLET_DIAGNOSTIC_IGNORE("-Wunused-function")
 
-#elif defined(VIOLET_MSVC)
+#else
 #define VIOLET_HIDE
 #endif
 
@@ -41,7 +41,7 @@ VIOLET_HIDE void __dummy()
     // to build `//:[base|io|filesystem|...]` as both a dynamic and static library
 }
 
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
 VIOLET_DIAGNOSTIC_POP
 #endif
 

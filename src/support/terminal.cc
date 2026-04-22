@@ -197,7 +197,7 @@ auto check256BitColor(const String& value)
 
 inline auto checkPlatformANSIColor(const String& value) -> bool
 {
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
     return value != "dumb";
 #else
     return value != "dumb";
@@ -214,7 +214,7 @@ auto violet::terminal::ColourLevel(StreamSource source) noexcept -> ColorLevel
     }
 
     if (isNoColour() || violet::sys::GetEnv(kTerm) == Some<String>("dumb") || !terminal::IsTTY(source)) {
-        return {};
+        return { };
     }
 
     if (violet::sys::GetEnv(kColorTerm).HasValueAnd(checkColorterm16m)

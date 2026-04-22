@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_LINUX
+#if VIOLET_PLATFORM(LINUX)
 
 #include <violet/Filesystem.h>
 #include <violet/Filesystem/File.h>

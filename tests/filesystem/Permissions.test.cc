@@ -25,7 +25,7 @@
 using namespace violet; // NOLINT(google-build-using-namespace)
 using namespace violet::filesystem; // NOLINT(google-build-using-namespace)
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
 
 #include <sys/stat.h>
 

@@ -56,7 +56,7 @@ struct VIOLET_API TempBuilder final {
         return *this;
     }
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
     constexpr auto WithMode(Mode mode) noexcept -> TempBuilder&
     {
         this->n_mode = mode;
@@ -72,7 +72,7 @@ private:
     String n_prefix = "violet-";
     String n_suffix;
 
-#ifdef VIOLET_UNIX
+#if VIOLET_PLATFORM(UNIX)
     Mode n_mode = 0600;
 #endif
 };

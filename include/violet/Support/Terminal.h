@@ -250,7 +250,7 @@ struct VIOLET_API Styled final {
     }
 };
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
 /// On Windows, this will enable virtual terminal processing mode for terminals that don't support
 /// ANSI colour output via SGR.
 ///

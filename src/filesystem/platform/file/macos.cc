@@ -21,7 +21,7 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_APPLE_MACOS
+#if VIOLET_PLATFORM(APPLE_MACOS)
 
 #include <violet/Filesystem/File.h>
 
@@ -41,7 +41,7 @@ auto File::Lock() const noexcept -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto File::SharedLock() const noexcept -> io::Result<void>
@@ -54,7 +54,7 @@ auto File::SharedLock() const noexcept -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto File::Unlock() const noexcept -> io::Result<void>
@@ -67,7 +67,7 @@ auto File::Unlock() const noexcept -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return {};
+    return { };
 }
 
 auto File::Locked() const noexcept -> io::Result<bool>

@@ -21,5 +21,5 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
 #endif

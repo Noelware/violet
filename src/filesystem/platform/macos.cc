@@ -21,5 +21,5 @@
 
 #include <violet/Violet.h>
 
-#ifdef VIOLET_APPLE_MACOS
+#if VIOLET_PLATFORM(APPLE_MACOS)
 #endif

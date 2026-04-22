@@ -80,7 +80,7 @@ enum struct VIOLET_API ErrorKind : UInt8 {
 } // namespace violet::io
 
 VIOLET_TO_STRING(violet::io::ErrorKind, self, {
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
     VIOLET_DIAGNOSTIC_PUSH
     VIOLET_DIAGNOSTIC_IGNORE("-Wswitch")
 #endif
@@ -209,7 +209,7 @@ VIOLET_TO_STRING(violet::io::ErrorKind, self, {
         return "write zero";
     }
 
-#if defined(VIOLET_CLANG) || defined(VIOLET_GCC)
+#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
     VIOLET_DIAGNOSTIC_POP
 #endif
 
@@ -224,17 +224,17 @@ struct VIOLET_API PlatformError final {
     VIOLET_IMPLICIT_COPY_AND_MOVE(PlatformError);
     ~PlatformError() = default;
 
-#ifdef VIOLET_WINDOWS
+#if VIOLET_PLATFORM(WINDOWS)
     /// The type that is represented of `GetLastError()` for Windows
     using error_type = UInt64;
-#elif defined(VIOLET_UNIX)
+#elif VIOLET_PLATFORM(UNIX)
     /// Type that is represented by `errno` on POSIX platforms
     using error_type = Int32;
 #endif
 
     [[nodiscard]] auto AsErrorKind() const noexcept -> ErrorKind;
 
-#if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)
+#if VIOLET_PLATFORM(WINDOWS) || VIOLET_PLATFORM(UNIX)
     [[nodiscard]] auto Get() const noexcept -> error_type;
 #endif
 
@@ -250,7 +250,7 @@ private:
     VIOLET_EXPLICIT PlatformError();
     VIOLET_EXPLICIT PlatformError(error_type error);
 
-#if defined(VIOLET_WINDOWS) || defined(VIOLET_UNIX)
+#if VIOLET_PLATFORM(WINDOWS) || VIOLET_PLATFORM(UNIX)
     error_type n_value;
 #endif
 };

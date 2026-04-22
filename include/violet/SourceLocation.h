@@ -30,13 +30,13 @@
 
 namespace violet {
 
-#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#if VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)
 #define __violet_pretty_function__ __PRETTY_FUNCTION__
 #else
 #define __violet_pretty_function__ ""
 #endif
 
-#if defined(VIOLET_CLANG) || defined(VIOLET_MSVC)
+#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(CLANG_CL) || VIOLET_COMPILER(MSVC)
 #define __violet_column__ __builtin_COLUMN()
 #else
 #define __violet_column__ 0
@@ -103,7 +103,7 @@ struct VIOLET_API SourceLocation final {
     /// @param line line number; defaults to `__builtin_LINE()` at the call site.
     /// @param column column number; defaults to `__builtin_COLUMN()` at the call site or `0` if not supported
     /// @param func the function name; defaults to `__PRETTY_FUNCTION__` on GCC/Clang or `""` if not supported
-#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#if VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)
     VIOLET_DIAGNOSTIC_PUSH
     VIOLET_DIAGNOSTIC_IGNORE("-Wpredefined-identifier-outside-function")
 #endif
@@ -116,7 +116,7 @@ struct VIOLET_API SourceLocation final {
     {
     }
 
-#if defined(VIOLET_GCC) || defined(VIOLET_CLANG)
+#if VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)
     VIOLET_DIAGNOSTIC_POP
 #endif
 
