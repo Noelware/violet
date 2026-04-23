@@ -37,14 +37,32 @@ struct Optional;
 }
 
 namespace violet::testing::runfiles {
+namespace detail {
+
+#if VIOLET_BUILDSYSTEM(BAZEL)
+    constexpr static bool methodCanBeMarkedNoexcept = false;
+#else
+    constexpr static bool methodCanBeMarkedNoexcept = true;
+#endif
+
+} // namespace detail
 
 /// Initializes the runfiles system, this is only useful when Bazel is the
 /// build system for running tests.
-VIOLET_API void Init(CStr argv0);
+VIOLET_API void Init(CStr argv0) noexcept(detail::methodCanBeMarkedNoexcept);
 
 /// Returns the absolute path of a binary from the runfiles system.
 /// @param path the path to locate
-/// @returns absolute path, if any.
-VIOLET_API auto Get(Str path) -> Optional<String>;
+VIOLET_API auto Get(Str path) noexcept(detail::methodCanBeMarkedNoexcept) -> Optional<String>;
+
+/// Returns the workspace name that was provided either by Bazel's runfiles system
+/// or with the `$VIOLET_TESTING_RUNFILES_WORKSPACE` environment variable.
+///
+/// If [`violet::testing::runfiles::SetWorkspaceName`] was set prior, it'll return
+/// that workspace name instead of detection.
+VIOLET_API auto WorkspaceName() noexcept(detail::methodCanBeMarkedNoexcept) -> Optional<String>;
+
+/// Set the workspace name to `ws`.
+VIOLET_API void SetWorkspaceName(Str ws) noexcept;
 
 } // namespace violet::testing::runfiles

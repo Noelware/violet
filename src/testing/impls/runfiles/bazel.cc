@@ -23,14 +23,19 @@
 
 #include <violet/Container/Optional.h>
 #include <violet/Filesystem.h>
+#include <violet/IO/Read.h>
+#include <violet/Strings.h>
 #include <violet/System.h>
 #include <violet/Testing/Runfiles.h>
-#include <violet/Violet.h>
 
-#include <ranges>
+#ifdef VIOLET_RUNFILES_LOGS
+#include <violet/Print.h>
+#endif
 
-using rules_cc::cc::runfiles::Runfiles;
 using violet::CStr;
+using violet::Nothing;
+using violet::Optional;
+using violet::Pair;
 using violet::String;
 using violet::UInt8;
 using violet::UniquePtr;
@@ -42,28 +47,103 @@ using violet::filesystem::Path;
 using violet::filesystem::TryExists;
 using violet::sys::GetEnv;
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static UniquePtr<rules_cc::cc::runfiles::Runfiles> n_runfiles;
-
-// TODO(@auguwu/Noel): Introduce `$VIOLET_TESTING_RUNFILES_TEST_WORKSPACE_OVERRIDE` to
-// override this value if it wasn't detected
-//
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static String n_testWorkspace = "_main";
-
-constexpr static CStr kWorkspaceEnv = "TEST_WORKSPACE";
+constexpr static CStr kTestWorkspaceEnv = "TEST_WORKSPACE";
 constexpr static CStr kRunfilesDirEnv = "RUNFILES_DIR";
-constexpr static CStr kWorkspaceOverrideEnv = "VIOLET_TESTING_RUNFILES_WORKSPACE_NAME";
+constexpr static CStr kDeprecatedWorkspaceOverrideEnv = "VIOLET_TESTING_RUNFILES_WORKSPACE_NAME";
+constexpr static CStr kWorkspaceOverrideEnv = "VIOLET_TESTING_RUNFILES_WORKSPACE";
+
+#ifdef VIOLET_RUNFILES_LOGS
+#define println(fmt, ...)                                                                                              \
+    violet::Println(                                                                                                   \
+        "[violet/testing/runfiles][{}:{}] {}", __FILE__, __LINE__, std::format(fmt __VA_OPT__(, ) __VA_ARGS__))
+
+#define printerr(fmt, ...)                                                                                             \
+    violet::PrintErrln(                                                                                                \
+        "[violet/testing/runfiles][{}:{}] {}", __FILE__, __LINE__, std::format(fmt __VA_OPT__(, ) __VA_ARGS__))
+#else
+#define println(...)
+#define printerr(...)
+#endif
 
 namespace {
 
-auto detectWorkspaceName() -> String
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
+UniquePtr<rules_cc::cc::runfiles::Runfiles> n_runfiles;
+Optional<String> n_workspace;
+Optional<String> n_testWorkspace;
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
+
+constexpr auto stringToPath(const String& str) -> Path
 {
-    // First, we need to get the repo name to be the main source repository, the
-    // way to get that is, to look inside of `$RUNFILES_DIR/_repo_mapping`, which
-    // is a symlink and we need to read the file. The contents look like:
+    return str;
+}
+
+auto collectRepositoryMapping() -> Vec<Pair<String, String>>
+{
+    auto runfilesDir = GetEnv(kRunfilesDirEnv).Map(stringToPath);
+    if (!runfilesDir.HasValue()) {
+        printerr("missing `${}` environment variable, therefore runfiles framework is useless", kRunfilesDirEnv);
+        return { };
+    }
+
+    auto repoMappingFile = runfilesDir->Join("_repo_mapping");
+    auto repoMappingFileExists = TryExists(repoMappingFile);
+    if (repoMappingFileExists.Err()) {
+        printerr(
+            "failed to find repository mapping [{}]: {}", repoMappingFile, VIOLET_MOVE(repoMappingFileExists).Error());
+
+        return { };
+    }
+
+    if (!*repoMappingFileExists) {
+        printerr("repository mapping [{}] doesn't exist", repoMappingFile);
+        return { };
+    }
+
+    auto canonRepoMapping = Canonicalize(repoMappingFile);
+    if (canonRepoMapping.Err()) {
+        printerr("failed to canonicalize repository mapping [{}]: {}", repoMappingFile,
+            VIOLET_MOVE(canonRepoMapping).Error());
+
+        return { };
+    }
+
+    Vec<Pair<String, String>> workspaces;
+    auto mapping = File::Open(*canonRepoMapping, OpenOptions{ }.Read());
+    if (mapping.Ok()) {
+        auto contents = violet::io::ReadToString(*mapping);
+        VIOLET_ASSERT0(contents.Ok());
+
+        for (const auto& line: violet::strings::Lines(*contents)) {
+            if (line.empty()) {
+                continue;
+            }
+
+            auto parts = violet::strings::SplitN<2>(line, ',');
+            VIOLET_ASSERT0(parts.Next().HasValue()); // skip the first entry since we don't care about it
+
+            auto first = parts.Next();
+            VIOLET_ASSERT0(first.HasValue());
+
+            auto second = parts.Next();
+            VIOLET_ASSERT0(second.HasValue());
+
+            workspaces.emplace_back(*first, *second);
+        }
+    } else {
+        printerr("failed to open file [{}]: {}", canonRepoMapping, VIOLET_MOVE(mapping).Error());
+    }
+
+    return workspaces;
+}
+
+auto detectWorkspace() -> Optional<String>
+{
+    // First, we would need to get the repository name from `$RUNFILES_DIR/_repo_mapping`,
+    // which is a file that shows all the repository mappings Bazel uses. For example,
+    // something like this would be the `_repo_mapping` file:
     //
-    // (example from Noel's machine)
+    // ```
     // ,absl,abseil-cpp+
     // ,googletest,googletest+
     // ,org_noelware_violet,_main
@@ -78,152 +158,120 @@ auto detectWorkspaceName() -> String
     // googletest+,rules_cc,rules_cc+
     // rules_cc+,rules_cc,rules_cc+
     // rules_cc++cc_configure_extension+local_config_cc,rules_cc,rules_cc+
+    // ```
     //
-    // from Noel's Zenful project:
+    // Bazel sets `$TEST_WORKSPACE` when we are invoked with a `cc_test` binary,
+    // which we can just do:
     //
-    // ,dev_floofy_zenful,_main
-    // ,googletest,googletest+
-    // ,violet,violet+
-    // abseil-cpp+,abseil-cpp,abseil-cpp+
-    // abseil-cpp+,googletest,googletest+
-    // googletest+,abseil-cpp,abseil-cpp+
-    // googletest+,googletest,googletest+
-    // violet+,absl,abseil-cpp+
-    // violet+,googletest,googletest+
-    // violet+,org_noelware_violet,violet+
+    // ```pseudo
+    // val file = readFile("$RUNFILES_DIR/_repo_mapping")
+    // for l in file.lines() {
+    //     if (val line = line.Grep("$TEST_WORKSPACE")) {
+    //         return line.Extract(delim: ",", index: 2);
+    //     }
+    // }
     //
-    // `$TEST_WORKSPACE` is also defined, which we can just say
+    // return Nothing;
+    // ```
     //
-    //    source_location = grep(line, "$TEST_WORKSPACE")
-    //
-    // and get the first element (`,org_noelware_violet,_main` -> `org_noelware_violet`)
-    //
-    // This trick also works on Bazel 8.x, but I am not sure if it works on Bazel 7.
-
-    String workspaceName;
-    auto workspace = GetEnv(kWorkspaceEnv);
-    auto runfilesDir = GetEnv(kRunfilesDirEnv).Map([](const String& value) -> Path { return value; });
-
-    if (workspace && runfilesDir) {
-        auto repoMappingPath = runfilesDir->Join("_repo_mapping");
-        VIOLET_ASSERT(TryExists(repoMappingPath).Ok(), "repo mapping doesn't exist?");
-
-        auto canon = Canonicalize(repoMappingPath);
-        VIOLET_ASSERT(canon.Ok(), "failed to canoncalize (and resolve symlinks) of `_repo_mapping`");
-
-        auto runfilesRepoMapping = File::Open(canon.Value(), OpenOptions{ }.Read());
-        if (runfilesRepoMapping.Ok()) {
-            Vec<UInt8> buf(8192);
-
-            auto res = runfilesRepoMapping->Read(buf);
-            VIOLET_ASSERT(res.Ok(), "failed to read runfiles repo mapping");
-            VIOLET_ASSERT(res.Value() != 0, "read 0 bytes?!");
-
-            String contents(buf.begin(), buf.end());
-
-            // TODO(@auguwu/Noel): make this better somehow
-            std::stringstream ss(contents);
-            String line;
-            while (std::getline(ss, line, '\n')) {
-                // If the line ends with `$TEST_WORKSPACE` (usually `_main` but
-                // I could be wrong), get the first element of splitting `,` and
-                // that is our repository!
-                if (line.ends_with(workspace.Value())) {
-                    auto parts = std::ranges::views::split(line, ',');
-
-                    auto it = parts.begin();
-                    ++it; // skip the 0th element
-
-                    VIOLET_ASSERT(it != parts.end(), "unreachable point");
-
-                    auto element = *it;
-                    workspaceName = String(element.begin(), element.end());
-
-#ifdef VIOLET_RUNFILES_LOGS
-                    std::cout << "[violet/testing/runfiles@init] using workspace name '" << workspaceName << "'\n";
-                    std::cout << "if this is the wrong workspace, either submit an issue at "
-                                 "https://github.com/Noelware/violet/issues/new";
-
-                    std::cout << " or use the `$" << kWorkspaceOverrideEnv
-                              << "' environment variable to populate your workspace\n\n";
-#endif
-
-                    ++it; // go to the third element for the test workspace
-                    auto tws = *it;
-                    n_testWorkspace = String(tws.begin(), tws.end());
-
-#ifdef VIOLET_RUNFILES_LOGS
-                    std::cout << "[violet/testing/runfiles@init] $TEST_WORKSPACE = " << n_testWorkspace << '\n';
-#endif
-
-                    break;
-                }
-            }
-        } else {
-#ifdef VIOLET_RUNFILES_LOGS
-            std::cerr << "[violet/testing/runfiles@error] failed to open file '" << canon.Value()
-                      << "' (tests might fail): " << VIOLET_MOVE(runfilesRepoMapping.Error()).ToString() << '\n';
-#endif
-        }
-    } else if (auto name = GetEnv(kWorkspaceOverrideEnv)) {
-        workspaceName = VIOLET_MOVE(name.Value());
-    } else {
-#ifdef VIOLET_RUNFILES_LOGS
-        std::cerr << "[violet/testing/runfiles@warning] unable to collect `$" << kRunfilesDirEnv << "' or `$"
-                  << kWorkspaceEnv
-                  << "' environment variables, cannot detect workspace name (you can override this with the `$"
-                  << kWorkspaceOverrideEnv << "' environment variable)";
-#endif
+    // If we are called from `Init(argv[0], /*inTestContext=/*false)`, then the caller
+    // should use `violet::testing::runfiles::SetWorkspaceName("<ws>")`, which, it is
+    // usually `_main`.
+    if (n_workspace.HasValue()) {
+        return n_workspace;
     }
 
-    return workspaceName;
-}
-
-} // namespace
-
-void violet::testing::runfiles::Init(CStr argv0)
-{
-    String workspaceName = detectWorkspaceName();
-    String error;
-    n_runfiles.reset(rules_cc::cc::runfiles::Runfiles::Create(argv0, workspaceName, &error));
-
-    if (!n_runfiles) {
-        auto msg = std::format("failed to build runfiles for test: {}", error);
-        VIOLET_ASSERT(false, msg);
-    }
-}
-
-auto violet::testing::runfiles::Get(Str path) -> Optional<String>
-{
-    VIOLET_ASSERT(static_cast<bool>(n_runfiles), "`violet::testing::runfiles::Init` was never called");
-
-    String logicalPath;
-    if (!n_testWorkspace.empty()) {
-        logicalPath = std::format("{}/{}", n_testWorkspace, path);
-    } else {
-        logicalPath = path;
-    }
-
-    auto logical = n_runfiles->Rlocation(logicalPath);
-    VIOLET_ASSERT(!logical.empty(), "bad runfile location");
-
-    auto exists = filesystem::TryExists(static_cast<Str>(logical));
-    if (exists.Err()) {
-#ifndef NDEBUG
-        auto error = VIOLET_MOVE(exists.Error());
-        std::cerr << "[violet/testing/runfiles] Unable to check the existence of runfile '" << logical << ": "
-                  << error.ToString() << '\n';
-#endif
+    auto workspace = GetEnv(kTestWorkspaceEnv);
+    if (!workspace.HasValue() && !n_workspace.HasValue()) {
+        printerr("missing `${}` environment variable, you will need to rely on "
+                 "`violet::testing::runfiles::SetWorkspaceName`",
+            kTestWorkspaceEnv);
 
         return Nothing;
     }
 
-    if (!exists.Value()) {
-#ifndef NDEBUG
-        std::cerr << "[violet/testing/runfiles] runfile [" << logical << "] doesn't exist (from path: " << path
-                  << ")\n";
-#endif
+    println("using `$TEST_WORKSPACE` (from Bazel): {}", *workspace);
 
+    if (auto name = GetEnv(kDeprecatedWorkspaceOverrideEnv)) {
+        printerr("warning: environment variable `${}` is deprecated in favour of `${}`, this will be removed in a "
+                 "26.06 release",
+            kDeprecatedWorkspaceOverrideEnv, kWorkspaceOverrideEnv);
+
+        return name;
+    }
+
+    if (auto name = GetEnv(kWorkspaceOverrideEnv)) {
+        return name;
+    }
+
+    for (const auto& [repo, ws]: collectRepositoryMapping()) {
+        if (ws.ends_with(workspace.Value())) {
+            n_workspace = repo;
+
+            println("using workspace name: {}", n_workspace);
+            println("--> if this is wrong, you can submit an issue if it's on our end at: "
+                    "https://github.com/Noelware/violet/issues/new?labels=%22Noelware.Violet.Testing%22&type=Bug");
+
+            println("--> you can also set the `${}` environment variable as well", kWorkspaceOverrideEnv);
+
+            n_testWorkspace = ws;
+            break;
+        }
+    }
+
+    return n_workspace;
+}
+
+} // namespace
+
+auto violet::testing::runfiles::WorkspaceName() -> Optional<String>
+{
+    if (n_workspace.HasValue()) {
+        return n_workspace;
+    }
+
+    static std::once_flag flag;
+    std::call_once(flag, [] -> void {
+        if (auto ws = detectWorkspace()) {
+            n_workspace = ws;
+        }
+    });
+
+    return n_workspace;
+}
+
+void violet::testing::runfiles::SetWorkspaceName(Str ws) noexcept
+{
+    n_workspace = ws;
+}
+
+void violet::testing::runfiles::Init(CStr argv0)
+{
+    String error;
+    String workspaceName = WorkspaceName().UnwrapOrDefault();
+    n_runfiles.reset(rules_cc::cc::runfiles::Runfiles::Create(argv0, workspaceName, &error));
+
+    VIOLET_ASSERT(n_runfiles != nullptr, std::format("failed to build runfiles: {}", error));
+}
+
+auto violet::testing::runfiles::Get(Str path) -> Optional<String>
+{
+    VIOLET_ASSERT0(n_runfiles != nullptr);
+
+    String logicalPath = n_testWorkspace.MapOr(
+        String(path), [path](String& ws) -> String { return std::format("{}/{}", VIOLET_MOVE(ws), path); });
+
+    auto logical = n_runfiles->Rlocation(logicalPath);
+    VIOLET_ASSERT(!logical.empty(), "bad runfile location");
+
+    auto exists = TryExists(static_cast<Str>(logical));
+    if (exists.Err()) {
+        printerr("unable to check existence of runfile [{}]: {}", logical, VIOLET_MOVE(exists).Error());
+        return Nothing;
+    }
+
+    if (!*exists) {
+        printerr("runfile [{}] doesn't exist (path={})", logical, path);
         return Nothing;
     }
 

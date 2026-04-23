@@ -19,6 +19,12 @@ availableAt:
 - Add **VIOLET_IF_CONSTEVAL**/**VIOLET_IF_NOT_CONSTEVAL** for `if consteval {}` ([`@auguwu`])
 - Move `Defer` and `CancellableDefer` to `violet/Defer.h` (`//violet:defer` Bazel target) ([`@auguwu`])
 - **Result** and **Optional** can now work in constexpr contexts ([`@auguwu`])
+- Add **UnwrapOrDefault** in **Result** and **Optional** if the value type supports default construction ([`@auguwu`])
+
+#### Noelware.Violet.Testing
+- **Runfiles**: Expose the test and non-test workspace name ([`@auguwu`])
+- **Runfiles**: Expose Runfiles without being in a `cc_test`-like context ([`@auguwu`])
+- **Runfiles**: Deprecate `VIOLET_TESTING_RUNFILES_WORKSPACE_NAME` as `_NAME` is redundant in the context of runfiles, use `VIOLET_TESTING_RUNFILES_WORKSPACE` instead ([`@auguwu`])
 
 ### 26.05.04
 - **Bazel**: Allow to use sanitizer flags together rather than exclusively ([`@auguwu`])

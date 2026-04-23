@@ -1038,6 +1038,34 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
     }
 
+    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
+    constexpr auto UnwrapOrDefault() & noexcept -> T
+        requires(std::is_default_constructible_v<T>)
+    {
+        return this->Ok() ? this->n_storage.Value : T{ };
+    }
+
+    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
+    constexpr auto UnwrapOrDefault() const& noexcept -> value_type
+        requires(std::is_default_constructible_v<T>)
+    {
+        return this->Ok() ? this->n_storage.Value : T{ };
+    }
+
+    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
+    constexpr auto UnwrapOrDefault() && noexcept -> value_type
+        requires(std::is_default_constructible_v<T>)
+    {
+        return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : T{ };
+    }
+
+    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
+    constexpr auto UnwrapOrDefault() const&& noexcept -> value_type
+        requires(std::is_default_constructible_v<T>)
+    {
+        return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : T{ };
+    }
+
     /// Returns the contained value without checking its state.
     ///
     /// # Safety

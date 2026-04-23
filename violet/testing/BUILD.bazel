@@ -35,6 +35,7 @@ violet_cc_library(
     }),
     deps = [
         "//violet",
+        "//violet:strings",
         "//violet/container:optional",
         "//violet/filesystem",
         "//violet/system",

@@ -90,26 +90,6 @@ VIOLET_API void Print(std::ostream& stream, std::format_string<Args...> fmt, Arg
 #endif
 }
 
-/// Writes a formatted string followed by a newline (`'\n'`) to `stdout`.
-///
-/// Delegates to the [`violet::Println(std::ostream&, ...)`] overload with
-/// `std::cout` as the target stream.
-///
-/// ## Example
-/// ```cpp
-/// #include <violet/Print.h>
-///
-/// violet::Println("count: {}", 3); // count: 3\n
-/// ```
-///
-/// @param fmt  A compile-time-checked format string.
-/// @param args Arguments referenced by the format string.
-template<typename... Args>
-VIOLET_API void Println(std::format_string<Args...> fmt, Args&&... args)
-{
-    return Println(std::cout, fmt, VIOLET_FWD(Args, args)...);
-}
-
 /// Writes a formatted string followed by a newline (`'\n'`) to `stream`.
 ///
 /// On C++23 and later, delegates to [`std::println(stream, fmt, args...)`].
@@ -133,6 +113,26 @@ VIOLET_API void Println(std::ostream& stream, std::format_string<Args...> fmt, A
 #else
     stream << std::format(fmt, VIOLET_FWD(Args, args)...) << '\n';
 #endif
+}
+
+/// Writes a formatted string followed by a newline (`'\n'`) to `stdout`.
+///
+/// Delegates to the [`violet::Println(std::ostream&, ...)`] overload with
+/// `std::cout` as the target stream.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Print.h>
+///
+/// violet::Println("count: {}", 3); // count: 3\n
+/// ```
+///
+/// @param fmt  A compile-time-checked format string.
+/// @param args Arguments referenced by the format string.
+template<typename... Args>
+VIOLET_API void Println(std::format_string<Args...> fmt, Args&&... args)
+{
+    return Println(std::cout, fmt, VIOLET_FWD(Args, args)...);
 }
 
 /// Writes a formatted string to `stderr` (`std::cerr`).

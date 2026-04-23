@@ -759,27 +759,55 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> value_type
+    [[nodiscard]] constexpr auto UnwrapOr(value_type&& defaultValue) & noexcept -> value_type
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> value_type
+    [[nodiscard]] constexpr auto UnwrapOr(value_type&& defaultValue) && noexcept -> value_type
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> value_type
+    [[nodiscard]] constexpr auto UnwrapOr(value_type&& defaultValue) const& noexcept -> value_type
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> value_type
+    [[nodiscard]] constexpr auto UnwrapOr(value_type&& defaultValue) const&& noexcept -> value_type
     {
         return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
+    }
+
+    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
+    constexpr auto UnwrapOrDefault() & noexcept -> value_type
+        requires(std::is_default_constructible_v<value_type>)
+    {
+        return this->HasValue() ? this->getValueRef() : value_type{ };
+    }
+
+    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
+    constexpr auto UnwrapOrDefault() const& noexcept -> value_type
+        requires(std::is_default_constructible_v<value_type>)
+    {
+        return this->HasValue() ? this->getValueRef() : value_type{ };
+    }
+
+    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
+    constexpr auto UnwrapOrDefault() && noexcept -> value_type
+        requires(std::is_default_constructible_v<value_type>)
+    {
+        return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : value_type{ };
+    }
+
+    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
+    constexpr auto UnwrapOrDefault() const&& noexcept -> value_type
+        requires(std::is_default_constructible_v<value_type>)
+    {
+        return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : value_type{ };
     }
 
     /// Returns the contained value without checking engagement.
