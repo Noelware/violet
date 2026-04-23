@@ -7,7 +7,7 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.05.04...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.05...master>
 
 ### 26.05.05
 - (breaking) Deprecate the `VIOLET_{COMPILER|ARCH|OS}` macros with `VIOLET_{PLATFORM|COMPILER|ARCH}_` prefix and add `VIOLET_BUILDSYSTEM_`-set of macros that are defined by the build system. ([`@auguwu`])
@@ -25,6 +25,8 @@ availableAt:
 - **Runfiles**: Expose the test and non-test workspace name ([`@auguwu`])
 - **Runfiles**: Expose Runfiles without being in a `cc_test`-like context ([`@auguwu`])
 - **Runfiles**: Deprecate `VIOLET_TESTING_RUNFILES_WORKSPACE_NAME` as `_NAME` is redundant in the context of runfiles, use `VIOLET_TESTING_RUNFILES_WORKSPACE` instead ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.04...26.05.05>
 
 ### 26.05.04
 - **Bazel**: Allow to use sanitizer flags together rather than exclusively ([`@auguwu`])
