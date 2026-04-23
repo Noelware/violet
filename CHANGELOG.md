@@ -18,6 +18,7 @@ availableAt:
 - Fix unwrapping a `Optional` not being constexpr-safe ([`@auguwu`])
 - Add **VIOLET_IF_CONSTEVAL**/**VIOLET_IF_NOT_CONSTEVAL** for `if consteval {}` ([`@auguwu`])
 - Move `Defer` and `CancellableDefer` to `violet/Defer.h` (`//violet:defer` Bazel target) ([`@auguwu`])
+- **Result** and **Optional** can now work in constexpr contexts ([`@auguwu`])
 
 ### 26.05.04
 - **Bazel**: Allow to use sanitizer flags together rather than exclusively ([`@auguwu`])

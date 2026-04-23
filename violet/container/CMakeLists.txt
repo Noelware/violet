@@ -23,8 +23,6 @@ include(CXX)
 
 violet_cc_library(
     optional
-    SRCS
-        ${CMAKE_SOURCE_DIR}/src/container/OptionalUnwrapFail.cc
     HDRS
         ${CMAKE_SOURCE_DIR}/include/violet/Container/Optional.h
     DEPS
@@ -43,8 +41,6 @@ violet_cc_test(
 
 violet_cc_library(
     result
-    SRCS
-        ${CMAKE_SOURCE_DIR}/src/container/ResultUnwrapFail.cc
     HDRS
         ${CMAKE_SOURCE_DIR}/include/violet/Container/Result.h
     DEPS

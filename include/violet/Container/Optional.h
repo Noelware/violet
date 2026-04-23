@@ -246,7 +246,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         std::is_nothrow_constructible_v<T, Args...>)
         : n_engaged(true)
     {
-        ::new (&this->n_value) T(VIOLET_FWD(Args, args)...);
+        std::construct_at(&this->n_value, VIOLET_FWD(Args, args)...);
     }
 
     /// Constructs an engaged [`Optional`] from `other`.
@@ -285,7 +285,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         : n_engaged(other.has_value())
     {
         if (other.has_value()) {
-            ::new (&this->n_value) T(*other);
+            std::construct_at(&this->n_value, *other);
             this->n_engaged = true;
         } else {
             this->n_engaged = false;
@@ -303,7 +303,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         : n_engaged(other.has_value())
     {
         if (other.has_value()) {
-            ::new (&this->n_value) T(VIOLET_MOVE(*other));
+            std::construct_at(&this->n_value, VIOLET_MOVE(*other));
             this->n_engaged = true;
         } else {
             this->n_engaged = false;
@@ -317,7 +317,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         : n_engaged(other.n_engaged)
     {
         if (other.n_engaged) {
-            ::new (&this->n_value) T(other.n_value);
+            std::construct_at(&this->n_value, other.n_value);
         }
     }
 
@@ -349,7 +349,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
                 if (this->n_engaged) {
                     this->getValueRef() = other.getValueRef();
                 } else {
-                    ::new (&this->n_value) T(other.getValueRef());
+                    std::construct_at(&this->n_value, other.getValueRef());
                     this->n_engaged = true;
                 }
             } else {
@@ -368,7 +368,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         : n_engaged(other.n_engaged)
     {
         if (other.n_engaged) {
-            ::new (&this->n_value) T(VIOLET_MOVE(other.n_value));
+            std::construct_at(&this->n_value, VIOLET_MOVE(other.n_value));
             other.n_engaged = false;
         }
     }
@@ -387,7 +387,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
                 if (this->n_engaged) {
                     this->getValueRef() = VIOLET_MOVE(other.getValueRef());
                 } else {
-                    ::new (&this->n_value) T(VIOLET_MOVE(other.getValueRef()));
+                    std::construct_at(&this->n_value, VIOLET_MOVE(other.getValueRef()));
                     this->n_engaged = true;
                 }
 
@@ -430,7 +430,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             if (this->n_engaged) {
                 *this->getValueRef() = *other;
             } else {
-                ::new (&this->n_value) T(*other);
+                std::construct_at(&this->n_value, *other);
                 this->n_engaged = true;
             }
         } else {
@@ -451,7 +451,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             if (this->n_engaged) {
                 *this->getValueRef() = *other;
             } else {
-                ::new (&this->n_value) T(*other);
+                std::construct_at(&this->n_value, *other);
                 this->n_engaged = true;
             }
 
@@ -473,9 +473,10 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         if (this->n_engaged) {
             this->getValueRef() = value;
         } else {
-            ::new (&this->n_value) T(value);
+            std::construct_at(&this->n_value, value);
             this->n_engaged = true;
         }
+
         return *this;
     }
 
@@ -488,9 +489,10 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         if (this->n_engaged) {
             this->getValueRef() = VIOLET_MOVE(value);
         } else {
-            ::new (&this->n_value) T(VIOLET_MOVE(value));
+            std::construct_at(&this->n_value, VIOLET_MOVE(value));
             this->n_engaged = true;
         }
+
         return *this;
     }
 
@@ -1038,7 +1040,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             this->Reset();
         }
 
-        ::new (&this->n_value) T(VIOLET_FWD(Args, args)...);
+        std::construct_at(&this->n_value, VIOLET_FWD(Args, args)...);
         this->n_engaged = true;
 
         return this->getValueRef();
@@ -1184,16 +1186,13 @@ private:
 
     constexpr auto getValueRef() & noexcept -> value_type&
     {
-        VIOLET_IF_CONSTEVAL
-        {
+        if VIOLET_IF_CONSTEVAL {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
                 return this->n_value.get();
             } else {
                 return this->n_value;
             }
-        }
-        else
-        {
+        } else {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
                 return std::launder(reinterpret_cast<T*>(&this->n_value))->get();
             }
@@ -1204,16 +1203,13 @@ private:
 
     constexpr auto getValueRef() const& noexcept -> const value_type&
     {
-        VIOLET_IF_CONSTEVAL
-        {
+        if VIOLET_IF_CONSTEVAL {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
                 return this->n_value.get();
             } else {
                 return this->n_value;
             }
-        }
-        else
-        {
+        } else {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
                 return std::launder(reinterpret_cast<const T*>(&this->n_value))->get();
             }
@@ -1224,16 +1220,13 @@ private:
 
     constexpr auto getValueRef() && noexcept -> value_type&&
     {
-        VIOLET_IF_CONSTEVAL
-        {
+        if VIOLET_IF_CONSTEVAL {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
                 return this->n_value.get();
             } else {
                 return this->n_value;
             }
-        }
-        else
-        {
+        } else {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
                 return VIOLET_MOVE(std::launder(reinterpret_cast<T*>(&this->n_value))->get());
             }
@@ -1244,16 +1237,13 @@ private:
 
     constexpr auto getValueRef() const&& noexcept -> const value_type&&
     {
-        VIOLET_IF_CONSTEVAL
-        {
+        if VIOLET_IF_CONSTEVAL {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
                 return this->n_value.get();
             } else {
                 return this->n_value;
             }
-        }
-        else
-        {
+        } else {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
                 return VIOLET_MOVE(std::launder(reinterpret_cast<const T*>(&this->n_value))->get());
             }

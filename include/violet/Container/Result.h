@@ -408,7 +408,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     constexpr VIOLET_IMPLICIT Result(const U& ok) noexcept(std::is_nothrow_constructible_v<T, const U&>)
         : n_ok(true)
     {
-        ::new (&this->n_storage.Value) T(ok);
+        std::construct_at(std::addressof(this->n_storage.Value), ok);
     }
 
     /// Constructs an `Ok` variant by moving `ok`.
@@ -419,7 +419,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         std::is_nothrow_constructible_v<T, U&&> && std::is_nothrow_move_constructible_v<U>)
         : n_ok(true)
     {
-        ::new (&this->n_storage.Value) T(VIOLET_MOVE(ok));
+        std::construct_at(std::addressof(this->n_storage.Value), VIOLET_MOVE(ok));
     }
 
     template<typename U>
@@ -465,13 +465,13 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Constructs the `Err` variant from `violet::Err<E>`.
     constexpr VIOLET_IMPLICIT Result(const violet::Err<E>& err)
     {
-        ::new (&this->n_storage.Error) violet::Err(err);
+        std::construct_at(std::addressof(this->n_storage.Error), err);
     }
 
     /// Constructs the `Err` variant by move.
     constexpr VIOLET_IMPLICIT Result(violet::Err<E>&& err) noexcept(std::is_nothrow_move_constructible_v<T>)
     {
-        ::new (&this->n_storage.Error) violet::Err(VIOLET_MOVE(err));
+        std::construct_at(std::addressof(this->n_storage.Error), VIOLET_MOVE(err));
     }
 
     ~Result()
@@ -484,9 +484,9 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         : n_ok(other.n_ok)
     {
         if (this->n_ok) {
-            ::new (&this->n_storage.Value) T(other.n_storage.Value);
+            std::construct_at(std::addressof(this->n_storage.Value), other.n_storage.Value);
         } else {
-            ::new (&this->n_storage.Error) violet::Err<E>(other.n_storage.Error);
+            std::construct_at(std::addressof(this->n_storage.Error), other.n_storage.Error);
         }
     }
 
@@ -494,12 +494,12 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     {
         if (this != &other) {
             this->destroy();
-
             this->n_ok = other.n_ok;
+
             if (this->n_ok) {
-                ::new (&this->n_storage.Value) T(other.n_storage.Value);
+                std::construct_at(std::addressof(this->n_storage.Value), other.n_storage.Value);
             } else {
-                ::new (&this->n_storage.Error) violet::Err<E>(other.n_storage.Error);
+                std::construct_at(std::addressof(this->n_storage.Error), other.n_storage.Error);
             }
         }
 
@@ -512,9 +512,9 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         : n_ok(std::exchange(other.n_ok, false))
     {
         if (this->n_ok) {
-            ::new (&this->n_storage.Value) T(VIOLET_MOVE(other.n_storage.Value));
+            std::construct_at(std::addressof(this->n_storage.Value), other.n_storage.Value);
         } else {
-            ::new (&this->n_storage.Error) violet::Err<E>(VIOLET_MOVE(other.n_storage.Error));
+            std::construct_at(std::addressof(this->n_storage.Error), other.n_storage.Error);
         }
     }
 
@@ -532,9 +532,9 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
                 this->n_ok = other.n_ok;
 
                 if (other.n_ok) {
-                    ::new (&this->n_storage.Value) T(VIOLET_MOVE(other.n_storage.Value));
+                    std::construct_at(std::addressof(this->n_storage.Value), VIOLET_MOVE(other.n_storage.Value));
                 } else {
-                    ::new (&this->n_storage.Error) violet::Err<E>(VIOLET_MOVE(other.n_storage.Error));
+                    std::construct_at(std::addressof(this->n_storage.Error), VIOLET_MOVE(other.n_storage.Error));
                 }
             }
         }

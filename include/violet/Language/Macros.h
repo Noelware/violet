@@ -472,9 +472,9 @@
 #endif
 
 #if __cpp_if_consteval >= 202106L
-#define VIOLET_IF_CONSTEVAL if consteval
-#define VIOLET_IF_NOT_CONSTEVAL if not consteval
+#define VIOLET_IF_CONSTEVAL consteval
+#define VIOLET_IF_NOT_CONSTEVAL not consteval
 #else
-#define VIOLET_IF_CONSTEVAL if (std::is_constant_evaluated())
-#define VIOLET_IF_NOT_CONSTEVAL if (!std::is_constant_evaluated())
+#define VIOLET_IF_CONSTEVAL (std::is_constant_evaluated())
+#define VIOLET_IF_NOT_CONSTEVAL (!std::is_constant_evaluated())
 #endif
