@@ -32,6 +32,7 @@
 #include <cstddef>
 #include <format>
 #include <map>
+#include <mutex>
 #include <span>
 #include <string>
 #include <string_view>
