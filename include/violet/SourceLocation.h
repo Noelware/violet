@@ -24,6 +24,7 @@
 #include <violet/Language/Macros.h>
 #include <violet/Language/Policy.h>
 
+#include <cstdint>
 #include <ostream>
 #include <source_location>
 #include <string_view>
