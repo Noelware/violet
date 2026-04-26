@@ -1183,7 +1183,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return !(*this == other);
     }
 
-    auto ToString() const noexcept -> String
+    [[nodiscard]] auto ToString() const noexcept -> String
     {
         if (!this->HasValue()) {
             return "«no value»";
@@ -1200,6 +1200,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
 private:
     bool n_engaged = false;
     union { // NOLINT(cppcoreguidelines-special-member-functions)
+        char dummy = '\0';
         T n_value;
     };
 
