@@ -22,6 +22,7 @@
 #include <violet/Language/Panic.h>
 #include <violet/Print.h>
 
+#include <atomic>
 #include <exception>
 
 using violet::panic::Hook;
