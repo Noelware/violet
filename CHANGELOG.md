@@ -7,6 +7,9 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.06...master>
+
+### 26.05.06
 #### Noelware.Violet
 - Add support for references in **Result** via `std::reference_wrapper`, like **Optional** ([`@auguwu`])
 - Add a new panic system that should resembles Rust's panic interface ([`@auguwu`])
