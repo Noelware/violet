@@ -25,6 +25,7 @@
 #include <violet/Language/Policy.h>
 
 #include <cstdint>
+#include <format>
 #include <ostream>
 #include <source_location>
 #include <string_view>
