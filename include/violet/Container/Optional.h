@@ -329,13 +329,11 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// If engaged, moves the value and resets `other`.
     template<typename U>
         requires(!std::is_same_v<std::remove_cvref_t<U>, Optional> && std::constructible_from<T, U>)
-    constexpr VIOLET_IMPLICIT Optional(
-        std::optional<U>&& other // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-        ) noexcept(std::is_nothrow_move_constructible_v<T>)
+    constexpr VIOLET_IMPLICIT Optional(std::optional<U>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
         : n_engaged(other.has_value())
     {
         if (other.has_value()) {
-            std::construct_at(&this->n_value, VIOLET_MOVE(*other));
+            std::construct_at(&this->n_value, VIOLET_MOVE(other).value());
             this->n_engaged = true;
         } else {
             this->n_engaged = false;
@@ -460,7 +458,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     {
         if (other.has_value()) {
             if (this->n_engaged) {
-                *this->getValueRef() = *other;
+                this->n_value = *other;
             } else {
                 std::construct_at(&this->n_value, *other);
                 this->n_engaged = true;
@@ -481,9 +479,9 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     {
         if (other.has_value()) {
             if (this->n_engaged) {
-                *this->getValueRef() = *other;
+                this->getValueRef() = VIOLET_MOVE(other).value();
             } else {
-                std::construct_at(&this->n_value, *other);
+                std::construct_at(&this->n_value, VIOLET_MOVE(other).value());
                 this->n_engaged = true;
             }
 
@@ -492,7 +490,6 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
             this->destroy();
         }
 
-        (void)VIOLET_MOVE(other);
         return *this;
     }
 
@@ -1126,7 +1123,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     constexpr VIOLET_EXPLICIT operator std::optional<T>() const noexcept
         requires(!instanceof_v<std::reference_wrapper, T>)
     {
-        return this->HasValue() ? std::optional<T>(this->getValueRef()) : Nothing;
+        return this->HasValue() ? std::optional<T>(this->n_value) : Nothing;
     }
 
     constexpr auto operator==(const std::nullopt_t&) const noexcept -> bool

@@ -25,9 +25,29 @@
 #include <violet/SourceLocation.h>
 #include <violet/Violet.h>
 
+#if VIOLET_REQUIRE_STL(202302L)
 #include <expected>
+#endif
+
 #include <type_traits>
 #include <utility>
+
+namespace violet::detail {
+
+#if VIOLET_REQUIRE_STL(202302L)
+/// Returns **true** if `T` is an instance of `std::expected<T, E>`.
+template<typename T>
+constexpr inline bool is_std_expected_v = instanceof_v<std::expected, T>;
+
+static_assert(is_std_expected_v<std::expected<String, Int32>>);
+static_assert(!is_std_expected_v<bool>);
+#else
+/// Always returns **false** as `std::expected` is available in C++23 and higher
+template<typename T, typename E>
+constexpr inline bool is_std_expected_v = false;
+#endif
+
+} // namespace violet::detail
 
 namespace violet {
 
@@ -69,6 +89,11 @@ struct VIOLET_API is_result: std::false_type { };
 template<typename T, typename E>
 struct VIOLET_API is_result<Result<T, E>>: std::true_type { };
 
+#if VIOLET_REQUIRE_STL(202302L)
+template<typename T, typename E>
+struct VIOLET_API is_result<std::expected<T, E>>: std::true_type { };
+#endif
+
 template<typename T>
 static constexpr bool is_result_v = is_result<T>::value;
 
@@ -87,6 +112,15 @@ struct VIOLET_API result_type<Result<U, E>> final {
     using value_type = U;
     using error_type = E;
 };
+
+#if VIOLET_REQUIRE_STL(202302L)
+/// Specialization of [`result_type`] for [`std::expected`].
+template<typename U, typename E>
+struct VIOLET_API result_type<std::expected<U, E>> final {
+    using value_type = U;
+    using error_type = E;
+};
+#endif
 
 /// Convenience alias for accessing the extracted inner value type.
 ///
@@ -185,6 +219,15 @@ struct VIOLET_API Err final {
         : n_value(VIOLET_FWD(Args, args)...)
     {
     }
+
+#if VIOLET_REQUIRE_STL(202302L)
+    template<typename Other>
+        requires(!std::same_as<E, std::decay_t<Other>> && std::constructible_from<E, std::decay_t<Other>>)
+    constexpr VIOLET_IMPLICIT Err(std::unexpected<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<E>)
+        : n_value(E(VIOLET_MOVE(other).error()))
+    {
+    }
+#endif
 
     /// [**lvalue**] Access the contained error.
     constexpr auto Error() & noexcept VIOLET_LIFETIMEBOUND -> E&
@@ -410,18 +453,18 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     constexpr VIOLET_IMPLICIT Result(const U& ok) noexcept(std::is_nothrow_constructible_v<T, const U&>)
         : n_ok(true)
     {
-        std::construct_at(std::addressof(this->getValueRef()), ok);
+        std::construct_at(std::addressof(this->n_storage.Value), ok);
     }
 
     /// Constructs an `Ok` variant by moving `ok`.
     template<typename U = T>
         requires(!std::same_as<std::remove_cvref_t<U>, Result<T, E>> && !std::same_as<std::remove_cvref_t<U>, Ok<T>>
             && !std::same_as<std::remove_cvref_t<U>, Err<E>> && std::constructible_from<T, U &&>)
-    constexpr VIOLET_IMPLICIT Result(T&& ok) noexcept(
+    constexpr VIOLET_IMPLICIT Result(U&& ok) noexcept(
         std::is_nothrow_constructible_v<T, U&&> && std::is_nothrow_move_constructible_v<U>)
         : n_ok(true)
     {
-        std::construct_at(std::addressof(this->getValueRef()), VIOLET_MOVE(ok));
+        std::construct_at(std::addressof(this->n_storage.Value), VIOLET_FWD(U, ok));
     }
 
     template<typename U>
@@ -501,7 +544,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         : n_ok(other.n_ok)
     {
         if (this->n_ok) {
-            std::construct_at(std::addressof(this->getValueRef()), other.n_storage.Value);
+            std::construct_at(std::addressof(this->n_storage.Value), other.n_storage.Value);
         } else {
             std::construct_at(std::addressof(this->n_storage.Error), other.n_storage.Error);
         }
@@ -514,7 +557,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             this->n_ok = other.n_ok;
 
             if (this->n_ok) {
-                std::construct_at(std::addressof(this->getValueRef()), other.n_storage.Value);
+                std::construct_at(std::addressof(this->n_storage.Value), other.n_storage.Value);
             } else {
                 std::construct_at(std::addressof(this->n_storage.Error), other.n_storage.Error);
             }
@@ -529,7 +572,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         : n_ok(std::exchange(other.n_ok, false))
     {
         if (this->n_ok) {
-            std::construct_at(std::addressof(this->getValueRef()), VIOLET_MOVE(other.n_storage.Value));
+            std::construct_at(std::addressof(this->n_storage.Value), VIOLET_MOVE(other.n_storage.Value));
         } else {
             std::construct_at(std::addressof(this->n_storage.Error), VIOLET_MOVE(other.n_storage.Error));
         }
@@ -541,7 +584,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         if (this != &other) {
             // If both are same variant, move-assign; else destroy + reconstruct.
             if (this->n_ok && other.n_ok) {
-                this->getValueRef() = VIOLET_MOVE(other.n_storage.Value);
+                this->n_storage.Value = VIOLET_MOVE(other.n_storage.Value);
             } else if (!this->n_ok && !other.n_ok) {
                 this->n_storage.Error = VIOLET_MOVE(other.n_storage.Error);
             } else {
@@ -558,6 +601,64 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
 
         return *this;
     }
+
+#if VIOLET_REQUIRE_STL(202302L)
+    template<typename U, typename E2>
+        requires(!std::same_as<std::remove_cvref_t<U>, Result> && std::constructible_from<T, U>
+            && std::constructible_from<E, E2>)
+    constexpr VIOLET_IMPLICIT Result(const std::expected<U, E2>& other)
+    {
+        if (other.has_value()) {
+            std::construct_at(&this->n_storage.Value, other.value());
+            this->n_ok = true;
+        } else {
+            std::construct_at(&this->n_storage.Error, violet::Err<E2>(other.error()));
+            this->n_ok = false;
+        }
+    }
+
+    template<typename U, typename E2>
+        requires(!std::same_as<std::remove_cvref_t<U>, Result> && std::constructible_from<T, U>
+            && std::constructible_from<E, E2>)
+    constexpr VIOLET_IMPLICIT Result(std::expected<U, E2>&& other)
+    {
+        if (other.has_value()) {
+            std::construct_at(&this->n_storage.Value, VIOLET_MOVE(other).value());
+            this->n_ok = true;
+        } else {
+            std::construct_at(&this->n_storage.Error, violet::Err<E2>(VIOLET_MOVE(other).error()));
+            this->n_ok = false;
+        }
+    }
+
+    constexpr auto operator=(std::expected<T, E>& other) -> Result&
+    {
+        this->destroy();
+        if (other.has_value()) {
+            std::construct_at(&this->n_storage.Value, other.value());
+            this->n_ok = true;
+        } else {
+            std::construct_at(&this->n_storage.Error, violet::Err<E>(other.error()));
+            this->n_ok = false;
+        }
+
+        return *this;
+    }
+
+    constexpr auto operator=(std::expected<T, E>&& other) -> Result&
+    {
+        this->destroy();
+        if (other.has_value()) {
+            std::construct_at(&this->n_storage.Value, VIOLET_MOVE(other).value());
+            this->n_ok = true;
+        } else {
+            std::construct_at(&this->n_storage.Error, violet::Err<E>(VIOLET_MOVE(other).error()));
+            this->n_ok = false;
+        }
+
+        return *this;
+    }
+#endif
 
     /// Returns `true` if this is the `Ok` variant.
     [[nodiscard]] constexpr auto Ok() const noexcept -> bool
@@ -587,7 +688,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Ok` variant.
-    [[nodiscard]] constexpr auto Value() & noexcept VIOLET_LIFETIMEBOUND -> T&
+    [[nodiscard]] constexpr auto Value() & noexcept VIOLET_LIFETIMEBOUND -> value_type&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
         return this->getValueRef();
@@ -597,7 +698,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Ok` variant.
-    [[nodiscard]] constexpr auto Value() const& noexcept VIOLET_LIFETIMEBOUND -> const T&
+    [[nodiscard]] constexpr auto Value() const& noexcept VIOLET_LIFETIMEBOUND -> const value_type&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
         return this->getValueRef();
@@ -607,7 +708,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Ok` variant.
-    [[nodiscard]] constexpr auto Value() && noexcept VIOLET_LIFETIMEBOUND -> T&&
+    [[nodiscard]] constexpr auto Value() && noexcept VIOLET_LIFETIMEBOUND -> value_type&&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
         return VIOLET_MOVE(this->getValueRef());
@@ -617,7 +718,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Ok` variant.
-    [[nodiscard]] constexpr auto Value() const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
+    [[nodiscard]] constexpr auto Value() const&& noexcept VIOLET_LIFETIMEBOUND -> const value_type&&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
         return VIOLET_MOVE(this->getValueRef());
@@ -627,7 +728,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Err` variant.
-    [[nodiscard]] constexpr auto Error() & noexcept VIOLET_LIFETIMEBOUND -> E&
+    [[nodiscard]] constexpr auto Error() & noexcept VIOLET_LIFETIMEBOUND -> error_type&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return this->getErrorRef();
@@ -637,7 +738,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Err` variant.
-    [[nodiscard]] constexpr auto Error() const& noexcept VIOLET_LIFETIMEBOUND -> const E&
+    [[nodiscard]] constexpr auto Error() const& noexcept VIOLET_LIFETIMEBOUND -> const error_type&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return this->getErrorRef();
@@ -647,7 +748,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Err` variant.
-    [[nodiscard]] constexpr auto Error() const&& noexcept VIOLET_LIFETIMEBOUND -> const E&&
+    [[nodiscard]] constexpr auto Error() const&& noexcept VIOLET_LIFETIMEBOUND -> const error_type&&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return VIOLET_MOVE(this->getErrorRef());
@@ -657,7 +758,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Err` variant.
-    [[nodiscard]] constexpr auto Error() && noexcept VIOLET_LIFETIMEBOUND -> E&&
+    [[nodiscard]] constexpr auto Error() && noexcept VIOLET_LIFETIMEBOUND -> error_type&&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
         return VIOLET_MOVE(this->getErrorRef());
@@ -667,12 +768,30 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// Equivalent to Rust's
     /// [`Result::transpose`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.transpose).
-    template<typename U>
-        requires(nested_result<Result<U, E>, E>)
-    [[nodiscard]] constexpr auto Transpose() && -> Result<U, E>
+    template<typename U = value_type, typename E2 = error_type>
+        requires(nested_result<Result<U, E2>, E2> && std::convertible_to<value_type, U>
+            && std::convertible_to<E2, error_type>)
+    [[nodiscard]] constexpr auto Transpose() && -> Result<result_value_type_t<U>, E2>
     {
         if (this->Ok()) {
-            return VIOLET_MOVE(Value());
+            return violet::Ok<result_value_type_t<U>>(VIOLET_MOVE(this->getValueRef()).Value());
+        }
+
+        return violet::Err<E2>(VIOLET_MOVE(this->Error()));
+    }
+
+    /// Applies `fun` to the contained `Ok` value and returns the result. If this is `Err`, propagates the error
+    /// unchanged.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::and_then`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.and_then).
+    template<typename Fun>
+        requires(callable<Fun, value_type &&>)
+    [[nodiscard]] constexpr auto AndThen(Fun&& fun) && -> Result<std::invoke_result_t<Fun, T>, E>
+    {
+        using Ret = std::invoke_result_t<Fun, T>;
+        if (this->Ok()) {
+            return violet::Ok<Ret>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
         }
 
         return violet::Err<E>(VIOLET_MOVE(Error()));
@@ -684,8 +803,8 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Equivalent to Rust's
     /// [`Result::and_then`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.and_then).
     template<typename Fun>
-        requires(callable<Fun>)
-    [[nodiscard]] constexpr auto AndThen(Fun&& fun) && -> Result<std::invoke_result_t<Fun, T>, E>
+        requires(callable<Fun, const value_type &&>)
+    [[nodiscard]] constexpr auto AndThen(Fun&& fun) const&& -> Result<std::invoke_result_t<Fun, T>, E>
     {
         using Ret = std::invoke_result_t<Fun, T>;
         if (this->Ok()) {
@@ -755,7 +874,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             return violet::Ok<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef()));
         }
 
-        return *this;
+        return violet::Err<error_type>(this->getErrorRef());
     }
 
     /// Applies `fun` to the contained value if present.
@@ -774,7 +893,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             return violet::Ok<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef()));
         }
 
-        return *this;
+        return violet::Err<error_type>(this->getErrorRef());
     }
 
     /// Applies `fun` to the contained value if present.
@@ -793,7 +912,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             return violet::Ok<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef())));
         }
 
-        return *this;
+        return violet::Err<error_type>(VIOLET_MOVE(this->getErrorRef()));
     }
 
     /// Applies `fun` to the contained value if present.
@@ -812,7 +931,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             return violet::Ok<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef())));
         }
 
-        return *this;
+        return violet::Err<error_type>(VIOLET_MOVE(this->getErrorRef()));
     }
 
     /// Applies `fun` to the contained error if present.
@@ -832,7 +951,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             return violet::Err<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getErrorRef()));
         }
 
-        return VIOLET_MOVE(violet::Ok<value_type>(this->getValueRef()));
+        return violet::Ok<value_type>(this->getValueRef());
     }
 
     /// Applies `fun` to the contained error if present.
@@ -852,7 +971,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             return violet::Err<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getErrorRef()));
         }
 
-        return VIOLET_MOVE(violet::Ok<value_type>(this->getValueRef()));
+        return violet::Ok<value_type>(this->getValueRef());
     }
 
     /// Applies `fun` to the contained error if present.
@@ -872,7 +991,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             return violet::Err<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getErrorRef())));
         }
 
-        return VIOLET_MOVE(violet::Ok<value_type>(VIOLET_MOVE(this->getValueRef())));
+        return violet::Ok<value_type>(VIOLET_MOVE(this->getValueRef()));
     }
 
     /// Applies `fun` to the contained error if present.
@@ -892,7 +1011,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             return violet::Err<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getErrorRef())));
         }
 
-        return VIOLET_MOVE(violet::Ok<value_type>(VIOLET_MOVE(this->getValueRef())));
+        return violet::Ok<value_type>(VIOLET_MOVE(this->getValueRef()));
     }
 
     /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
@@ -1589,7 +1708,7 @@ private:
             }
         } else {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return *std::launder(reinterpret_cast<T*>(&this->n_storage.Value))->get();
+                return std::launder(reinterpret_cast<T*>(&this->n_storage.Value))->get();
             }
 
             return *std::launder(reinterpret_cast<T*>(&this->n_storage.Value));
@@ -1606,7 +1725,7 @@ private:
             }
         } else {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return *std::launder(reinterpret_cast<const T*>(&this->n_storage.Value))->get();
+                return std::launder(reinterpret_cast<const T*>(&this->n_storage.Value))->get();
             }
 
             return *std::launder(reinterpret_cast<const T*>(&this->n_storage.Value));
@@ -1623,7 +1742,7 @@ private:
             }
         } else {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return VIOLET_MOVE(*std::launder(reinterpret_cast<T*>(&this->n_storage.Value)))->get();
+                return VIOLET_MOVE(std::launder(reinterpret_cast<T*>(&this->n_storage.Value)))->get();
             }
 
             return VIOLET_MOVE(*std::launder(reinterpret_cast<T*>(&this->n_storage.Value)));
@@ -1640,7 +1759,7 @@ private:
             }
         } else {
             if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return VIOLET_MOVE(*std::launder(reinterpret_cast<const T*>(&this->n_storage.Value)))->get();
+                return VIOLET_MOVE(std::launder(reinterpret_cast<const T*>(&this->n_storage.Value)))->get();
             }
 
             return VIOLET_MOVE(*std::launder(reinterpret_cast<const T*>(&this->n_storage.Value)));
@@ -1741,15 +1860,18 @@ struct Result<void, E> final {
     }
 
     constexpr VIOLET_IMPLICIT Result(const Result& other)
-        : n_value(other.n_value ? new violet::Err<E>(*other.n_value) : nullptr)
     {
+        if (other.n_value != nullptr) {
+            this->n_value = new violet::Err<E>(*other.n_value);
+        }
     }
 
     constexpr auto operator=(const Result& other) noexcept -> Result&
     {
         if (this != &other) {
-            delete this->n_value;
-            this->n_value = other.n_value ? new violet::Err<E>(*other.n_value) : nullptr;
+            if (other.n_value != nullptr) {
+                this->n_value = new violet::Err<E>(*other.n_value);
+            }
         }
 
         return *this;
@@ -1763,12 +1885,59 @@ struct Result<void, E> final {
     constexpr auto operator=(Result&& other) noexcept -> Result&
     {
         if (this != &other) {
-            delete this->n_value;
+            if (this->n_value != nullptr) {
+                delete this->n_value;
+                this->n_value = nullptr;
+            }
+
             this->n_value = std::exchange(other.n_value, nullptr);
         }
 
         return *this;
     }
+
+#if VIOLET_REQUIRE_STL(202302L)
+    template<typename E2>
+        requires(!std::same_as<std::remove_cvref_t<E2>, Result<void, E2>> && std::constructible_from<E, E2>)
+    constexpr VIOLET_IMPLICIT Result(const std::expected<void, E2>& other)
+    {
+        if (!other.has_value()) {
+            this->n_value = new violet::Err<E2>(other.error());
+        }
+    }
+
+    template<typename E2>
+        requires(!std::same_as<std::remove_cvref_t<E2>, Result<void, E2>> && std::constructible_from<E, E2>)
+    constexpr VIOLET_IMPLICIT Result(std::expected<void, E2>&& other)
+    {
+        if (!other.has_value()) {
+            this->n_value = violet::Err<E2>(VIOLET_MOVE(other).error());
+        }
+    }
+
+    constexpr auto operator=(std::expected<void, E>& other) -> Result&
+    {
+        if (!other.has_value()) {
+            this->n_value = new violet::Err<E>(other.error());
+        }
+
+        return *this;
+    }
+
+    constexpr auto operator=(std::expected<void, E>&& other) -> Result&
+    {
+        if (this->n_value != nullptr) {
+            delete this->n_value;
+            this->n_value = nullptr;
+        }
+
+        if (!other.has_value()) {
+            this->n_value = new violet::Err<E>(VIOLET_MOVE(other).error());
+        }
+
+        return *this;
+    }
+#endif
 
     /// Returns `true` if success.
     [[nodiscard]] constexpr auto Ok() const noexcept -> bool

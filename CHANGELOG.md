@@ -7,7 +7,13 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.05.06...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.07...master>
+
+### 26.05.07
+#### Noelware.Violet
+- Fix regressions in **Result** and **Optional** by adding tests for std::reference_wrapper and `std::expected` on C++23 for **Result** and `std::optional` for **Optional**
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.06...26.05.07>
 
 ### 26.05.06
 #### Noelware.Violet

@@ -75,7 +75,7 @@ struct instanceof: std::false_type { };
 template<template<class...> typename Template, typename... Args>
 struct instanceof<Template, Template<Args...>>: std::true_type { };
 
-/// Returns the value from the [`instanceof<Template, T>`] type trait.
+/// Returns the value from the [`instanceof<Template, Args...>`] type trait.
 template<template<class...> typename Template, typename T>
 inline constexpr bool instanceof_v = instanceof<Template, T>::value;
 

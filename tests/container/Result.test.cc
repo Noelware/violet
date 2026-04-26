@@ -398,6 +398,216 @@ TEST(Result, StreamOperator)
     EXPECT_FALSE(os.str().empty());
 }
 
+TEST(ResultRef, OkWithRef)
+{
+    int value = 42;
+    Result<std::reference_wrapper<Int32>, String> res = Ok(std::ref(value));
+
+    ASSERT_TRUE(res);
+    EXPECT_EQ(res.Value(), 42);
+}
+
+TEST(ResultRef, ErrWithRefValue)
+{
+    Result<std::reference_wrapper<Int32>, String> res = Err(String("failed"));
+
+    ASSERT_FALSE(res);
+    EXPECT_EQ(res.Error(), "failed");
+}
+
+TEST(ResultRef, ConstRefInOk)
+{
+    const String s = "immutable";
+    Result<std::reference_wrapper<const String>, Int32> res = Ok(std::cref(s));
+
+    ASSERT_TRUE(res);
+    EXPECT_EQ(res.Value(), "immutable");
+}
+
+TEST(ResultRef, MapPreservesRef)
+{
+    int value = 8;
+    Result<std::reference_wrapper<Int32>, String> res = Ok(std::ref(value));
+
+    auto mapped = res.Map([](int ref) -> int { return ref * 3; });
+
+    ASSERT_TRUE(mapped);
+    EXPECT_EQ(*mapped, 24);
+    EXPECT_EQ(value, 8); // Original unchanged
+}
+
+TEST(ResultRef, MapOnErr)
+{
+    Result<std::reference_wrapper<Int32>, String> res = Err(String("nope"));
+
+    bool called = false;
+    auto mapped = res.Map([&](int ref) -> int {
+        called = true;
+        return ref;
+    });
+
+    EXPECT_FALSE(mapped);
+    EXPECT_FALSE(called);
+}
+
+TEST(ResultRef, AndThenWithRef)
+{
+    int value = 4;
+    Result<std::reference_wrapper<Int32>, String> res = Ok(std::ref(value));
+
+    auto chained = VIOLET_MOVE(res).AndThen([](int ref) -> Result<Int32, String> {
+        if (ref > 0) {
+            return Ok(ref * 10);
+        }
+
+        return Err(String("non-positive"));
+    });
+
+    ASSERT_TRUE(chained);
+    EXPECT_EQ(VIOLET_MOVE(chained).Transpose().Value(), 40);
+}
+
+TEST(ResultRef, MoveSemantics)
+{
+    int value = 33;
+    Result<std::reference_wrapper<Int32>, String> a = Ok(std::ref(value));
+
+    auto b = VIOLET_MOVE(a);
+    ASSERT_TRUE(b);
+    EXPECT_EQ(b.Value(), 33);
+}
+
+#if VIOLET_REQUIRE_STL(202302L)
+TEST(ResultFromStd, ConstructFromExpectedWithValue)
+{
+    std::expected<Int32, String> exp = 42;
+    Result<Int32, String> res(exp);
+
+    ASSERT_TRUE(res);
+    EXPECT_EQ(res.Value(), 42);
+}
+
+TEST(ResultFromStd, ConstructFromExpectedWithError)
+{
+    std::expected<Int32, String> exp = std::unexpected("fail");
+    Result<Int32, String> res(exp);
+
+    ASSERT_FALSE(res);
+    EXPECT_EQ(res.Error(), "fail");
+}
+
+TEST(ResultFromStd, ConstructFromExpectedRvalueWithValue)
+{
+    std::expected<String, Int32> exp = "hello";
+    Result<String, Int32> res(VIOLET_MOVE(exp));
+
+    ASSERT_TRUE(res);
+    EXPECT_EQ(res.Value(), "hello");
+}
+
+TEST(ResultFromStd, ConstructFromExpectedRvalueWithError)
+{
+    std::expected<String, Int32> exp = std::unexpected(404);
+    Result<String, Int32> res(VIOLET_MOVE(exp));
+
+    ASSERT_FALSE(res);
+    EXPECT_EQ(res.Error(), 404);
+}
+
+TEST(ResultFromStd, AssignExpectedValueToOk)
+{
+    Result<Int32, String> res = Ok(1);
+    std::expected<Int32, String> exp = 2;
+
+    res = exp;
+
+    ASSERT_TRUE(res);
+    EXPECT_EQ(res.Value(), 2);
+}
+
+TEST(ResultFromStd, AssignExpectedErrorToOk)
+{
+    Result<Int32, String> res = Ok(1);
+    std::expected<Int32, String> exp = std::unexpected(String("oops"));
+
+    res = exp;
+
+    ASSERT_FALSE(res);
+    EXPECT_EQ(res.Error(), "oops");
+}
+
+TEST(ResultFromStd, AssignExpectedValueToErr)
+{
+    Result<Int32, String> res = Err(String("old"));
+    std::expected<Int32, String> exp = 99;
+
+    res = exp;
+
+    ASSERT_TRUE(res);
+    EXPECT_EQ(res.Value(), 99);
+}
+
+TEST(ResultFromStd, AssignExpectedErrorToErr)
+{
+    Result<Int32, String> res = Err(String("old"));
+    std::expected<Int32, String> exp = std::unexpected(String("new"));
+
+    res = exp;
+
+    ASSERT_FALSE(res);
+    EXPECT_EQ(res.Error(), "new");
+}
+
+TEST(ResultFromStd, MoveAssignExpectedValue)
+{
+    Result<String, Int32> res = Err(0);
+    std::expected<String, Int32> exp = "moved";
+
+    res = VIOLET_MOVE(exp);
+
+    ASSERT_TRUE(res);
+    EXPECT_EQ(res.Value(), "moved");
+}
+
+TEST(ResultFromStd, MoveAssignExpectedError)
+{
+    Result<Int32, String> res = Ok(0);
+    std::expected<Int32, String> exp = std::unexpected(String("moved err"));
+
+    res = VIOLET_MOVE(exp);
+
+    ASSERT_FALSE(res);
+    EXPECT_EQ(res.Error(), "moved err");
+}
+
+TEST(ResultFromStd, WithMoveOnlyValue)
+{
+    std::expected<std::unique_ptr<Int32>, Int32> exp = std::make_unique<Int32>(77);
+    Result<std::unique_ptr<Int32>, Int32> res(VIOLET_MOVE(exp));
+
+    ASSERT_TRUE(res);
+    ASSERT_NE(res.Value(), nullptr);
+    EXPECT_EQ(*(res->get()), 77);
+}
+
+TEST(ResultFromStd, WithVoidValue)
+{
+    std::expected<void, String> exp;
+    Result<void, String> res(exp);
+    EXPECT_TRUE(res);
+}
+
+TEST(ResultFromStd, PreservesValueSemantics)
+{
+    std::expected<String, Int32> exp = "original";
+    Result<String, Int32> res(exp);
+
+    res = Ok("changed");
+    EXPECT_EQ(*exp, "original");
+    EXPECT_EQ(res.Value(), "changed");
+}
+#endif
+
 TEST(ResultVoid, DefaultIsOk)
 {
     Result<void, String> r;
