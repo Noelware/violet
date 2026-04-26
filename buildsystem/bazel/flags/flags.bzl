@@ -67,6 +67,8 @@ STRING_FLAGS = {
 
         By default, this will use the **elfutils** `libdw` library.
 
+        * `system-llvm`: Uses the system's LLVM that is available. This will be imported as a [`cc_import`]
+                         definition.
         * `libdwarf`: Uses **elfutils**' `libdw` library to parse DWARF object files. Recommended
                       on most instances.
         * `llvm`: Uses LLVM's machinery to parse DWARF object files. Only recommended if you want
@@ -84,13 +86,15 @@ STRING_FLAGS = {
         "doc": """The backend to use when parsing Mach-O binaries on macOS. This is mainly used by the `Noelware.Violet.Experimental.Debugging`
         framework. When you don't have dependents on any target inside of `//violet/experimental/debugging`, this is disabled.
 
-        By default, it'll use `libLLVM` to parse Mach-O binaries. Unfortunately, `libLLVM` is VERY large, so that is the penalty right now unless
-        you want to use very experimental machinery that the Violet team implements theirselves.
+        By default, it'll use `libLLVM` to parse Mach-O binaries. This will use the system's LLVM that is available either
+        via Homebrew or available using Apple's LLVM.
 
+        * `system-llvm`: Uses the system's LLVM that is available. This will be imported as a [`cc_import`]
+                         definition.
         * `llvm`: Uses LLVM's machinery to parse DWARF object files. Only recommended if you want
                   strong support, but at the cost of more compilation time as libLLVM is a huge
                   project.
-        * `violet` (EXPERIMENTAL): Uses Noelware's implementation for parsing DWARF object files. Not recommended
+        * `violet` (EXPERIMENTAL): Uses Noelware's implementation for parsing Mach-O object files. Not recommended
                                    at the slightest; this is VERY experimental and things are subject to break. We're
                                    not sure if we want to do this.
         * `disable`: Disables parsing Mach-O binaries alltogether. The implementation won't resolve line numbers or function names

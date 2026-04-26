@@ -61,7 +61,11 @@ violet_cc_library(
 
 violet_cc_test(
     name = "result_test",
-    srcs = ["//tests/container:Result.test.cc"],
+    srcs = [
+        "//tests/container:Result.test.cc",
+        "//tests/container/result:Err.test.cc",
+        "//tests/container/result:Ok.test.cc",
+    ],
     deps = [
         ":optional",
         ":result",

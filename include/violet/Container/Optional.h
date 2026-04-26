@@ -110,7 +110,7 @@ struct VIOLET_API Some final {
     template<typename Other>
         requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
     constexpr VIOLET_IMPLICIT Some(Some<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
-        : n_value(T(VIOLET_MOVE(other).n_value))
+        : n_value(T(VIOLET_MOVE(other).Value()))
     {
     }
 
@@ -132,9 +132,41 @@ struct VIOLET_API Some final {
     {
     }
 
+    constexpr auto Value() & noexcept VIOLET_LIFETIMEBOUND -> T&
+    {
+        return this->n_value;
+    }
+
+    constexpr auto Value() && noexcept VIOLET_LIFETIMEBOUND -> T&&
+    {
+        return VIOLET_MOVE(this->n_value);
+    }
+
+    constexpr auto Value() const& noexcept VIOLET_LIFETIMEBOUND -> const T&
+    {
+        return this->n_value;
+    }
+
+    constexpr auto Value() const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
+    {
+        return this->n_value;
+    }
+
+    constexpr auto operator==(const Some& other) const noexcept -> bool
+        requires(requires { this->Value() == other.Value(); })
+    {
+        return this->Value() == other.Value();
+    }
+
+    constexpr auto operator!=(const Some& other) const noexcept -> bool
+        requires(requires { this->Value() == other.Value(); })
+    {
+        return this->Value() != other.Value();
+    }
+
     [[nodiscard]] auto ToString() const noexcept -> String
     {
-        return violet::ToString(this->n_value);
+        return violet::ToString(this->Value());
     }
 
     friend auto operator<<(std::ostream& os, const Some& self) noexcept -> std::ostream&
@@ -555,18 +587,14 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) &
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> value_type
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) & -> value_type
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return this->getValueRef();
         }
 
-        panicUnexpectly("tried to unwrap nothing", loc);
+        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
     }
 
     /// Forefully retrieve a value from this container or panics if no value was present.
@@ -582,18 +610,14 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) &&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> value_type
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) && -> value_type
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return VIOLET_MOVE(this->getValueRef());
         }
 
-        panicUnexpectly("tried to unwrap nothing", loc);
+        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
     }
 
     /// Forefully retrieve a value from this container or panics if no value was present.
@@ -609,18 +633,14 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> value_type
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const& -> value_type
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return this->getValueRef();
         }
 
-        panicUnexpectly("tried to unwrap nothing", loc);
+        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
     }
 
     /// Forefully retrieve a value from this container or panics if no value was present.
@@ -636,18 +656,14 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const&&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> value_type
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const&& -> value_type
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return VIOLET_MOVE(this->getValueRef());
         }
 
-        panicUnexpectly("tried to unwrap nothing", loc);
+        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
     }
 
     /// Returns the contained value or panics with `message` if no value is present.
@@ -663,18 +679,14 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) &
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> value_type
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) & -> value_type
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return this->getValueRef();
         }
 
-        panicUnexpectly(message, loc);
+        VIOLET_PANIC_USERLAND(message, loc);
     }
 
     /// Returns the contained value or panics with `message` if no value is present.
@@ -690,18 +702,14 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) &&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> value_type
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) && -> value_type
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return VIOLET_MOVE(this->getValueRef());
         }
 
-        panicUnexpectly(message, loc);
+        VIOLET_PANIC_USERLAND(message, loc);
     }
 
     /// Returns the contained value or panics with `message` if no value is present.
@@ -717,18 +725,15 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> value_type
+    constexpr auto Except(
+        Str message, violet::SourceLocation loc = std::source_location::current()) const& -> value_type
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return this->getValueRef();
         }
 
-        panicUnexpectly(message, loc);
+        VIOLET_PANIC_USERLAND(message, loc);
     }
 
     /// Returns the contained value or panics with `message` if no value is present.
@@ -744,18 +749,15 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const&&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> value_type
+    constexpr auto Except(
+        Str message, violet::SourceLocation loc = std::source_location::current()) const&& -> value_type
     {
         VIOLET_LIKELY_IF(this->HasValue())
         {
             return VIOLET_MOVE(this->getValueRef());
         }
 
-        panicUnexpectly(message, loc);
+        VIOLET_PANIC_USERLAND(message, loc);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
@@ -1196,7 +1198,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     }
 
 private:
-    mutable bool n_engaged = false;
+    bool n_engaged = false;
     union { // NOLINT(cppcoreguidelines-special-member-functions)
         T n_value;
     };
@@ -1278,22 +1280,6 @@ private:
 
             return VIOLET_MOVE(*std::launder(reinterpret_cast<const value_type*>(&this->n_value)));
         }
-    }
-
-    [[noreturn]] VIOLET_COLD static void panicUnexpectly(Str message, [[maybe_unused]] violet::SourceLocation loc)
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-    {
-#ifdef VIOLET_HAS_EXCEPTIONS
-        throw std::logic_error(std::format(
-            "[violet::Optional][{}:{}:{} ({})]: panic: {}", loc.File, loc.Line, loc.Column, loc.Function, message));
-#else
-        violet::PrintErrln(
-            "[violet::Optional][{}:{}:{} ({})]: panic: {}", loc.File, loc.Line, loc.Column, loc.Function, message);
-
-        VIOLET_UNREACHABLE();
-#endif
     }
 };
 

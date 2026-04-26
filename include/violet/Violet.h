@@ -25,6 +25,7 @@
 
 #include <violet/Language/Assert.h> // IWYU pragma: export
 #include <violet/Language/Macros.h> // IWYU pragma: export
+#include <violet/Language/Panic.h> // IWYU pragma: export
 #include <violet/Language/Policy.h> // IWYU pragma: export
 
 #include <any>

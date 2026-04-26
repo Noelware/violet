@@ -60,6 +60,12 @@
 #define VIOLET_HAS_FEATURE(x) 0
 #endif
 
+#if !defined(VIOLET_HAS_BUILTIN) && defined(__has_builtin)
+#define VIOLET_HAS_BUILTIN(x) __has_builtin(__builtin_##x)
+#else
+#define VIOLET_HAS_BUILTIN(x) 0
+#endif
+
 // We need to fill in the following defines if they weren't defined before
 // from foreign build systems that we don't support or they were stubbed out.
 //

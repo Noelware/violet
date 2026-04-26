@@ -60,6 +60,7 @@ violet_cc_library(
     deps = [
         ":assert",
         ":macros",
+        ":panic",
         ":policy_checks",
     ],
 )
@@ -142,4 +143,14 @@ violet_cc_library(
     name = "defer",
     hdrs = ["//include/violet:Defer.h"],
     deps = [":violet"],
+)
+
+violet_cc_library(
+    name = "panic",
+    srcs = ["//src:panic.cc"],
+    hdrs = ["//include/violet/Language:Panic.h"],
+    deps = [
+        ":print",
+        ":source_location",
+    ],
 )

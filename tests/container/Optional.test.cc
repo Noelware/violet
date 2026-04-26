@@ -22,203 +22,806 @@
 #include <gtest/gtest.h>
 #include <violet/Container/Optional.h>
 
-using namespace violet; // NOLINT(google-build-using-namespace)
+VIOLET_DIAGNOSTIC_PUSH
 
-// NOLINTBEGIN(readability-identifier-length)
+#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
+VIOLET_DIAGNOSTIC_IGNORE("-Wself-move")
+VIOLET_DIAGNOSTIC_IGNORE("-Wself-assign-overloaded")
+#endif
 
-TEST(Optionals, Basic)
+// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length,performance-unnecessary-copy-initialization,cppcoreguidelines-special-member-functions)
+using namespace violet;
+
+TEST(Optional, DefaultIsDisengaged)
 {
-    const Optional<UInt32> opt;
-    ASSERT_FALSE(opt.HasValue());
+    Optional<int> opt;
+    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(static_cast<bool>(opt));
 }
 
-TEST(Optionals, Nothing)
+TEST(Optional, NothingIsDisengaged)
 {
-    const Optional<UInt32> opt = Nothing;
-    ASSERT_FALSE(opt.HasValue());
+    Optional<int> opt = Nothing;
+    EXPECT_FALSE(opt.HasValue());
 }
 
-TEST(Optionals, InPlaceConstructor)
+TEST(Optional, ConstructFromValue)
 {
-    const Optional<String> opt(std::in_place, "hello, world!");
-    const Optional<String> opt2 = Some("hello, world!");
-
-    ASSERT_TRUE(opt.HasValue());
-    ASSERT_TRUE(opt2.HasValue());
-
-    ASSERT_EQ(opt.Value(), opt2.Value());
+    Optional<int> opt = 42;
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value(), 42);
 }
 
-TEST(Optionals, CopyConstructor)
+TEST(Optional, ConstructFromRvalue)
 {
-    const Optional<String> opt1 = Some<String>("hello");
-    const Optional<String> opt2 = opt1; // NOLINT(performance-unnecessary-copy-initialization)
-
-    ASSERT_TRUE(opt1.HasValue());
-    ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(opt1.Value(), "hello");
-    ASSERT_EQ(opt2.Value(), "hello");
+    Optional<std::string> opt = std::string("hello");
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value(), "hello");
 }
 
-TEST(Optionals, MoveConstructor)
+TEST(Optional, ConstructInPlace)
 {
-    Optional<String> opt1 = Some<String>("hello");
-    auto opt2 = VIOLET_MOVE(opt1);
-
-    ASSERT_FALSE(opt1.HasValue());
-    ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(opt2.Value(), "hello");
+    Optional<std::string> opt(std::in_place, 5, 'x');
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value(), "xxxxx");
 }
 
-TEST(Optionals, CopyAssignment)
+TEST(Optional, ConstructFromSomeLvalue)
 {
-    const Optional<String> opt1 = Some<String>("hello");
-    Optional<String> opt2;
-
-    opt2 = opt1;
-
-    ASSERT_TRUE(opt1.HasValue());
-    ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(opt1.Value(), "hello");
-    ASSERT_EQ(opt2.Value(), "hello");
+    Some<int> s(42);
+    Optional<int> opt(s);
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value(), 42);
 }
 
-TEST(Optionals, MoveAssignment)
+TEST(Optional, ConstructFromSomeRvalue)
 {
-    Optional<String> opt1 = Some<String>("hello");
-    Optional<String> opt2;
-
-    opt2 = VIOLET_MOVE(opt1);
-
-    ASSERT_FALSE(opt1.HasValue());
-    ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(opt2.Value(), "hello");
+    Optional<int> opt(Some<int>(42));
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value(), 42);
 }
 
-TEST(Optionals, HasValue)
+TEST(Optional, ConstructFromStdOptionalEngaged)
 {
-    const Optional<UInt32> opt1{ };
-    const Optional<UInt32> opt2 = Some<UInt32>(1);
-
-    ASSERT_FALSE(opt1.HasValue());
-    ASSERT_TRUE(opt2.HasValue());
+    std::optional<int> std_opt = 42;
+    Optional<int> opt(std_opt);
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value(), 42);
 }
 
-TEST(Optionals, Value)
+TEST(Optional, ConstructFromStdOptionalEmpty)
 {
-    const Optional<String> opt = Some<String>("world");
-    ASSERT_EQ(opt.Value(), "world");
+    std::optional<int> std_opt;
+    Optional<int> opt(std_opt);
+    EXPECT_FALSE(opt.HasValue());
 }
 
-TEST(Optionals, Unwrap)
+TEST(Optional, ConstructFromStdOptionalRvalue)
 {
-    Optional<String> opt = Some<String>("world");
-    ASSERT_EQ(VIOLET_MOVE(opt).Unwrap(), "world");
+    Optional<std::string> opt(std::optional<std::string>("hello"));
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value(), "hello");
 }
 
-TEST(Optionals, UnwrapOr)
+TEST(Optional, CopyConstructEngaged)
 {
-    Optional<String> opt1 = Some<String>("world");
-    Optional<String> opt2;
-
-    ASSERT_EQ(VIOLET_MOVE(opt1).UnwrapOr("hello"), "world");
-    ASSERT_EQ(VIOLET_MOVE(opt2).UnwrapOr("hello"), "hello");
+    Optional<int> a = 42;
+    Optional<int> b(a);
+    EXPECT_TRUE(b.HasValue());
+    EXPECT_EQ(b.Value(), 42);
 }
 
-TEST(Optionals, Map)
+TEST(Optional, CopyConstructDisengaged)
 {
-    const Optional<String> opt1 = Some<String>("hello");
-    const auto opt2 = Optional<String>();
-
-    const auto res1 = opt1.Map([](const String& value) -> UInt { return value.length(); });
-    const auto res2 = opt2.Map([](const String& value) -> UInt { return value.length(); });
-
-    ASSERT_TRUE(res1.HasValue());
-    ASSERT_EQ(res1.Value(), 5);
-    ASSERT_FALSE(res2.HasValue());
+    Optional<int> a;
+    Optional<int> b(a);
+    EXPECT_FALSE(b.HasValue());
 }
 
-TEST(Optionals, MapOr)
+TEST(Optional, CopyAssignEngagedToEngaged)
 {
-    const Optional<String> opt1 = Some<String>("hello");
-    const auto opt2 = Optional<String>();
-
-    const auto res1 = opt1.MapOr(0, [](const String& value) -> UInt { return value.length(); });
-    const auto res2 = opt2.MapOr(0, [](const String& value) -> UInt { return value.length(); });
-
-    ASSERT_EQ(res1, 5);
-    ASSERT_EQ(res2, 0);
+    Optional<int> a = 1;
+    Optional<int> b = 2;
+    b = a;
+    EXPECT_EQ(b.Value(), 1);
 }
 
-TEST(Optionals, HasValueAnd)
+TEST(Optional, CopyAssignEngagedToDisengaged)
 {
-    const Optional<UInt32> opt1 = Some<UInt32>(2);
-    const Optional<UInt32> opt2 = Some<UInt32>(3);
-    const auto opt3 = Optional<UInt32>();
-
-    ASSERT_TRUE(opt1.HasValueAnd([](UInt32 value) -> bool { return value % 2 == 0; }));
-    ASSERT_FALSE(opt2.HasValueAnd([](UInt32 value) -> bool { return value % 2 == 0; }));
-    ASSERT_FALSE(opt3.HasValueAnd([](UInt32 value) -> bool { return value % 2 == 0; }));
+    Optional<int> a = 42;
+    Optional<int> b;
+    b = a;
+    EXPECT_TRUE(b.HasValue());
+    EXPECT_EQ(b.Value(), 42);
 }
 
-TEST(Optionals, Take)
+TEST(Optional, CopyAssignDisengagedToEngaged)
 {
-    Optional<String> opt1 = Some<String>("hello");
-    const auto opt2 = opt1.Take();
-
-    ASSERT_FALSE(opt1.HasValue());
-    ASSERT_TRUE(opt2.HasValue());
-    ASSERT_EQ(opt2.Value(), "hello");
+    Optional<int> a;
+    Optional<int> b = 42;
+    b = a;
+    EXPECT_FALSE(b.HasValue());
 }
 
-TEST(Optionals, Reset)
+TEST(Optional, CopyAssignSelf)
 {
-    Optional<String> opt = Some<String>("hello");
-    ASSERT_TRUE(opt.HasValue());
+    Optional<int> a = 42;
+    a = a;
+    EXPECT_TRUE(a.HasValue());
+    EXPECT_EQ(a.Value(), 42);
+}
 
+TEST(Optional, MoveConstructEngaged)
+{
+    Optional<std::string> a = std::string("hello");
+    Optional<std::string> b(VIOLET_MOVE(a));
+    EXPECT_TRUE(b.HasValue());
+    EXPECT_EQ(b.Value(), "hello");
+    // a should be disengaged after move
+    EXPECT_FALSE(a.HasValue()); // NOLINT(bugprone-use-after-move)
+}
+
+TEST(Optional, MoveConstructDisengaged)
+{
+    Optional<int> a;
+    Optional<int> b(VIOLET_MOVE(a));
+    EXPECT_FALSE(b.HasValue());
+}
+
+TEST(Optional, MoveAssignEngagedToEngaged)
+{
+    Optional<std::string> a = std::string("hello");
+    Optional<std::string> b = std::string("world");
+    b = VIOLET_MOVE(a);
+    EXPECT_TRUE(b.HasValue());
+    EXPECT_EQ(b.Value(), "hello");
+}
+
+TEST(Optional, MoveAssignEngagedToDisengaged)
+{
+    Optional<std::string> a = std::string("hello");
+    Optional<std::string> b;
+    b = VIOLET_MOVE(a);
+    EXPECT_TRUE(b.HasValue());
+    EXPECT_EQ(b.Value(), "hello");
+}
+
+TEST(Optional, MoveAssignDisengagedToEngaged)
+{
+    Optional<std::string> a;
+    Optional<std::string> b = std::string("hello");
+    b = VIOLET_MOVE(a);
+    EXPECT_FALSE(b.HasValue());
+}
+
+TEST(Optional, MoveAssignSelf)
+{
+    Optional<int> a = 42;
+    a = VIOLET_MOVE(a);
+    // Should not crash; value may be in moved-from state
+    EXPECT_TRUE(a.HasValue());
+}
+
+TEST(Optional, AssignNothingToEngaged)
+{
+    Optional<int> opt = 42;
+    opt = Nothing;
+    EXPECT_FALSE(opt.HasValue());
+}
+
+TEST(Optional, AssignNothingToDisengaged)
+{
+    Optional<int> opt;
+    opt = Nothing;
+    EXPECT_FALSE(opt.HasValue());
+}
+
+TEST(Optional, AssignValueLvalue)
+{
+    Optional<int> opt;
+    int val = 42;
+    opt = val;
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value(), 42);
+}
+
+TEST(Optional, AssignValueRvalue)
+{
+    Optional<std::string> opt;
+    opt = std::string("hello");
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value(), "hello");
+}
+
+TEST(Optional, ReassignValue)
+{
+    Optional<int> opt = 1;
+    opt = 42;
+    EXPECT_EQ(opt.Value(), 42);
+}
+
+TEST(Optional, ValueRefQualifiers)
+{
+    Optional<std::string> opt = std::string("hello");
+
+    // lvalue
+    EXPECT_EQ(opt.Value(), "hello");
+
+    // const lvalue
+    const auto& cref = opt;
+    EXPECT_EQ(cref.Value(), "hello");
+}
+
+TEST(Optional, DerefOperator)
+{
+    Optional<int> opt = 42;
+    EXPECT_EQ(*opt, 42);
+}
+
+TEST(Optional, ArrowOperator)
+{
+    Optional<std::string> opt = std::string("hello");
+    EXPECT_EQ(opt->size(), 5U);
+}
+
+TEST(Optional, BoolConversion)
+{
+    Optional<int> engaged = 42;
+    Optional<int> empty;
+
+    EXPECT_TRUE(static_cast<bool>(engaged));
+    EXPECT_FALSE(static_cast<bool>(empty));
+}
+
+TEST(Optional, UnwrapEngaged)
+{
+    Optional<int> opt = 42;
+    EXPECT_EQ(opt.Unwrap(), 42);
+}
+
+TEST(Optional, UnwrapOrEngaged)
+{
+    Optional<int> opt = 42;
+    EXPECT_EQ(opt.UnwrapOr(0), 42);
+}
+
+TEST(Optional, UnwrapOrDisengaged)
+{
+    Optional<int> opt;
+    EXPECT_EQ(opt.UnwrapOr(99), 99);
+}
+
+TEST(Optional, UnwrapOrDefaultEngaged)
+{
+    Optional<int> opt = 42;
+    EXPECT_EQ(opt.UnwrapOrDefault(), 42);
+}
+
+TEST(Optional, UnwrapOrDefaultDisengaged)
+{
+    Optional<int> opt;
+    EXPECT_EQ(opt.UnwrapOrDefault(), 0);
+}
+
+TEST(Optional, UnwrapUnchecked)
+{
+    Optional<int> opt = 42;
+    EXPECT_EQ(opt.UnwrapUnchecked(Unsafe("in test code; this will not fail")), 42);
+}
+
+TEST(Optional, ExceptEngaged)
+{
+    Optional<int> opt = 42;
+    EXPECT_EQ(opt.Except("should not panic"), 42);
+}
+
+TEST(Optional, MapEngaged)
+{
+    Optional<int> opt = 21;
+    auto mapped = opt.Map([](int v) { return v * 2; });
+    EXPECT_TRUE(mapped.HasValue());
+    EXPECT_EQ(mapped.Value(), 42);
+}
+
+TEST(Optional, MapDisengaged)
+{
+    Optional<int> opt;
+    auto mapped = opt.Map([](int v) { return v * 2; });
+    EXPECT_FALSE(mapped.HasValue());
+}
+
+TEST(Optional, MapChangesType)
+{
+    Optional<int> opt = 42;
+    auto mapped = opt.Map([](int v) { return std::to_string(v); });
+    EXPECT_TRUE(mapped.HasValue());
+    EXPECT_EQ(mapped.Value(), "42");
+}
+
+TEST(Optional, MapRvalue)
+{
+    auto mapped = Optional<int>(21).Map([](int v) { return v * 2; });
+    EXPECT_TRUE(mapped.HasValue());
+    EXPECT_EQ(mapped.Value(), 42);
+}
+
+TEST(Optional, MapOrEngaged)
+{
+    Optional<int> opt = 21;
+    auto val = opt.MapOr(0, [](int v) { return v * 2; });
+    EXPECT_EQ(val, 42);
+}
+
+TEST(Optional, MapOrDisengaged)
+{
+    Optional<int> opt;
+    auto val = opt.MapOr(99, [](int v) { return v * 2; });
+    EXPECT_EQ(val, 99);
+}
+
+TEST(Optional, HasValueAndTrue)
+{
+    Optional<int> opt = 42;
+    EXPECT_TRUE(opt.HasValueAnd([](int v) { return v > 0; }));
+}
+
+TEST(Optional, HasValueAndFalse)
+{
+    Optional<int> opt = 42;
+    EXPECT_FALSE(opt.HasValueAnd([](int v) { return v < 0; }));
+}
+
+TEST(Optional, HasValueAndDisengaged)
+{
+    Optional<int> opt;
+    EXPECT_FALSE(opt.HasValueAnd([](int) { return true; }));
+}
+
+TEST(Optional, TakeEngaged)
+{
+    Optional<int> opt = 42;
+    auto taken = opt.Take();
+    EXPECT_TRUE(taken.HasValue());
+    EXPECT_EQ(taken.Value(), 42);
+    EXPECT_FALSE(opt.HasValue());
+}
+
+TEST(Optional, TakeDisengaged)
+{
+    Optional<int> opt;
+    auto taken = opt.Take();
+    EXPECT_FALSE(taken.HasValue());
+    EXPECT_FALSE(opt.HasValue());
+}
+
+TEST(Optional, ReplaceEngaged)
+{
+    Optional<int> opt = 1;
+    auto& ref = opt.Replace(42);
+    EXPECT_EQ(ref, 42);
+    EXPECT_EQ(opt.Value(), 42);
+}
+
+TEST(Optional, ReplaceDisengaged)
+{
+    Optional<int> opt;
+    auto& ref = opt.Replace(42);
+    EXPECT_EQ(ref, 42);
+    EXPECT_TRUE(opt.HasValue());
+}
+
+TEST(Optional, Reset)
+{
+    Optional<int> opt = 42;
     opt.Reset();
-    ASSERT_FALSE(opt.HasValue());
+    EXPECT_FALSE(opt.HasValue());
 }
 
-TEST(Optionals, SizeAndAlignmentRequirementsMustMatchRust)
+TEST(Optional, ResetAlreadyDisengaged)
 {
-    struct AlignTest final {
-        alignas(16) char __dummy_data[16];
-    };
-
-    EXPECT_GE(sizeof(Optional<int>), sizeof(int));
-    EXPECT_EQ(alignof(Optional<int>), alignof(int));
-
-    EXPECT_EQ(alignof(Optional<AlignTest>), alignof(AlignTest));
-    EXPECT_GE(sizeof(Optional<AlignTest>), sizeof(AlignTest) + 1);
+    Optional<int> opt;
+    opt.Reset();
+    EXPECT_FALSE(opt.HasValue());
 }
 
-TEST(Optionals, ReferenceWrapperWorks)
+TEST(Optional, EqualityBothEngaged)
 {
-    struct Hello final {
-        bool Lucky;
-        String Fortune;
+    Optional<int> a = 42;
+    Optional<int> b = 42;
+    EXPECT_EQ(a, b);
+}
+
+TEST(Optional, InequalityDifferentValues)
+{
+    Optional<int> a = 1;
+    Optional<int> b = 2;
+    EXPECT_NE(a, b);
+}
+
+TEST(Optional, EqualityBothDisengaged)
+{
+    Optional<int> a;
+    Optional<int> b;
+    // Both are Nothing — compare via nullopt
+    EXPECT_EQ(a, Nothing);
+    EXPECT_EQ(b, Nothing);
+}
+
+TEST(Optional, EqualityWithNothing)
+{
+    Optional<int> engaged = 42;
+    Optional<int> empty;
+
+    EXPECT_NE(engaged, Nothing);
+    EXPECT_EQ(empty, Nothing);
+}
+
+TEST(Optional, EqualityWithValue)
+{
+    Optional<int> opt = 42;
+    EXPECT_EQ(opt, 42);
+    EXPECT_NE(opt, 0);
+}
+
+TEST(Optional, EqualityDisengagedWithValue)
+{
+    Optional<int> opt;
+    EXPECT_NE(opt, 42);
+}
+
+TEST(Optional, EqualityWithStdOptional)
+{
+    Optional<int> opt = 42;
+    std::optional<int> std_opt = 42;
+    EXPECT_EQ(opt, std_opt);
+}
+
+TEST(Optional, InequalityWithStdOptional)
+{
+    Optional<int> opt = 42;
+    std::optional<int> std_opt = 99;
+    EXPECT_NE(opt, std_opt);
+}
+
+TEST(Optional, ConvertToStdOptionalEngaged)
+{
+    Optional<int> opt = 42;
+    auto std_opt = static_cast<std::optional<int>>(opt);
+    EXPECT_TRUE(std_opt.has_value());
+    EXPECT_EQ(*std_opt, 42);
+}
+
+TEST(Optional, ConvertToStdOptionalDisengaged)
+{
+    Optional<int> opt;
+    auto std_opt = static_cast<std::optional<int>>(opt);
+    EXPECT_FALSE(std_opt.has_value());
+}
+
+TEST(Optional, MoveOnlyType)
+{
+    Optional<std::unique_ptr<int>> opt = std::make_unique<int>(42);
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(**opt, 42);
+
+    auto moved = VIOLET_MOVE(opt);
+    EXPECT_TRUE(moved.HasValue());
+    EXPECT_EQ(*moved.Value(), 42);
+}
+
+TEST(Optional, VectorValue)
+{
+    std::vector<int> v = { 1, 2, 3 };
+    Optional<std::vector<int>> opt = VIOLET_MOVE(v);
+    EXPECT_TRUE(opt.HasValue());
+    EXPECT_EQ(opt.Value().size(), 3U);
+}
+
+TEST(Optional, DestructorCalledOnReset)
+{
+    static int dtor_count = 0;
+    struct Counted final {
+        ~Counted()
+        {
+            ++dtor_count;
+        }
     };
 
-    Hello lucky{ .Lucky = true, .Fortune = "hello, world" };
-    Optional<std::reference_wrapper<Hello>> x(std::ref(lucky));
+    dtor_count = 0;
+    {
+        Optional<Counted> opt(std::in_place);
+        EXPECT_EQ(dtor_count, 0);
+        opt.Reset();
+        EXPECT_EQ(dtor_count, 1);
+    }
+    // Destructor of disengaged optional should not call dtor again
+    EXPECT_EQ(dtor_count, 1);
+}
 
-    ASSERT_TRUE(x);
+TEST(Optional, DestructorCalledOnScopeExit)
+{
+    static int dtor_count = 0;
+    struct Counted {
+        ~Counted()
+        {
+            ++dtor_count;
+        }
+    };
 
-    EXPECT_TRUE(x->Lucky);
-    EXPECT_EQ(x->Fortune, "hello, world");
+    dtor_count = 0;
+    {
+        Optional<Counted> opt(std::in_place);
+    }
+    EXPECT_EQ(dtor_count, 1);
+}
+
+TEST(Optional, ToStringEngaged)
+{
+    Optional<int> opt = 42;
+    EXPECT_FALSE(opt.ToString().empty());
+}
+
+TEST(Optional, ToStringDisengaged)
+{
+    Optional<int> opt;
+    auto s = opt.ToString();
+    EXPECT_FALSE(s.empty());
+}
+
+TEST(Optional, StreamOperator)
+{
+    Optional<int> opt = 42;
+    std::ostringstream os;
+    os << opt;
+    EXPECT_FALSE(os.str().empty());
+}
+
+TEST(OptionalTraits, IsOptional)
+{
+    static_assert(is_optional_v<Optional<int>>);
+    static_assert(is_optional_v<std::optional<int>>);
+    static_assert(!is_optional_v<int>);
+    static_assert(!is_optional_v<Some<int>>);
+}
+
+TEST(OptionalTraits, OptionalType)
+{
+    static_assert(std::same_as<optional_type_t<Optional<int>>, int>);
+    static_assert(std::same_as<optional_type_t<std::optional<std::string>>, std::string>);
+}
+
+TEST(OptionalConstexpr, DefaultIsDisengaged)
+{
+    constexpr Optional<int> opt;
+    static_assert(!opt.HasValue());
+    static_assert(!static_cast<bool>(opt));
+}
+
+TEST(OptionalConstexpr, NothingIsDisengaged)
+{
+    constexpr Optional<int> opt = Nothing;
+    static_assert(!opt.HasValue());
+}
+
+TEST(OptionalConstexpr, ConstructFromValue)
+{
+    constexpr Optional<int> opt = 42;
+    static_assert(opt.HasValue());
+    static_assert(opt.Value() == 42);
+}
+
+TEST(OptionalConstexpr, ConstructInPlace)
+{
+    constexpr Optional<int> opt(std::in_place, 42);
+    static_assert(opt.HasValue());
+    static_assert(opt.Value() == 42);
+}
+
+TEST(OptionalConstexpr, ConstructFromSome)
+{
+    constexpr Optional<int> opt(Some<int>(42));
+    static_assert(opt.HasValue());
+    static_assert(opt.Value() == 42);
+}
+
+TEST(OptionalConstexpr, BoolConversion)
+{
+    constexpr Optional<int> engaged = 42;
+    constexpr Optional<int> empty;
+
+    static_assert(static_cast<bool>(engaged));
+    static_assert(!static_cast<bool>(empty));
+}
+
+TEST(OptionalConstexpr, DerefOperator)
+{
+    constexpr Optional<int> opt = 42;
+    static_assert(*opt == 42);
+}
+
+TEST(OptionalConstexpr, ValueAccess)
+{
+    constexpr Optional<int> opt = 42;
+    static_assert(opt.Value() == 42);
+}
+
+TEST(OptionalConstexpr, UnwrapOrEngaged)
+{
+    constexpr Optional<int> opt = 42;
+    static_assert(opt.UnwrapOr(0) == 42);
+}
+
+TEST(OptionalConstexpr, UnwrapOrDisengaged)
+{
+    constexpr Optional<int> opt;
+    static_assert(opt.UnwrapOr(99) == 99);
+}
+
+TEST(OptionalConstexpr, UnwrapOrDefaultEngaged)
+{
+    constexpr Optional<int> opt = 42;
+    static_assert(opt.UnwrapOrDefault() == 42);
+}
+
+TEST(OptionalConstexpr, UnwrapOrDefaultDisengaged)
+{
+    constexpr Optional<int> opt;
+    static_assert(opt.UnwrapOrDefault() == 0);
+}
+
+TEST(OptionalConstexpr, UnwrapUnchecked)
+{
+    constexpr Optional<int> opt = 42;
+    static_assert(opt.UnwrapUnchecked(Unsafe("in test code; don't care about safety")) == 42);
+}
+
+TEST(OptionalConstexpr, MapEngaged)
+{
+    constexpr auto mapped = Optional<int>(21).Map([](int v) { return v * 2; });
+    static_assert(mapped.HasValue());
+    static_assert(mapped.Value() == 42);
+}
+
+TEST(OptionalConstexpr, MapDisengaged)
+{
+    constexpr auto mapped = Optional<int>().Map([](int v) { return v * 2; });
+    static_assert(!mapped.HasValue());
+}
+
+TEST(OptionalConstexpr, MapOrEngaged)
+{
+    constexpr Optional<int> opt = 21;
+    constexpr auto val = opt.MapOr(0, [](int v) { return v * 2; });
+    static_assert(val == 42);
+}
+
+TEST(OptionalConstexpr, MapOrDisengaged)
+{
+    constexpr Optional<int> opt;
+    constexpr auto val = opt.MapOr(99, [](int v) { return v * 2; });
+    static_assert(val == 99);
+}
+
+TEST(OptionalConstexpr, HasValueAndTrue)
+{
+    constexpr Optional<int> opt = 42;
+    static_assert(opt.HasValueAnd([](int v) { return v > 0; }));
+}
+
+TEST(OptionalConstexpr, HasValueAndFalse)
+{
+    constexpr Optional<int> opt = 42;
+    static_assert(!opt.HasValueAnd([](int v) { return v < 0; }));
+}
+
+TEST(OptionalConstexpr, HasValueAndDisengaged)
+{
+    constexpr Optional<int> opt;
+    static_assert(!opt.HasValueAnd([](int) { return true; }));
+}
+
+TEST(OptionalConstexpr, EqualityWithNothing)
+{
+    constexpr Optional<int> engaged = 42;
+    constexpr Optional<int> empty;
+
+    static_assert(engaged != Nothing);
+    static_assert(empty == Nothing);
+}
+
+TEST(OptionalConstexpr, EqualityWithValue)
+{
+    constexpr Optional<int> opt = 42;
+    static_assert(opt == 42);
+    static_assert(opt != 0);
+}
+
+TEST(OptionalConstexpr, EqualityBothEngaged)
+{
+    constexpr Optional<int> a = 42;
+    constexpr Optional<int> b = 42;
+    constexpr Optional<int> c = 99;
+
+    static_assert(a == b);
+    static_assert(a != c);
+}
+
+TEST(OptionalConstexpr, CopyConstruct)
+{
+    constexpr Optional<int> a = 42;
+    constexpr Optional<int> b(a);
+    static_assert(b.HasValue());
+    static_assert(b.Value() == 42);
+}
+
+TEST(OptionalConstexpr, CopyConstructDisengaged)
+{
+    constexpr Optional<int> a;
+    constexpr Optional<int> b(a);
+    static_assert(!b.HasValue());
 }
 
 namespace {
 
-constexpr auto getLuckyNumber() -> Optional<Int32>
+consteval auto ConstexprMapChain() -> int
 {
-    return 42;
+    return Optional<int>(10).Map([](int v) { return v + 5; }).Map([](int v) { return v * 2; }).UnwrapOr(0);
+}
+
+consteval auto ConstexprTakeAndReplace() -> int
+{
+    Optional<int> opt = 42;
+    auto taken = opt.Take();
+    if (opt.HasValue()) {
+        return -1; // should be disengaged
+    }
+
+    (void)opt.Replace(99);
+    return opt.Value() + taken.Value(); // 99 + 42
+}
+
+consteval auto ConstexprMoveConstruct() -> int
+{
+    Optional<int> a = 42;
+    Optional<int> b(static_cast<Optional<int>&&>(a));
+    if (a.HasValue()) {
+        return -1; // should be disengaged
+    }
+    return b.Value();
 }
 
 } // namespace
 
-// A static-test to ensure that `getValueRef()` (internals for unwrapping) is constexpr-safe
-static_assert(getLuckyNumber().Unwrap() == 42);
+TEST(OptionalConsteval, MapChain)
+{
+    static_assert(ConstexprMapChain() == 30);
+}
 
-// NOLINTEND(readability-identifier-length)
+TEST(OptionalConsteval, TakeAndReplace)
+{
+    static_assert(ConstexprTakeAndReplace() == 141);
+}
+
+TEST(OptionalConsteval, MoveConstruct)
+{
+    static_assert(ConstexprMoveConstruct() == 42);
+}
+
+TEST(OptionalTraitsConstexpr, IsOptional)
+{
+    static_assert(is_optional_v<Optional<int>>);
+    static_assert(is_optional_v<std::optional<int>>);
+    static_assert(!is_optional_v<int>);
+    static_assert(!is_optional_v<Some<int>>);
+}
+
+TEST(OptionalTraitsConstexpr, OptionalType)
+{
+    static_assert(std::same_as<optional_type_t<Optional<int>>, int>);
+    static_assert(std::same_as<optional_type_t<Optional<double>>, double>);
+    static_assert(std::same_as<optional_type_t<std::optional<int>>, int>);
+}
+
+// NOLINTEND(google-build-using-namespace,readability-identifier-length,performance-unnecessary-copy-initialization,cppcoreguidelines-special-member-functions)
+
+VIOLET_DIAGNOSTIC_POP

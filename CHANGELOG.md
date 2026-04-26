@@ -7,6 +7,18 @@ availableAt:
 ---
 
 ### unreleased
+#### Noelware.Violet
+- Add support for references in **Result** via `std::reference_wrapper`, like **Optional** ([`@auguwu`])
+- Add a new panic system that should resembles Rust's panic interface ([`@auguwu`])
+    - It'll use **std::terminate** by default, which means you can setup your own termination handlers via [`std::set_terminate`](https://en.cppreference.com/cpp/error/set_terminate).
+    - Assertions don't use the new panic system as they should only `std::abort` the process. They'll use the backtrace system once that's available.
+- Add `ANYHOW`, `ANYHOW_FMT`, `ENSURE`, and `ENSURE_FMT` macros in anyhow ([`@auguwu`])
+    - Originated and ported from [`Noelware/Eous@5f1fb256`](https://github.com/Noelware/Eous/blob/5f1fb25692f054acea6695eed9cc8e575439ff71/src/eous/Macros.h#L16-L27)
+- Add converting constructor for **Result\<T, E\>(Err\<F\>)** ([`@auguwu`])
+- Add more methods to **Result** (not available in `Result<void, E>` specialization):
+    - `Map`, `MapOr`, `MapOrElse`, `MapOrDefault`
+    - `UnwrapOrDefault`
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.05...master>
 
 ### 26.05.05

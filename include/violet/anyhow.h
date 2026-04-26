@@ -275,3 +275,16 @@ private:
 };
 
 } // namespace violet::anyhow
+
+#define ANYHOW(error) ::violet::anyhow::Error(error)
+#define ANYHOW_FMT(fmt, ...) ::violet::anyhow::Error(::std::format(fmt __VA_OPT__(, ) __VA_ARGS__))
+
+#define ENSURE(condition, error)                                                                                       \
+    if (!(condition)) {                                                                                                \
+        return ::violet::Err<::violet::anyhow::Error>(ANYHOW(error));                                                  \
+    }
+
+#define ENSURE_FMT(condition, fmt, ...)                                                                                \
+    if (!(condition)) {                                                                                                \
+        return ::violet::Err<::violet::anyhow::Error>(ANYHOW_FMT(fmt __VA_OPT__(, ) __VA_ARGS__));                     \
+    }

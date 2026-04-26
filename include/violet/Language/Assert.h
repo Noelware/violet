@@ -33,29 +33,70 @@
 
 namespace violet::internals {
 
-inline void DoAssertion(bool condition, const char* conditionString, std::string message, std::ostream& os = std::cerr,
+inline void FailAssertion(const char* conditionString, std::string message, std::ostream& os = std::cerr,
     std::source_location loc = std::source_location::current())
 {
-    VIOLET_UNLIKELY_IF(!condition)
-    {
-        Println(os, "[{}:{}:{}]: condition '{}' failed: {}", loc.file_name(), loc.line(), loc.column(), conditionString,
-            message);
+    Println(os, "[{}:{}:{}]: condition '{}' failed: {}", loc.file_name(), loc.line(), loc.column(), conditionString,
+        message);
 
-        std::abort();
-    }
+    std::abort();
 }
 
 } // namespace violet::internals
 
-#define VIOLET_ASSERT(cond, message) ::violet::internals::DoAssertion(cond, #cond, message)
-#define VIOLET_ASSERT0(cond) ::violet::internals::DoAssertion(cond, #cond, "assertion failed")
+#define VIOLET_ASSERT(condition, message)                                                                              \
+    do {                                                                                                               \
+        if (!(condition)) {                                                                                            \
+            ::violet::internals::FailAssertion(#condition, message, ::std::cerr, ::std::source_location::current());   \
+        }                                                                                                              \
+    } while (false);
 
-#define VIOLET_TODO_WITH(msg) ::violet::internals::DoAssertion(false, "todo!(" msg ")", msg)
+#define VIOLET_ASSERT0(condition)                                                                                      \
+    do {                                                                                                               \
+        if (!(condition)) {                                                                                            \
+            ::violet::internals::FailAssertion(                                                                        \
+                #condition, "assertion failed", ::std::cerr, ::std::source_location::current());                       \
+        }                                                                                                              \
+    } while (false);
+
+#define VIOLET_ASSERT_FMT(condition, fmt, ...)                                                                         \
+    do {                                                                                                               \
+        if (!(condition)) {                                                                                            \
+            ::violet::internals::FailAssertion(#condition, ::std::format(fmt __VA_OPT__(, ) __VA_ARGS__), ::std::cerr, \
+                ::std::source_location::current());                                                                    \
+        }                                                                                                              \
+    } while (false);
+
+#define VIOLET_TODO_WITH(msg)                                                                                          \
+    ::violet::internals::FailAssertion("todo!(" msg ")", msg, ::std::cerr, ::std::source_location::current())
+
 #define VIOLET_TODO() VIOLET_TODO_WITH("prototype not implemented")
 
 #ifndef NDEBUG
-#define VIOLET_DEBUG_ASSERT(expr, message) ::violet::internals::DoAssertion(expr, #expr, message)
-#define VIOLET_DEBUG_ASSERT0(expr) ::violet::internals::DoAssertion(expr, #expr, "[debug] assertion failed")
+#define VIOLET_DEBUG_ASSERT(condition, message)                                                                        \
+    do {                                                                                                               \
+        if (!(condition)) {                                                                                            \
+            ::violet::internals::FailAssertion(#condition, message, ::std::cerr, ::std::source_location::current());   \
+        }                                                                                                              \
+    } while (false);
+
+#define VIOLET_DEBUG_ASSERT0(condition)                                                                                \
+    do {                                                                                                               \
+        if (!(condition)) {                                                                                            \
+            ::violet::internals::FailAssertion(                                                                        \
+                #condition, "assertion failed", ::std::cerr, ::std::source_location::current());                       \
+        }                                                                                                              \
+    } while (false);
+
+#define VIOLET_DEBUG_ASSERT_FMT(condition, fmt, ...)                                                                   \
+    do {                                                                                                               \
+        if (!(condition)) {                                                                                            \
+            ::violet::internals::FailAssertion(#condition, ::std::format(fmt __VA_OPT__(, ) __VA_ARGS__), ::std::cerr, \
+                ::std::source_location::current());                                                                    \
+        }                                                                                                              \
+    } while (false);
 #else
-#define VIOLET_DEBUG_ASSERT(expr, message)
+#define VIOLET_DEBUG_ASSERT(condition, message) ((void)0)
+#define VIOLET_DEBUG_ASSERT0(condition) ((void)0)
+#define VIOLET_DEBUG_ASSERT_FMT(condition, fmt, ...) ((void)0)
 #endif

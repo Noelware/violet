@@ -36,7 +36,7 @@ namespace violet {
 #define __violet_pretty_function__ ""
 #endif
 
-#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(CLANG_CL) || VIOLET_COMPILER(MSVC)
+#if (VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(CLANG_CL) || VIOLET_COMPILER(MSVC)) && VIOLET_HAS_BUILTIN(COLUMN)
 #define __violet_column__ __builtin_COLUMN()
 #else
 #define __violet_column__ 0

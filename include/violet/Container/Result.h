@@ -396,7 +396,9 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         "`Result<T, E>` requires E to be movable or copyable");
     static_assert(sizeof(E) > 0, "`Result<T, E>` requires E to be a complete type");
 
-    using value_type = T;
+    using value_type = std::conditional_t<instanceof_v<std::reference_wrapper, T>,
+        std::remove_reference_t<std::unwrap_reference_t<T>>, T>;
+
     using error_type = E;
 
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Result);
@@ -408,7 +410,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     constexpr VIOLET_IMPLICIT Result(const U& ok) noexcept(std::is_nothrow_constructible_v<T, const U&>)
         : n_ok(true)
     {
-        std::construct_at(std::addressof(this->n_storage.Value), ok);
+        std::construct_at(std::addressof(this->getValueRef()), ok);
     }
 
     /// Constructs an `Ok` variant by moving `ok`.
@@ -419,7 +421,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         std::is_nothrow_constructible_v<T, U&&> && std::is_nothrow_move_constructible_v<U>)
         : n_ok(true)
     {
-        std::construct_at(std::addressof(this->n_storage.Value), VIOLET_MOVE(ok));
+        std::construct_at(std::addressof(this->getValueRef()), VIOLET_MOVE(ok));
     }
 
     template<typename U>
@@ -474,7 +476,22 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         std::construct_at(std::addressof(this->n_storage.Error), VIOLET_MOVE(err));
     }
 
-    ~Result()
+    /// Constructs the `Err` variant from a convertible error type.
+    template<typename F>
+        requires(!std::same_as<std::remove_cvref_t<F>, E> && std::convertible_to<const F&, E>)
+    constexpr VIOLET_IMPLICIT Result(const violet::Err<F>& err)
+    {
+        std::construct_at(std::addressof(this->n_storage.Error), violet::Err<E>(E(err.Error())));
+    }
+
+    template<typename F>
+        requires(!std::same_as<std::remove_cvref_t<F>, E> && std::convertible_to<F &&, E>)
+    constexpr VIOLET_IMPLICIT Result(violet::Err<F>&& err) noexcept(std::is_nothrow_constructible_v<E, F&&>)
+    {
+        std::construct_at(std::addressof(this->n_storage.Error), violet::Err<E>(E(VIOLET_MOVE(err).Error())));
+    }
+
+    constexpr ~Result()
     {
         this->destroy();
     }
@@ -484,7 +501,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         : n_ok(other.n_ok)
     {
         if (this->n_ok) {
-            std::construct_at(std::addressof(this->n_storage.Value), other.n_storage.Value);
+            std::construct_at(std::addressof(this->getValueRef()), other.n_storage.Value);
         } else {
             std::construct_at(std::addressof(this->n_storage.Error), other.n_storage.Error);
         }
@@ -497,7 +514,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             this->n_ok = other.n_ok;
 
             if (this->n_ok) {
-                std::construct_at(std::addressof(this->n_storage.Value), other.n_storage.Value);
+                std::construct_at(std::addressof(this->getValueRef()), other.n_storage.Value);
             } else {
                 std::construct_at(std::addressof(this->n_storage.Error), other.n_storage.Error);
             }
@@ -512,9 +529,9 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         : n_ok(std::exchange(other.n_ok, false))
     {
         if (this->n_ok) {
-            std::construct_at(std::addressof(this->n_storage.Value), other.n_storage.Value);
+            std::construct_at(std::addressof(this->getValueRef()), VIOLET_MOVE(other.n_storage.Value));
         } else {
-            std::construct_at(std::addressof(this->n_storage.Error), other.n_storage.Error);
+            std::construct_at(std::addressof(this->n_storage.Error), VIOLET_MOVE(other.n_storage.Error));
         }
     }
 
@@ -524,7 +541,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         if (this != &other) {
             // If both are same variant, move-assign; else destroy + reconstruct.
             if (this->n_ok && other.n_ok) {
-                this->n_storage.Value = VIOLET_MOVE(other.n_storage.Value);
+                this->getValueRef() = VIOLET_MOVE(other.n_storage.Value);
             } else if (!this->n_ok && !other.n_ok) {
                 this->n_storage.Error = VIOLET_MOVE(other.n_storage.Error);
             } else {
@@ -532,7 +549,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
                 this->n_ok = other.n_ok;
 
                 if (other.n_ok) {
-                    std::construct_at(std::addressof(this->n_storage.Value), VIOLET_MOVE(other.n_storage.Value));
+                    std::construct_at(std::addressof(this->getValueRef()), VIOLET_MOVE(other.n_storage.Value));
                 } else {
                     std::construct_at(std::addressof(this->n_storage.Error), VIOLET_MOVE(other.n_storage.Error));
                 }
@@ -548,8 +565,20 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
         return this->n_ok;
     }
 
+    /// Returns `true` if this is the `Ok` variant.
+    [[nodiscard]] constexpr auto Ok() noexcept -> bool
+    {
+        return this->n_ok;
+    }
+
     /// Returns `true` if this is the `Err` variant.
     [[nodiscard]] constexpr auto Err() const noexcept -> bool
+    {
+        return !this->Ok();
+    }
+
+    /// Returns `true` if this is the `Err` variant.
+    [[nodiscard]] constexpr auto Err() noexcept -> bool
     {
         return !this->Ok();
     }
@@ -558,20 +587,40 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Ok` variant.
-    [[nodiscard]] constexpr auto Value() noexcept VIOLET_LIFETIMEBOUND -> T&
+    [[nodiscard]] constexpr auto Value() & noexcept VIOLET_LIFETIMEBOUND -> T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
-        return this->n_storage.Value;
+        return this->getValueRef();
     }
 
     /// Returns a reference to the contained value.
     ///
     /// ## Panics
     /// This will provide a debug assertion to check if this result is the `Ok` variant.
-    [[nodiscard]] constexpr auto Value() const noexcept VIOLET_LIFETIMEBOUND -> const T&
+    [[nodiscard]] constexpr auto Value() const& noexcept VIOLET_LIFETIMEBOUND -> const T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
-        return this->n_storage.Value;
+        return this->getValueRef();
+    }
+
+    /// Returns a reference to the contained value.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if this result is the `Ok` variant.
+    [[nodiscard]] constexpr auto Value() && noexcept VIOLET_LIFETIMEBOUND -> T&&
+    {
+        VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
+        return VIOLET_MOVE(this->getValueRef());
+    }
+
+    /// Returns a reference to the contained value.
+    ///
+    /// ## Panics
+    /// This will provide a debug assertion to check if this result is the `Ok` variant.
+    [[nodiscard]] constexpr auto Value() const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
+    {
+        VIOLET_DEBUG_ASSERT(this->Ok(), "`Result<T, E>` invariant reached");
+        return VIOLET_MOVE(this->getValueRef());
     }
 
     /// Returns a reference to the contained error.
@@ -581,7 +630,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     [[nodiscard]] constexpr auto Error() & noexcept VIOLET_LIFETIMEBOUND -> E&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
-        return this->n_storage.Error.Error();
+        return this->getErrorRef();
     }
 
     /// Returns a reference to the contained error.
@@ -591,7 +640,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     [[nodiscard]] constexpr auto Error() const& noexcept VIOLET_LIFETIMEBOUND -> const E&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
-        return this->n_storage.Error.Error();
+        return this->getErrorRef();
     }
 
     /// Returns a reference to the contained error.
@@ -601,7 +650,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     [[nodiscard]] constexpr auto Error() const&& noexcept VIOLET_LIFETIMEBOUND -> const E&&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
-        return VIOLET_MOVE(this->n_storage.Error.Error());
+        return VIOLET_MOVE(this->getErrorRef());
     }
 
     /// Returns a reference to the contained error.
@@ -611,7 +660,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     [[nodiscard]] constexpr auto Error() && noexcept VIOLET_LIFETIMEBOUND -> E&&
     {
         VIOLET_DEBUG_ASSERT(this->Err(), "`Result<T, E>` invariant reached");
-        return VIOLET_MOVE(this->n_storage.Error.Error());
+        return VIOLET_MOVE(this->getErrorRef());
     }
 
     /// Converts `Result<Result<U, E>, E>` into `Result<U, E>`.
@@ -626,7 +675,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
             return VIOLET_MOVE(Value());
         }
 
-        return Err<E>(VIOLET_MOVE(Error()));
+        return violet::Err<E>(VIOLET_MOVE(Error()));
     }
 
     /// Applies `fun` to the contained `Ok` value and returns the result. If this is `Err`, propagates the error
@@ -640,15 +689,15 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     {
         using Ret = std::invoke_result_t<Fun, T>;
         if (this->Ok()) {
-            return Ok<Ret>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
+            return violet::Ok<Ret>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(Value())));
         }
 
-        return Err<E>(VIOLET_MOVE(Error()));
+        return violet::Err<E>(VIOLET_MOVE(Error()));
     }
 
     /// Invokes `fun` with the contained `Ok` value (if present) and returns `*this` unchanged.
     template<typename Fun>
-        requires(callable<Fun> && callable_returns<Fun, void, const T&>)
+        requires(callable<Fun, const value_type&> && callable_returns<Fun, void, const value_type&>)
     [[nodiscard]] constexpr auto Inspect(Fun&& fun) noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<T>()))) -> Result&
     {
@@ -674,47 +723,365 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
 
     /// Returns `true` if `Ok` and predicate returns `true`.
     template<typename Pred>
-        requires(callable<Pred> && callable_returns<Pred, bool, const T&>)
+        requires(callable<Pred, const value_type&> && callable_returns<Pred, bool, const value_type&>)
     [[nodiscard]] constexpr auto OkAnd(Pred&& pred) const
-        noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<T>()))) -> bool
+        noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<const value_type&>()))) -> bool
     {
         return this->Ok() && std::invoke(VIOLET_FWD(Pred, pred), Value());
     }
 
     /// Returns `true` if `Err` and predicate returns `true`.
     template<typename Pred>
-        requires(callable<Pred> && callable_returns<Pred, bool, const E&>)
+        requires(callable<Pred, const error_type&> && callable_returns<Pred, bool, const error_type&>)
     [[nodiscard]] constexpr auto ErrAnd(Pred&& pred) const
-        noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<E>()))) -> bool
+        noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<const error_type&>()))) -> bool
     {
         return this->Err() && std::invoke(VIOLET_FWD(Pred, pred), Error());
     }
 
-    /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
+    /// Applies `fun` to the contained value if present.
     ///
-    /// This will also enforce a fast, hot path if this container is in its `Ok` variant.
+    /// Equivalent to Rust's [`Result::map`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map)
     ///
-    /// ## Panics
-    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-    /// on if it is enabled or not.
-    ///
-    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-    /// instrinstics if [`std::unreachable`] isn't available.
-    ///
-    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) &
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T
+    /// @returns `Ok(fun(value))` if this container is engaged, `*this` otherwise.
+    template<typename Fun>
+        requires(callable<Fun, value_type&>)
+    [[nodiscard]] constexpr auto Map(Fun&& fun) & noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>())))
+        -> Result<std::invoke_result_t<Fun, value_type&>, E>
     {
-        VIOLET_LIKELY_IF(this->Ok())
-        {
-            return this->n_storage.Value;
+        using return_type = std::invoke_result_t<Fun, value_type&>;
+        if (this->Ok()) {
+            return violet::Ok<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef()));
         }
 
-        panicUnexpectly("tried to `Unwrap()` a error variant", loc);
+        return *this;
+    }
+
+    /// Applies `fun` to the contained value if present.
+    ///
+    /// Equivalent to Rust's [`Result::map`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map)
+    ///
+    /// @returns `Ok(fun(value))` if this container is engaged, `*this` otherwise.
+    template<typename Fun>
+        requires(callable<Fun, const value_type&>)
+    [[nodiscard]] constexpr auto Map(Fun&& fun) const& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&>())))
+        -> Result<std::invoke_result_t<Fun, const value_type&>, E>
+    {
+        using return_type = std::invoke_result_t<Fun, const value_type&>;
+        if (this->Ok()) {
+            return violet::Ok<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef()));
+        }
+
+        return *this;
+    }
+
+    /// Applies `fun` to the contained value if present.
+    ///
+    /// Equivalent to Rust's [`Result::map`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map)
+    ///
+    /// @returns `Ok(fun(value))` if this container is engaged, `*this` otherwise.
+    template<typename Fun>
+        requires(callable<Fun, value_type &&>)
+    [[nodiscard]] constexpr auto Map(Fun&& fun) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&&>())))
+        -> Result<std::invoke_result_t<Fun, value_type&&>, E>
+    {
+        using return_type = std::invoke_result_t<Fun, value_type&&>;
+        if (this->Ok()) {
+            return violet::Ok<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef())));
+        }
+
+        return *this;
+    }
+
+    /// Applies `fun` to the contained value if present.
+    ///
+    /// Equivalent to Rust's [`Result::map`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map)
+    ///
+    /// @returns `Ok(fun(value))` if this container is engaged, `*this` otherwise.
+    template<typename Fun>
+        requires(callable<Fun, const value_type &&>)
+    [[nodiscard]] constexpr auto Map(Fun&& fun) const&& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&&>())))
+        -> Result<std::invoke_result_t<Fun, const value_type&&>, E>
+    {
+        using return_type = std::invoke_result_t<Fun, const value_type&&>;
+        if (this->Ok()) {
+            return violet::Ok<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef())));
+        }
+
+        return *this;
+    }
+
+    /// Applies `fun` to the contained error if present.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_err`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_err)
+    ///
+    /// @returns `Err(fun(error))` if this container is not engaged, `*this` otherwise.
+    template<typename Fun>
+        requires(callable<Fun, error_type&>)
+    [[nodiscard]] constexpr auto MapErr(Fun&& fun) & noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<error_type&>())))
+        -> Result<value_type, std::invoke_result_t<Fun, error_type&>>
+    {
+        using return_type = std::invoke_result_t<Fun, error_type&>;
+        if (this->Err()) {
+            return violet::Err<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getErrorRef()));
+        }
+
+        return VIOLET_MOVE(violet::Ok<value_type>(this->getValueRef()));
+    }
+
+    /// Applies `fun` to the contained error if present.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_err`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_err)
+    ///
+    /// @returns `Err(fun(error))` if this container is not engaged, `*this` otherwise.
+    template<typename Fun>
+        requires(callable<Fun, const error_type&>)
+    [[nodiscard]] constexpr auto MapErr(Fun&& fun) const& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const error_type&>())))
+        -> Result<value_type, std::invoke_result_t<Fun, const error_type&>>
+    {
+        using return_type = std::invoke_result_t<Fun, error_type&>;
+        if (this->Err()) {
+            return violet::Err<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getErrorRef()));
+        }
+
+        return VIOLET_MOVE(violet::Ok<value_type>(this->getValueRef()));
+    }
+
+    /// Applies `fun` to the contained error if present.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_err`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_err)
+    ///
+    /// @returns `Err(fun(error))` if this container is not engaged, `*this` otherwise.
+    template<typename Fun>
+        requires(callable<Fun, error_type &&>)
+    [[nodiscard]] constexpr auto MapErr(Fun&& fun) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<error_type&&>())))
+        -> Result<value_type, std::invoke_result_t<Fun, error_type&&>>
+    {
+        using return_type = std::invoke_result_t<Fun, error_type&&>;
+        if (this->Err()) {
+            return violet::Err<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getErrorRef())));
+        }
+
+        return VIOLET_MOVE(violet::Ok<value_type>(VIOLET_MOVE(this->getValueRef())));
+    }
+
+    /// Applies `fun` to the contained error if present.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_err`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_err)
+    ///
+    /// @returns `Err(fun(error))` if this container is not engaged, `*this` otherwise.
+    template<typename Fun>
+        requires(callable<Fun, const error_type &&>)
+    [[nodiscard]] constexpr auto MapErr(Fun&& fun) const&& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const error_type&&>())))
+        -> Result<value_type, std::invoke_result_t<Fun, const error_type&&>>
+    {
+        using return_type = std::invoke_result_t<Fun, const error_type&&>;
+        if (this->Err()) {
+            return violet::Err<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getErrorRef())));
+        }
+
+        return VIOLET_MOVE(violet::Ok<value_type>(VIOLET_MOVE(this->getValueRef())));
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_or`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or)
+    template<typename U, typename Fun>
+        requires(callable<Fun, value_type&> && std::convertible_to<std::invoke_result_t<Fun, value_type&>, U>)
+    constexpr auto MapOr(U&& defaultValue, Fun&& fun) & -> U
+    {
+        if (this->Ok()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef());
+        }
+
+        return VIOLET_FWD(U, defaultValue);
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_or`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or)
+    template<typename U, typename Fun>
+        requires(
+            callable<Fun, const value_type&> && std::convertible_to<std::invoke_result_t<Fun, const value_type&>, U>)
+    constexpr auto MapOr(U&& defaultValue, Fun&& fun) const& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&>()))) -> U
+    {
+        if (this->Ok()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef());
+        }
+
+        return VIOLET_FWD(U, defaultValue);
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_or`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or)
+    template<typename U, typename Fun>
+        requires(callable<Fun, value_type &&> && std::convertible_to<std::invoke_result_t<Fun, value_type &&>, U>)
+    constexpr auto MapOr(U&& defaultValue, Fun&& fun) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&&>()))) -> U
+    {
+        if (this->Ok()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef()));
+        }
+
+        return VIOLET_FWD(U, defaultValue);
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_or`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or)
+    template<typename U, typename Fun>
+        requires(callable<Fun, const value_type &&>
+            && std::convertible_to<std::invoke_result_t<Fun, const value_type &&>, U>)
+    constexpr auto MapOr(U&& defaultValue, Fun&& fun) const&& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&&>()))) -> U
+    {
+        if (this->Ok()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef()));
+        }
+
+        return VIOLET_FWD(U, defaultValue);
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise calls `defaultValue`
+    /// with the error that is contained instead.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_or_else`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or_else)
+    template<typename U, typename Default, typename Fun>
+        requires(callable<Fun, value_type&> && callable<Default, error_type&> && callable_returns<Fun, U, value_type&>
+            && callable_returns<Default, U, error_type&>)
+    constexpr auto MapOrElse(Default&& defaultValue, Fun&& fun) & -> U
+    {
+        if (this->Ok()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef());
+        }
+
+        return std::invoke(VIOLET_FWD(Default, defaultValue), this->getErrorRef());
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise calls `defaultValue`
+    /// with the error that is contained instead.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_or_else`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or_else)
+    template<typename U, typename Default, typename Fun>
+        requires(callable<Fun, const value_type&> && callable<Default, const error_type&>
+            && callable_returns<Fun, U, const value_type&> && callable_returns<Default, U, const error_type&>)
+    constexpr auto MapOrElse(Default&& defaultValue, Fun&& fun) const& -> U
+    {
+        if (this->Ok()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef());
+        }
+
+        return std::invoke(VIOLET_FWD(Default, defaultValue), this->getErrorRef());
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise calls `defaultValue`
+    /// with the error that is contained instead.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_or_else`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or_else)
+    template<typename U, typename Default, typename Fun>
+        requires(callable<Fun, value_type &&> && callable<Default, error_type &&>
+            && callable_returns<Fun, U, value_type &&> && callable_returns<Default, U, error_type &&>)
+    constexpr auto MapOrElse(Default&& defaultValue, Fun&& fun) && -> U
+    {
+        if (this->Ok()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef()));
+        }
+
+        return std::invoke(VIOLET_FWD(Default, defaultValue), VIOLET_MOVE(this->getErrorRef()));
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise calls `defaultValue`
+    /// with the error that is contained instead.
+    ///
+    /// Equivalent to Rust's
+    /// [`Result::map_or_else`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or_else)
+    template<typename U, typename Default, typename Fun>
+        requires(callable<Fun, const value_type &&> && callable<Default, const error_type &&>
+            && callable_returns<Fun, U, const value_type &&> && callable_returns<Default, U, const error_type &&>)
+    constexpr auto MapOrElse(Default&& defaultValue, Fun&& fun) const&& -> U
+    {
+        if (this->Ok()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef()));
+        }
+
+        return std::invoke(VIOLET_FWD(Default, defaultValue), VIOLET_MOVE(this->getErrorRef()));
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise returns a default
+    /// constructible instance of `U`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::map_or_default`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or_default)
+    template<typename U, typename Fun>
+        requires(violet::callable<Fun, value_type&> && std::is_default_constructible_v<U>
+            && std::convertible_to<std::invoke_result_t<Fun, value_type&>, U>)
+    constexpr auto MapOrDefault(Fun&& fun) & noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>()))) -> U
+    {
+        return this->MapOr(U{ }, VIOLET_FWD(Fun, fun));
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise returns a default
+    /// constructible instance of `U`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::map_or_default`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or_default)
+    template<typename U, typename Fun>
+        requires(violet::callable<Fun, const value_type&> && std::is_default_constructible_v<U>
+            && std::convertible_to<std::invoke_result_t<Fun, const value_type&>, U>)
+    constexpr auto MapOrDefault(Fun&& fun) const& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&>()))) -> U
+    {
+        return this->MapOr(U{ }, VIOLET_FWD(Fun, fun));
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise returns a default
+    /// constructible instance of `U`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::map_or_default`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or_default)
+    template<typename U, typename Fun>
+        requires(violet::callable<Fun, value_type &&> && std::is_default_constructible_v<U>
+            && std::convertible_to<std::invoke_result_t<Fun, value_type &&>, U>)
+    constexpr auto MapOrDefault(Fun&& fun) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&&>()))) -> U
+    {
+        return this->MapOr(U{ }, VIOLET_FWD(Fun, fun));
+    }
+
+    /// Applies `fun` to the contained value if present, otherwise returns a default
+    /// constructible instance of `U`.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::map_or_default`](https://doc.rust-lang.org/1.93.0/std/result/enum.Result.html#method.map_or_default)
+    template<typename U, typename Fun>
+        requires(violet::callable<Fun, const value_type &&> && std::is_default_constructible_v<U>
+            && std::convertible_to<std::invoke_result_t<Fun, const value_type &&>, U>)
+    constexpr auto MapOrDefault(Fun&& fun) const&& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&&>()))) -> U
+    {
+        return this->MapOr(U{ }, VIOLET_FWD(Fun, fun));
     }
 
     /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
@@ -730,18 +1097,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) &&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) & -> value_type
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
-            return VIOLET_MOVE(this->n_storage.Value);
+            return this->getValueRef();
         }
 
-        panicUnexpectly("tried to `Unwrap()` a error variant", loc);
+        VIOLET_PANIC_USERLAND("tried to `Unwrap()` a error variant", loc);
     }
 
     /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
@@ -757,18 +1120,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) && -> value_type
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
-            return this->n_storage.Value;
+            return VIOLET_MOVE(this->getValueRef());
         }
 
-        panicUnexpectly("tried to `Unwrap()` a error variant", loc);
+        VIOLET_PANIC_USERLAND("tried to `Unwrap()` a error variant", loc);
     }
 
     /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
@@ -784,18 +1143,37 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const&&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const& -> value_type
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
-            return VIOLET_MOVE(this->n_storage.Value);
+            return this->getValueRef();
         }
 
-        panicUnexpectly("tried to `Unwrap()` a error variant", loc);
+        VIOLET_PANIC_USERLAND("tried to `Unwrap()` a error variant", loc);
+    }
+
+    /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
+    ///
+    /// This will also enforce a fast, hot path if this container is in its `Ok` variant.
+    ///
+    /// ## Panics
+    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
+    /// on if it is enabled or not.
+    ///
+    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
+    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
+    /// instrinstics if [`std::unreachable`] isn't available.
+    ///
+    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
+    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const&& -> value_type
+    {
+        VIOLET_LIKELY_IF(this->Ok())
+        {
+            return VIOLET_MOVE(this->getValueRef());
+        }
+
+        VIOLET_PANIC_USERLAND("tried to `Unwrap()` a error variant", loc);
     }
 
     /// Forefully retrieve this container's `Err` variant or panics if no error was present.
@@ -811,18 +1189,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) &
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> E
+    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) & -> error_type
     {
         VIOLET_LIKELY_IF(this->Err())
         {
-            return this->n_storage.Error.Error();
+            return this->getErrorRef();
         }
 
-        panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
+        VIOLET_PANIC_USERLAND("tried to `Unwrap()` a ok variant", loc);
     }
 
     /// Forefully retrieve this container's `Err` variant or panics if no error was present.
@@ -838,18 +1212,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) &&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> E
+    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) && -> error_type
     {
         VIOLET_LIKELY_IF(this->Err())
         {
-            return VIOLET_MOVE(this->n_storage.Error.Error());
+            return VIOLET_MOVE(this->getErrorRef());
         }
 
-        panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
+        VIOLET_PANIC_USERLAND("tried to `Unwrap()` a ok variant", loc);
     }
 
     /// Forefully retrieve this container's `Err` variant or panics if no error was present.
@@ -865,18 +1235,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) const&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> E
+    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) const& -> error_type
     {
         VIOLET_LIKELY_IF(this->Err())
         {
-            return this->n_storage.Error.Error();
+            return this->getErrorRef();
         }
 
-        panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
+        VIOLET_PANIC_USERLAND("tried to `Unwrap()` a ok variant", loc);
     }
 
     /// Forefully retrieve this container's `Err` variant or panics if no error was present.
@@ -892,18 +1258,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) const&&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> E
+    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) const&& -> E
     {
-        VIOLET_LIKELY_IF(this->Ok())
+        VIOLET_LIKELY_IF(this->Err())
         {
-            return VIOLET_MOVE(this->n_storage.Error.Error());
+            return VIOLET_MOVE(this->getErrorRef());
         }
 
-        panicUnexpectly("tried to `Unwrap()` an ok variant", loc);
+        VIOLET_PANIC_USERLAND("tried to `Unwrap()` a ok variant", loc);
     }
 
     /// Returns the contained value or panics with `message` if no value is present.
@@ -919,18 +1281,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) &
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) & -> value_type
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
-            return this->n_storage.Value;
+            return this->getValueRef();
         }
 
-        panicUnexpectly(message, loc);
+        VIOLET_PANIC_USERLAND(message, loc);
     }
 
     /// Returns the contained value or panics with `message` if no value is present.
@@ -946,18 +1304,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) &&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) && -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
-            return VIOLET_MOVE(this->n_storage.Value);
+            return VIOLET_MOVE(this->getValueRef());
         }
 
-        panicUnexpectly(message, loc);
+        VIOLET_PANIC_USERLAND(message, loc);
     }
 
     /// Returns the contained value or panics with `message` if no value is present.
@@ -973,18 +1327,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const& -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
-            return this->n_storage.Value;
+            return this->getValueRef();
         }
 
-        panicUnexpectly(message, loc);
+        VIOLET_PANIC_USERLAND(message, loc);
     }
 
     /// Returns the contained value or panics with `message` if no value is present.
@@ -1000,70 +1350,66 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const&&
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
-        -> T
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const&& -> T
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
-            return VIOLET_MOVE(this->n_storage.Value);
+            return VIOLET_MOVE(this->getValueRef());
         }
 
-        panicUnexpectly(message, loc);
+        VIOLET_PANIC_USERLAND(message, loc);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
     [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> T
     {
-        return this->Ok() ? this->n_storage.Value : VIOLET_MOVE(defaultValue);
+        return this->Ok() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
     [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> T
     {
-        return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
+        return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
     [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> T
     {
-        return this->Ok() ? this->n_storage.Value : VIOLET_MOVE(defaultValue);
+        return this->Ok() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
     [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
     {
-        return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : VIOLET_MOVE(defaultValue);
+        return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() & noexcept -> T
         requires(std::is_default_constructible_v<T>)
     {
-        return this->Ok() ? this->n_storage.Value : T{ };
+        return this->Ok() ? this->getValueRef() : T{ };
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() const& noexcept -> value_type
         requires(std::is_default_constructible_v<T>)
     {
-        return this->Ok() ? this->n_storage.Value : T{ };
+        return this->Ok() ? this->getValueRef() : T{ };
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() && noexcept -> value_type
         requires(std::is_default_constructible_v<T>)
     {
-        return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : T{ };
+        return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : T{ };
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() const&& noexcept -> value_type
         requires(std::is_default_constructible_v<T>)
     {
-        return this->Ok() ? VIOLET_MOVE(this->n_storage.Value) : T{ };
+        return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : T{ };
     }
 
     /// Returns the contained value without checking its state.
@@ -1072,7 +1418,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Undefined behavior if no value is present.
     [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> T&
     {
-        return this->n_storage.Value;
+        return this->getValueRef();
     }
 
     /// Returns the contained value without checking its state.
@@ -1081,7 +1427,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Undefined behavior if no value is present.
     [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const T&
     {
-        return this->n_storage.Value;
+        return this->getValueRef();
     }
 
     /// Returns the contained value without checking its state.
@@ -1090,7 +1436,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Undefined behavior if no value is present.
     [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> T&&
     {
-        return VIOLET_MOVE(this->n_storage.Value);
+        return VIOLET_MOVE(this->getValueRef());
     }
 
     /// Returns the contained value without checking its state.
@@ -1099,7 +1445,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Undefined behavior if no value is present.
     [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
     {
-        return VIOLET_MOVE(this->n_storage.Value);
+        return VIOLET_MOVE(this->getValueRef());
     }
 
     /// Returns the contained error without checking its state.
@@ -1108,7 +1454,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Undefined behavior if no error is present.
     [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> E&
     {
-        return this->n_storage.Error.Error();
+        return this->getErrorRef();
     }
 
     /// Returns the contained error without checking its state.
@@ -1117,7 +1463,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Undefined behavior if no error is present.
     [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const E&
     {
-        return this->n_storage.Error.Error();
+        return this->getErrorRef();
     }
 
     /// Returns the contained error without checking its state.
@@ -1126,7 +1472,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Undefined behavior if no error is present.
     [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> E&&
     {
-        return VIOLET_MOVE(this->n_storage.Error.Error());
+        return VIOLET_MOVE(this->getErrorRef());
     }
 
     /// Returns the contained error without checking its state.
@@ -1135,43 +1481,43 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Undefined behavior if no error is present.
     [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const E&&
     {
-        return VIOLET_MOVE(this->n_storage.Error.Error());
+        return VIOLET_MOVE(this->getErrorRef());
     }
 
     constexpr auto operator*() & VIOLET_LIFETIMEBOUND->T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
-        return this->n_storage.Value;
+        return this->getValueRef();
     }
 
     constexpr auto operator*() && VIOLET_LIFETIMEBOUND->T&&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
-        return VIOLET_MOVE(this->n_storage.Value);
+        return VIOLET_MOVE(this->getValueRef());
     }
 
     constexpr auto operator*() const & VIOLET_LIFETIMEBOUND->const T&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
-        return this->n_storage.Value;
+        return this->getValueRef();
     }
 
     constexpr auto operator*() const && VIOLET_LIFETIMEBOUND->const T&&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
-        return VIOLET_MOVE(this->n_storage.Value);
+        return VIOLET_MOVE(this->getValueRef());
     }
 
     constexpr auto operator->() -> T*
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Accessing a Result in Err state");
-        return std::addressof(this->n_storage.Value);
+        return std::addressof(this->getValueRef());
     }
 
     constexpr auto operator->() const -> const T*
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Accessing a Result in Err state");
-        return std::addressof(this->n_storage.Value);
+        return std::addressof(this->getValueRef());
     }
 
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
@@ -1207,7 +1553,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     }
 
 private:
-    mutable bool n_ok = false;
+    bool n_ok = false;
 
     // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
     union storage_t {
@@ -1215,15 +1561,17 @@ private:
         violet::Err<E> Error;
 
         constexpr storage_t() noexcept { }
-        ~storage_t() { }
+        constexpr ~storage_t() { }
     } n_storage;
 
-    void destroy() noexcept(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<E>)
+    constexpr void destroy() noexcept(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<E>)
     {
         if (this->n_ok) {
             if constexpr (!std::is_trivially_destructible_v<T>) {
                 this->n_storage.Value.~T();
             }
+
+            this->n_ok = false;
         } else {
             if constexpr (!std::is_trivially_destructible_v<E>) {
                 this->n_storage.Error.~Err<E>();
@@ -1231,20 +1579,108 @@ private:
         }
     }
 
-    [[noreturn]] VIOLET_COLD static void panicUnexpectly(Str message, [[maybe_unused]] violet::SourceLocation loc)
-#ifndef VIOLET_HAS_EXCEPTIONS
-        noexcept
-#endif
+    constexpr auto getValueRef() & noexcept -> value_type&
     {
-#ifdef VIOLET_HAS_EXCEPTIONS
-        throw std::logic_error(std::format(
-            "[violet::Result<T, E>][{}:{}:{} ({})]: {}", loc.File, loc.Line, loc.Column, loc.Function, message));
-#else
-        violet::PrintErrln(
-            "[violet::Result<T, E>][{}:{}:{} ({})]: panic: {}", loc.File, loc.Line, loc.Column, loc.Function, message);
+        if VIOLET_IF_CONSTEVAL {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return this->n_storage.Value.get();
+            } else {
+                return this->n_storage.Value;
+            }
+        } else {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return *std::launder(reinterpret_cast<T*>(&this->n_storage.Value))->get();
+            }
 
-        VIOLET_UNREACHABLE();
-#endif
+            return *std::launder(reinterpret_cast<T*>(&this->n_storage.Value));
+        }
+    }
+
+    constexpr auto getValueRef() const& noexcept -> const value_type&
+    {
+        if VIOLET_IF_CONSTEVAL {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return this->n_storage.Value.get();
+            } else {
+                return this->n_storage.Value;
+            }
+        } else {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return *std::launder(reinterpret_cast<const T*>(&this->n_storage.Value))->get();
+            }
+
+            return *std::launder(reinterpret_cast<const T*>(&this->n_storage.Value));
+        }
+    }
+
+    constexpr auto getValueRef() && noexcept -> value_type&&
+    {
+        if VIOLET_IF_CONSTEVAL {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return VIOLET_MOVE(this->n_storage.Value).get();
+            } else {
+                return VIOLET_MOVE(this->n_storage.Value);
+            }
+        } else {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return VIOLET_MOVE(*std::launder(reinterpret_cast<T*>(&this->n_storage.Value)))->get();
+            }
+
+            return VIOLET_MOVE(*std::launder(reinterpret_cast<T*>(&this->n_storage.Value)));
+        }
+    }
+
+    constexpr auto getValueRef() const&& noexcept -> const value_type&&
+    {
+        if VIOLET_IF_CONSTEVAL {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return VIOLET_MOVE(this->n_storage.Value).get();
+            } else {
+                return VIOLET_MOVE(this->n_storage.Value);
+            }
+        } else {
+            if constexpr (instanceof_v<std::reference_wrapper, T>) {
+                return VIOLET_MOVE(*std::launder(reinterpret_cast<const T*>(&this->n_storage.Value)))->get();
+            }
+
+            return VIOLET_MOVE(*std::launder(reinterpret_cast<const T*>(&this->n_storage.Value)));
+        }
+    }
+
+    constexpr auto getErrorRef() & noexcept -> error_type&
+    {
+        if VIOLET_IF_CONSTEVAL {
+            return this->n_storage.Error.Error();
+        } else {
+            return std::launder(std::addressof(this->n_storage.Error))->Error();
+        }
+    }
+
+    constexpr auto getErrorRef() const& noexcept -> const error_type&
+    {
+        if VIOLET_IF_CONSTEVAL {
+            return this->n_storage.Error.Error();
+        } else {
+            return std::launder(std::addressof(this->n_storage.Error))->Error();
+        }
+    }
+
+    constexpr auto getErrorRef() && noexcept -> error_type&&
+    {
+        if VIOLET_IF_CONSTEVAL {
+            return VIOLET_MOVE(this->n_storage.Error.Error());
+        } else {
+            return std::launder(std::addressof(this->n_storage.Error))->Error();
+        }
+    }
+
+    constexpr auto getErrorRef() const&& noexcept -> const error_type&&
+    {
+        if VIOLET_IF_CONSTEVAL {
+            return VIOLET_MOVE(this->n_storage.Error.Error());
+        } else {
+            return std::launder(std::addressof(this->n_storage.Error))->Error();
+        }
     }
 };
 
@@ -1296,7 +1732,7 @@ struct Result<void, E> final {
     {
     }
 
-    ~Result()
+    constexpr ~Result()
     {
         if (this->n_value != nullptr) {
             delete this->n_value;
@@ -1376,10 +1812,10 @@ struct Result<void, E> final {
     {
         using Ret = std::invoke_result_t<Fun>;
         if (this->Ok()) {
-            return Ok<Ret>(std::invoke(VIOLET_FWD(Fun, fun)));
+            return violet::Ok<Ret>(std::invoke(VIOLET_FWD(Fun, fun)));
         }
 
-        return Err<E>(VIOLET_MOVE(Error()));
+        return violet::Err<E>(VIOLET_MOVE(Error()));
     }
 
     template<typename Fun>
@@ -1419,7 +1855,7 @@ struct Result<void, E> final {
     }
 
     template<typename Pred>
-        requires(callable<Pred> && callable_returns<Pred, bool, const E&>)
+        requires(callable<Pred, const E&> && callable_returns<Pred, bool, const E&>)
     constexpr auto ErrAnd(Pred&& pred) const noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<E>())))
         -> bool
     {
