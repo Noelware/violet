@@ -96,7 +96,6 @@ cat <<EOF > "$SCRIPT_DIR/.bazeldist/MODULE.bazel"
 module(
     name = "violet",
     version = "$VERSION",
-    compatibility_level = 0,
     repo_name = "org_noelware_violet",
 )
 

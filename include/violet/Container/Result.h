@@ -1377,7 +1377,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) const&& -> E
+    constexpr auto UnwrapErr(violet::SourceLocation loc = std::source_location::current()) const&& -> error_type
     {
         VIOLET_LIKELY_IF(this->Err())
         {
@@ -1423,7 +1423,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) && -> T
+    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) && -> value_type
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -1446,7 +1446,8 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const& -> T
+    constexpr auto Except(
+        Str message, violet::SourceLocation loc = std::source_location::current()) const& -> value_type
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -1469,7 +1470,8 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// instrinstics if [`std::unreachable`] isn't available.
     ///
     /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) const&& -> T
+    constexpr auto Except(
+        Str message, violet::SourceLocation loc = std::source_location::current()) const&& -> value_type
     {
         VIOLET_LIKELY_IF(this->Ok())
         {
@@ -1480,31 +1482,31 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) & noexcept -> value_type
     {
         return this->Ok() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) && noexcept -> value_type
     {
         return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const& noexcept -> value_type
     {
         return this->Ok() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> T
+    [[nodiscard]] constexpr auto UnwrapOr(T&& defaultValue) const&& noexcept -> value_type
     {
         return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
-    constexpr auto UnwrapOrDefault() & noexcept -> T
+    constexpr auto UnwrapOrDefault() & noexcept -> value_type
         requires(std::is_default_constructible_v<T>)
     {
         return this->Ok() ? this->getValueRef() : T{ };
@@ -1535,7 +1537,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> T&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> value_type&
     {
         return this->getValueRef();
     }
@@ -1544,7 +1546,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const T&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const value_type&
     {
         return this->getValueRef();
     }
@@ -1553,7 +1555,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> T&&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> value_type&&
     {
         return VIOLET_MOVE(this->getValueRef());
     }
@@ -1562,7 +1564,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
+    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const value_type&&
     {
         return VIOLET_MOVE(this->getValueRef());
     }
@@ -1571,7 +1573,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no error is present.
-    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> E&
+    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> error_type&
     {
         return this->getErrorRef();
     }
@@ -1580,7 +1582,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no error is present.
-    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const E&
+    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const error_type&
     {
         return this->getErrorRef();
     }
@@ -1589,7 +1591,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no error is present.
-    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> E&&
+    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> error_type&&
     {
         return VIOLET_MOVE(this->getErrorRef());
     }
@@ -1598,42 +1600,42 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     ///
     /// # Safety
     /// Undefined behavior if no error is present.
-    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const E&&
+    [[nodiscard]] constexpr auto UnwrapErrUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const error_type&&
     {
         return VIOLET_MOVE(this->getErrorRef());
     }
 
-    constexpr auto operator*() & VIOLET_LIFETIMEBOUND->T&
+    constexpr auto operator*() & VIOLET_LIFETIMEBOUND->value_type&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
         return this->getValueRef();
     }
 
-    constexpr auto operator*() && VIOLET_LIFETIMEBOUND->T&&
+    constexpr auto operator*() && VIOLET_LIFETIMEBOUND->value_type&&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
         return VIOLET_MOVE(this->getValueRef());
     }
 
-    constexpr auto operator*() const & VIOLET_LIFETIMEBOUND->const T&
+    constexpr auto operator*() const & VIOLET_LIFETIMEBOUND->const value_type&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
         return this->getValueRef();
     }
 
-    constexpr auto operator*() const && VIOLET_LIFETIMEBOUND->const T&&
+    constexpr auto operator*() const && VIOLET_LIFETIMEBOUND->const value_type&&
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Dereferencing a Result in Err state");
         return VIOLET_MOVE(this->getValueRef());
     }
 
-    constexpr auto operator->() -> T*
+    constexpr auto operator->() -> value_type*
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Accessing a Result in Err state");
         return std::addressof(this->getValueRef());
     }
 
-    constexpr auto operator->() const -> const T*
+    constexpr auto operator->() const -> const value_type*
     {
         VIOLET_DEBUG_ASSERT(this->Ok(), "Accessing a Result in Err state");
         return std::addressof(this->getValueRef());

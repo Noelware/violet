@@ -57,6 +57,12 @@ private:
 /// trigger cancellation. A source can produce any number of [`CancellationToken`]s via the
 /// [`CancellationTokenSource::Token()`] method, which shares the underlying state.
 ///
+/// > [!NOTE]
+/// > **CancellationTokenSource** is cheaply copyable; all copies share the same
+/// > underlying cancellation state. Calling [`CancellationTokenSource::Cancel()`]
+/// > on **any** copy cancels all tokens derived from any copy of the same source.
+///
+///
 /// ## Example
 /// ```cpp
 /// #include <violet/Experimental/Threading/CancellationToken.h>
@@ -76,8 +82,7 @@ private:
 /// Once [`Cancel()`] has been called it cannot be undone. If you need
 /// re-arming semantics, create a new `CancellationTokenSource`.
 struct VIOLET_API CancellationTokenSource final {
-    VIOLET_DISALLOW_COPY(CancellationTokenSource);
-    VIOLET_IMPLICIT_MOVE(CancellationTokenSource);
+    VIOLET_IMPLICIT_COPY_AND_MOVE(CancellationTokenSource);
 
     VIOLET_IMPLICIT CancellationTokenSource() noexcept
         : n_state(std::make_shared<state_t>())
@@ -101,6 +106,10 @@ struct VIOLET_API CancellationTokenSource final {
     ///
     /// > [!NOTE]
     /// > Calling [`CancellationTokenSource::Cancel()`] more than once is a no-op.
+    ///
+    /// > [!IMPORTANT]
+    /// > Calling `Cancel` affects **all copies** of this [`CancellationTokenSource`], not just
+    /// > the instance `Cancel()` is called on.
     VIOLET_API void Cancel() const noexcept;
 
 private:
@@ -139,7 +148,6 @@ private:
 ///             doWork();
 ///         }
 ///     });
-///
 ///
 /// // ...after a while
 /// cts.Cancel();

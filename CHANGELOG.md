@@ -7,11 +7,20 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.05.07...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.08...master>
+
+### 26.05.08
+#### Noelware.Violet
+- Fix more regressions in `Result` from returning the wrong type ([`@auguwu`])
+
+#### Noelware.Violet.Experimental.Threading
+- Make **CancellationTokenSource** copyable ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.07...26.05.08>
 
 ### 26.05.07
 #### Noelware.Violet
-- Fix regressions in **Result** and **Optional** by adding tests for std::reference_wrapper and `std::expected` on C++23 for **Result** and `std::optional` for **Optional**
+- Fix regressions in **Result** and **Optional** by adding tests for std::reference_wrapper and `std::expected` on C++23 for **Result** and `std::optional` for **Optional** ([`@auguwu`])
 
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.06...26.05.07>
 

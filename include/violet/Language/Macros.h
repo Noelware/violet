@@ -331,6 +331,8 @@
 #define VIOLET_LIFETIMEBOUND [[clang::lifetimebound]]
 #elif VIOLET_HAS_CPP_ATTRIBUTE(msvc::lifetimebound)
 #define VIOLET_LIFETIMEBOUND [[msvc::lifetimebound]]
+#elif VIOLET_HAS_CPP_ATTRIBUTE(lifetimebound)
+#define VIOLET_LIFETIMEBOUND [[lifetimebound]]
 #else
 #define VIOLET_LIFETIMEBOUND
 #endif
