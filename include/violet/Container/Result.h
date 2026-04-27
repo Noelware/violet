@@ -569,7 +569,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
     /// Move-constructs from another `Result`. Preserves the variant and transfers ownership.
     constexpr VIOLET_IMPLICIT Result(Result&& other) noexcept(
         std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
-        : n_ok(std::exchange(other.n_ok, false))
+        : n_ok(other.n_ok)
     {
         if (this->n_ok) {
             std::construct_at(std::addressof(this->n_storage.Value), VIOLET_MOVE(other.n_storage.Value));
