@@ -33,6 +33,6 @@ bazel_dep(name = "rules_shell", version = "0.8.0", dev_dependency = True)
 bazel_dep(name = "minato", dev_dependency = True)
 git_override(
     module_name = "minato",
-    commit = "9616121fe1039032a658b6ddb435dfd4101e08e5",
+    commit = "62a6dffeafc46bd67b56fbc20a17ddbb33ea2004",
     remote = "https://github.com/auguwu/minato.git",
 )
