@@ -27,17 +27,45 @@
 
 namespace violet::iter {
 
+/// An iterator adapter that allows peeking at the next element without
+/// consuming it.
+///
+/// `Peekable` wraps an existing iterator and adds a [`Peekable::Peek`] method that
+/// returns a reference to the next element without advancing the iterator.
+/// The peeked value is cached internally and returned on the subsequent
+/// call to [`Peekable::Next`].
+///
+/// This is useful for lookahead-based parsing, conditional consumption, and
+/// any situation where a decision depends on the next element before
+/// committing to consume it.
+///
+/// ## Examples
+/// ```cpp
+/// #include <violet/Iterator/Peekable.h>
+/// #include <violet/Print.h>
+///
+/// auto items = violet::MkIterable(violet::Vec<violet::Int32>({1, 2, 3})).Peekable();
+/// auto peeked = items.Peek(); // Some(1)
+/// assert(peeked == items.Peek());
+///
+/// auto first = items.Next(); // consume
+/// assert(first == peeked);
+/// assert(first != items.Peek());
+/// ```
 template<Iterable Impl>
 struct VIOLET_API Peekable final: public Iterator<Peekable<Impl>> {
     using Item = TypeOf<Impl>;
+    using underlying_iterator = Impl;
 
     VIOLET_DISALLOW_CONSTRUCTOR(Peekable);
+    ~Peekable() = default;
 
-    VIOLET_IMPLICIT Peekable(Impl iter)
-        : n_iter(iter)
-    {
-    }
-
+    /// Returns the next element without consuming it, or `Nothing` if the
+    /// iterator is exhausted.
+    ///
+    /// The first call to `Peek` advances the underlying iterator by one
+    /// position and caches the result. Subsequent calls to `Peek` return
+    /// the same cached value until [`Next`] is called to consume it.
     auto Peek() noexcept -> Optional<Item>
     {
         if (!this->n_peeked.HasValue()) {
@@ -51,6 +79,12 @@ struct VIOLET_API Peekable final: public Iterator<Peekable<Impl>> {
         return Nothing;
     }
 
+    /// Advances the iterator and returns the next element, or `Nothing` if
+    /// the iterator is exhausted.
+    ///
+    /// If a value was previously cached by [`Peek`], that value is returned
+    /// and the cache is cleared. Otherwise, the underlying iterator is
+    /// advanced directly.
     auto Next() noexcept -> Optional<Item>
     {
         if (this->n_peeked.HasValue()) {
@@ -64,6 +98,13 @@ struct VIOLET_API Peekable final: public Iterator<Peekable<Impl>> {
     }
 
 private:
+    friend struct Iterator<Impl>;
+
+    VIOLET_IMPLICIT Peekable(Impl iter)
+        : n_iter(iter)
+    {
+    }
+
     Impl n_iter;
     Optional<Item> n_peeked;
 };
@@ -71,13 +112,13 @@ private:
 } // namespace violet::iter
 
 template<typename Impl>
-inline auto violet::Iterator<Impl>::Peekable() & noexcept
+inline auto violet::Iterator<Impl>::Peekable() & noexcept -> decltype(auto)
 {
     return iter::Peekable(getThisObject());
 }
 
 template<typename Impl>
-inline auto violet::Iterator<Impl>::Peekable() && noexcept
+inline auto violet::Iterator<Impl>::Peekable() && noexcept -> decltype(auto)
 {
     return iter::Peekable(VIOLET_MOVE(getThisObject()));
 }

@@ -27,21 +27,53 @@
 
 namespace violet::iter {
 
+/// An iterator adapter that yields at most the first `n` elements from the
+/// underlying iterator.
+///
+/// `Take` wraps an existing iterator and enforces a cap on the number of
+/// elements produced. Once the limit is reached, all subsequent calls to
+/// [`Next`] return `Nothing`, regardless of whether the underlying iterator
+/// has remaining elements.
+///
+/// If the underlying iterator implements `DoubleEndedIterable`, `Take` also
+/// supports reverse iteration via [`NextBack`], consuming from the back
+/// against the same shared remaining count.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Iterator/Take.h>
+/// #include <violet/Print.h>
+///
+/// auto items = violet::MkIterable(violet::Vec<violet::Int32>{1, 2, 3, 4, 5}).Take(3);
+/// for (auto value: items) {
+///     violet::Println("{}", value);
+/// }
+///
+/// // => 1
+/// // => 2
+/// // => 3
+/// ```
+///
+/// ## Size Hint
+/// Both bounds are capped at the remaining take count. If the underlying
+/// iterator does not provide a size hint, the upper bound is set to the
+/// remaining count.
+///
+/// @tparam Impl underlying iterator type
 template<Iterable Impl>
 struct VIOLET_API Take final: public Iterator<Take<Impl>> {
     using Item = TypeOf<Impl>;
+    using underlying_iterator = Impl;
 
     VIOLET_DISALLOW_CONSTRUCTOR(Take);
-    VIOLET_DISALLOW_COPY_AND_MOVE(Take);
-
     ~Take() = default;
 
-    VIOLET_IMPLICIT Take(Impl iter, UInt take)
-        : n_iter(iter)
-        , n_remaining(take)
-    {
-    }
-
+    /// Returns the next element from the underlying iterator, or `Nothing`
+    /// if the take limit has been reached or the underlying iterator is
+    /// exhausted.
+    ///
+    /// Each call decrements the remaining count. Once the count reaches
+    /// zero, all subsequent calls return `Nothing`.
     auto Next() noexcept -> Optional<Item>
     {
         if (this->n_remaining == 0) {
@@ -52,6 +84,13 @@ struct VIOLET_API Take final: public Iterator<Take<Impl>> {
         return this->n_iter.Next();
     }
 
+    /// Returns the next element from the back of the underlying iterator,
+    /// or `Nothing` if the take limit has been reached or the underlying
+    /// iterator is exhausted.
+    ///
+    /// This method is only available when the underlying iterator satisfies
+    /// `DoubleEndedIterable`. Each call decrements the same shared remaining
+    /// count used by [`Next`].
     auto NextBack() noexcept -> Optional<Item>
         requires DoubleEndedIterable<Impl>
     {
@@ -63,10 +102,15 @@ struct VIOLET_API Take final: public Iterator<Take<Impl>> {
         return this->n_iter.NextBack();
     }
 
+    /// Returns a hint of the remaining length of the iterator.
+    ///
+    /// Both bounds are capped at the remaining take count. If the underlying
+    /// iterator does not provide a size hint, the lower bound is `0` and the
+    /// upper bound is set to the remaining count.
     [[nodiscard]] auto SizeHint() const noexcept -> violet::SizeHint
     {
         if constexpr (requires { this->n_iter.SizeHint(); }) {
-            struct SizeHint hint = this->n_iter.SizeHint();
+            violet::SizeHint hint = this->n_iter.SizeHint();
 
             UInt lo = std::min(hint.Low, this->n_remaining);
             Optional<UInt> hi;
@@ -84,6 +128,14 @@ struct VIOLET_API Take final: public Iterator<Take<Impl>> {
     }
 
 private:
+    friend struct Iterator<Impl>;
+
+    VIOLET_IMPLICIT Take(Impl iter, UInt take)
+        : n_iter(iter)
+        , n_remaining(take)
+    {
+    }
+
     Impl n_iter;
     UInt n_remaining;
 };
@@ -93,13 +145,13 @@ private:
 namespace violet {
 
 template<typename Impl>
-inline auto Iterator<Impl>::Take(UInt take) & noexcept
+inline auto Iterator<Impl>::Take(UInt take) & noexcept -> decltype(auto)
 {
     return iter::Take(getThisObject(), take);
 }
 
 template<typename Impl>
-inline auto Iterator<Impl>::Take(UInt take) && noexcept
+inline auto Iterator<Impl>::Take(UInt take) && noexcept -> decltype(auto)
 {
     return iter::Take(VIOLET_MOVE(getThisObject()), take);
 }

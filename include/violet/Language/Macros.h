@@ -73,21 +73,11 @@
 // * VIOLET_ARCH_{X86_64,AARCH64}
 // * VIOLET_COMPILER_{CLANG|MSVC|GCC}
 // * VIOLET_BUILDSYSTEM_{BAZEL|CMAKE|MESON|GN} - new as of 26.05.05
-#if defined(VIOLET_LINUX) && !defined(VIOLET_PLATFORM_LINUX)
-#warning "`VIOLET_LINUX` is a deprecated define, use `VIOLET_PLATFORM_LINUX` instead"
-#define VIOLET_PLATFORM_LINUX
-#endif // defined(VIOLET_LINUX) && !defined(VIOLET_PLATFORM_LINUX)
-
 #ifndef VIOLET_PLATFORM_LINUX
 #if defined(__linux__) && !defined(__ANDROID__)
 #define VIOLET_PLATFORM_LINUX
 #endif
 #endif // !defined(VIOLET_PLATFORM_LINUX)
-
-#if defined(VIOLET_APPLE_MACOS) && !defined(VIOLET_PLATFORM_APPLE_MACOS)
-#warning "`VIOLET_APPLE_MACOS` is a deprecated define, use `VIOLET_PLATFORM_APPLE_MACOS` instead"
-#define VIOLET_PLATFORM_APPLE_MACOS
-#endif
 
 // If we ever have plans on adding iOS/tvOS/watchOS/visionOS support for this library,
 // we'll consider adding it under the `VIOLET_APPLE_{IOS,TVOS,WATCHOS,VISIONOS}` umbrella
@@ -115,19 +105,9 @@
 #endif
 #endif // !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
 
-#if defined(VIOLET_WINDOWS) && !defined(VIOLET_PLATFORM_WINDOWS)
-#warning "`VIOLET_WINDOWS` is a deprecated define, use `VIOLET_PLATFORM_WINDOWS` instead"
-#define VIOLET_PLATFORM_WINDOWS
-#endif
-
 #if !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
 #define VIOLET_PLATFORM_WINDOWS
 #endif // !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
-
-#if defined(VIOLET_X86_64) && !defined(VIOLET_ARCH_X86_64)
-#warning "`VIOLET_X86_64` is a deprecated define, use `VIOLET_ARCH_X86_64` instead"
-#define VIOLET_ARCH_X86_64
-#endif
 
 #if !defined(VIOLET_ARCH_X86_64)                                                                                       \
     && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) || defined(__x86_64) || defined(_M_AMD64))
@@ -135,19 +115,9 @@
 #endif // !defined(VIOLET_ARCH_X86_64) && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) ||
        // defined(__x86_64) || defined(_M_AMD64))
 
-#if defined(VIOLET_AARCH64) && !defined(VIOLET_ARCH_AARCH64)
-#warning "`VIOLET_AARCH64` is a deprecated define, use `VIOLET_ARCH_AARCH64` instead"
-#define VIOLET_ARCH_AARCH64
-#endif
-
 #if !defined(VIOLET_ARCH_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
 #define VIOLET_ARCH_AARCH64
 #endif // !defined(VIOLET_ARCH_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
-
-#if defined(VIOLET_CLANG) && !defined(VIOLET_COMPILER_CLANG)
-#warning "`VIOLET_CLANG` is a deprecated define, use `VIOLET_COMPILER_CLANG` instead"
-#define VIOLET_COMPILER_CLANG
-#endif
 
 #if !defined(VIOLET_COMPILER_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
 #define VIOLET_COMPILER_CLANG
@@ -157,19 +127,9 @@
 #define VIOLET_COMPILER_CLANG_CL
 #endif // !defined(VIOLET_COMPILER_CLANG_CL) && (defined(__clang__) && defined(_MSC_VER))
 
-#if defined(VIOLET_GCC) && !defined(VIOLET_COMPILER_GCC)
-#warning "`VIOLET_GCC` is a deprecated define, use `VIOLET_COMPILER_GCC` instead"
-#define VIOLET_COMPILER_GCC
-#endif
-
 #if !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
 #define VIOLET_COMPILER_GCC
 #endif // !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
-
-#if defined(VIOLET_MSVC) && !defined(VIOLET_COMPILER_MSVC)
-#warning "`VIOLET_MSVC` is a deprecated define, use `VIOLET_COMPILER_MSVC` instead"
-#define VIOLET_COMPILER_MSVC
-#endif
 
 #if !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
 #define VIOLET_COMPILER_MSVC
@@ -186,6 +146,7 @@
 #define VIOLET_ARCH(arch) defined(VIOLET_ARCH_##arch)
 #define VIOLET_COMPILER(compiler) defined(VIOLET_COMPILER_##compiler)
 #define VIOLET_BUILDSYSTEM(system) defined(VIOLET_BUILDSYSTEM_##system)
+#define VIOLET_SANITIZER(sanitizer) defined(VIOLET_SANITIZER_##sanitizer)
 
 #ifndef VIOLET_API
 #if VIOLET_COMPILER(MSVC) || VIOLET_COMPILER(CLANG_CL)
@@ -217,27 +178,39 @@
 #define VIOLET_LOCAL
 #endif // defined(VIOLET_BUILDING)
 
-#ifndef VIOLET_MSAN
+#if defined(VIOLET_MSAN) || defined(VIOLET_SANITIZER_MEMORY)
+#error "Do not define `VIOLET_MSAN`/`VIOLET_SANITIZER_MEMORY` on your own"
+#else
 #if VIOLET_COMPILER(CLANG) && VIOLET_HAS_FEATURE(memory_sanitizer)
 #define VIOLET_MSAN
+#define VIOLET_SANITIZER_MEMORY
 #endif
 #endif
 
-#ifndef VIOLET_ASAN
+#if defined(VIOLET_ASAN) || defined(VIOLET_SANITIZER_ADDRESS)
+#error "Do not define `VIOLET_ASAN` / `VIOLET_SANITIZER_ADDRESS` on your own"
+#else
 #if VIOLET_HAS_FEATURE(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
 #define VIOLET_ASAN
+#define VIOLET_SANITIZER_ADDRESS
 #endif
 #endif
 
-#ifndef VIOLET_TSAN
+#if defined(VIOLET_TSAN) || defined(VIOLET_SANITIZER_THREAD)
+#error "Do not define `VIOLET_TSAN` / `VIOLET_SANITIZER_THREAD` on your own"
+#else
 #if VIOLET_HAS_FEATURE(thread_sanitizer) || defined(__SANITIZE_THREAD__)
 #define VIOLET_TSAN
+#define VIOLET_SANITIZER_THREAD
 #endif
 #endif
 
-#ifndef VIOLET_UBSAN
+#if defined(VIOLET_UBSAN) || defined(VIOLET_SANITIZER_UNDEFINED)
+#error "Do not define `VIOLET_UBSAN` / `VIOLET_SANITIZER_UNDEFINED` on your own"
+#else
 #if VIOLET_HAS_FEATURE(undefined_behavior_sanitizer)
 #define VIOLET_UBSAN
+#define VIOLET_SANITIZER_UNDEFINED
 #endif
 #endif
 
@@ -245,9 +218,9 @@
 #error "`VIOLET_USE_RTTI` cannot be directly set"
 #elif VIOLET_HAS_FEATURE(cxx_rtti)
 #define VIOLET_USE_RTTI 1
-#elif defined(__GNUC__) && defined(__GXX_RTTI)
+#elif (VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)) && defined(__GXX_RTTI)
 #define VIOLET_USE_RTTI 1
-#elif defined(_MSC_VER) && defined(_CPPRTTI)
+#elif VIOLET_COMPILER(MSVC) && defined(_CPPRTTI)
 #define VIOLET_USE_RTTI 1
 #else
 #define VIOLET_USE_RTTI 0

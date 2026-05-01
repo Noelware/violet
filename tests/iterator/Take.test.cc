@@ -19,34 +19,162 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "tests/iterator/fixtures/FixedSizeIterator.h"
+
 #include <gtest/gtest.h>
-#include <violet/Iterator.h>
 #include <violet/Iterator/Take.h>
-#include <violet/Violet.h>
 
-using namespace violet; // NOLINT(google-build-using-namespace)
+// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
+using namespace violet;
+using namespace violet::testing::fixtures;
 
-TEST(Iterators, TakeNoneYieldsEmpty)
+TEST(Iterators, TakeTakesFirstNElements)
 {
-    Vec<UInt32> vi({ 1, 2, 3 });
-    auto it = MkIterable(vi).Take(0);
-
-    EXPECT_TRUE(it.Collect<Vec<UInt32>>().empty());
+    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+    EXPECT_EQ(*iter.Next(), 1);
+    EXPECT_EQ(*iter.Next(), 2);
+    EXPECT_EQ(*iter.Next(), 3);
+    EXPECT_FALSE(iter.Next());
 }
 
-TEST(Iterators, TakeSome)
+TEST(Iterators, TakeTakesZeroYieldsNothing)
 {
-    Vec<UInt32> vi({ 7, 8, 9 });
-    auto it = MkIterable(vi).Take(2);
-
-    Vec<UInt32> expected({ 7, 8 });
-    EXPECT_EQ(it.Collect<Vec<UInt32>>(), expected);
+    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Take(0);
+    EXPECT_FALSE(iter.Next());
 }
 
-TEST(Iterators, TakeExceedsSizeReturnsAll)
+TEST(Iterators, TakeTakesExactLength)
 {
-    Vec<UInt32> vi({ 1, 2, 3 });
-    auto it = MkIterable(vi).Take(10);
-
-    EXPECT_EQ(it.Collect<Vec<UInt32>>(), vi);
+    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Take(3);
+    EXPECT_EQ(*iter.Next(), 1);
+    EXPECT_EQ(*iter.Next(), 2);
+    EXPECT_EQ(*iter.Next(), 3);
+    EXPECT_FALSE(iter.Next());
 }
+
+TEST(Iterators, TakeTakesMoreThanLength)
+{
+    auto iter = FixedSizeIterator<Int32, 2>({ 1, 2 }).Take(100);
+    EXPECT_EQ(*iter.Next(), 1);
+    EXPECT_EQ(*iter.Next(), 2);
+    EXPECT_FALSE(iter.Next());
+}
+
+TEST(Iterators, TakeTakesOnEmptyIterator)
+{
+    struct Empty final: public Iterator<Empty> {
+        using Item = Int32;
+
+        auto Next() noexcept -> Optional<Item>
+        {
+            return Nothing;
+        }
+    };
+
+    auto iter = Empty().Take(5);
+    EXPECT_FALSE(iter.Next());
+}
+
+TEST(Iterators, TakeTakesSingleElement)
+{
+    auto iter = FixedSizeIterator<Int32, 3>({ 10, 20, 30 }).Take(1);
+    auto elem = iter.Next();
+    ASSERT_TRUE(elem);
+    EXPECT_EQ(*elem, 10);
+    EXPECT_FALSE(iter.Next());
+}
+
+TEST(Iterators, TakeExhaustedIteratorRemainsExhausted)
+{
+    auto iter = FixedSizeIterator<Int32, 2>({ 1, 2 }).Take(1);
+    ASSERT_TRUE(iter.Next());
+    EXPECT_FALSE(iter.Next());
+    EXPECT_FALSE(iter.Next());
+    EXPECT_FALSE(iter.Next());
+}
+
+TEST(Iterators, TakeNextBackTakesFromEnd)
+{
+    auto iter = DoubleEndedFixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+    auto a = iter.NextBack();
+    ASSERT_TRUE(a);
+    EXPECT_EQ(*a, 5);
+
+    auto b = iter.NextBack();
+    ASSERT_TRUE(b);
+    EXPECT_EQ(*b, 4);
+
+    auto c = iter.NextBack();
+    ASSERT_TRUE(c);
+    EXPECT_EQ(*c, 3);
+
+    EXPECT_FALSE(iter.NextBack());
+}
+
+TEST(Iterators, TakeNextAndNextBackShareRemainingCount)
+{
+    auto iter = DoubleEndedFixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+
+    // Consume from front.
+    EXPECT_EQ(*iter.Next(), 1);
+
+    // Consume from back.
+    EXPECT_EQ(*iter.NextBack(), 5);
+
+    // One remaining.
+    EXPECT_EQ(*iter.Next(), 2);
+
+    // Limit reached.
+    EXPECT_FALSE(iter.Next());
+    EXPECT_FALSE(iter.NextBack());
+}
+
+TEST(Iterators, TakeNextBackWithTakeZero)
+{
+    auto iter = DoubleEndedFixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Take(0);
+    EXPECT_FALSE(iter.NextBack());
+}
+
+TEST(Iterators, TakeSizeHintCappedByRemaining)
+{
+    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+    auto hint = iter.SizeHint();
+    EXPECT_EQ(hint.Low, 3U);
+    ASSERT_TRUE(hint.High);
+    EXPECT_EQ(*hint.High, 3U);
+}
+
+TEST(Iterators, TakeSizeHintWhenTakeExceedsLength)
+{
+    auto iter = FixedSizeIterator<Int32, 2>({ 1, 2 }).Take(100);
+    auto hint = iter.SizeHint();
+
+    // Low is capped at the underlying iterator's size.
+    EXPECT_EQ(hint.Low, 2U);
+    ASSERT_TRUE(hint.High);
+
+    // High is capped at the underlying iterator's size.
+    EXPECT_EQ(*hint.High, 2U);
+}
+
+TEST(Iterators, TakeSizeHintAfterPartialConsumption)
+{
+    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+    (void)iter.Next();
+
+    auto hint = iter.SizeHint();
+    EXPECT_LE(hint.Low, 2U);
+    ASSERT_TRUE(hint.High);
+    EXPECT_LE(*hint.High, 2U);
+}
+
+TEST(Iterators, TakeSizeHintWithTakeZero)
+{
+    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Take(0);
+    auto hint = iter.SizeHint();
+    EXPECT_EQ(hint.Low, 0U);
+    ASSERT_TRUE(hint.High);
+    EXPECT_EQ(*hint.High, 0U);
+}
+
+// NOLINTEND(google-build-using-namespace,readability-identifier-length)

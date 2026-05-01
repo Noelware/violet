@@ -131,7 +131,6 @@ private:
     struct Impl;
 
     template<typename... Args>
-        requires(std::is_constructible_v<Impl, Args...>)
     VIOLET_EXPLICIT Dirs(Args&&... args);
 
     Impl* n_impl; ///< pointer to the implementation itself.
@@ -155,7 +154,6 @@ private:
     struct Impl;
 
     template<typename... Args>
-        requires(std::is_constructible_v<Impl, Args...>)
     VIOLET_EXPLICIT WalkDirs(Args&&... args);
 
     Impl* n_impl; ///< pointer to the implementation itself.

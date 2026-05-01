@@ -21,41 +21,29 @@
 
 include(CXX)
 
-violet_cc_library(
-    macros
-    HDRS
-        ../include/violet/Language/Macros.h
-)
+## START: Targets ##
 
-violet_cc_library(
-    policy_checks
-    HDRS
-        ../include/violet/Language/Policy.h
-)
+## END: Targets ##
 
-violet_cc_library(
-    violet
-    HDRS
-        ../include/violet/Violet.h
-    DEPS
-        violet::macros
-        violet::policy_checks
-        absl::int128
-)
-
-add_subdirectory(support)
 add_subdirectory(container)
-add_subdirectory(iterator)
-# add_subdirectory(system)
+# add_subdirectory(events)
 
-# if(VIOLET_ENABLE_BACKTRACE)
-#     add_subdirectory(backtrace)
+# if ("Violet.Experimental" IN_LIST VIOLET_FRAMEWORKS)
+#     add_subdirectory(experimental)
 # endif()
 
-if(VIOLET_ENABLE_IO)
-    add_subdirectory(io)
-endif()
+# if ("Violet.Filesystem" IN_LIST VIOLET_FRAMEWORKS)
+#     add_subdirectory(filesystem)
+# endif()
 
-if(VIOLET_ENABLE_FS)
-    add_subdirectory(filesystem)
-endif()
+# if ("Violet.IO" IN_LIST VIOLET_FRAMEWORKS)
+#     add_subdirectory(io)
+# endif()
+
+# add_subdirectory(iterator)
+# add_subdirectory(support)
+# add_subdirectory(system)
+
+# if ("Violet.Testing" IN_LIST VIOLET_FRAMEWORKS)
+#     add_subdirectory(testing)
+# endif()

@@ -22,6 +22,6 @@
 #include <gtest/gtest.h>
 #include <violet/Violet.h>
 
-#ifndef VIOLET_UNIX
+#if !VIOLET_PLATFORM(UNIX)
 #error "Extended Attributes are only supported on Unix"
 #endif

@@ -49,15 +49,6 @@ void violet::sys::RemoveEnv(Unsafe, Str key)
 
 auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
 {
-    // When executed from `bazel run` or `bazel test`, we are placed in the runfiles
-    // directory, so we use the `BUILD_WORKING_DIRECTORY` environment variable to get
-    // the actual working directory.
-#ifdef BAZEL
-    if (auto wd = GetEnv("BUILD_WORKING_DIRECTORY")) {
-        return filesystem::Path(wd.Value());
-    }
-#endif
-
     Array<char, PATH_MAX> buf;
     if (::getcwd(buf.data(), buf.size()) == nullptr) {
         return Err(io::Error::OSError());

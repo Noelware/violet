@@ -20,21 +20,3 @@
 # SOFTWARE.
 
 include(CXX)
-
-violet_cc_library(
-    cxx_demangle
-    SRCS
-        "${CMAKE_SOURCE_DIR}/src/support/demangle.cc"
-    HDRS
-        "${CMAKE_SOURCE_DIR}/include/violet/Support/Demangle.h"
-    DEPS
-        violet::violet
-)
-
-violet_cc_library(
-    bitflags
-    HDRS
-        "${CMAKE_SOURCE_DIR}/include/violet/Support/Bitflags.h"
-    DEPS
-        violet::violet
-)

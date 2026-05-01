@@ -29,7 +29,7 @@
     "bazel.buildifierFixOnFormat": true,
     "bazel.buildifierConfigJsonPath": ".buildifier.json",
 
-    "cmake.configureArgs": ["-DVIOLET_ENABLE_TESTS:BOOL=ON", "-DVIOLET_ENABLE_ALL:BOOL=ON"],
+    "cmake.configureArgs": ["-DVIOLET_ENABLE_TESTS:BOOL=ON", "-DVIOLET_ALL_FRAMEWORKS:BOOL=ON"],
 
     // Nix-specific settings \\
     "nix.enableLanguageServer": true,

@@ -20,23 +20,3 @@
 # SOFTWARE.
 
 include(CXX)
-
-if(UNIX)
-    violet_cc_library(
-        filesystem_ext_xattr
-        HDRS
-            ${CMAKE_SOURCE_DIR}/include/violet/Filesystem/Extensions/XAttr.h
-        DEPS
-            violet::violet
-            violet::io_descriptor
-            violet::io_error
-    )
-
-    violet_cc_test(
-        filesystem_ext_xattr_test
-        SRCS
-            ${CMAKE_SOURCE_DIR}/tests/filesystem/extensions/XAttr.test.cc
-        DEPS
-            violet::filesystem_ext_xattr
-    )
-endif()

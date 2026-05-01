@@ -31,28 +31,41 @@ project(violet
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+include(ReadFile)
 include(CTest)
 
-message(STATUS "violet ${violet_VERSION}: using compiler ${CMAKE_CXX_COMPILER_ID} v${CMAKE_CXX_COMPILER_VERSION}")
+set(VIOLET_DEVBUILD OFF CACHE BOOL "Whether this is a development build")
+get_violet_version(VIOLET_VERSION CACHE STRING)
 
-# Add options to configure this build. This should be similar to the Bazel flags we have.
-option(VIOLET_WIN32_DLLEXPORT "Marks all Violet APIs as `__declspec(dllexport)` instead of `__declspec(dllimport)` (Windows only)" OFF)
-option(VIOLET_EXCEPTIONS "Whether if exceptions should be enabled for this build" ON)
-option(VIOLET_UBSAN "Enables Undefined Behaviour Sanitizers for this build" OFF)
-option(VIOLET_TSAN "Enables Thread Sanitizer for this build" OFF)
-option(VIOLET_ASAN "Enables Address Sanitizer for this build" OFF)
-option(VIOLET_MSAN "Enables Memory Sanitizer for this build" OFF)
+message(STATUS "violet ${VIOLET_VERSION}: using compiler ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 
-# dependencies
-option(VIOLET_USE_SYSTEM_ABSEIL "Uses the system's Abseil instead of vendoring" OFF)
+# +^~w~^+ START: Toggles +^~w~^+
+option(VIOLET_ASSERT_SUBSCRIPT "Enables asserts in subscript operators" ON)
+option(VIOLET_ASAN "Enables the Address Sanitizer on each CMake target" OFF)
+option(VIOLET_BITFLAGS_FREE_FUNCTIONS "Enables or disables the free functions that are implemented for `|`, `&`, `^`, and `~` for `violet::Bitflags`" OFF)
+option(VIOLET_RUNFILES_LOGS "Enables verbose logs in the console for each test that uses the Runfiles framework" ON)
+option(VIOLET_MSAN "Enables the Memory Sanitizer on each CMake target" OFF)
+option(VIOLET_UBSAN "Enables the Undefined Behaviour Sanitizer on each CMake target" OFF)
+option(VIOLET_TSAN "Enables the Thread Sanitizer on each CMake target" OFF)
+option(VIOLET_ALL_FRAMEWORKS "Enables all frameworks" OFF)
+# +^~w~^+ END: Toggles +^~w~^+
 
-# libraries (this will avoid building most libraries except the core libs: Noelware.Violet.(Container|Iterator|Language|Numeric|Support|System})
-option(VIOLET_ENABLE_ALL "Enables all Noelware.Violet libraries" OFF)
+set(VIOLET_FRAMEWORKS "Violet" CACHE STRING "A list of Violet frameworks to build")
+set(VIOLET_ALL_FRAMEWORKS "Violet;Violet.Experimental;Violet.Experimental.Threading;Violet.Filesystem;Violet.IO;Violet.IO.Experimental;Violet.Testing")
+set_property(CACHE VIOLET_FRAMEWORKS PROPERTY STRINGS
+    "Violet"
+    "Violet.Experimental"
+    "Violet.Experimental.Threading"
+    "Violet.Filesystem"
+    "Violet.IO"
+    "Violet.IO.Experimental"
+    "Violet.Testing"
+)
 
-option(VIOLET_ENABLE_SUBPROCESS "Enables the Noelware.Violet.Subprocess library" OFF)
-option(VIOLET_ENABLE_BACKTRACE "Enables the Noelware.Violet.Backtrace library" OFF)
-option(VIOLET_ENABLE_FS "Enables the Noelware.Violet.Filesystem library" OFF)
-option(VIOLET_ENABLE_IO "Enables the Noelware.Violet.IO library" OFF)
+if (VIOLET_ALL_FRAMEWORKS)
+    message(STATUS "Enabling all frameworks")
+    set(VIOLET_FRAMEWORKS "${VIOLET_ALL_FRAMEWORKS}" CACHE STRING "enabled all frameworks" FORCE)
+endif()
 
 # Options relating to tests
 option(VIOLET_ENABLE_TESTS "Enables the test suite" OFF)
@@ -64,35 +77,13 @@ else()
     option(VIOLET_INSTALL "Enables the install rule" ON)
 endif()
 
-if(VIOLET_ENABLE_ALL)
-    message(STATUS "Enabling all Noelware.Violet libraries!")
-
-    set(VIOLET_ENABLE_FS ON)
-    set(VIOLET_ENABLE_IO ON)
-endif()
+string(REPLACE ";" ", " FRAMEWORKS "${VIOLET_FRAMEWORKS}")
+message(STATUS "== Building frameworks: ${FRAMEWORKS} ==")
 
 include(FetchContent)
 
-if (VIOLET_USE_SYSTEM_ABSEIL)
-    message(STATUS "Using system Abseil C++ libraries")
-    find_package(absl REQUIRED)
-else()
-    message(STATUS "Using vendored version of Abseil C++ libraries")
-
-    FetchContent_Declare(
-        absl
-        GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-        GIT_TAG "20250814.1"
-    )
-
-    # We have to enable Abseil's install policies so that we get `absl::`
-    set(ABSL_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(absl)
-endif()
-
 if (VIOLET_ENABLE_TESTS)
     enable_testing()
-
     if(VIOLET_USE_SYSTEM_GOOGLETEST)
         message(STATUS "Using system GoogleTest libraries")
         find_package(GTest)
@@ -108,7 +99,6 @@ if (VIOLET_ENABLE_TESTS)
         endif()
     else()
         message(STATUS "Using a vendored version of GoogleTest")
-
         FetchContent_Declare(
             googletest
             GIT_REPOSITORY
@@ -127,62 +117,62 @@ endif()
 
 # Set the minimum CXX Standard to C++26 if not defined
 if(NOT DEFINED CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 26)
-    message(STATUS "CMAKE_CXX_STANDARD was not set, using C++26 as the default")
+    set(CMAKE_CXX_STANDARD 20)
+    message(STATUS "CMAKE_CXX_STANDARD was not set, using C++20 as the default")
 endif()
 
 add_subdirectory(violet)
 
-if(VIOLET_INSTALL)
-    install(EXPORT VioletTargets NAMESPACE violet:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/violet")
-    configure_package_config_file(
-        buildsystem/cmake/VioletConfig.cmake.in
-        "${PROJECT_BINARY_DIR}/VioletConfig.cmake"
+# if(VIOLET_INSTALL)
+#     install(EXPORT VioletTargets NAMESPACE violet:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/violet")
+#     configure_package_config_file(
+#         buildsystem/cmake/VioletConfig.cmake.in
+#         "${PROJECT_BINARY_DIR}/VioletConfig.cmake"
 
-        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/violet"
-    )
+#         INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/violet"
+#     )
 
-    # INCLUDE EXPORT +-+ libviolet
-    install(FILES ${PROJECT_SOURCE_DIR}/include/violet/Violet.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet)
+#     # INCLUDE EXPORT +-+ libviolet
+#     install(FILES ${PROJECT_SOURCE_DIR}/include/violet/Violet.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet)
 
-    # INCLUDE EXPORT +-+ libviolet_container
-    file(GLOB_RECURSE CONTAINER_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Container/*.h")
-    install(FILES ${CONTAINER_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Container)
+#     # INCLUDE EXPORT +-+ libviolet_container
+#     file(GLOB_RECURSE CONTAINER_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Container/*.h")
+#     install(FILES ${CONTAINER_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Container)
 
-    # INCLUDE EXPORT +-+ libviolet_filesystem
-    if(VIOLET_ENABLE_FS)
-        file(GLOB_RECURSE FILESYSTEM_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Filesystem/*.h")
-        install(FILES ${FILESYSTEM_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Filesystem)
-    endif()
+#     # INCLUDE EXPORT +-+ libviolet_filesystem
+#     if(VIOLET_ENABLE_FS)
+#         file(GLOB_RECURSE FILESYSTEM_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Filesystem/*.h")
+#         install(FILES ${FILESYSTEM_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Filesystem)
+#     endif()
 
-    # INCLUDE EXPORT +-+ libviolet_io
-    if(VIOLET_ENABLE_IO)
-        file(GLOB_RECURSE IO_HDRS "${PROJECT_SOURCE_DIR}/include/violet/IO/*.h")
-        install(FILES ${IO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/IO)
-    endif()
+#     # INCLUDE EXPORT +-+ libviolet_io
+#     if(VIOLET_ENABLE_IO)
+#         file(GLOB_RECURSE IO_HDRS "${PROJECT_SOURCE_DIR}/include/violet/IO/*.h")
+#         install(FILES ${IO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/IO)
+#     endif()
 
-    # INCLUDE EXPORT +-+ libviolet_subprocess
-    if(VIOLET_ENABLE_SUBPROCESS)
-        install(FILES "${PROJECT_SOURCE_DIR}/include/violet/Subprocess.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet)
-    endif()
+#     # INCLUDE EXPORT +-+ libviolet_subprocess
+#     if(VIOLET_ENABLE_SUBPROCESS)
+#         install(FILES "${PROJECT_SOURCE_DIR}/include/violet/Subprocess.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet)
+#     endif()
 
-    # INCLUDE EXPORT +-+ libviolet_iterator
-    file(GLOB_RECURSE ITERATOR_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Iterator/*.h")
-    install(FILES ${ITERATOR_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Iterator)
+#     # INCLUDE EXPORT +-+ libviolet_iterator
+#     file(GLOB_RECURSE ITERATOR_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Iterator/*.h")
+#     install(FILES ${ITERATOR_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Iterator)
 
-    # INCLUDE EXPORT +-+ libviolet_language
-    file(GLOB_RECURSE LANG_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Language/*.h")
-    install(FILES ${LANG_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Language)
+#     # INCLUDE EXPORT +-+ libviolet_language
+#     file(GLOB_RECURSE LANG_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Language/*.h")
+#     install(FILES ${LANG_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Language)
 
-    # INCLUDE EXPORT +-+ libviolet_numeric
-    file(GLOB_RECURSE NUMERIC_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Numeric/*.h")
-    install(FILES ${NUMERIC_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Numeric)
+#     # INCLUDE EXPORT +-+ libviolet_numeric
+#     file(GLOB_RECURSE NUMERIC_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Numeric/*.h")
+#     install(FILES ${NUMERIC_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Numeric)
 
-    # INCLUDE EXPORT +-+ libviolet_support
-    file(GLOB_RECURSE SUPPORT_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Support/*.h")
-    install(FILES ${SUPPORT_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Support)
+#     # INCLUDE EXPORT +-+ libviolet_support
+#     file(GLOB_RECURSE SUPPORT_HDRS "${PROJECT_SOURCE_DIR}/include/violet/Support/*.h")
+#     install(FILES ${SUPPORT_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/Support)
 
-    # INCLUDE EXPORT +-+ libviolet_system
-    file(GLOB_RECURSE SYSTEM_HDRS "${PROJECT_SOURCE_DIR}/include/violet/System/*.h")
-    install(FILES ${SYSTEM_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/System)
-endif()
+#     # INCLUDE EXPORT +-+ libviolet_system
+#     file(GLOB_RECURSE SYSTEM_HDRS "${PROJECT_SOURCE_DIR}/include/violet/System/*.h")
+#     install(FILES ${SYSTEM_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/violet/System)
+# endif()

@@ -146,7 +146,7 @@ struct VIOLET_API SmolString final {
     /// This method will panic if the size of the string plus the string itself is greater than or equal
     /// to the capacity.
     template<typename... Args>
-    constexpr auto AppendFormatted(std::format_string<Args...> fmt, Args&&... args) -> SmolString&
+    auto AppendFormatted(std::format_string<Args...> fmt, Args&&... args) -> SmolString&
     {
         auto remaining = N - this->n_size;
         auto result = std::format_to_n(this->n_data.data() + this->n_size, remaining, fmt, VIOLET_FWD(Args, args)...);

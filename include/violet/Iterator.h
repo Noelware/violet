@@ -112,7 +112,7 @@ struct SizeHint;
 template<typename T>
 concept Iterable = requires(T ty) {
     // Constraint that requires `ty.Next()` to be callable.
-    { ty.Next() } -> std::same_as<decltype(ty.Next())>;
+    { ty.Next() };
 
     // Constraint that the type that is returned by `ty.Next()` is a
     // `Noelware::Violet::Optional`.
@@ -138,7 +138,6 @@ concept DoubleEndedIterable = Iterable<T> && requires(T ty) {
 };
 
 namespace iter {
-
     /// Extracts the type that is returned of a iterator's `Next()` method.
     template<typename T>
     using TypeOf = optional_type_t<decltype(std::declval<T>().Next())>;
@@ -202,11 +201,6 @@ namespace iter {
         struct STLRangeIterator final {
             VIOLET_DISALLOW_CONSTRUCTOR(STLRangeIterator);
 
-            STLRangeIterator(Impl impl)
-                : n_iter(VIOLET_MOVE(impl))
-            {
-            }
-
             auto operator!=(detail::sentinel) -> bool
             {
                 if (!this->n_current) {
@@ -227,6 +221,18 @@ namespace iter {
             }
 
         private:
+            friend struct violet::Iterator<Impl>;
+
+            VIOLET_IMPLICIT STLRangeIterator(Impl& impl)
+                : n_iter(impl)
+            {
+            }
+
+            VIOLET_IMPLICIT STLRangeIterator(Impl&& impl)
+                : n_iter(VIOLET_MOVE(impl))
+            {
+            }
+
             Impl n_iter;
             Optional<violet::iter::TypeOf<Impl>> n_current;
         };
@@ -238,6 +244,7 @@ namespace iter {
         template<typename It>
         struct STLCompatibleIterator final: public Iterator<STLCompatibleIterator<It>> {
             using Item = std::remove_cv_t<std::remove_reference_t<typename std::iter_value_t<It>>>;
+            using underlying_iterator = STLCompatibleIterator<It>;
 
             STLCompatibleIterator(It begin, It end)
                 : n_current(begin)
@@ -265,6 +272,7 @@ namespace iter {
             VIOLET_DISALLOW_COPY(OwnedSTLIterator);
             ~OwnedSTLIterator() = default;
 
+            using underlying_iterator = OwnedSTLIterator<Container>;
             using container_type = std::remove_cvref_t<Container>;
             using iterator = decltype(std::declval<Container>().begin());
             using Item = typename STLCompatibleIterator<iterator>::Item;
@@ -353,16 +361,7 @@ struct VIOLET_API SizeHint final {
 /// @tparam Impl The implementation class.
 template<class Impl>
 struct Iterator {
-    /// Adapter that allows inspecting the next element without consuming it.
-    ///
-    /// Calling `Peek()` returns an `Optional<Item>` representing the next value,
-    /// but does not advance the iterator. Subsequent calls to `Next()` will still
-    /// return this value.
-    ///
-    /// Equivalent to Rust's [`Iterator::peekable()`].
-    ///
-    /// [`Iterator::peekable()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.peekable
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Peekable() & noexcept;
+    using underlying_iterator = Impl;
 
     /// Adapter that allows inspecting the next element without consuming it.
     ///
@@ -373,13 +372,27 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::peekable()`].
     ///
     /// [`Iterator::peekable()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.peekable
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Peekable() && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Peekable() & noexcept
+        -> decltype(auto);
+
+    /// Adapter that allows inspecting the next element without consuming it.
+    ///
+    /// Calling `Peek()` returns an `Optional<Item>` representing the next value,
+    /// but does not advance the iterator. Subsequent calls to `Next()` will still
+    /// return this value.
+    ///
+    /// Equivalent to Rust's [`Iterator::peekable()`].
+    ///
+    /// [`Iterator::peekable()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.peekable
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Peekable() && noexcept
+        -> decltype(auto);
 
     /// Adapter that yields `(index, item)` pairs.
     ///
     /// The index starts at zero and increments for each value produced.
     /// Equivalent to Rust's `Iterator::enumerate()`.
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Enumerate() & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Enumerate() & noexcept
+        -> decltype(auto);
 
     /// Adapter that yields `(index, item)` pairs.
     ///
@@ -387,7 +400,8 @@ struct Iterator {
     /// Equivalent to Rust's `Iterator::enumerate()`.
     ///
     /// [`Iterator::enumerate()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.enumerate
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Enumerate() && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Enumerate() && noexcept
+        -> decltype(auto);
 
     /// Adapter that transforms items using a mapping function.
     ///
@@ -404,7 +418,8 @@ struct Iterator {
     /// [`Iterator::map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.map
     template<typename Fun>
         requires callable<Fun, iter::TypeOf<Impl>>
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Map(Fun&&) & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Map(Fun&&) & noexcept
+        -> decltype(auto);
 
     /// Adapter that transforms items using a mapping function.
     ///
@@ -421,7 +436,8 @@ struct Iterator {
     /// [`Iterator::map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.map
     template<typename Fun>
         requires callable<Fun, iter::TypeOf<Impl>>
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Map(Fun&& fun) && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Map(Fun&& fun) && noexcept
+        -> decltype(auto);
 
     /// Adapter that yields only items for which the predicate returns `true`.
     ///
@@ -430,7 +446,8 @@ struct Iterator {
     /// [`Iterator::filter()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter
     template<typename Pred>
         requires callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Filter(Pred&& pred) & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Filter(Pred&& pred) & noexcept
+        -> decltype(auto);
 
     /// Adapter that yields only items for which the predicate returns `true`.
     ///
@@ -439,31 +456,36 @@ struct Iterator {
     /// [`Iterator::filter()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter
     template<typename Pred>
         requires callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Filter(Pred&& pred) && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Filter(Pred&& pred) && noexcept
+        -> decltype(auto);
 
     /// Skips the first `skip` items.
     ///
     /// Equivalent to Rust's [`Iterator::skip()`].
     /// [`Iterator::skip()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.skip
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Skip(UInt skip) & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Skip(UInt skip) & noexcept
+        -> decltype(auto);
 
     /// Skips the first `skip` items.
     ///
     /// Equivalent to Rust's [`Iterator::skip()`].
     /// [`Iterator::skip()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.skip
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Skip(UInt skip) && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Skip(UInt skip) && noexcept
+        -> decltype(auto);
 
     /// Yields at most `take` items from the iterator.
     ///
     /// Equivalent to Rust's [`Iterator::take()`].
     /// [`Iterator::take()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.take
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Take(UInt take) & noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Take(UInt take) & noexcept
+        -> decltype(auto);
 
     /// Yields at most `take` items from the iterator.
     ///
     /// Equivalent to Rust's [`Iterator::take()`].
     /// [`Iterator::take()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.take
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Take(UInt take) && noexcept;
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Take(UInt take) && noexcept
+        -> decltype(auto);
 
     /// Reduces the iterator to a single accumulated value.
     ///
@@ -895,6 +917,35 @@ private:
         return static_cast<Impl&&>(*this);
     }
 };
+
+/// A type-trait that extracts the underlying iterator type from an iterator adapter.
+///
+/// Many iterator adapters (such as `Map`, `Filter`, `Take`, etc.) wrap
+/// an inner iterator and expose its type via a nested `underlying_iterator`
+/// type alias. This trait provides a uniform way to retrieve that type
+/// without inspecting the adapter's internals directly.
+///
+/// The primary template is intentionally left undefined; only types that
+/// provide a nested `underlying_iterator` alias will match the partial
+/// specialization.
+template<typename T>
+struct underlying_iterator;
+
+template<typename T>
+    requires(requires { typename T::underlying_iterator; })
+struct underlying_iterator<T> final {
+    using type = typename T::underlying_iterator;
+};
+
+template<typename Container>
+    requires(iter::detail::__has_adl_begin_end<Container> || iter::detail::__has_member_begin_end<Container>)
+struct underlying_iterator<Container> final {
+    using type = iter::detail::STLCompatibleIterator<Container>;
+};
+
+/// Convenience alias for `underlying_iterator<T>::type`.
+template<typename T>
+using underlying_iterator_t = typename underlying_iterator<T>::type;
 
 /// Adapts a container into a Violet iterator.
 ///

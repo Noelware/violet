@@ -105,71 +105,34 @@ sanitizer = {
 
 defines = select({
     "@platforms//os:linux": [
-        # deprecated values; use `VIOLET_PLATFORM_*` or the `VIOLET_PLATFORM(<platform>)`
-        # macro.
-        "VIOLET_UNIX",
-        "VIOLET_LINUX",
-
-        # new as of 26.05.05
         "VIOLET_PLATFORM_UNIX",
         "VIOLET_PLATFORM_LINUX",
         "_GNU_SOURCE",
     ],
     "@platforms//os:macos": [
-        # deprecated values; use `VIOLET_PLATFORM_*` or the `VIOLET_PLATFORM(<platform>)`
-        # macro.
-        "VIOLET_UNIX",
-        "VIOLET_APPLE_MACOS",
-
-        # new as of 26.05.05
         "VIOLET_PLATFORM_UNIX",
         "VIOLET_PLATFORM_APPLE_MACOS",
     ],
     "@platforms//os:windows": [
-        # deprecated values; use `VIOLET_PLATFORM_*` or the `VIOLET_PLATFORM(<platform>)`
-        # macro.
-        "VIOLET_WINDOWS",
-
-        # new as of 26.05.05
         "VIOLET_PLATFORM_WINDOWS",
     ],
     "//conditions:default": [],
 }) + select({
     "@platforms//cpu:aarch64": [
-        # deprecated values; use `VIOLET_ARCH_*` or the `VIOLET_ARCH(<arch>)`
-        # macro.
-        "VIOLET_AARCH64",
-
-        # new as of 26.05.05
         "VIOLET_ARCH_AARCH64",
     ],
     "@platforms//cpu:x86_64": [
-        # deprecated values; use `VIOLET_ARCH_*` or the `VIOLET_ARCH(<arch>)`
-        # macro.
-        "VIOLET_X86_64",
-
-        # new as of 26.05.05
         "VIOLET_ARCH_X86_64",
     ],
     "//conditions:default": [],
 }) + select({
     "@rules_cc//cc/compiler:clang": [
-        # deprecated values; use `VIOLET_COMPILER_*` or the `VIOLET_COMPILER(<compiler>)`
-        # macro.
-        "VIOLET_CLANG",
-
-        # new as of 26.05.05
         "VIOLET_COMPILER_CLANG",
 
         # defines that are compiler-specific
         "NOMINMAX",
     ],
     "@rules_cc//cc/compiler:clang-cl": [
-        # deprecated values; use `VIOLET_COMPILER_*` or the `VIOLET_COMPILER(<compiler>)`
-        # macro.
-        "VIOLET_CLANG",
-
-        # new as of 26.05.05
         "VIOLET_COMPILER_CLANG",
         "VIOLET_COMPILER_CLANG_CL",  # allows detection if we are `clang-cl` instead of pure `clang`
 
@@ -177,22 +140,12 @@ defines = select({
         "NOMINMAX",
     ],
     "@rules_cc//cc/compiler:gcc": [
-        # deprecated values; use `VIOLET_COMPILER_*` or the `VIOLET_COMPILER(<compiler>)`
-        # macro.
-        "VIOLET_GCC",
-
-        # new as of 26.05.05
         "VIOLET_COMPILER_GCC",
 
         # defines that are compiler-specific
         "NOMINMAX",
     ],
     "@rules_cc//cc/compiler:msvc-cl": [
-        # deprecated values; use `VIOLET_COMPILER_*` or the `VIOLET_COMPILER(<compiler>)`
-        # macro.
-        "VIOLET_MSVC",
-
-        # new as of 26.05.05
         "VIOLET_COMPILER_MSVC",
 
         # defines that are compiler-specific

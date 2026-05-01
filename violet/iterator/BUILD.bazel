@@ -29,7 +29,6 @@ violet_cc_library(
     name = "enumerate",
     hdrs = ["//include/violet/Iterator:Enumerate.h"],
     deps = [
-        "//violet",
         "//violet:iterator",
         "//violet/container",
     ],
@@ -38,14 +37,16 @@ violet_cc_library(
 violet_cc_test(
     name = "enumerate_test",
     srcs = ["//tests/iterator:Enumerate.test.cc"],
-    deps = [":enumerate"],
+    deps = [
+        ":enumerate",
+        "//tests/iterator/fixtures:fixed_size_iterator",
+    ],
 )
 
 violet_cc_library(
     name = "filter",
     hdrs = ["//include/violet/Iterator:Filter.h"],
     deps = [
-        "//violet",
         "//violet:iterator",
         "//violet/container",
     ],
@@ -54,14 +55,16 @@ violet_cc_library(
 violet_cc_test(
     name = "filter_test",
     srcs = ["//tests/iterator:Filter.test.cc"],
-    deps = [":filter"],
+    deps = [
+        ":filter",
+        "//tests/iterator/fixtures:fixed_size_iterator",
+    ],
 )
 
 violet_cc_library(
     name = "map",
     hdrs = ["//include/violet/Iterator:Map.h"],
     deps = [
-        "//violet",
         "//violet:iterator",
         "//violet/container",
     ],
@@ -70,14 +73,16 @@ violet_cc_library(
 violet_cc_test(
     name = "map_test",
     srcs = ["//tests/iterator:Map.test.cc"],
-    deps = [":map"],
+    deps = [
+        ":map",
+        "//tests/iterator/fixtures:fixed_size_iterator",
+    ],
 )
 
 violet_cc_library(
     name = "peekable",
     hdrs = ["//include/violet/Iterator:Peekable.h"],
     deps = [
-        "//violet",
         "//violet:iterator",
         "//violet/container",
     ],
@@ -86,7 +91,10 @@ violet_cc_library(
 violet_cc_test(
     name = "peekable_test",
     srcs = ["//tests/iterator:Peekable.test.cc"],
-    deps = [":peekable"],
+    deps = [
+        ":peekable",
+        "//tests/iterator/fixtures:fixed_size_iterator",
+    ],
 )
 
 violet_cc_library(
@@ -102,7 +110,10 @@ violet_cc_library(
 violet_cc_test(
     name = "skip_test",
     srcs = ["//tests/iterator:Skip.test.cc"],
-    deps = [":skip"],
+    deps = [
+        ":skip",
+        "//tests/iterator/fixtures:fixed_size_iterator",
+    ],
 )
 
 violet_cc_library(
@@ -118,5 +129,8 @@ violet_cc_library(
 violet_cc_test(
     name = "take_test",
     srcs = ["//tests/iterator:Take.test.cc"],
-    deps = [":take"],
+    deps = [
+        ":take",
+        "//tests/iterator/fixtures:fixed_size_iterator",
+    ],
 )

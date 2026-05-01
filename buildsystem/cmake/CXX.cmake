@@ -19,264 +19,259 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-## --=-- Definitions and C++ Options --=--
-set(VIOLET_DEFINES "CMAKE;VIOLET_BUILDSYSTEM_CMAKE")
+include(CMakeDependentOption)
+include(Utils)
+
+encode_version_as_integer("${VIOLET_VERSION}" VIOLET_VERSION_INT)
+
+if(VIOLET_DEVBUILD)
+    set(VIOLET_DEVBUILD_INT 1)
+else()
+    set(VIOLET_DEVBUILD_INT 0)
+endif()
+
+set(VIOLET_DEFINES
+    "NOMINMAX"
+    "VIOLET_BUILDSYSTEM_CMAKE"
+    "VIOLET_VERSION=${VIOLET_VERSION_INT}"
+    "VIOLET_DEVBUILD=${VIOLET_DEVBUILD_INT}"
+)
 
 if(UNIX)
-    list(APPEND VIOLET_DEFINES "VIOLET_UNIX;VIOLET_PLATFORM_UNIX")
+    list(APPEND VIOLET_DEFINES "VIOLET_PLATFORM_UNIX")
     if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        list(APPEND VIOLET_DEFINES "VIOLET_APPLE_MACOS;VIOLET_PLATFORM_APPLE_MACOS")
+        list(APPEND VIOLET_DEFINES "VIOLET_PLATFORM_APPLE_MACOS")
     elseif(LINUX)
-        list(APPEND VIOLET_DEFINES "VIOLET_LINUX;VIOLET_PLATFORM_LINUX")
+        list(APPEND VIOLET_DEFINES "_GNU_SOURCE;VIOLET_PLATFORM_LINUX")
     endif()
 elseif(WIN32)
-    list(APPEND VIOLET_DEFINES "VIOLET_WINDOWS;VIOLET_PLATFORM_WINDOWS")
-    if(VIOLET_WIN32_DLLEXPORT)
-        list(APPEND VIOLET_DEFINES "VIOLET_DLL_EXPORT")
-    endif()
+    list(APPEND VIOLET_DEFINES "VIOLET_PLATFORM_WINDOWS")
 endif()
 
-# Architecture Defines
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-    list(APPEND VIOLET_DEFINES "VIOLET_AARCH64;VIOLET_ARCH_AARCH64")
+    list(APPEND VIOLET_DEFINES "VIOLET_ARCH_AARCH64")
 elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-    list(APPEND VIOLET_DEFINES "VIOLET_X86_64;VIOLET_ARCH_X86_64")
+    list(APPEND VIOLET_DEFINES "VIOLET_ARCH_X86_64")
 endif()
 
-# Compiler Defines and C++ options
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    list(APPEND VIOLET_OS_DEFINES "VIOLET_CLANG;VIOLET_COMPILER_CLANG")
-    set(VIOLET_COMPILER_COPTS "-DNOMINMAX")
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    list(APPEND VIOLET_OS_DEFINES "VIOLET_GCC;VIOLET_COMPILER_GCC")
-    set(VIOLET_COMPILER_COPTS "-DNOMINMAX")
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC;VIOLET_COMPILER_MSVC")
-    list(APPEND VIOLET_OS_DEFINES "VIOLET_MSVC")
-    set(VIOLET_COMPILER_COPTS "/DNOMINMAX /DWIN32_LEAN_AND_MEAN")
-else()
-    set(VIOLET_COMPILER_COPTS "")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(MSVC)
+        list(APPEND VIOLET_DEFINES "VIOLET_COMPILER_CLANG_CL")
+    else()
+        list(APPEND VIOLET_DEFINES "VIOLET_COMPILER_CLANG")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    list(APPEND VIOLET_DEFINES "VIOLET_COMPILER_GCC")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    list(APPEND VIOLET_DEFINES "VIOLET_COMPILER_MSVC;WIN32_LEAN_AND_MEAN")
 endif()
 
 ## --=-- Sanitizer Options --=--
 if (VIOLET_ASAN)
-    set(VIOLET_SANITIZER_OPTS "-fsanitize=address")
-    set(VIOLET_ASAN_OPTIONS "print_summary=1:print_stacktrace=1")
-    set(VIOLET_SANITIZER_ENV "ASAN_OPTIONS=${VIOLET_ASAN_OPTIONS}")
+    set(VIOLET_SANITIZER_COPTS "-fsanitize=address")
+    set(VIOLET_SANITIZER_LINKOPTS "-fsanitize=address")
+    set(VIOLET_ASAN_OPTIONS "detect_leaks=1:color=always:print_summary=1")
+    set(VIOLET_LSAN_OPTIONS "report_objects=1:print_summary=1")
+    set(VIOLET_SANITIZER_ENV "ASAN_OPTIONS=${VIOLET_ASAN_OPTIONS};LSAN_OPTIONS=${VIOLET_LSAN_OPTIONS}")
 elseif (VIOLET_MSAN)
-    set(VIOLET_SANITIZER_OPTS "-fsanitize=memory")
-    set(VIOLET_SANITIZER_ENV "MSAN_OPTIONS=")
+    set(VIOLET_SANITIZER_COPTS "-fsanitize=memory")
+    set(VIOLET_SANITIZER_LINKOPTS "-fsanitize=memory")
+    set(VIOLET_MSAN_OPTIONS "poison_in_dtor=1")
+    set(VIOLET_SANITIZER_ENV "MSAN_OPTIONS=${VIOLET_MSAN_OPTIONS}")
 elseif (VIOLET_TSAN)
-    set(VIOLET_SANITIZER_OPTS "-fsanitize=thread")
-    set(VIOLET_SANITIZER_ENV "TSAN_OPTIONS=print_summary=1")
+    set(VIOLET_SANITIZER_COPTS "-fsanitize=thread")
+    set(VIOLET_SANITIZER_LINKOPTS "-fsanitize=thread")
+    set(VIOLET_TSAN_OPTIONS "halt_on_error=1:print_summary=1:second_deadlock_state=1:report_atomic_races=0")
+    set(VIOLET_SANITIZER_ENV "TSAN_OPTIONS=${VIOLET_TSAN_OPTIONS}")
 elseif (VIOLET_UBSAN)
-    set(VIOLET_SANITIZER_OPTS "-fsanitize=undefined")
-    set(VIOLET_UBSAN_OPTIONS "print_summary=1:print_stacktrace=1")
+    set(VIOLET_SANITIZER_COPTS "-fsanitize=undefined")
+    set(VIOLET_SANITIZER_LINKOPTS "-fsanitize=undefined")
+    set(VIOLET_UBSAN_OPTIONS "halt_on_error=1:print_summary=1:print_stacktrace=1")
     set(VIOLET_SANITIZER_ENV "UBSAN_OPTIONS=${VIOLET_UBSAN_OPTIONS}")
 else()
-    set(VIOLET_SANITIZER_OPTS "")
+    set(VIOLET_SANITIZER_COPTS "")
+    set(VIOLET_SANITIZER_LINKOPTS "")
     set(VIOLET_SANITIZER_ENV "")
 endif()
 
-function(violet_cc_library TARGET_NAME)
-    # Parse all arguments that are mimicked from `buildsystem/bazel/cc.bzl`.
+function(violet_cc_library TARGET)
     cmake_parse_arguments(
         VCC
-        "SHARED"
+        "PUBLIC"
         ""
-        "SRCS;HDRS;DEPS;COPTS;LINKOPTS;PRIVATE_DEPS"
+        "SRCS;HDRS;DEPS;COPTS;LINKOPTS;DEFINES;LOCAL_DEFINES"
         ${ARGN}
     )
 
-    if(NOT VCC_SRCS AND VCC_HDRS)
-        add_library(viol_${TARGET_NAME} INTERFACE)
+    if (NOT VCC_SRCS AND VCC_HDRS)
+        add_library(violet_${TARGET} INTERFACE)
+        add_library(violet::${TARGET} ALIAS violet_${TARGET})
 
-        target_include_directories(viol_${TARGET_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
-
-        # Add compiler options to library
-        target_compile_options(
-            viol_${TARGET_NAME} INTERFACE
-            ${VCC_COPTS}
-            ${VIOLET_SANITIZER_OPTS}
-            ${VIOLET_COMPILER_COPTS}
+        target_include_directories(violet_${TARGET} INTERFACE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         )
 
-        # Add linker options
-        target_link_options(
-            viol_${TARGET_NAME} INTERFACE
-            ${VCC_LINKOPTS}
-            ${VIOLET_SANITIZER_OPTS}
+        target_compile_definitions(violet_${TARGET} INTERFACE ${VIOLET_DEFINES} ${VCC_DEFINES})
+        target_compile_options(violet_${TARGET} INTERFACE ${VCC_COPTS} ${VIOLET_SANITIZER_COPTS})
+        target_link_options(violet_${TARGET} INTERFACE ${VCC_LINKOPTS} ${VIOLET_SANITIZER_LINKOPTS})
+        target_compile_definitions(violet_${TARGET} INTERFACE
+            VIOLET_BUILDING
+            ${VCC_LOCAL_DEFINES}
         )
 
-        # Add definitions
-        target_compile_definitions(
-            viol_${TARGET_NAME} INTERFACE
-            ${VIOLET_DEFINES}
-        )
-
-        # Add dependencies, if any were given
-        target_link_libraries(viol_${TARGET_NAME} INTERFACE ${VCC_DEPS})
-    else()
-        set(VCC_SRCS_AND_HDRS ${VCC_SRCS} ${VCC_HDRS})
-
-        # Create the library itself
-        add_library(viol_${TARGET_NAME} "")
-        target_sources(viol_${TARGET_NAME} PRIVATE ${VCC_SRCS} ${VCC_HDRS})
-
-        # Add compiler options to library
-        target_compile_options(
-            viol_${TARGET_NAME} PRIVATE
-            ${VCC_COPTS}
-            ${VIOLET_SANITIZER_OPTS}
-            ${VIOLET_COMPILER_COPTS}
-        )
-
-        # Add linker options
-        target_link_options(
-            viol_${TARGET_NAME} PRIVATE
-            ${VCC_LINKOPTS}
-            ${VIOLET_SANITIZER_OPTS}
-        )
-
-        # Add definitions
-        target_compile_definitions(
-            viol_${TARGET_NAME} PRIVATE
-            ${VIOLET_DEFINES}
-        )
-
-        target_include_directories(viol_${TARGET_NAME} PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-        )
-
-        target_link_libraries(viol_${TARGET_NAME} PUBLIC ${VCC_DEPS})
-
-        if(VCC_PRIVATE_DEPS)
-            target_link_libraries(viol_${TARGET_NAME} PUBLIC ${VCC_PRIVATE_DEPS})
+        if (VCC_DEPS)
+            target_link_libraries(violet_${TARGET} INTERFACE ${VCC_DEPS})
         endif()
 
-        set_property(TARGET viol_${TARGET_NAME} PROPERTY CXX_STANDARD ${CMAKE_CXX_STANDARD})
-        target_sources(viol_${TARGET_NAME} PRIVATE ${VCC_HDRS})
-    endif()
-
-    if (VIOLET_INSTALL)
-        install(TARGETS viol_${TARGET_NAME} EXPORT VioletTargets
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
-    endif()
-
-    add_library(violet::${TARGET_NAME} ALIAS viol_${TARGET_NAME})
-endfunction()
-
-# --- Custom cc_test mimic ---
-function(violet_cc_test TARGET_NAME)
-    if(NOT VIOLET_ENABLE_TESTS)
         return()
-    endif()
-
-    # Parse arguments
-    cmake_parse_arguments(
-        VCT
-        ""
-        "SIZE"
-        "SRCS;DEPS;COPTS;LINKOPTS;ENV"
-        ${ARGN}
-    )
-
-    # Set default size (mimics Bazel's `size = "small"`)
-    if (NOT VCT_SIZE)
-        set(VCT_SIZE "small")
-    endif()
-
-    add_executable(viol_${TARGET_NAME} ${VCT_SRCS})
-
-    target_compile_options(
-        viol_${TARGET_NAME} PRIVATE
-        ${VCT_COPTS}
-        ${VIOLET_SANITIZER_OPTS}
-    )
-
-    target_link_options(
-        viol_${TARGET_NAME} PRIVATE
-        ${VCT_LINKOPTS}
-        ${VIOLET_SANITIZER_OPTS}
-    )
-
-    set(TEST_DEPS ${VCT_DEPS})
-
-    # GTEST_{CFLAGS|LDFLAGS} is only set if GoogleTest was found via pkg-config when
-    # using the system's version of GoogleTest. Yes, it is cursed. No, I don't like it.
-    # And no, there is no better way of doing this.
-    if(DEFINED GTEST_CFLAGS AND DEFINED GTEST_LDFLAGS)
-        target_link_libraries(viol_${TARGET_NAME} PRIVATE ${VCT_DEPS} ${GTEST_LDFLAGS})
-        target_compile_options(viol_${TARGET_NAME} PRIVATE ${GTEST_CFLAGS})
     else()
-        target_link_libraries(viol_${TARGET_NAME} PRIVATE ${VCT_DEPS} GTest::gtest GTest::gtest_main)
+    if (BUILD_SHARED_LIBS)
+            add_library(violet_${TARGET} SHARED ${VCC_SRCS} ${VCC_HDRS})
+        else()
+            add_library(violet_${TARGET} STATIC ${VCC_SRCS} ${VCC_HDRS})
+        endif()
     endif()
 
-    add_test(NAME viol_${TARGET_NAME} COMMAND viol_${TARGET_NAME})
-    gtest_discover_tests(viol_${TARGET_NAME})
-
-    if (VIOLET_SANITIZER_ENV)
-        list(APPEND TEST_ENVIRONMENT_VARS ${VIOLET_SANITIZER_ENV})
-    endif()
-
-    foreach (ITEM ${VCT_ENV})
-        list(APPEND TEST_ENVIRONMENT_VARS ${ITEM})
-    endforeach()
-
-    if (TEST_ENVIRONMENT_VARS)
-        set_tests_properties(viol_${TARGET_NAME} PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_VARS}")
-    endif()
-
-    set_tests_properties(viol_${TARGET_NAME} PROPERTIES LABELS "size=${VCT_SIZE}")
-endfunction()
-
-function(violet_platform_sources target base)
-    if(NOT TARGET ${target})
-        message(FATAL_ERROR "Target '${target}' does not exist yet!")
-    endif()
-
-    cmake_parse_arguments(
-        PF
-        ""
-        "APPLE;LINUX;WINDOWS"
-        ""
-        ${ARGN}
+    target_include_directories(violet_${TARGET} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     )
 
-    set(sources "")
-    if(WIN32)
-        if (PF_WINDOWS)
-            list(APPEND sources "${base}/${PF_WINDOWS}")
+    target_compile_options(violet_${TARGET} PRIVATE ${VCC_COPTS} ${VIOLET_SANITIZER_COPTS})
+    target_link_options(violet_${TARGET} PRIVATE ${VCC_LINKOPTS} ${VIOLET_SANITIZER_LINKOPTS})
+
+    target_compile_definitions(violet_${TARGET} PRIVATE
+        VIOLET_BUILDING
+        ${VCC_LOCAL_DEFINES}
+    )
+
+    target_compile_definitions(violet_${TARGET} PUBLIC ${VIOLET_DEFINES} ${VCC_DEFINES})
+
+    if (BUILD_SHARED_LIBS)
+        target_compile_definitions(violet_${TARGET} PUBLIC VIOLET_BUILD_SHARED)
+        if (VIOLET_COMPILER_MSVC OR VIOLET_COMPILER_CLANG_CL)
+            target_compile_options(violet_${TARGET} PRIVATE "/Zc:dllexportInlines-")
         else()
-            list(APPEND sources "${base}/windows.cc")
-        endif()
-    elseif(UNIX)
-        if(APPLE AND PF_APPLE)
-            if (EXISTS PF_APPLE)
-                list(APPEND sources "${base}/${PF_APPLE}")
-            else()
-                message(FATAL_ERROR "Unable to find file [${base}/${PF_LINUX}]")
-            endif()
-        elseif(LINUX AND PF_LINUX)
-            if(EXISTS "${base}/${PF_LINUX}")
-                list(APPEND sources "${base}/${PF_LINUX}")
-            else()
-                message(FATAL_ERROR "Unable to find file [${base}/${PF_LINUX}]")
-            endif()
-        endif()
-
-        if (EXISTS "${base}/unix.cc")
-            list(APPEND sources "${base}/unix.cc")
+            target_compile_options(violet_${TARGET} PRIVATE
+                "-fvisibility=hidden"
+                "-fvisibility-inlines-hidden"
+            )
         endif()
     endif()
 
-    if(${sources} STREQUAL "")
-        list(APPEND sources "${base}/unsupported.cc")
+    if (VCC_DEPS)
+        target_link_libraries(violet_${TARGET} PUBLIC ${VCC_DEPS})
     endif()
 
-    target_sources(${target} PRIVATE ${sources})
+    add_library(violet::${TARGET} ALIAS violet_${TARGET})
 endfunction()
+
+# # --- Custom cc_test mimic ---
+# function(violet_cc_test TARGET_NAME)
+#     if(NOT VIOLET_ENABLE_TESTS)
+#         return()
+#     endif()
+
+#     # Parse arguments
+#     cmake_parse_arguments(
+#         VCT
+#         ""
+#         "SIZE"
+#         "SRCS;DEPS;COPTS;LINKOPTS;ENV"
+#         ${ARGN}
+#     )
+
+#     # Set default size (mimics Bazel's `size = "small"`)
+#     if (NOT VCT_SIZE)
+#         set(VCT_SIZE "small")
+#     endif()
+
+#     add_executable(viol_${TARGET_NAME} ${VCT_SRCS})
+
+#     target_compile_options(
+#         viol_${TARGET_NAME} PRIVATE
+#         ${VCT_COPTS}
+#         ${VIOLET_SANITIZER_OPTS}
+#     )
+
+#     target_link_options(
+#         viol_${TARGET_NAME} PRIVATE
+#         ${VCT_LINKOPTS}
+#         ${VIOLET_SANITIZER_OPTS}
+#     )
+
+#     set(TEST_DEPS ${VCT_DEPS})
+
+#     # GTEST_{CFLAGS|LDFLAGS} is only set if GoogleTest was found via pkg-config when
+#     # using the system's version of GoogleTest. Yes, it is cursed. No, I don't like it.
+#     # And no, there is no better way of doing this.
+#     if(DEFINED GTEST_CFLAGS AND DEFINED GTEST_LDFLAGS)
+#         target_link_libraries(viol_${TARGET_NAME} PRIVATE ${VCT_DEPS} ${GTEST_LDFLAGS})
+#         target_compile_options(viol_${TARGET_NAME} PRIVATE ${GTEST_CFLAGS})
+#     else()
+#         target_link_libraries(viol_${TARGET_NAME} PRIVATE ${VCT_DEPS} GTest::gtest GTest::gtest_main)
+#     endif()
+
+#     add_test(NAME viol_${TARGET_NAME} COMMAND viol_${TARGET_NAME})
+#     gtest_discover_tests(viol_${TARGET_NAME})
+
+#     if (VIOLET_SANITIZER_ENV)
+#         list(APPEND TEST_ENVIRONMENT_VARS ${VIOLET_SANITIZER_ENV})
+#     endif()
+
+#     foreach (ITEM ${VCT_ENV})
+#         list(APPEND TEST_ENVIRONMENT_VARS ${ITEM})
+#     endforeach()
+
+#     if (TEST_ENVIRONMENT_VARS)
+#         set_tests_properties(viol_${TARGET_NAME} PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_VARS}")
+#     endif()
+
+#     set_tests_properties(viol_${TARGET_NAME} PROPERTIES LABELS "size=${VCT_SIZE}")
+# endfunction()
+
+# function(violet_platform_sources target base)
+#     if(NOT TARGET ${target})
+#         message(FATAL_ERROR "Target '${target}' does not exist yet!")
+#     endif()
+
+#     cmake_parse_arguments(
+#         PF
+#         ""
+#         "APPLE;LINUX;WINDOWS"
+#         ""
+#         ${ARGN}
+#     )
+
+#     set(sources "")
+#     if(WIN32)
+#         if (PF_WINDOWS)
+#             list(APPEND sources "${base}/${PF_WINDOWS}")
+#         else()
+#             list(APPEND sources "${base}/windows.cc")
+#         endif()
+#     elseif(UNIX)
+#         if(APPLE AND PF_APPLE)
+#             if (EXISTS PF_APPLE)
+#                 list(APPEND sources "${base}/${PF_APPLE}")
+#             else()
+#                 message(FATAL_ERROR "Unable to find file [${base}/${PF_LINUX}]")
+#             endif()
+#         elseif(LINUX AND PF_LINUX)
+#             if(EXISTS "${base}/${PF_LINUX}")
+#                 list(APPEND sources "${base}/${PF_LINUX}")
+#             else()
+#                 message(FATAL_ERROR "Unable to find file [${base}/${PF_LINUX}]")
+#             endif()
+#         endif()
+
+#         if (EXISTS "${base}/unix.cc")
+#             list(APPEND sources "${base}/unix.cc")
+#         endif()
+#     endif()
+
+#     if(${sources} STREQUAL "")
+#         list(APPEND sources "${base}/unsupported.cc")
+#     endif()
+
+#     target_sources(${target} PRIVATE ${sources})
+# endfunction()

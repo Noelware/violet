@@ -55,3 +55,11 @@ load(":flags.bzl", "BOOL_FLAGS", "STRING_FLAGS")
     },
     visibility = ["//:__subpackages__"],
 ) for (flag, map) in STRING_FLAGS.items() for value in map.get("values", [])]
+
+config_setting(
+    name = "dbg_build",
+    values = {
+        "compilation_mode": "dbg",
+    },
+    visibility = ["//:__subpackages__"],
+)

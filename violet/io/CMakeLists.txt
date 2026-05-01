@@ -21,66 +21,9 @@
 
 include(CXX)
 
-violet_cc_library(
-    io_error
-    SRCS
-        ${CMAKE_SOURCE_DIR}/src/io/error.cc
-    HDRS
-        ${CMAKE_SOURCE_DIR}/include/violet/IO/Error.h
-    DEPS
-        violet::violet
-        violet::optional
-        violet::result
-)
+## START: Targets ##
+## END: Targets ##
 
-violet_platform_sources(viol_io_error "${CMAKE_SOURCE_DIR}/src/io/platform/error")
-
-violet_cc_library(
-    io_read
-    SRCS
-        ${CMAKE_SOURCE_DIR}/src/io/read.cc
-    HDRS
-        ${CMAKE_SOURCE_DIR}/include/violet/IO/Read.h
-    DEPS
-        violet::violet
-        violet::io_error
-)
-
-violet_cc_test(
-    io_read_test
-    SRCS
-        ${CMAKE_SOURCE_DIR}/tests/io/Read.test.cc
-    DEPS
-        violet::io_read
-)
-
-violet_cc_library(
-    io_write
-    SRCS
-        ${CMAKE_SOURCE_DIR}/src/io/write.cc
-    HDRS
-        ${CMAKE_SOURCE_DIR}/include/violet/IO/Write.h
-    DEPS
-        violet::violet
-        violet::io_error
-)
-
-violet_cc_test(
-    io_write_test
-    SRCS
-        ${CMAKE_SOURCE_DIR}/tests/io/Write.test.cc
-    DEPS
-        violet::io_write
-)
-
-violet_cc_library(
-    io_descriptor
-    HDRS
-        ${CMAKE_SOURCE_DIR}/include/violet/IO/Descriptor.h
-    DEPS
-        violet::violet
-        violet::io_read
-        violet::io_write
-)
-
-violet_platform_sources(viol_io_descriptor "${CMAKE_SOURCE_DIR}/src/io/platform/descriptor")
+if ("Violet.IO.Experimental" in VIOLET_FRAMEWORKS)
+    add_subdirectory(experimental)
+endif()

@@ -53,10 +53,6 @@ BOOL_FLAGS = {
         "default": False,
         "doc": "Enables the **Undefined Behaviour** Sanitizer on each C++ target. Usually, this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions.",
     },
-    "win32_dllexport": {
-        "default": False,
-        "doc": "When set to **true**, this will use `__declspec(dllexport)` on MSVC toolchains instead of `__declspec(dllimport)`. This is a no-op on non-MSVC toolchains.",
-    },
 }
 
 STRING_FLAGS = {

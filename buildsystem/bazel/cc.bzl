@@ -33,13 +33,11 @@ def violet_cc_library(name, deps = [], copts = [], linkopts = [], local_defines 
         copts = copts + sanitizer["copts"],
         linkopts = linkopts + sanitizer["linkopts"],
         includes = ["includes"],
-        local_defines = local_defines + ["VIOLET_BUILDING"],
+        local_defines = local_defines + select({
+            "//buildsystem/bazel/flags:dbg_build": ["VIOLET_NO_ASSERT_SUBSCRIPT"],
+            "//conditions:default": [],
+        }) + ["VIOLET_BUILDING"],
         defines = defines + [
-            # deprecated define; use `VIOLET_BUILDSYSTEM_BAZEL` or `VIOLET_BUILDSYSTEM(<system>)`
-            # to detect what buildsystem what we are under
-            "BAZEL",
-
-            # new flag as of 26.05.05
             "VIOLET_BUILDSYSTEM_BAZEL",
             ("VIOLET_VERSION=%d" % encode_as_int()),
             ("VIOLET_DEVBUILD=%d" % (1 if DEVBUILD else 0)),

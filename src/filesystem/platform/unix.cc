@@ -55,8 +55,10 @@ struct Dirs::Impl final {
 
     ~Impl()
     {
-        if (this->n_entries != nullptr)
+        if (this->n_entries != nullptr) {
             ::closedir(this->n_entries);
+            this->n_entries = nullptr;
+        }
     }
 
     Impl(const Dirs::Impl&) = delete;
@@ -97,7 +99,6 @@ private:
 };
 
 template<typename... Args>
-    requires(std::is_constructible_v<Dirs::Impl, Args...>)
 Dirs::Dirs(Args&&... args)
     : n_impl(new Impl(VIOLET_FWD(Args, args)...))
 {
@@ -145,6 +146,8 @@ struct WalkDirs::Impl final {
             VIOLET_DEBUG_ASSERT(frame.DirEntry != nullptr, "existence of a dirent pointer failed");
             ::closedir(frame.DirEntry);
         }
+
+        this->n_stack.clear();
     }
 
     auto Next() -> Optional<WalkDirs::Item>
@@ -189,7 +192,6 @@ private:
 };
 
 template<typename... Args>
-    requires(std::is_constructible_v<WalkDirs::Impl, Args...>)
 WalkDirs::WalkDirs(Args&&... args)
     : n_impl(new Impl(VIOLET_FWD(Args, args)...))
 {

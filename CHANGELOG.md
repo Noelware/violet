@@ -7,6 +7,22 @@ availableAt:
 ---
 
 ### unreleased
+- (breaking) Remove the old, deprecated platform/compiler/buildsystem/architecture-based macros that were deprecated in [26.05.05](#260505) ([`@auguwu`])
+- (breaking) Deprecate `VIOLET_{M|T|UB|A}SAN` for `VIOLET_SANITIZER_{ADDRESS|MEMORY|THREAD|UNDEFINED}`, will be removed in a 26.07 release ([`@auguwu`])
+
+#### CMake
+- Improve interface around the CMake build. Getting closer to codegen from Bazel to CMake targets.
+
+#### Noelware.Violet
+- **Iterator**: Add forwarded declarations for all iterable combinators ([`@auguwu`])
+- **Iterator**: Make the return type for combinators more obvious ([`@auguwu`])
+- **Iterator**: Add documentation for all iterable combinators ([`@auguwu`])
+- **Iterator**: Add `underlying_iterator` and `underlying_iterator_t` type trait ([`@auguwu`])
+- **Optional**: Add `Optional::operator<=>` for `violet::Nothing`, `violet::Optional`, `std::optional`, and `T` ([`@auguwu`])
+
+#### Noelware.Violet.Filesystem
+- Fix a issue where when using `WalkDirs`/`Dirs` fails to compile ([`@auguwu`])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.05.08...master>
 
 ### 26.05.08

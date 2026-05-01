@@ -1180,6 +1180,78 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         return !(*this == other);
     }
 
+    constexpr auto operator<=>(std::nullopt_t) const -> std::strong_ordering
+    {
+        return this->HasValue() <=> false;
+    }
+
+    constexpr auto operator<=>(const std::optional<T>& other) const -> std::strong_ordering
+        requires(std::three_way_comparable<T>)
+    {
+        if (this->HasValue() && other.has_value()) {
+            return this->Value() <=> *other;
+        }
+
+        return this->HasValue() <=> other.has_value();
+    }
+
+    constexpr auto operator<=>(const std::optional<T>& other) const -> std::partial_ordering
+        requires(!std::three_way_comparable<T> && std::totally_ordered<T>)
+    {
+        if (this->HasValue() && other.has_value()) {
+            if (**this < *other) {
+                return std::partial_ordering::less;
+            }
+
+            if (*other < **this) {
+                return std::partial_ordering::greater;
+            }
+
+            return std::partial_ordering::equivalent;
+        }
+
+        return this->HasValue() <=> other.has_value();
+    }
+
+    constexpr auto operator<=>(const Optional& other) const -> std::strong_ordering
+        requires(std::three_way_comparable<T>)
+    {
+        if (this->HasValue() && other.HasValue()) {
+            return this->Value() <=> other.Value();
+        }
+
+        return this->HasValue() <=> other.HasValue();
+    }
+
+    constexpr auto operator<=>(const Optional& other) const -> std::partial_ordering
+        requires(!std::three_way_comparable<T> && std::totally_ordered<T>)
+    {
+        if (this->HasValue() && other.HasValue()) {
+            if (**this < *other) {
+                return std::partial_ordering::less;
+            }
+
+            if (*other < **this) {
+                return std::partial_ordering::greater;
+            }
+
+            return std::partial_ordering::equivalent;
+        }
+
+        return this->HasValue() <=> other.HasValue();
+    }
+
+    template<typename U = T>
+    constexpr auto operator<=>(const T& rhs) const -> std::compare_three_way_result_t<U>
+        requires std::three_way_comparable<U>
+    {
+        if (this->HasValue()) {
+            return **this <=> rhs;
+        }
+
+        return std::strong_ordering::less;
+    }
+
     [[nodiscard]] auto ToString() const noexcept -> String
     {
         if (!this->HasValue()) {
