@@ -49,6 +49,8 @@ copts = cpp.get_supported_arguments(
     '-Wno-gcc-compat',
     '-Wno-gnu-statement-expression',
     '-Wno-c2y-extensions',
+    '-Wno-c++26-extensions',
+    '-Wno-pragmas',
 )
 
 fs = import('fs')
