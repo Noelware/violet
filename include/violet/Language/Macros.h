@@ -100,7 +100,7 @@
 // | |     | | +-----------------+ +----+ +-------+ +--------+ +--------+ | |           | |
 // | +-----+ +------------------------------------------------------------+ +-----------+ |
 // +--------------------------------------------------------------------------------------+
-#if !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
+#if VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
 #include <TargetConditionals.h>
 
 #if TARGET_OS_MAC && TARGET_OS_OSX

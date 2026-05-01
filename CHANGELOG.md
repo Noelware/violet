@@ -7,6 +7,9 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.06...master>
+
+### 26.06
 - (breaking) Remove the old, deprecated platform/compiler/buildsystem/architecture-based macros that were deprecated in [26.05.05](#260505) ([`@auguwu`])
 - (breaking) Deprecate `VIOLET_{M|T|UB|A}SAN` for `VIOLET_SANITIZER_{ADDRESS|MEMORY|THREAD|UNDEFINED}`, will be removed in a 26.07 release ([`@auguwu`])
 
@@ -27,7 +30,7 @@ availableAt:
 #### Noelware.Violet.Filesystem
 - Fix a issue where when using `WalkDirs`/`Dirs` fails to compile ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.05.08...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.05.08...26.06>
 
 ### 26.05.08
 #### Noelware.Violet
