@@ -34,10 +34,12 @@ on:
             - 'hack/**'
             - '.ci/**'
             - 'nix/**'
+            - 'docs/**'
 
             - 'tools/bazeldist'
             - 'tools/hotpatch-release.py'
 
+            - .noeldoc.yml
             - CHANGELOG.md
             - renovate.json
             - flake.lock
