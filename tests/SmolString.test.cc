@@ -22,10 +22,10 @@
 // NOLINTBEGIN(readability-identifier-length)
 
 #include <gtest/gtest.h>
-#include <violet/Experimental/SmolString.h>
+#include <violet/SmolString.h>
 
 // NOLINTBEGIN(google-build-using-namespace)
-using namespace violet::experimental;
+using namespace violet;
 using namespace std::string_view_literals;
 // NOLINTEND(google-build-using-namespace)
 

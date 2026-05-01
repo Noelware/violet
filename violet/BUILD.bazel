@@ -126,7 +126,7 @@ violet_cc_library(
     hdrs = ["//include/violet/Runtime:Info.h"],
     deps = [
         ":macros",
-        "//violet/experimental:smol_string",
+        ":smol_string",
     ],
 )
 
@@ -153,4 +153,21 @@ violet_cc_library(
         ":print",
         ":source_location",
     ],
+)
+
+violet_cc_library(
+    name = "smol_string",
+    hdrs = ["//include/violet:SmolString.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":assert",
+        ":macros",
+        ":policy_checks",
+    ],
+)
+
+violet_cc_test(
+    name = "smol_string_test",
+    srcs = ["//tests:SmolString.test.cc"],
+    deps = [":smol_string"],
 )

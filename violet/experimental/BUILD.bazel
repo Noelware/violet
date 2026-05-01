@@ -28,18 +28,13 @@ package(
 violet_cc_library(
     name = "smol_string",
     hdrs = ["//include/violet/Experimental:SmolString.h"],
+    deprecation = "`smol_string` has been promoted to Noelware.Violet as of 26.06, use `@violet//violet:smol_string` instead",
     visibility = ["//visibility:public"],
     deps = [
         "//violet:assert",
         "//violet:macros",
         "//violet:policy_checks",
     ],
-)
-
-violet_cc_test(
-    name = "smol_string_test",
-    srcs = ["//tests/experimental:SmolString.test.cc"],
-    deps = [":smol_string"],
 )
 
 violet_cc_library(

@@ -270,6 +270,7 @@ auto violet::terminal::ColoursEnabled(StreamSource source) noexcept -> bool
         case ColorChoice::Never:
             return false;
 
+        case ColorChoice::Auto:
         default:
             break;
         }

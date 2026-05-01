@@ -20,24 +20,24 @@
 # SOFTWARE.
 
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
-load("//buildsystem/bazel:cc/defs.bzl", "defines", "sanitizer")
+load("//buildsystem/bazel:cc/defs.bzl", "sanitizer", other_copts = "copts", other_defines = "defines")
 load(":version.bzl", "DEVBUILD", "encode_as_int")
 
-def violet_cc_library(name, deps = [], copts = [], linkopts = [], local_defines = [], **kwargs):
+def violet_cc_library(name, deps = [], copts = [], linkopts = [], defines = [], local_defines = [], **kwargs):
     if "includes" in kwargs:
         fail("`violet_cc_library`(%s) defined `includes` but it is not allowed" % name)
 
     return cc_library(
         name = name,
         deps = ["//:include_hack"] + deps,
-        copts = copts + sanitizer["copts"],
+        copts = copts + other_copts + sanitizer["copts"],
         linkopts = linkopts + sanitizer["linkopts"],
         includes = ["includes"],
         local_defines = local_defines + select({
             "//buildsystem/bazel/flags:dbg_build": ["VIOLET_NO_ASSERT_SUBSCRIPT"],
             "//conditions:default": [],
         }) + ["VIOLET_BUILDING"],
-        defines = defines + [
+        defines = defines + other_defines + [
             "VIOLET_BUILDSYSTEM_BAZEL",
             ("VIOLET_VERSION=%d" % encode_as_int()),
             ("VIOLET_DEVBUILD=%d" % (1 if DEVBUILD else 0)),

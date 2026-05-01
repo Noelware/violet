@@ -11,9 +11,13 @@ availableAt:
 - (breaking) Deprecate `VIOLET_{M|T|UB|A}SAN` for `VIOLET_SANITIZER_{ADDRESS|MEMORY|THREAD|UNDEFINED}`, will be removed in a 26.07 release ([`@auguwu`])
 
 #### CMake
-- Improve interface around the CMake build. Getting closer to codegen from Bazel to CMake targets.
+- Improve interface around the CMake build. Getting closer to codegen from Bazel to CMake targets. ([`@auguwu`])
+
+#### Meson
+- Initial support for Meson. ([`@auguwu`])
 
 #### Noelware.Violet
+- Promote **violet::experimental::SmolString** to Noelware.Violet (now as `violet::SmolString`)
 - **Iterator**: Add forwarded declarations for all iterable combinators ([`@auguwu`])
 - **Iterator**: Make the return type for combinators more obvious ([`@auguwu`])
 - **Iterator**: Add documentation for all iterable combinators ([`@auguwu`])

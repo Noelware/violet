@@ -87,7 +87,9 @@ FetchContent_MakeAvailable(violet)
 [`FetchContent`]: https://cmake.org/cmake/help/latest/module/FetchContent.html
 
 ### Meson
-**Meson** is not supported as of this current release. We have a basic `meson.build` but we won't add support unless necessary or if multiple people need support.
+**Meson** is fully supported as of **26.06**! 🎉
+
+You can include `violet` as a Git submodule and `subdir('thirdparty/violet')` and it should just work!
 
 ## License
-**Violet** is licensed under the **Apache 2.0** License with love and care by [Noelware, LLC.](https://noelware.org).
+**Violet** is licensed under the **MIT** License with love and care by [Noelware, LLC.](https://noelware.org).

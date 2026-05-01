@@ -73,10 +73,12 @@
 // * VIOLET_ARCH_{X86_64,AARCH64}
 // * VIOLET_COMPILER_{CLANG|MSVC|GCC}
 // * VIOLET_BUILDSYSTEM_{BAZEL|CMAKE|MESON|GN} - new as of 26.05.05
-#ifndef VIOLET_PLATFORM_LINUX
 #if defined(__linux__) && !defined(__ANDROID__)
-#define VIOLET_PLATFORM_LINUX
+#ifndef VIOLET_PLATFORM_LINUX
+#define VIOLET_PLATFORM_LINUX 1
 #endif
+#else
+#define VIOLET_PLATFORM_LINUX 0
 #endif // !defined(VIOLET_PLATFORM_LINUX)
 
 // If we ever have plans on adding iOS/tvOS/watchOS/visionOS support for this library,
@@ -100,53 +102,85 @@
 // +--------------------------------------------------------------------------------------+
 #if !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
 #include <TargetConditionals.h>
+
 #if TARGET_OS_MAC && TARGET_OS_OSX
-#define VIOLET_PLATFORM_APPLE_MACOS
+#ifndef VIOLET_PLATFORM_APPLE_MACOS
+#define VIOLET_PLATFORM_APPLE_MACOS 1
 #endif
+#endif
+#else
+#define VIOLET_PLATFORM_APPLE_MACOS 0
 #endif // !defined(VIOLET_PLATFORM_APPLE_MACOS) && VIOLET_HAS_INCLUDE(<TargetConditionals.h>)
 
-#if !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
-#define VIOLET_PLATFORM_WINDOWS
+#if defined(_WIN32)
+#ifndef VIOLET_PLATFORM_WINDOWS
+#define VIOLET_PLATFORM_WINDOWS 1
+#endif
+#else
+#define VIOLET_PLATFORM_WINDOWS 0
 #endif // !defined(VIOLET_PLATFORM_WINDOWS) && defined(_WIN32)
 
-#if !defined(VIOLET_ARCH_X86_64)                                                                                       \
-    && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) || defined(__x86_64) || defined(_M_AMD64))
-#define VIOLET_ARCH_VIOLET_ARCH_X86_64
+#if defined(__x86_64__) || defined(__amd64__) || defined(__amd64) || defined(__x86_64) || defined(_M_AMD64)
+#ifndef VIOLET_ARCH_X86_64
+#define VIOLET_ARCH_X86_64 1
+#endif
+#else
+#define VIOLET_ARCH_X86_64 0
 #endif // !defined(VIOLET_ARCH_X86_64) && (defined(__x86_64__) || defined(__amd64__) || defined(__amd64) ||
        // defined(__x86_64) || defined(_M_AMD64))
 
-#if !defined(VIOLET_ARCH_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
-#define VIOLET_ARCH_AARCH64
+#if (defined(__aarch64__) || defined(_M_ARM64))
+#ifndef VIOLET_ARCH_AARCH64
+#define VIOLET_ARCH_AARCH64 1
+#endif
+#else
+#define VIOLET_ARCH_AARCH64 0
 #endif // !defined(VIOLET_ARCH_AARCH64) && (defined(__aarch64__) || defined(_M_ARM64))
 
-#if !defined(VIOLET_COMPILER_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
-#define VIOLET_COMPILER_CLANG
+#if (defined(__clang__) && !defined(_MSC_VER))
+#ifndef VIOLET_COMPILER_CLANG
+#define VIOLET_COMPILER_CLANG 1
+#endif
+#else
+#define VIOLET_COMPILER_CLANG 0
 #endif // !defined(VIOLET_COMPILER_CLANG) && (defined(__clang__) && !defined(_MSC_VER))
 
-#if !defined(VIOLET_COMPILER_CLANG_CL) && (defined(__clang__) && defined(_MSC_VER))
-#define VIOLET_COMPILER_CLANG_CL
+#if (defined(__clang__) && defined(_MSC_VER))
+#ifndef VIOLET_COMPILER_CLANG_CL
+#define VIOLET_COMPILER_CLANG_CL 1
+#endif
+#else
+#define VIOLET_COMPILER_CLANG_CL 0
 #endif // !defined(VIOLET_COMPILER_CLANG_CL) && (defined(__clang__) && defined(_MSC_VER))
 
-#if !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
-#define VIOLET_COMPILER_GCC
+#if (defined(__GNUC__) && !defined(__clang__))
+#ifndef VIOLET_COMPILER_GCC
+#define VIOLET_COMPILER_GCC 1
+#endif
+#else
+#define VIOLET_COMPILER_GCC 0
 #endif // !defined(VIOLET_GCC) && (defined(__GNUC__) && !defined(__clang__))
 
-#if !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
-#define VIOLET_COMPILER_MSVC
+#if (defined(_MSC_VER) && !defined(__clang__))
+#ifndef VIOLET_COMPILER_MSVC
+#define VIOLET_COMPILER_MSVC 1
+#endif
+#else
+#define VIOLET_COMPILER_MSVC 0
 #endif // !defined(VIOLET_MSVC) && (defined(_MSC_VER) && !defined(__clang__))
 
 #if !defined(VIOLET_BUILDSYSTEM_BAZEL) && !defined(VIOLET_BUILDSYSTEM_CMAKE) && !defined(VIOLET_BUILDSYSTEM_MESON)     \
     && !defined(VIOLET_BUILDSYSTEM_GN)
 #warning                                                                                                               \
     "Neither `VIOLET_BUILDSYSTEM_{BAZEL|CMAKE|MESON|GN}` are not set, this is a foreign buildsystem we don't have full support on!"
-#define VIOLET_BUILDSYSTEM_FOREIGN
+#define VIOLET_BUILDSYSTEM_FOREIGN 1
 #endif
 
-#define VIOLET_PLATFORM(platform) defined(VIOLET_PLATFORM_##platform)
-#define VIOLET_ARCH(arch) defined(VIOLET_ARCH_##arch)
-#define VIOLET_COMPILER(compiler) defined(VIOLET_COMPILER_##compiler)
-#define VIOLET_BUILDSYSTEM(system) defined(VIOLET_BUILDSYSTEM_##system)
-#define VIOLET_SANITIZER(sanitizer) defined(VIOLET_SANITIZER_##sanitizer)
+#define VIOLET_PLATFORM(platform) VIOLET_PLATFORM_##platform
+#define VIOLET_ARCH(arch) VIOLET_ARCH_##arch
+#define VIOLET_COMPILER(compiler) VIOLET_COMPILER_##compiler
+#define VIOLET_BUILDSYSTEM(system) VIOLET_BUILDSYSTEM_##system
+#define VIOLET_SANITIZER(sanitizer) VIOLET_SANITIZER_##sanitizer
 
 #ifndef VIOLET_API
 #if VIOLET_COMPILER(MSVC) || VIOLET_COMPILER(CLANG_CL)
@@ -405,7 +439,13 @@
     VIOLET_IMPLICIT_CONSTEXPR_COPY(Type)                                                                               \
     VIOLET_IMPLICIT_CONSTEXPR_MOVE(Type)
 
-#define VIOLET_REQUIRE_STL(ver) (defined(_MSVC_LANG) && _MSVC_LANG >= ver) || __cplusplus >= ver
+#ifdef _MSVC_LANG
+#define VIOLET_CPLUSPLUS _MSVC_LANG
+#else
+#define VIOLET_CPLUSPLUS __cplusplus
+#endif
+
+#define VIOLET_REQUIRE_STL(ver) (VIOLET_CPLUSPLUS >= ver)
 
 #ifdef VIOLET_IS_LITTLE_ENDIAN
 #error "Do not pre-define `VIOLET_IS_LITTLE_ENDIAN`"

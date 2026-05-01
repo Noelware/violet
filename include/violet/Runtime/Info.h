@@ -21,9 +21,15 @@
 
 #pragma once
 
-#include <violet/Experimental/SmolString.h>
+#include <violet/SmolString.h>
 
 namespace violet {
+
+VIOLET_DIAGNOSTIC_PUSH
+
+#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
+VIOLET_DIAGNOSTIC_IGNORE("-Wunused-const-variable")
+#endif
 
 /// Full numeric version identifier.
 ///
@@ -41,7 +47,7 @@ constexpr static const int VERSION = VIOLET_VERSION;
 /// The major year component (e.g. `26`).
 constexpr static const int YEAR = VIOLET_VERSION / 1'000'000;
 
-/// The month component (`1` ~ `12`).
+/// The month component (`2` ~ `13`).
 constexpr static const int MONTH = (VIOLET_VERSION / 10000) % 100;
 
 /// The patch component; value of `0` indicates no patch.
@@ -50,13 +56,15 @@ constexpr static const int PATCH = (VIOLET_VERSION / 100) % 100;
 /// The build component; only available in dev builds.
 constexpr static const int BUILD = VIOLET_VERSION % 100;
 
-#ifdef VIOLET_DEVBUILD
+#if defined(VIOLET_DEVBUILD) && VIOLET_DEVBUILD
 /// Returns **true** if this is a development build.
 constexpr static const bool DEVBUILD = true;
 #else
-/// Returns **true** if this is a development build.
+/// Returns **false** if this is a development build.
 constexpr static const bool DEVBUILD = false;
 #endif
+
+VIOLET_DIAGNOSTIC_POP
 
 /// Returns the library version as a human-readable string.
 ///
@@ -89,16 +97,14 @@ constexpr static const bool DEVBUILD = false;
 /// ```
 constexpr auto Version() noexcept -> experimental::SmolString<256>
 {
-    using namespace std::string_view_literals;
-
-    experimental::SmolString<256> smol;
+    SmolString<256> smol;
     smol.AppendFormatted("{}.{:02}", YEAR, MONTH);
 
     if (PATCH > 0) {
         smol.AppendFormatted(".{:02}", PATCH);
     }
 
-#ifdef VIOLET_DEVBUILD
+#if defined(VIOLET_DEVBUILD) && VIOLET_DEVBUILD
     smol.Append("-dev");
 
     if (BUILD > 0) {

@@ -214,6 +214,35 @@ jobs:
 
             - run: bazel test //... ${{env.BAZELFLAGS}}
 
-    # cmake:
-    # meson:
-    # gn:
+    meson:
+        name: "Meson"
+        runs-on: ubuntu-22.04
+        container:
+            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+        strategy:
+            fail-fast: false
+            matrix:
+                compiler: [gcc-15, gcc-14, clang-22, clang-21, clang-20]
+                include:
+                    - compiler: gcc-15
+                      cxx: g++
+                      cc: gcc
+                    - compiler: gcc-14
+                      cxx: g++
+                      cc: gcc
+                    - compiler: clang-22
+                      cxx: clang++-22
+                      cc: clang-22
+                    - compiler: clang-21
+                      cxx: clang++-21
+                      cc: clang-21
+                    - compiler: clang-20
+                      cxx: clang++-20
+                      cc: clang-20
+        env:
+            CXX: ${{matrix.cxx}}
+            CC: ${{matrix.cc}}
+        steps:
+            - uses: actions/checkout@v6
+            - run: meson setup build --fatal-meson-warnings
+            - run: meson compile -C build

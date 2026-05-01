@@ -80,10 +80,6 @@ enum struct VIOLET_API ErrorKind : UInt8 {
 } // namespace violet::io
 
 VIOLET_TO_STRING(violet::io::ErrorKind, self, {
-#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
-    VIOLET_DIAGNOSTIC_PUSH
-    VIOLET_DIAGNOSTIC_IGNORE("-Wswitch")
-#endif
     switch (self) {
     case io::ErrorKind::AddrInUse:
         return "address in use";
@@ -207,13 +203,11 @@ VIOLET_TO_STRING(violet::io::ErrorKind, self, {
 
     case io::ErrorKind::WriteZero:
         return "write zero";
+
+    case io::ErrorKind::__other:
+    default:
+        VIOLET_UNREACHABLE();
     }
-
-#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
-    VIOLET_DIAGNOSTIC_POP
-#endif
-
-    VIOLET_UNREACHABLE();
 });
 
 namespace violet::io {
@@ -369,6 +363,6 @@ namespace __detail {
 } // namespace violet::io
 
 #define VIOLET_IO_ERROR(KIND, T, ...)                                                                                  \
-    ::violet::io::__detail::__mk_io_error<T>(::violet::io::ErrorKind::KIND, ##__VA_ARGS__)
+    ::violet::io::__detail::__mk_io_error<T>(::violet::io::ErrorKind::KIND __VA_OPT__(, ) __VA_ARGS__)
 
 VIOLET_FORMATTER(violet::io::Error);

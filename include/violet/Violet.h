@@ -108,7 +108,7 @@ struct pack_element<0, T, Ts...> final {
 // As 18/04/26, GCC doesn't implement mangle pack indexing, so for now, we only
 // enable using the pack indexing operator on Clang or if a compiler (that isn't
 // GCC) has `__cpp_pack_indexing`
-#if (defined(__cpp_pack_indexing) && !VIOLET_COMPILER(GCC)) || VIOLET_COMPILER(CLANG)
+#if ((defined(__cpp_pack_indexing) >= 202311L) && !VIOLET_COMPILER(GCC)) || VIOLET_COMPILER(CLANG)
 /// Convenience alias for using the pack indexing operator on newer compiler
 /// versions that support it
 ///
