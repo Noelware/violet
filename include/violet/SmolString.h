@@ -239,7 +239,7 @@ struct VIOLET_API SmolString final {
 };
 
 template<std::size_t M>
-SmolString(const char (&)[M]) -> SmolString<M>;
+SmolString(const char (&)[M]) -> SmolString<M - 1>;
 
 } // namespace violet
 

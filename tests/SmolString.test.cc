@@ -33,7 +33,7 @@ TEST(SmolStrings, DefaultConstructionResultsInEmpty)
 {
     constexpr SmolString<16> str;
 
-    EXPECT_EQ(str.Size(), 0);
+    EXPECT_EQ(str.Size, 0);
     EXPECT_EQ(str.Capacity(), 16);
     EXPECT_TRUE(str.Empty());
     EXPECT_FALSE(str);
@@ -45,7 +45,7 @@ TEST(SmolStrings, ConstructFromStringLiteral)
 
     EXPECT_TRUE(str);
     EXPECT_FALSE(str.Empty());
-    EXPECT_EQ(str.Size(), 5);
+    EXPECT_EQ(str.Size, 5);
     EXPECT_EQ(static_cast<std::string_view>(str), "hello");
 }
 
@@ -55,7 +55,7 @@ TEST(SmolStrings, ConstructFromStringLiteralWithSizeParameter)
 
     EXPECT_TRUE(str);
     EXPECT_FALSE(str.Empty());
-    EXPECT_EQ(str.Size(), 5);
+    EXPECT_EQ(str.Size, 5);
     EXPECT_EQ(static_cast<std::string_view>(str), "hello");
 }
 
@@ -63,7 +63,7 @@ TEST(SmolStrings, ConstructFromEmptyLiteral)
 {
     constexpr SmolString s("");
 
-    EXPECT_EQ(s.Size(), 0);
+    EXPECT_EQ(s.Size, 0);
     EXPECT_TRUE(s.Empty());
 }
 
@@ -72,7 +72,7 @@ TEST(SmolStrings, ConstructFromStringView)
     constexpr auto sv = "world"sv;
     SmolString<16> s(sv);
 
-    EXPECT_EQ(s.Size(), 5);
+    EXPECT_EQ(s.Size, 5);
     EXPECT_EQ(static_cast<std::string_view>(s), "world");
 }
 
@@ -80,7 +80,7 @@ TEST(SmolStrings, ConstructFromEmptyStringView)
 {
     SmolString<8> s(""sv);
 
-    EXPECT_EQ(s.Size(), 0);
+    EXPECT_EQ(s.Size, 0);
     EXPECT_TRUE(s.Empty());
 }
 
@@ -90,7 +90,7 @@ TEST(SmolStrings, CTADDeducesCorrectCapacity)
 
     static_assert(std::is_same_v<decltype(s), const SmolString<3>>);
     EXPECT_EQ(s.Capacity(), 3);
-    EXPECT_EQ(s.Size(), 3);
+    EXPECT_EQ(s.Size, 3);
 }
 
 TEST(SmolStrings, CTADSingleChar)
@@ -98,14 +98,14 @@ TEST(SmolStrings, CTADSingleChar)
     constexpr SmolString s("x");
 
     static_assert(std::is_same_v<decltype(s), const SmolString<1>>);
-    EXPECT_EQ(s.Size(), 1);
+    EXPECT_EQ(s.Size, 1);
 }
 
 TEST(SmolStrings, SizeReflectsContent)
 {
     SmolString<32> s("test");
 
-    EXPECT_EQ(s.Size(), 4);
+    EXPECT_EQ(s.Size, 4);
     EXPECT_EQ(s.Capacity(), 32);
     EXPECT_FALSE(s.Empty());
 }
@@ -121,7 +121,7 @@ TEST(SmolStrings, PushAppendsCharacter)
     SmolString<8> s("ab");
     s.Push('c');
 
-    EXPECT_EQ(s.Size(), 3);
+    EXPECT_EQ(s.Size, 3);
     EXPECT_EQ(static_cast<std::string_view>(s), "abc");
 }
 
@@ -131,7 +131,7 @@ TEST(SmolStrings, PushMultipleCharacters)
     s.Push('h');
     s.Push('i');
 
-    EXPECT_EQ(s.Size(), 2);
+    EXPECT_EQ(s.Size, 2);
     EXPECT_EQ(static_cast<std::string_view>(s), "hi");
 }
 
@@ -140,8 +140,8 @@ TEST(SmolStrings, PushToExactCapacity)
     SmolString<3> s("ab");
     s.Push('c');
 
-    EXPECT_EQ(s.Size(), 3);
-    EXPECT_EQ(s.Size(), s.Capacity());
+    EXPECT_EQ(s.Size, 3);
+    EXPECT_EQ(s.Size, s.Capacity());
     EXPECT_EQ(static_cast<std::string_view>(s), "abc");
 }
 
@@ -151,7 +151,7 @@ TEST(SmolStrings, AppendStringView)
     s.Append(" world");
 
     EXPECT_EQ(static_cast<std::string_view>(s), "hello world");
-    EXPECT_EQ(s.Size(), 11);
+    EXPECT_EQ(s.Size, 11);
 }
 
 TEST(SmolStrings, AppendEmpty)
@@ -160,7 +160,7 @@ TEST(SmolStrings, AppendEmpty)
     s.Append("");
 
     EXPECT_EQ(static_cast<std::string_view>(s), "hello");
-    EXPECT_EQ(s.Size(), 5);
+    EXPECT_EQ(s.Size, 5);
 }
 
 TEST(SmolStrings, AppendChaining)
@@ -176,7 +176,7 @@ TEST(SmolStrings, AppendToExactCapacity)
     SmolString<6> s("foo");
     s.Append("bar");
 
-    EXPECT_EQ(s.Size(), s.Capacity());
+    EXPECT_EQ(s.Size, s.Capacity());
     EXPECT_EQ(static_cast<std::string_view>(s), "foobar");
 }
 
@@ -214,7 +214,7 @@ TEST(SmolStrings, BeginEndDistance)
 {
     SmolString<16> s("test");
 
-    EXPECT_EQ(static_cast<size_t>(s.end() - s.begin()), s.Size());
+    EXPECT_EQ(static_cast<size_t>(s.end() - s.begin()), s.Size);
 }
 
 TEST(SmolStrings, ConstIteration)
@@ -320,7 +320,7 @@ TEST(SmolStrings, ConstexprDefaultConstruction)
 {
     constexpr SmolString<8> s;
 
-    static_assert(s.Size() == 0);
+    static_assert(s.Size == 0);
     static_assert(s.Empty());
 }
 
@@ -328,7 +328,7 @@ TEST(SmolStrings, ConstexprLiteralConstruction)
 {
     constexpr SmolString s("constexpr");
 
-    static_assert(s.Size() == 9);
+    static_assert(s.Size == 9);
     static_assert(!s.Empty());
 }
 
@@ -344,7 +344,7 @@ TEST(SmolStrings, SingleCharacterString)
 {
     constexpr SmolString s("x");
 
-    EXPECT_EQ(s.Size(), 1);
+    EXPECT_EQ(s.Size, 1);
     EXPECT_EQ(s[0], 'x');
     EXPECT_EQ(s.Capacity(), 1);
 }
@@ -353,7 +353,7 @@ TEST(SmolStrings, AllSameCharacters)
 {
     SmolString<4> s("aaaa");
 
-    EXPECT_EQ(s.Size(), 4);
+    EXPECT_EQ(s.Size, 4);
     EXPECT_TRUE(s == "aaaa"sv);
 }
 
@@ -363,7 +363,8 @@ TEST(SmolStrings, NullBytesInContent)
     s.Push('\0');
     s.Push('a');
 
-    EXPECT_EQ(s.Size(), 2);
+    EXPECT_EQ(s.Size, 2);
+
     // string_view should preserve embedded nulls
     auto sv = static_cast<std::string_view>(s);
     EXPECT_EQ(sv.size(), 2);
