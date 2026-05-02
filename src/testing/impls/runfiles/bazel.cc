@@ -49,7 +49,6 @@ using violet::sys::GetEnv;
 
 constexpr static CStr kTestWorkspaceEnv = "TEST_WORKSPACE";
 constexpr static CStr kRunfilesDirEnv = "RUNFILES_DIR";
-constexpr static CStr kDeprecatedWorkspaceOverrideEnv = "VIOLET_TESTING_RUNFILES_WORKSPACE_NAME";
 constexpr static CStr kWorkspaceOverrideEnv = "VIOLET_TESTING_RUNFILES_WORKSPACE";
 
 #ifdef VIOLET_RUNFILES_LOGS
@@ -191,15 +190,6 @@ auto detectWorkspace() -> Optional<String>
     }
 
     println("using `$TEST_WORKSPACE` (from Bazel): {}", *workspace);
-
-    if (auto name = GetEnv(kDeprecatedWorkspaceOverrideEnv)) {
-        printerr("warning: environment variable `${}` is deprecated in favour of `${}`, this will be removed in a "
-                 "26.06 release",
-            kDeprecatedWorkspaceOverrideEnv, kWorkspaceOverrideEnv);
-
-        return name;
-    }
-
     if (auto name = GetEnv(kWorkspaceOverrideEnv)) {
         return name;
     }
