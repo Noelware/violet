@@ -7,7 +7,16 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.06...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.06.01...master>
+
+### 26.06.01
+#### Noelware.Violet
+- **SmolString**: Expose `Data` and `Size` so that NTTP works ([`@auguwu`])
+
+#### Noelware.Violet.Filesystem
+- Remove deprecated parameters in `OpenOptions` ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.06...26.06.01>
 
 ### 26.06
 - (breaking) Remove the old, deprecated platform/compiler/buildsystem/architecture-based macros that were deprecated in [26.05.05](#260505) ([`@auguwu`])

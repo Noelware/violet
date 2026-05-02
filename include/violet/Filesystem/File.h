@@ -58,54 +58,42 @@ struct VIOLET_API OpenOptions final {
     constexpr OpenOptions() = default;
 
     /// Enables or disables reading this file.
-    /// @param yes whether if it should be read or not.
-    constexpr auto Read(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
-        = true) noexcept -> OpenOptions&
+    constexpr auto Read() noexcept -> OpenOptions&
     {
         this->n_bits = this->n_bits.Toggle(flag::kRead);
         return *this;
     }
 
     /// Enables or disables writing to this file.
-    /// @param yes whether if it should be read or not.
-    constexpr auto Write(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
-        = true) noexcept -> OpenOptions&
+    constexpr auto Write() noexcept -> OpenOptions&
     {
         this->n_bits = this->n_bits.Toggle(flag::kWrite);
         return *this;
     }
 
     /// Enables or disables ensuring this file is created if it doesn't exist.
-    /// @param yes whether if it should be read or not.
-    constexpr auto Create(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
-        = true) noexcept -> OpenOptions&
+    constexpr auto Create() noexcept -> OpenOptions&
     {
         this->n_bits = this->n_bits.Toggle(flag::kCreate);
         return *this;
     }
 
     /// Enables or disables appending new data to this file.
-    /// @param yes whether if it should be read or not.
-    constexpr auto Append(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
-        = true) noexcept -> OpenOptions&
+    constexpr auto Append() noexcept -> OpenOptions&
     {
         this->n_bits = this->n_bits.Toggle(flag::kAppend);
         return *this;
     }
 
     /// Enables or disables overwriting file data instead of appending.
-    /// @param yes whether if it should be read or not.
-    constexpr auto Truncate(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
-        = true) noexcept -> OpenOptions&
+    constexpr auto Truncate() noexcept -> OpenOptions&
     {
         this->n_bits = this->n_bits.Toggle(flag::kTruncate);
         return *this;
     }
 
     /// Enables or disables whether if this file will be created atomically.
-    /// @param yes whether if it should be read or not.
-    constexpr auto CreateNew(VIOLET_DEPRECATED_BECAUSE(26.03.08, "no longer needed") [[maybe_unused]] bool yes
-        = true) noexcept -> OpenOptions&
+    constexpr auto CreateNew() noexcept -> OpenOptions&
     {
         this->n_bits = this->n_bits.Toggle(flag::kCreateNew);
         return *this;

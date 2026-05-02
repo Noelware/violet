@@ -64,7 +64,7 @@ struct VIOLET_API FileInputStream final: public InputStream {
     template<std::convertible_to<filesystem::PathRef> Path>
     static auto Open(Path&& path) noexcept -> Result<FileInputStream>
     {
-        filesystem::File file = VIOLET_TRY(filesystem::OpenOptions{ }.Read(true).Open(VIOLET_FWD(Path, path)));
+        filesystem::File file = VIOLET_TRY(filesystem::OpenOptions{ }.Read().Open(VIOLET_FWD(Path, path)));
         return FileInputStream(VIOLET_MOVE(file));
     }
 

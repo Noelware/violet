@@ -57,10 +57,16 @@ namespace violet {
 /// hello.Append(", world!");
 ///
 /// VIOLET_ASSERT(hello == "hello, world!", "`hello` didn't construct correctly");
-/// VIOLET_ASSERT(hello.Size() == 13, "size failure");
+/// VIOLET_ASSERT(hello.Size == 13, "size failure");
 /// ```
 template<size_t N>
 struct VIOLET_API SmolString final {
+    /// The data that this string contains.
+    std::array<char, N> Data{ };
+
+    /// The size of the string.
+    size_t Size = 0;
+
     /// Construct a empty smol string.
     constexpr VIOLET_IMPLICIT SmolString() noexcept = default;
 
@@ -70,13 +76,13 @@ struct VIOLET_API SmolString final {
     /// - `M <= N + 1` :: literal string size cannot (minus null terminator) cannot exceed
     ///   the capacity.
     ///
-    /// @param M size of the string; deduced from the array size (including null-terminator).
+    /// @tparam M size of the string; deduced from the array size (including null-terminator).
     template<size_t M>
         requires((M <= N + 1))
     constexpr VIOLET_IMPLICIT SmolString(const char (&str)[M]) noexcept
-        : n_size(M - 1)
+        : Size(M - 1)
     {
-        std::copy_n(str, this->n_size, this->n_data.begin());
+        std::copy_n(str, this->Size, this->Data.begin());
     }
 
     /// Construct a [`SmolString`] from any type convertible to [`std::string_view`].
@@ -88,16 +94,10 @@ struct VIOLET_API SmolString final {
     template<std::convertible_to<std::string_view> Str>
         requires(!std::same_as<std::decay_t<Str>, const char*>)
     constexpr VIOLET_IMPLICIT SmolString(Str sv) noexcept(noexcept(sv.size() < N))
-        : n_size(sv.size())
+        : Size(sv.size())
     {
         VIOLET_ASSERT0(sv.size() < N);
-        std::copy_n(sv.data(), this->n_size, this->n_data.begin());
-    }
-
-    /// Returns the size of this string.
-    [[nodiscard]] constexpr auto Size() const noexcept -> size_t
-    {
-        return this->n_size;
+        std::copy_n(sv.data(), this->Size, this->Data.begin());
     }
 
     /// Returns the capacity (excluding the null terminator) that this smol string can carry.
@@ -109,7 +109,7 @@ struct VIOLET_API SmolString final {
     /// Returns **true** if this smol string is empty.
     [[nodiscard]] constexpr auto Empty() const noexcept -> bool
     {
-        return this->n_size == 0;
+        return this->Size == 0;
     }
 
     /// Pushes a single character into this smol string.
@@ -119,8 +119,8 @@ struct VIOLET_API SmolString final {
     /// to the capacity.
     constexpr void Push(char ch)
     {
-        VIOLET_DEBUG_ASSERT(this->n_size <= N, "smol string at max capacity");
-        this->n_data[this->n_size++] = ch;
+        VIOLET_DEBUG_ASSERT(this->Size <= N, "smol string at max capacity");
+        this->Data[this->Size++] = ch;
     }
 
     /// Pushes a [`std::string_view`] into this smol string.
@@ -130,10 +130,10 @@ struct VIOLET_API SmolString final {
     /// to the capacity.
     constexpr auto Append(std::string_view sv) -> SmolString&
     {
-        VIOLET_DEBUG_ASSERT(this->n_size + sv.size() <= N, "overflow would occur");
+        VIOLET_DEBUG_ASSERT(this->Size + sv.size() <= N, "overflow would occur");
 
-        std::copy_n(sv.data(), sv.size(), this->n_data.data() + this->n_size);
-        this->n_size += sv.size();
+        std::copy_n(sv.data(), sv.size(), this->Data.data() + this->Size);
+        this->Size += sv.size();
 
         return *this;
     }
@@ -148,11 +148,11 @@ struct VIOLET_API SmolString final {
     template<typename... Args>
     auto AppendFormatted(std::format_string<Args...> fmt, Args&&... args) -> SmolString&
     {
-        auto remaining = N - this->n_size;
-        auto result = std::format_to_n(this->n_data.data() + this->n_size, remaining, fmt, VIOLET_FWD(Args, args)...);
+        auto remaining = N - this->Size;
+        auto result = std::format_to_n(this->Data.data() + this->Size, remaining, fmt, VIOLET_FWD(Args, args)...);
 
-        VIOLET_DEBUG_ASSERT(this->n_size + result.size <= N, "formatted output exceeded capacity");
-        this->n_size += result.size;
+        VIOLET_DEBUG_ASSERT(this->Size + result.size <= N, "formatted output exceeded capacity");
+        this->Size += result.size;
 
         return *this;
     }
@@ -160,25 +160,25 @@ struct VIOLET_API SmolString final {
     /// Support for C++ iterators. Resolves to [`std::array<char, N>::data`].
     constexpr auto begin() noexcept -> char*
     {
-        return this->n_data.data();
+        return this->Data.data();
     }
 
     /// Support for C++ iterators. Resolves to [`std::array<char, N>::data`] to the size of the string itself.
     constexpr auto end() noexcept -> char*
     {
-        return this->n_data.data() + this->n_size;
+        return this->Data.data() + this->Size;
     }
 
     /// Support for C++ iterators. Resolves to [`std::array<char, N>::data`].
     [[nodiscard]] constexpr auto begin() const noexcept -> const char*
     {
-        return this->n_data.data();
+        return this->Data.data();
     }
 
     /// Support for C++ iterators. Resolves to [`std::array<char, N>::data`] to the size of the string itself.
     [[nodiscard]] constexpr auto end() const noexcept -> const char*
     {
-        return this->n_data.data() + this->n_size;
+        return this->Data.data() + this->Size;
     }
 
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
@@ -188,7 +188,7 @@ struct VIOLET_API SmolString final {
 
     constexpr VIOLET_EXPLICIT operator std::string_view() const noexcept
     {
-        return { this->n_data.data(), this->n_size };
+        return { this->Data.data(), this->Size };
     }
 
     /// ## Notes
@@ -197,10 +197,10 @@ struct VIOLET_API SmolString final {
     constexpr auto operator[](size_t idx) -> char&
     {
 #ifndef VIOLET_NO_ASSERT_SUBSCRIPT
-        VIOLET_DEBUG_ASSERT(idx <= this->n_size, "reached out of bounds");
+        VIOLET_DEBUG_ASSERT(idx <= this->Size, "reached out of bounds");
 #endif
 
-        return this->n_data[idx];
+        return this->Data[idx];
     }
 
     /// ## Notes
@@ -209,10 +209,10 @@ struct VIOLET_API SmolString final {
     constexpr auto operator[](size_t idx) const -> const char&
     {
 #ifndef VIOLET_NO_ASSERT_SUBSCRIPT
-        VIOLET_DEBUG_ASSERT(idx <= this->n_size, "reached out of bounds");
+        VIOLET_DEBUG_ASSERT(idx <= this->Size, "reached out of bounds");
 #endif
 
-        return this->n_data[idx];
+        return this->Data[idx];
     }
 
     constexpr friend auto operator==(const SmolString& self, std::string_view sv) -> bool
@@ -236,14 +236,10 @@ struct VIOLET_API SmolString final {
     }
 
     constexpr auto operator<=>(const SmolString&) const noexcept -> std::strong_ordering = default;
-
-private:
-    std::array<char, N> n_data{ };
-    size_t n_size = 0;
 };
 
 template<std::size_t M>
-SmolString(const char (&)[M]) -> SmolString<M - 1>;
+SmolString(const char (&)[M]) -> SmolString<M>;
 
 } // namespace violet
 
