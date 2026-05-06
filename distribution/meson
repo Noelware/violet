@@ -36,7 +36,7 @@ mkdir -p "$dir"
 dirs=(
     "include"
     "src"
-    "hack/pkg-config"
+    "hack"
     "tests"
 )
 
@@ -51,6 +51,11 @@ files=(
 for dirent in "${dirs[@]}"; do
     echo "[violet/tools:mesondist] copying directory $dir ~> $dir/$dirent"
     cp -r "$SCRIPT_DIR/$dirent" "$dir"
+
+    if [ "$dirent" == "hack" ]; then
+        rm -rf "$dir/hack/nix"
+        rm "$dir/hack/build-ci-images.sh"
+    fi
 done
 
 for file in "${files[@]}"; do

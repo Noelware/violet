@@ -77,17 +77,15 @@ endif
 
 violet_version = yy * 1000000 + mm * 10000 + dd * 100 + patch
 violet_devbuild = false
-
-add_project_arguments(
+violet_platform_defines = [
     '-DVIOLET_VERSION=' + violet_version.to_string(),
-    language: ['c', 'cpp'],
-)
+    '-DVIOLET_BUILDSYSTEM_MESON'
+]
 
 if violet_devbuild
-    add_project_arguments('-DVIOLET_DEVBUILD=1', language: ['c', 'cpp'])
+    violet_platform_defines += ['-DVIOLET_DEVBUILD=1']
 endif
 
-violet_platform_defines = ['-DVIOLET_BUILDSYSTEM_MESON']
 if host_machine.system() == 'linux'
     violet_platform_defines += ['-DVIOLET_PLATFORM_UNIX', '-DVIOLET_PLATFORM_LINUX', '-D_GNU_SOURCE']
 elif host_machine.system() == 'darwin'
