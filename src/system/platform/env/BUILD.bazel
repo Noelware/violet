@@ -19,28 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-name: Release
-on:
-    release:
-        types:
-          - published
-jobs:
-    distribution:
-        name: "Distribution"
-        runs-on: ubuntu-latest
-        container:
-            # TODO(@auguwu/Noel): switch to `cr.noelware.cloud/ci/base` once available
-            image: ghcr.io/noelware/violet/ci:clang-21
-        steps:
-            - uses: actions/checkout@v6
-            - run: ./tools/bazeldist
-            - run: ./distribution/meson
-            - uses: softprops/action-gh-release@v3
-              with:
-                files: |
-                    ${{github.workspace}}/bazeldist.tgz
-                    ${{github.workspace}}/mesondist.tgz
-
-            - run: python3 ./tools/hotpatch-release.py
-              env:
-                GITHUB_TOKEN: ${{github.token}}
+exports_files(glob(["*.cc"]))

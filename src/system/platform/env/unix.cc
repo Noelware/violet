@@ -27,23 +27,24 @@
 
 #include <unistd.h>
 
-auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
+auto violet::sys::GetEnv(Str key) noexcept -> Optional<String>
 {
-    Array<char, PATH_MAX> buf;
-    if (::getcwd(buf.data(), buf.size()) == nullptr) {
-        return Err(io::Error::OSError());
+    const auto* var = ::getenv(key.data());
+    if (var != nullptr) {
+        return Some<String>(var);
     }
 
-    return filesystem::Path(buf.data());
+    return Nothing;
 }
 
-auto violet::sys::SetWorkingDir(filesystem::PathRef path) -> io::Result<void>
+void violet::sys::SetEnv(Unsafe, Str key, Str value, bool replace)
 {
-    if (::chdir(static_cast<CStr>(path)) != 0) {
-        return Err(io::Error::OSError());
-    }
+    ::setenv(key.data(), value.data(), static_cast<int>(replace));
+}
 
-    return { };
+void violet::sys::RemoveEnv(Unsafe, Str key)
+{
+    ::unsetenv(key.data());
 }
 
 #endif

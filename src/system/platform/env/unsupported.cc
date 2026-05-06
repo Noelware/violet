@@ -19,31 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Violet.h>
-
-#if VIOLET_PLATFORM(UNIX)
-
 #include <violet/System.h>
 
-#include <unistd.h>
-
-auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
+auto violet::sys::GetEnv(Str) noexcept -> Optional<String>
 {
-    Array<char, PATH_MAX> buf;
-    if (::getcwd(buf.data(), buf.size()) == nullptr) {
-        return Err(io::Error::OSError());
-    }
-
-    return filesystem::Path(buf.data());
+    return Nothing;
 }
 
-auto violet::sys::SetWorkingDir(filesystem::PathRef path) -> io::Result<void>
-{
-    if (::chdir(static_cast<CStr>(path)) != 0) {
-        return Err(io::Error::OSError());
-    }
+void violet::sys::SetEnv(Unsafe, Str, Str, bool) { }
 
-    return { };
-}
-
-#endif
+void violet::sys::RemoveEnv(Unsafe, Str) { }

@@ -31,7 +31,6 @@ project(
 
 cpp = meson.get_compiler('cpp')
 compiler_id = cpp.get_id()
-
 copts = cpp.get_supported_arguments(
     '/DNOMINMAX',
     '-fdiagnostics-color=always',
@@ -121,9 +120,9 @@ elif compiler_id == 'gcc'
     ]
 elif compiler_id == 'msvc'
     violet_platform_defines += [
-        '/DVIOLET_COMPILER_MSVC',
-        '/DNOMINMAX',
-        '/DWIN32_LEAN_AND_MEAN',
+        '-DVIOLET_COMPILER_MSVC',
+        '-DNOMINMAX',
+        '-DWIN32_LEAN_AND_MEAN',
     ]
 endif
 
@@ -132,73 +131,85 @@ add_project_arguments(copts, language: ['cpp'])
 
 violet_include_dir = include_directories('include')
 
+conf = configuration_data()
+conf.set('PREFIX', get_option('prefix'))
+conf.set('VERSION', meson.project_version())
+
+if get_option('default_library') == 'shared'
+    violet_build_defines = ['-DVIOLET_BUILDING', '-DVIOLET_BUILD_SHARED']
+    violet_consumer_defines = ['-DVIOLET_BUILD_SHARED']
+else
+    violet_build_defines = ['-DVIOLET_BUILDING']
+    violet_consumer_defines = []
+endif
+
 ## ~^=w=^~ START: Noelware.Violet ~^=w=^~ ##
+
 libviolet_srcs = files(
-    'src/anyhow.cc',
     'src/panic.cc',
     'src/strings.cc',
+    'src/system/ci.cc',
     'src/support/demangle.cc',
-    'src/support/terminal.cc',
 )
 
 if host_machine.system() == 'linux' or host_machine.system() == 'darwin'
-    libviolet_srcs += files('src/support/platform/terminal/unix.cc')
+    libviolet_srcs += files('src/system/platform/env/unix.cc')
 elif host_machine.system() == 'windows'
-    libviolet_srcs += files('src/support/platform/terminal/windows.cc')
+    libviolet_srcs += files('src/system/platform/env/windows.cc')
 else
-    libviolet_srcs += files('src/support/platform/terminal/unsupported.cc')
+    libviolet_srcs += files('src/system/platform/env/unsupported.cc')
 endif
 
-libviolet_hdrs = files(
-    'include/violet/Container/Optional.h',
-    'include/violet/Container/Result.h',
-    'include/violet/Defer.h',
-    'include/violet/Events/EventEmitter.h',
-    'include/violet/Iterator.h',
-    'include/violet/Iterator/Enumerate.h',
-    'include/violet/Iterator/Filter.h',
-    'include/violet/Iterator/Map.h',
-    'include/violet/Iterator/Peekable.h',
-    'include/violet/Iterator/Skip.h',
-    'include/violet/Iterator/Take.h',
-    'include/violet/Language/Assert.h',
-    'include/violet/Language/Macros.h',
-    'include/violet/Language/Panic.h',
-    'include/violet/Language/Policy.h',
-    'include/violet/Print.h',
-    'include/violet/Runtime/Info.h',
-    'include/violet/SmolString.h',
-    'include/violet/SourceLocation.h',
-    'include/violet/Strings.h',
-    'include/violet/Support/Bitflags.h',
-    'include/violet/Support/Demangle.h',
-    'include/violet/Support/Terminal.h',
-    'include/violet/System.h',
-    'include/violet/System/CI.h',
-    'include/violet/Violet.h',
-    'include/violet/anyhow.h',
-)
-
-violet_lib = static_library(
+violet_lib = library(
     'violet',
     libviolet_srcs,
     include_directories: violet_include_dir,
+    cpp_args: violet_build_defines,
+    install: true
 )
 
-violet_dep = declare_dependency(include_directories: violet_include_dir, link_with: violet_lib)
+violet_dep = declare_dependency(
+    include_directories: violet_include_dir,
+    link_with: violet_lib,
+    compile_args: violet_platform_defines + violet_consumer_defines,
+)
+
+configure_file(
+    input: 'hack/pkg-config/libviolet.pc',
+    output: 'libviolet.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig'
+)
 
 ## ~^=w=^~ END: Noelware.Violet ~^=w=^~ ##
 
 ## ~^=w=^~ START: Noelware.Violet.Experimental ~^=w=^~ ##
 
-libviolet_experimental_hdrs = files(
-    'include/violet/Experimental/Language/TypeId.h',
-    'include/violet/Experimental/OneOf.h',
+libviolet_experimental_srcs = files('src/experimental/Any.cc')
+
+violet_experimental_lib = library(
+    'violet_experimental',
+    libviolet_experimental_srcs,
+    dependencies: [violet_dep],
+    include_directories: violet_include_dir,
+    cpp_args: violet_build_defines,
+    install: true
 )
 
 violet_experimental_dep = declare_dependency(
     include_directories: violet_include_dir,
+    link_with: [violet_experimental_lib],
     dependencies: [violet_dep],
+    compile_args: violet_consumer_defines
+)
+
+configure_file(
+    input: 'hack/pkg-config/libviolet_experimental.pc',
+    output: 'libviolet_experimental.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig'
 )
 
 ## ~^=w=^~ END: Noelware.Violet.Experimental ~^=w=^~ ##
@@ -206,18 +217,28 @@ violet_experimental_dep = declare_dependency(
 ## ~^=w=^~ START: Noelware.Violet.Experimental.Threading ~^=w=^~ ##
 
 libviolet_experimental_threading_srcs = files('src/experimental/threading/CancellationToken.cc')
-libviolet_experimental_threading_hdrs = files('include/violet/Experimental/Threading/CancellationToken.h')
 
-violet_experimental_threading_lib = static_library(
+violet_experimental_threading_lib = library(
     'violet_experimental_threading',
     libviolet_experimental_threading_srcs,
     include_directories: violet_include_dir,
+    cpp_args: violet_build_defines,
+    install: true
 )
 
 violet_experimental_threading_dep = declare_dependency(
     include_directories: violet_include_dir,
     link_with: [violet_experimental_threading_lib],
     dependencies: [violet_dep],
+    compile_args: violet_consumer_defines
+)
+
+configure_file(
+    input: 'hack/pkg-config/libviolet_experimental_threading.pc',
+    output: 'libviolet_experimental_threading.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig'
 )
 
 ## ~^=w=^~ END: Noelware.Violet.Experimental.Threading ~^=w=^~ ##
@@ -233,37 +254,44 @@ libviolet_io_srcs = files(
 if host_machine.system() == 'linux' or host_machine.system() == 'darwin'
     libviolet_io_srcs += files(
         'src/io/platform/descriptor/unix.cc',
-        'src/io/platform/error/unix.cc'
+        'src/io/platform/error/unix.cc',
+        'src/system/platform/unix.cc'
     )
 elif host_machine.system() == 'windows'
     libviolet_io_srcs += files(
         'src/io/platform/descriptor/windows.cc',
-        'src/io/platform/error/windows.cc'
+        'src/io/platform/error/windows.cc',
+        'src/system/platform/windows.cc'
     )
 else
     libviolet_io_srcs += files(
         'src/io/platform/descriptor/unsupported.cc',
-        'src/io/platform/error/unsupported.cc'
+        'src/io/platform/error/unsupported.cc',
+        'src/system/platform/unsupported.cc'
     )
 endif
 
-libviolet_io_hdrs = files(
-    'include/violet/IO/Descriptor.h',
-    'include/violet/IO/Error.h',
-    'include/violet/IO/Read.h',
-    'include/violet/IO/Write.h'
-)
-
-violet_io_lib = static_library(
+violet_io_lib = library(
     'violet_io',
     libviolet_io_srcs,
-    include_directories: violet_include_dir
+    include_directories: violet_include_dir,
+    cpp_args: violet_build_defines,
+    install: true
 )
 
 violet_io_dep = declare_dependency(
     include_directories: violet_include_dir,
     link_with: violet_io_lib,
-    dependencies: [violet_dep]
+    dependencies: [violet_dep],
+    compile_args: violet_consumer_defines
+)
+
+configure_file(
+    input: 'hack/pkg-config/libviolet_io.pc',
+    output: 'libviolet_io.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig'
 )
 
 ## ~^=w=^~ END: Noelware.Violet.IO ~^=w=^~ ##
@@ -314,48 +342,33 @@ else
     )
 endif
 
-libviolet_filesystem_hdrs = files(
-    'include/violet/Filesystem.h',
-    'include/violet/Filesystem/File.h',
-    'include/violet/Filesystem/Path.h',
-    'include/violet/Filesystem/Permissions.h',
-    'include/violet/Filesystem/Temporary.h',
-    'include/violet/Filesystem/Extensions/XAttr.h'
-)
-
-violet_filesystem_lib = static_library(
+violet_filesystem_lib = library(
     'violet_filesystem',
     libviolet_filesystem_srcs,
+    dependencies: [violet_dep, violet_io_dep],
     include_directories: violet_include_dir,
+    cpp_args: violet_build_defines,
+    install: true
 )
 
 violet_filesystem_dep = declare_dependency(
     include_directories: violet_include_dir,
     link_with: [violet_filesystem_lib],
     dependencies: [violet_dep, violet_io_dep],
+    compile_args: violet_consumer_defines
+)
+
+configure_file(
+    input: 'hack/pkg-config/libviolet_filesystem.pc',
+    output: 'libviolet_filesystem.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig'
 )
 
 ## ~^=w=^~ END: Noelware.Violet.Filesystem ~^=w=^~ ##
 
 ## ~^=w=^~ START: Noelware.Violet.IO.Experimental ~^=w=^~ ##
-
-libviolet_io_experimental_hdrs = files(
-    'include/violet/IO/Experimental/BufferedInputStream.h',
-    'include/violet/IO/Experimental/BufferedOutputStream.h',
-    'include/violet/IO/Experimental/OutputStream.h',
-    'include/violet/IO/Experimental/InputStream.h',
-
-    'include/violet/IO/Experimental/Input/ByteArrayInputStream.h',
-    'include/violet/IO/Experimental/Input/FileInputStream.h',
-    'include/violet/IO/Experimental/Input/StdinInputStream.h',
-    'include/violet/IO/Experimental/Input/StringInputStream.h',
-
-    'include/violet/IO/Experimental/Output/ByteArrayOutputStream.h',
-    'include/violet/IO/Experimental/Output/FileOutputStream.h',
-    'include/violet/IO/Experimental/Output/StdoutOutputStream.h',
-    'include/violet/IO/Experimental/Output/StderrOutputStream.h',
-    'include/violet/IO/Experimental/Output/StringOutputStream.h',
-)
 
 libviolet_io_experimental_srcs = files(
     'src/io/experimental/input/buffered.cc',
@@ -398,16 +411,116 @@ else
     )
 endif
 
-violet_io_experimental_lib = static_library(
+violet_io_experimental_lib = library(
     'violet_io_experimental',
     libviolet_io_experimental_srcs,
-    include_directories: violet_include_dir
+    include_directories: violet_include_dir,
+    dependencies: [violet_io_dep, violet_filesystem_dep],
+    cpp_args: violet_build_defines,
+    install: true
 )
 
 violet_io_experimental_dep = declare_dependency(
     include_directories: violet_include_dir,
     link_with: violet_io_experimental_lib,
-    dependencies: [violet_io_dep, violet_filesystem_dep]
+    dependencies: [violet_io_dep, violet_filesystem_dep],
+    compile_args: violet_consumer_defines
+)
+
+configure_file(
+    input: 'hack/pkg-config/libviolet_io_experimental.pc',
+    output: 'libviolet_io_experimental.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig'
 )
 
 ## ~^=w=^~ END: Noelware.Violet.IO.Experimental ~^=w=^~ ##
+
+## ~^=w=^~ START: Noelware.Violet.Terminal ~^=w=^~ ##
+
+libviolet_terminal_srcs = files('src/support/terminal.cc')
+
+if host_machine.system() == 'linux' or host_machine.system() == 'darwin'
+    libviolet_terminal_srcs += files('src/support/platform/terminal/unix.cc')
+elif host_machine.system() == 'windows'
+    libviolet_terminal_srcs += files('src/support/platform/terminal/windows.cc')
+else
+    libviolet_terminal_srcs += files('src/support/platform/terminal/unsupported.cc')
+endif
+
+violet_terminal_lib = library(
+    'violet_terminal',
+    libviolet_terminal_srcs,
+    include_directories: violet_include_dir,
+    dependencies: [violet_dep, violet_io_dep],
+    cpp_args: violet_build_defines,
+    install: true
+)
+
+violet_terminal_dep = declare_dependency(
+    include_directories: violet_include_dir,
+    link_with: violet_terminal_lib,
+    dependencies: [violet_dep, violet_io_dep],
+    compile_args: violet_consumer_defines,
+)
+
+configure_file(
+    input: 'hack/pkg-config/libviolet_terminal.pc',
+    output: 'libviolet_terminal.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig'
+)
+
+## ~^=w=^~ END: Noelware.Violet.Terminal ~^=w=^~ ##
+
+## `violet::anyhow` belongs in its own dependency as it depends on libviolet and libviolet_io,
+## even though `anyhow` is in Noelware.Violet, but whatever I guess.
+violet_anyhow_lib = library(
+    'violet_anyhow',
+    'src/anyhow.cc',
+    include_directories: violet_include_dir,
+    dependencies: [violet_dep, violet_terminal_dep, violet_io_dep],
+    cpp_args: violet_build_defines,
+    install: true
+)
+
+violet_anyhow_dep = declare_dependency(
+    include_directories: violet_include_dir,
+    link_with: violet_anyhow_lib,
+    compile_args: violet_consumer_defines
+)
+
+configure_file(
+    input: 'hack/pkg-config/libviolet_anyhow.pc',
+    output: 'libviolet_anyhow.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig'
+)
+
+install_subdir(
+    'include/violet',
+    install_dir: get_option('prefix') / 'include',
+    exclude_files: [
+        './BUILD.bazel',
+        './Container/BUILD.bazel',
+        './Events/BUILD.bazel',
+        './Experimental/BUILD.bazel',
+        './Experimental/Language/BUILD.bazel',
+        './Experimental/Threading/BUILD.bazel',
+        './Filesystem/BUILD.bazel',
+        './Filesystem/Extensions/BUILD.bazel',
+        './IO/BUILD.bazel',
+        './IO/Experimental/BUILD.bazel',
+        './IO/Experimental/Input/BUILD.bazel',
+        './IO/Experimental/Output/BUILD.bazel',
+        './Iterator/BUILD.bazel',
+        './Language/BUILD.bazel',
+        './Runtime/BUILD.bazel',
+        './Support/BUILD.bazel',
+        './System/BUILD.bazel',
+        './Testing/BUILD.bazel'
+    ]
+)

@@ -28,10 +28,22 @@ package(
 violet_cc_library(
     name = "system",
     srcs = select({
-        "@platforms//os:linux": ["//src/system/platform:unix.cc"],
-        "@platforms//os:macos": ["//src/system/platform:unix.cc"],
-        "@platforms//os:windows": ["//src/system/platform:windows.cc"],
-        "//conditions:default": ["//src/system/platform:unsupported.cc"],
+        "@platforms//os:linux": [
+            "//src/system/platform:unix.cc",
+            "//src/system/platform/env:unix.cc",
+        ],
+        "@platforms//os:macos": [
+            "//src/system/platform:unix.cc",
+            "//src/system/platform/env:unix.cc",
+        ],
+        "@platforms//os:windows": [
+            "//src/system/platform:windows.cc",
+            "//src/system/platform/env:windows.cc",
+        ],
+        "//conditions:default": [
+            "//src/system/platform:unsupported.cc",
+            "//src/system/platform/env:unsupported.cc",
+        ],
     }),
     hdrs = ["//include/violet:System.h"],
     deps = [

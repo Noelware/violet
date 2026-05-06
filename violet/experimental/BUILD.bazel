@@ -38,6 +38,24 @@ violet_cc_library(
 )
 
 violet_cc_library(
+    name = "any",
+    srcs = ["//src/experimental:Any.cc"],
+    hdrs = ["//include/violet/Experimental:Any.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet/container:optional",
+        "//violet/experimental/language:typeid",
+        "//violet/support:demangle",
+    ],
+)
+
+violet_cc_test(
+    name = "any_test",
+    srcs = ["//tests/experimental:Any.test.cc"],
+    deps = [":any"],
+)
+
+violet_cc_library(
     name = "oneof",
     hdrs = ["//include/violet/Experimental:OneOf.h"],
     visibility = ["//visibility:public"],

@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-# ---------------------------------------------------------------------------------
 # 🌺💜 Violet: Extended C++ standard library
 # Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
 #
@@ -20,17 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# ---------------------------------------------------------------------------------
 
-for obj in $(find bazel-bin/ -name '*.a' -not -path '*/external/*'); do
-    echo "==> Shared Object :: $obj"
+prefix=@PREFIX@
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${prefix}/lib
 
-    # Find undefined symbols for the target platform
-    nm --undefined-only "$obj" 2>/dev/null |
-        awk '{print $NF}' |
-        while read sym; do
-            if ! [ -n "$sym" ] && nm --defined-only "$obj" 2>/dev/null | grep -q " $sym$"; then
-                echo "    |-> missing symbol \`$sym\`"
-            fi
-        done
-done
+Name: violet_io
+Description: Extended C++ standard library that provides I/O utilities
+Version: @VERSION@
+Cflags: -I${includedir}
+Libs: -L${libdir} -lviolet -lviolet_io

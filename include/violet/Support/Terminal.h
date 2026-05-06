@@ -27,7 +27,6 @@
 
 #include <violet/IO/Error.h>
 #include <violet/Support/Bitflags.h>
-#include <violet/Violet.h>
 
 namespace violet::terminal {
 
@@ -67,25 +66,58 @@ struct VIOLET_API ColorLevel final {
 };
 
 /// Terminal window dimensions, measured in character cells.
-///
-/// * `Columns` — width of the terminal in columns
-/// * `Rows` — height of the terminal in rows
 struct VIOLET_API Window final {
     UInt16 Columns = 0; ///< width of the terminal in columns
     UInt16 Rows = 0; ///< height of the terminal in rows
 };
 
-/// Represents a 24-bit terminal color expressed as normalized floats.
+/// Represents a 24-bit RGB color value with an associated foreground/background
+/// rendering mode for use in ANSI terminal escape sequences.
 ///
-/// Each component must lie in the range `[0.0, 1.0]`. The constructor
-/// accepting floats asserts this range in debug builds.
+/// `RGB` stores individual red, green, and blue channel values as unsigned 8-bit
+/// integers, along with a flag indicating whether the color should be applied as
+/// a foreground or background color when painting terminal output.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Support/Terminal.h>
+/// #include <violet/Print.h>
+///
+/// using namespace violet::terminal;
+///
+/// RGB red(255, 0, 0);
+/// violet::Println("{}This text is red!\033[0m", red.Paint());
+///
+/// // Create a blue background colour
+/// RGB bg(0, 0, 255, /*foreground=*/false);
+///
+/// // Colors compare by channel values only, ignoring `foreground` flag.
+/// assert(red == RGB(255, 0, 0, /*foreground=*/false));
+/// ```
 struct VIOLET_API RGB final {
-    UInt8 Red = 0; ///< Red channel in a `[0.0, 1.0]` range
-    UInt8 Green = 0; ///< Green channel in a `[0.0, 1.0]` range
-    UInt8 Blue = 0; ///< Blue channel in a `[0.0, 1.0]` range
-    bool Foreground = true; ///< whether if the color is for the foreground or background
+    /// The red channel value, ranging from `0..=255`.
+    UInt8 Red = 0;
 
+    /// The green channel value, ranging from `0..=255`.
+    UInt8 Green = 0;
+
+    /// The blue channel value, ranging from `0..=255`.
+    UInt8 Blue = 0;
+
+    /// Whether this color should be applied as a foreground color (`true`) or
+    /// a background color (`false`) when generating ANSI escape sequences.
+    bool Foreground = true;
+
+    /// Constructs a default `RGB` with all channels set to zero (black) and
+    /// [`RGB::Foreground`] set to `true`.
     constexpr VIOLET_IMPLICIT RGB() noexcept = default;
+
+    /// Constructs an `RGB` from the given channel values.
+    ///
+    /// @param red        red channel intensity
+    /// @param green      green channel intensity
+    /// @param blue       blue channel intensity
+    /// @param foreground if `true`, the color targets the foreground; otherwise, the background.
     constexpr VIOLET_IMPLICIT RGB(UInt8 red, UInt8 green, UInt8 blue, bool foreground = true) noexcept
         : Red(red)
         , Green(green)
@@ -94,13 +126,27 @@ struct VIOLET_API RGB final {
     {
     }
 
+    /// Returns the ANSI escape sequence string that applies this color to
+    /// subsequent terminal output.
+    ///
+    /// The returned sequence uses SGR parameter 38 (foreground) or 48
+    /// (background) with the 24-bit color mode (`;2;r;g;b`), depending on
+    /// the value of [`RGB::Foreground`].
     [[nodiscard]] auto Paint() const noexcept -> String;
+
+    /// Returns a human-readable string representation of this color in the
+    /// format `rgb(R, G, B)`.
     [[nodiscard]] auto ToString() const noexcept -> String;
     friend auto operator<<(std::ostream& os, const RGB& self) noexcept -> std::ostream&
     {
         return os << self.ToString();
     }
 
+    /// Compares two `RGB` values for equality by their channel values.
+    ///
+    /// Note that [`Foreground`] is **not** considered in the comparison, two
+    /// colors with identical channels but different rendering modes are
+    /// treated as equal.
     auto operator==(const RGB& rhs) const noexcept -> bool
     {
         return this->Red == rhs.Red && this->Green == rhs.Green && this->Blue == rhs.Blue;

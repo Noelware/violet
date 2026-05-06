@@ -191,11 +191,13 @@ build.ninja
 
 **/.usr.bazelrc
 bazeldist.tgz
+mesondist.tgz
 .clangd
 
 !include/violet/Testing/
 
 .bazeldist/
+.mesondist/
 .cache/
 .direnv/
 build/

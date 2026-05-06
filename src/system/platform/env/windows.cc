@@ -21,29 +21,17 @@
 
 #include <violet/Violet.h>
 
-#if VIOLET_PLATFORM(UNIX)
+#if VIOLET_PLATFORM(WINDOWS)
 
 #include <violet/System.h>
 
-#include <unistd.h>
-
-auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
+auto violet::sys::GetEnv(Str key) noexcept -> Optional<String>
 {
-    Array<char, PATH_MAX> buf;
-    if (::getcwd(buf.data(), buf.size()) == nullptr) {
-        return Err(io::Error::OSError());
-    }
-
-    return filesystem::Path(buf.data());
+    return Nothing;
 }
 
-auto violet::sys::SetWorkingDir(filesystem::PathRef path) -> io::Result<void>
-{
-    if (::chdir(static_cast<CStr>(path)) != 0) {
-        return Err(io::Error::OSError());
-    }
+void violet::sys::SetEnv(Unsafe, Str key, Str value, bool replace) { }
 
-    return { };
-}
+void violet::sys::RemoveEnv(Unsafe, Str key) { }
 
 #endif

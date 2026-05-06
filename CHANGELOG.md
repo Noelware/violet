@@ -7,7 +7,19 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.06.01...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.06.02...master>
+
+### 26.06.02
+#### Meson
+- Fix issues where platform-specific defines were not being propagated ([`@auguwu`])
+- **Meson** is now fully supported as a secondary buildsystem ([`@auguwu`])
+    - Changelogs in releases will now include a way to add **Noelware.Violet** as a Meson wrapdb file
+    - There is a new tarball (**mesondist.tgz**) that should be used over the Git repository or release tarballs as it strips all Bazel and CMake configurations.
+
+#### Noelware.Violet.Experimental
+- Add **violet::experimental::Any**, a new type originated from Noelware's Eous project that is type-erased, RTTI-friendly type over `std::any` ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.06.01...26.06.02>
 
 ### 26.06.01
 #### Noelware.Violet

@@ -21,14 +21,6 @@
 
 #include <violet/System.h>
 
-auto violet::sys::GetEnv(Str) noexcept -> Optional<CStr>
-{
-    return Nothing;
-}
-
-void violet::sys::SetEnv(Unsafe, Str, Str, bool) {}
-void violet::sys::RemoveEnv(Unsafe, Str) {}
-
 auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
 {
     return Err(VIOLET_IO_ERROR(Unsupported, String, "unsupported operation"));
