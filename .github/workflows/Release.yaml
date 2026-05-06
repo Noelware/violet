@@ -33,13 +33,16 @@ jobs:
             image: ghcr.io/noelware/violet/ci:clang-21
         steps:
             - uses: actions/checkout@v6
+
             - run: ./tools/bazeldist
+            - uses: softprops/action-gh-release@v3
+              with:
+                files: ${{github.workspace}}/bazeldist.tgz
+
             - run: ./distribution/meson
             - uses: softprops/action-gh-release@v3
               with:
-                files: |
-                    ${{github.workspace}}/bazeldist.tgz
-                    ${{github.workspace}}/mesondist.tgz
+                files: ${{github.workspace}}/mesondist.tgz
 
             - run: python3 ./tools/hotpatch-release.py
               env:

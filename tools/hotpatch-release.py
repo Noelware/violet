@@ -98,7 +98,8 @@ def BazelHotpatch(f: StringIO, tag: str):
     f.write('          # "https://artifacts.noelware.org/bazel-registry/violet/%s/bazeldist.tgz",\n' % tag)
     f.write('          "https://github.com/%s/releases/download/%s/bazeldist.tgz",\n' % (REPOSITORY, tag))
     f.write('    ]\n')
-    f.write(')\n\n')
+    f.write(')\n')
+    f.write('```\n')
 
 def Main():
     if token is None or tag is None == 0:
