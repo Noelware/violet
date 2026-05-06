@@ -73,8 +73,10 @@ def MesonHotpatch(f: StringIO, tag: str):
     f.write('> **subprojects/violet.wrap**:\n')
     f.write('```ini\n')
     f.write('[wrap-file]\n')
-    f.write('source_url  = https://github.com/%s/releases/download/%s/mesondist.tgz\n' % (REPOSITORY, tag))
-    f.write('source_hash = %s\n\n' % source_hash)
+    f.write('directory = violet-%s\n' % tag)
+    f.write('source_url = https://github.com/%s/releases/download/%s/mesondist.tgz\n' % (REPOSITORY, tag))
+    f.write('source_hash = %s\n' % source_hash)
+    f.write('lead_directory_missing = true\n\n')
     f.write('[provide]\n')
 
     for name, dep in mapping.items():
@@ -114,6 +116,7 @@ def Main():
 
     f = StringIO()
     f.write(body)
+    f.write('\n')
 
     BazelHotpatch(f, tag)
     MesonHotpatch(f, tag)

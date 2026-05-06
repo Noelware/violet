@@ -36,8 +36,8 @@ mkdir -p "$dir"
 dirs=(
     "include"
     "src"
+    "hack/pkg-config"
     "tests"
-    "violet"
 )
 
 files=(

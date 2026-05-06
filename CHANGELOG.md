@@ -7,7 +7,12 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.06.02...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.06.03...master>
+
+### 26.06.03
+This is a patch revision, nothing much has changed than the Meson distribution.
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.06.02...26.06.03>
 
 ### 26.06.02
 #### Meson
