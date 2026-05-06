@@ -246,3 +246,4 @@ jobs:
             - uses: actions/checkout@v6
             - run: meson setup build --fatal-meson-warnings
             - run: meson compile -C build
+            - run: meson install --destdir ./install -C build
