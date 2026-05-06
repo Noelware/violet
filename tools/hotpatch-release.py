@@ -75,6 +75,7 @@ def MesonHotpatch(f: StringIO, tag: str):
     f.write('[wrap-file]\n')
     f.write('directory = violet-%s\n' % tag)
     f.write('source_url = https://github.com/%s/releases/download/%s/mesondist.tgz\n' % (REPOSITORY, tag))
+    f.write('source_filename = mesondist.tgz\n')
     f.write('source_hash = %s\n' % source_hash)
     f.write('lead_directory_missing = true\n\n')
     f.write('[provide]\n')
