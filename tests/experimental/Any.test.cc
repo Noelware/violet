@@ -171,6 +171,7 @@ TEST(Any, OperatorOstream)
     EXPECT_EQ(os.str(), "7");
 }
 
+#if VIOLET_USE_RTTI
 TEST(Any, TypeNameInt)
 {
     auto value = Any::New<int>(0);
@@ -180,7 +181,6 @@ TEST(Any, TypeNameInt)
     EXPECT_NE(name.find("int"), String::npos);
 }
 
-#if VIOLET_USE_RTTI
 TEST(Any, TypeNameString)
 {
     auto value = Any::New<String>("x");
