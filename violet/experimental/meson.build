@@ -2,7 +2,7 @@
 # Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
+# of this software and associated documentation files (the 'Software'), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
@@ -11,7 +11,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -19,5 +19,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
-bazel_dep(name = "abseil-cpp", version = "20260107.1", repo_name = "absl")
+libviolet_experimental_srcs = files('../../src/experimental/Any.cc')
+
+violet_experimental_lib = library(
+    'violet_experimental',
+    libviolet_experimental_srcs,
+    dependencies: [violet_dep],
+    include_directories: violet_include_dir,
+    cpp_args: violet_build_defines,
+    install: true,
+)
+
+violet_experimental_dep = declare_dependency(
+    include_directories: violet_include_dir,
+    link_with: [violet_experimental_lib],
+    dependencies: [violet_dep],
+    compile_args: violet_consumer_defines,
+)
+
+configure_file(
+    input: '../../hack/pkg-config/libviolet_experimental.pc',
+    output: 'libviolet_experimental.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig',
+)

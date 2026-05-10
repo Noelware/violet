@@ -20,6 +20,10 @@
 # SOFTWARE.
 
 BOOL_FLAGS = {
+    "abseil": {
+        "default": False,
+        "doc": "Brings in [Abseil](https://github.com/abseil/abseil-cpp) libraries instead of C++'s standard library types (mostly synchronization primitives)",
+    },
     "asan": {
         "default": False,
         "doc": "Enables the **Address** Sanitizer on each C++ target. Usually, this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions.",

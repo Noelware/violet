@@ -37,11 +37,50 @@
 
 namespace violet::experimental {
 
+/// A type-erased virtual dispatch table for [`Any`]-like containers.
+///
+/// `AnyVTable` stores function pointers for converting to string, cloning,
+/// and destructing a type-erased value. It is constructed at compile time
+/// via [`For<T>()`], which generates the appropriate implementations based
+/// on `T`'s capabilities.
+///
+/// ## Design
+/// Rather than using inheritance and virtual methods, `AnyVTable` uses
+/// a C-style vtable with function pointers operating on `void*`. This
+/// avoids the overhead of virtual dispatch and allows the vtable itself
+/// to be `constexpr`-constructed.
 struct VIOLET_API AnyVTable {
+    /// Converts the type-erased value at `ptr` to a string representation.
+    ///
+    /// The resolution order is:
+    ///     1. `violet::ToString(*self)` if `violet::Stringify<T>` is satisfied.
+    ///     2. `operator<<(std::ostream&, T)` if available.
+    ///     3. RTTI-based demangled type name and hash (if RTTI is enabled).
+    ///     4. A static fallback string.
     String (*ToString)(const void* ptr) = nullptr;
+
+    /// Copy-constructs `T` from `src` into the storage at `dst` using placement new.
+    ///
+    /// Returns a pointer to the newly constructed object (which is `dst`).
+    /// `nullptr` if `T` is not copy-constructible, callers must check before invoking.
     void* (*Clone)(const void* src, void* dst) = nullptr;
+
+    /// Destroys the object at `ptr` via `std::destroy_at` and deallocates
+    /// the memory with `::operator delete`.
     void (*Destruct)(void* ptr) = nullptr;
 
+    /// Constructs an `AnyVTable` for the given type `T` at compile time.
+    ///
+    /// The generated vtable adapts to `T`'s capabilities:
+    /// - `ToString` is always populated.
+    /// - `Clone` is only populated if `T` is copy-constructible.
+    /// - `Destruct` is always populated.
+    ///
+    /// ## Type Requirements
+    /// - `T` must be destructible.
+    /// - `T` does **not** need to be copy-constructible. If it isn't, `Clone` will be `nullptr`.
+    ///
+    /// @tparam T the concrete type to generate the vtable for.
     template<typename T>
     constexpr static auto For() -> AnyVTable
     {

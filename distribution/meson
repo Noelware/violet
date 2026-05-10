@@ -43,6 +43,7 @@ dirs=(
 files=(
     ".violet-version"
     "meson.build"
+    "meson_options.txt"
     "README.md"
     "LICENSE"
     "CHANGELOG.md"
