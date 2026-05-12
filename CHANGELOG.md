@@ -16,6 +16,7 @@ availableAt:
     - **Own** is a version of **std::shared_ptr** that works with shared base types that point to derived types and other fixes.
 - New integral-based functions arrive from Eous' codebase. ([`@auguwu`])
 - Deprecate **VIOLET_HAS_EXCEPTIONS**, **VIOLET_USE_RTTI**, **VIOLET_IS_LITTLE_ENDIAN**, and **VIOLET_IS_BIG_ENDIAN** for **VIOLET_FEATURE_{EXCEPTIONS|RTTI} / VIOLET_PLATFORM_{LITTLE|BIG}_ENDIAN** for consistency ([`@auguwu`])
+- Add **anyhow::Error::ToString** ([`@auguwu`])
 
 #### Noelware.Violet.Experimental.Time
 This is a brand new framework that was brought from Eous' codebase.

@@ -99,7 +99,7 @@ auto Duration::FromStr(Str input) noexcept -> violet::anyhow::Result<Duration>
         const auto [theUnit, len] = unit.Value();
         pos += len;
 
-        auto value = numeric::Parse(numStr);
+        auto value = numeric::Parse<double>(numStr);
         if (value.Err()) {
             return Err(
                 ANYHOW_FMT("invalid number '{}' in duration {}", numStr, input).Context(VIOLET_MOVE(value).Error()));

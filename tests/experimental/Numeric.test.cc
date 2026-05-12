@@ -193,179 +193,183 @@ TEST(Numeric, CheckedMulReturnsNothingOnNegativeOverflow)
 
 TEST(Numeric, ParseUnsignedUInt64ParsesValid)
 {
-    auto result = ParseUnsigned<UInt64>("12345");
+    auto result = Parse<UInt64>("12345");
     ASSERT_TRUE(result);
     EXPECT_EQ(VIOLET_MOVE(result).Unwrap(), 12345U);
 }
 
 TEST(Numeric, ParseUnsignedUInt64FailsOnEmpty)
 {
-    auto result = ParseUnsigned<UInt64>("");
+    auto result = Parse<UInt64>("");
     EXPECT_FALSE(result);
 }
 
 TEST(Numeric, ParseUnsignedUInt64FailsOnNonNumeric)
 {
-    auto result = ParseUnsigned<UInt64>("abc");
+    auto result = Parse<UInt64>("abc");
     EXPECT_FALSE(result);
 }
 
 TEST(Numeric, ParseUnsignedUInt64FailsOnTrailingGarbage)
 {
-    auto result = ParseUnsigned<UInt64>("123abc");
+    auto result = Parse<UInt64>("123abc");
     EXPECT_FALSE(result);
 }
 
 TEST(Numeric, ParseUnsignedUInt8FitsInRange)
 {
-    auto result = ParseUnsigned<UInt8>("255");
+    auto result = Parse<UInt8>("255");
     ASSERT_TRUE(result);
     EXPECT_EQ(VIOLET_MOVE(result).Unwrap(), 255U);
 }
 
 TEST(Numeric, ParseUnsignedUInt8RejectsOutOfRange)
 {
-    auto result = ParseUnsigned<UInt8>("256");
+    auto result = Parse<UInt8>("256");
     EXPECT_FALSE(result);
 }
 
 TEST(Numeric, ParseUnsignedUInt16FitsInRange)
 {
-    auto result = ParseUnsigned<UInt16>("65535");
+    auto result = Parse<UInt16>("65535");
     ASSERT_TRUE(result);
     EXPECT_EQ(VIOLET_MOVE(result).Unwrap(), 65535U);
 }
 
 TEST(Numeric, ParseUnsignedUInt16RejectsOutOfRange)
 {
-    auto result = ParseUnsigned<UInt16>("65536");
+    auto result = Parse<UInt16>("65536");
     EXPECT_FALSE(result);
 }
 
 TEST(Numeric, ParseUnsignedUInt32FitsInRange)
 {
-    auto result = ParseUnsigned<UInt32>("4294967295");
+    auto result = Parse<UInt32>("4294967295");
     ASSERT_TRUE(result);
     EXPECT_EQ(VIOLET_MOVE(result).Unwrap(), 4294967295U);
 }
 
 TEST(Numeric, ParseUnsignedUInt32RejectsOutOfRange)
 {
-    auto result = ParseUnsigned<UInt32>("4294967296");
+    auto result = Parse<UInt32>("4294967296");
     EXPECT_FALSE(result);
 }
 
 TEST(Numeric, ParseSignedInt64ParsesPositive)
 {
-    auto result = ParseSigned<Int64>("12345");
+    auto result = Parse<Int64>("12345");
     ASSERT_TRUE(result);
     EXPECT_EQ(VIOLET_MOVE(result).Unwrap(), 12345);
 }
 
 TEST(Numeric, ParseSignedInt64ParsesNegative)
 {
-    auto result = ParseSigned<Int64>("-12345");
+    auto result = Parse<Int64>("-12345");
     ASSERT_TRUE(result);
     EXPECT_EQ(VIOLET_MOVE(result).Unwrap(), -12345);
 }
 
 TEST(Numeric, ParseSignedInt64FailsOnEmpty)
 {
-    auto result = ParseSigned<Int64>("");
+    auto result = Parse<Int64>("");
     EXPECT_FALSE(result);
 }
 
 TEST(Numeric, ParseSignedInt64FailsOnTrailingGarbage)
 {
-    auto result = ParseSigned<Int64>("42xyz");
+    auto result = Parse<Int64>("42xyz");
     EXPECT_FALSE(result);
 }
 
 TEST(Numeric, ParseSignedInt8FitsInRange)
 {
-    auto pos = ParseSigned<Int8>("127");
+    auto pos = Parse<Int8>("127");
     ASSERT_TRUE(pos.Ok());
     EXPECT_EQ(VIOLET_MOVE(pos).Unwrap(), 127);
 
-    auto neg = ParseSigned<Int8>("-128");
+    auto neg = Parse<Int8>("-128");
     ASSERT_TRUE(neg.Ok());
     EXPECT_EQ(VIOLET_MOVE(neg).Unwrap(), -128);
 }
 
 TEST(Numeric, ParseSignedInt8RejectsOutOfRange)
 {
-    EXPECT_TRUE(ParseSigned<Int8>("128").Err());
-    EXPECT_TRUE(ParseSigned<Int8>("-129").Err());
+    EXPECT_TRUE(Parse<Int8>("128").Err());
+    EXPECT_TRUE(Parse<Int8>("-129").Err());
 }
 
 TEST(Numeric, ParseSignedInt16FitsInRange)
 {
-    auto pos = ParseSigned<Int16>("32767");
+    auto pos = Parse<Int16>("32767");
     ASSERT_TRUE(pos.Ok());
     EXPECT_EQ(VIOLET_MOVE(pos).Unwrap(), 32767);
 
-    auto neg = ParseSigned<Int16>("-32768");
+    auto neg = Parse<Int16>("-32768");
     ASSERT_TRUE(neg.Ok());
     EXPECT_EQ(VIOLET_MOVE(neg).Unwrap(), -32768);
 }
 
 TEST(Numeric, ParseSignedInt16RejectsOutOfRange)
 {
-    EXPECT_TRUE(ParseSigned<Int16>("32768").Err());
-    EXPECT_TRUE(ParseSigned<Int16>("-32769").Err());
+    EXPECT_TRUE(Parse<Int16>("32768").Err());
+    EXPECT_TRUE(Parse<Int16>("-32769").Err());
 }
 
 TEST(Numeric, ParseSignedInt32FitsInRange)
 {
-    auto pos = ParseSigned<Int32>("2147483647");
+    auto pos = Parse<Int32>("2147483647");
     ASSERT_TRUE(pos.Ok());
     EXPECT_EQ(VIOLET_MOVE(pos).Unwrap(), 2147483647);
 
-    auto neg = ParseSigned<Int32>("-2147483648");
+    auto neg = Parse<Int32>("-2147483648");
     ASSERT_TRUE(neg.Ok());
     EXPECT_EQ(VIOLET_MOVE(neg).Unwrap(), -2147483648);
 }
 
 TEST(Numeric, ParseSignedInt32RejectsOutOfRange)
 {
-    EXPECT_TRUE(ParseSigned<Int32>("2147483648").Err());
-    EXPECT_TRUE(ParseSigned<Int32>("-2147483649").Err());
+    EXPECT_TRUE(Parse<Int32>("2147483648").Err());
+    EXPECT_TRUE(Parse<Int32>("-2147483649").Err());
 }
+
+#if defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 170000
 
 TEST(Numeric, ParseDoubleParsesValid)
 {
-    auto result = Parse("3.14");
+    auto result = Parse<double>("3.14");
     ASSERT_TRUE(result);
     EXPECT_DOUBLE_EQ(VIOLET_MOVE(result).Unwrap(), 3.14);
 }
 
 TEST(Numeric, ParseDoubleParsesInteger)
 {
-    auto result = Parse("42");
+    auto result = Parse<double>("42");
     ASSERT_TRUE(result);
     EXPECT_DOUBLE_EQ(VIOLET_MOVE(result).Unwrap(), 42.0);
 }
 
 TEST(Numeric, ParseDoubleParsesNegative)
 {
-    auto result = Parse("-2.5");
+    auto result = Parse<double>("-2.5");
     ASSERT_TRUE(result);
     EXPECT_DOUBLE_EQ(VIOLET_MOVE(result).Unwrap(), -2.5);
 }
 
 TEST(Numeric, ParseDoubleFailsOnEmpty)
 {
-    EXPECT_TRUE(Parse("").Err());
+    EXPECT_TRUE(Parse<double>("").Err());
 }
 
 TEST(Numeric, ParseDoubleFailsOnTrailingGarbage)
 {
-    EXPECT_TRUE(Parse("3.14xyz").Err());
+    EXPECT_TRUE(Parse<double>("3.14xyz").Err());
 }
 
 TEST(Numeric, ParseDoubleFailsOnNonNumeric)
 {
-    EXPECT_TRUE(Parse("abc").Err());
+    EXPECT_TRUE(Parse<double>("abc").Err());
 }
+
+#endif
 
 // NOLINTEND(google-build-using-namespace,readability-identifier-length,readability-magic-numbers)

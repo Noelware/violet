@@ -23,6 +23,8 @@
 #include <violet/Support/Terminal.h>
 #include <violet/anyhow.h>
 
+#include <ranges>
+
 using violet::PrintErr;
 using violet::PrintErrln;
 using violet::String;
@@ -125,6 +127,34 @@ auto Error::Context(Error&& context) && noexcept -> Error
 
     tail->Next = this->n_node;
     this->n_node = nullptr;
+
+    return out;
+}
+
+auto Error::ToString() const -> String
+{
+    Vec<const node_t*> stack;
+    for (auto* node = this->n_node; node != nullptr; node = node->Next) {
+        VIOLET_DEBUG_ASSERT(node != nullptr, "invalid invariant: `node` shouldn't be null");
+        VIOLET_DEBUG_ASSERT_FMT(
+            node->Object != nullptr, "missing object in child node of {:p}", static_cast<const void*>(node));
+
+        VIOLET_DEBUG_ASSERT(node->VTable.Message != nullptr, "invalid invariant reached: vtable missing `Message()'");
+
+        stack.push_back(node);
+    }
+
+    String out;
+    bool first = true;
+    for (const auto* node: std::views::reverse(stack)) {
+        if (!first) {
+            out.push_back(':');
+            out.push_back(' ');
+        }
+
+        out.append(node->VTable.Message(node->Object));
+        first = false;
+    }
 
     return out;
 }

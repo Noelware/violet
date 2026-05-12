@@ -240,10 +240,7 @@ constexpr auto CheckedMul(T one, T two) -> Optional<T>
 /// Fallible, no-exception way to parse unsigned integrals from string input.
 /// @param input input to parse
 template<std::unsigned_integral N>
-__violet_constexpr_charconv__ auto ParseUnsigned(Str input) -> anyhow::Result<N>;
-
-template<>
-__violet_constexpr_charconv__ auto ParseUnsigned<UInt64>(Str input) -> anyhow::Result<UInt64>
+__violet_constexpr_charconv__ auto Parse(Str input) -> anyhow::Result<N>
 {
     CStr it = input.data();
     CStr end = input.data() + input.size();
@@ -259,37 +256,21 @@ __violet_constexpr_charconv__ auto ParseUnsigned<UInt64>(Str input) -> anyhow::R
         return Err(ANYHOW_FMT("trailing garbage in input: {}", input));
     }
 
-    return tmp;
-}
-
-#define __violet_impl_unsigned_parse__(type)                                                                           \
-    template<>                                                                                                         \
-    __violet_constexpr_charconv__ auto ParseUnsigned<type>(Str input) -> anyhow::Result<type>                          \
-    {                                                                                                                  \
-        auto value = VIOLET_TRY(ParseUnsigned<UInt64>(input));                                                         \
-        constexpr auto kMax = std::numeric_limits<type>::max();                                                        \
-        if (value > kMax) {                                                                                            \
-            return Err(ANYHOW_FMT("failed to parse integral value [{}]", input)                                        \
-                    .Context(                                                                                          \
-                        std::format("wanted less than or equal to `{}', but received [{}] instead", kMax, value)));    \
-        }                                                                                                              \
-                                                                                                                       \
-        return static_cast<type>(value);                                                                               \
+    if constexpr (!std::same_as<N, UInt64>) {
+        constexpr auto kMax = std::numeric_limits<N>::max();
+        if (tmp > kMax) {
+            return Err(ANYHOW_FMT("failed to parse integral value: {}", input)
+                    .Context(std::format("wanted less than or equal to: {}, but got {}", kMax, tmp)));
+        }
     }
 
-__violet_impl_unsigned_parse__(UInt8);
-__violet_impl_unsigned_parse__(UInt16);
-__violet_impl_unsigned_parse__(UInt32);
-
-#undef __violet_impl_unsigned_parse__
+    return static_cast<N>(tmp);
+}
 
 /// Fallible, no-exception way to parse unsigned integrals from string input.
 /// @param input input to parse
 template<std::integral N>
-__violet_constexpr_charconv__ auto ParseSigned(Str input) -> anyhow::Result<N>;
-
-template<>
-__violet_constexpr_charconv__ auto ParseSigned<Int64>(Str input) -> anyhow::Result<Int64>
+__violet_constexpr_charconv__ auto Parse(Str input) -> anyhow::Result<N>
 {
     CStr it = input.data();
     CStr end = input.data() + input.size();
@@ -305,35 +286,24 @@ __violet_constexpr_charconv__ auto ParseSigned<Int64>(Str input) -> anyhow::Resu
         return Err(ANYHOW_FMT("trailing garbage in input: {}", input));
     }
 
-    return tmp;
-}
+    if constexpr (!std::same_as<N, Int64>) {
+        constexpr auto kMin = std::numeric_limits<N>::min();
+        constexpr auto kMax = std::numeric_limits<N>::max();
+        if (tmp > kMax) {
+            return Err(ANYHOW_FMT("failed to parse integral value: {}", input)
+                    .Context(std::format("wanted less than: {}, but got {}", kMax, tmp)));
+        }
 
-#define __violet_impl_signed_parse__(type)                                                                             \
-    template<>                                                                                                         \
-    __violet_constexpr_charconv__ auto ParseSigned<type>(Str input) -> anyhow::Result<type>                            \
-    {                                                                                                                  \
-        auto value = VIOLET_TRY(ParseSigned<Int64>(input));                                                            \
-        constexpr auto kMin = std::numeric_limits<type>::min();                                                        \
-        constexpr auto kMax = std::numeric_limits<type>::max();                                                        \
-        if (value > kMax) {                                                                                            \
-            return Err(ANYHOW_FMT("failed to parse integral value [{}]", input)                                        \
-                    .Context(                                                                                          \
-                        std::format("wanted less than or equal to `{}', but received [{}] instead", kMax, value)));    \
-        }                                                                                                              \
-                                                                                                                       \
-        if (value < static_cast<Int64>(kMin)) {                                                                        \
-            return Err(ANYHOW_FMT("failed to parse integral value [{}]", input)                                        \
-                    .Context(                                                                                          \
-                        std::format("wanted greater than or equal to `{}', but received [{}] instead", kMin, value))); \
-        }                                                                                                              \
-        return static_cast<type>(value);                                                                               \
+        if (tmp < static_cast<Int64>(kMin)) {
+            return Err(ANYHOW_FMT("failed to parse integral value: {}", input)
+                    .Context(std::format("wanted greater than: {}, but got {}", kMin, tmp)));
+        }
     }
 
-__violet_impl_signed_parse__(Int8);
-__violet_impl_signed_parse__(Int16);
-__violet_impl_signed_parse__(Int32);
+    return static_cast<N>(tmp);
+}
 
-#undef __violet_impl_signed_parse__
+#if defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 170000
 
 /// Fallible, no-exception way to parse a double-precision floating-point value
 /// from string input.
@@ -372,6 +342,8 @@ __violet_constexpr_charconv__ auto Parse(Str input) -> anyhow::Result<T>
 
     return tmp;
 }
+
+#endif
 
 #undef __violet_constexpr_charconv__
 

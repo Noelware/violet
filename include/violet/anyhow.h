@@ -110,6 +110,12 @@ struct VIOLET_API Error final {
     /// Print a human-readable representation of the error to the process' standard error.
     VIOLET_API void Print() const noexcept;
 
+    VIOLET_API [[nodiscard]] auto ToString() const -> violet::String;
+    friend auto operator<<(std::ostream& os, const Error& self) -> std::ostream&
+    {
+        return os << self.ToString();
+    }
+
 private:
     VIOLET_IMPLICIT Error() noexcept = default;
 
@@ -158,7 +164,7 @@ private:
                     VIOLET_DEBUG_ASSERT(src != nullptr, "assumption failed");
 
                     if constexpr (Stringify<T>) {
-                        return ToString(*src);
+                        return violet::ToString(*src);
                     }
 
                     if constexpr (requires(std::ostream& os) { os << *src; }) {
