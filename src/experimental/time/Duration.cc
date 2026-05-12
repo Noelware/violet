@@ -22,6 +22,8 @@
 #include <violet/Experimental/Numeric.h>
 #include <violet/Experimental/Time/Duration.h>
 
+#include <cmath>
+
 using violet::experimental::chrono::Duration;
 
 using violet::Array;

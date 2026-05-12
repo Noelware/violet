@@ -19,15 +19,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-option(
-    'abseil',
-    type: 'feature',
-    description: 'Brings in [Abseil](https://github.com/abseil/abseil-cpp) libraries instead of C++\'s standard library types (mostly synchronization primitives)',
+libviolet_experimental_time_srcs = files(
+    '../../../src/experimental/time/Clock.cc',
+    '../../../src/experimental/time/Duration.cc',
+    '../../../src/experimental/time/FakeClock.cc',
+    '../../../src/experimental/time/TimePoint.cc',
 )
 
-option(
-    'bitflags_free_function_impls',
-    type: 'boolean',
-    value: false,
-    description: 'If set to `false`, disables the free-functions for the following operators when using the `violet::Bitflags` class: `|`, `^`, `&`, and `~`',
+violet_experimental_time_lib = library(
+    'violet_experimental_time',
+    libviolet_experimental_time_srcs,
+    include_directories: violet_include_dir,
+    cpp_args: violet_build_defines,
+    dependencies: [violet_anyhow_dep, violet_experimental_dep],
+    install: true,
+)
+
+violet_experimental_time_dep = declare_dependency(
+    include_directories: violet_include_dir,
+    link_with: violet_experimental_time_lib,
+    compile_args: violet_platform_defines + violet_consumer_defines,
+)
+
+configure_file(
+    input: '../../../hack/pkg-config/libviolet_experimental_time.pc',
+    output: 'libviolet_experimental_time.pc',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('prefix') / 'lib' / 'pkgconfig',
 )

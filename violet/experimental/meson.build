@@ -21,19 +21,41 @@
 
 libviolet_experimental_srcs = files('../../src/experimental/Any.cc')
 
+violet_build_defines += [
+    '-DVIOLET_FEATURE_ABSEIL=@0@'.format(get_option('abseil').enabled().to_int()),
+]
+
+absl_base_dep = dependency('absl_base', required: get_option('abseil'))
+absl_synchronization_dep = dependency('absl_synchronization', required: get_option('abseil'))
+absl_time_dep = dependency('absl_time', required: get_option('abseil'))
+
+libviolet_experimental_deps = [violet_dep]
+
+if get_option('abseil').enabled()
+    libviolet_experimental_deps += [absl_synchronization_dep, absl_time_dep, absl_base_dep]
+    libviolet_experimental_srcs += files('../../src/experimental/Mutex.abseil.cc')
+else
+    libviolet_experimental_srcs += files('../../src/experimental/Mutex.std.cc')
+endif
+
 violet_experimental_lib = library(
     'violet_experimental',
     libviolet_experimental_srcs,
-    dependencies: [violet_dep],
+    dependencies: libviolet_experimental_deps,
     include_directories: violet_include_dir,
     cpp_args: violet_build_defines,
     install: true,
 )
 
+violet_experimental_consumer_deps = [violet_dep]
+if get_option('abseil').enabled()
+    violet_experimental_consumer_deps += [absl_synchronization_dep, absl_time_dep, absl_base_dep]
+endif
+
 violet_experimental_dep = declare_dependency(
     include_directories: violet_include_dir,
     link_with: [violet_experimental_lib],
-    dependencies: [violet_dep],
+    dependencies: violet_experimental_consumer_deps,
     compile_args: violet_consumer_defines,
 )
 

@@ -104,6 +104,10 @@ subdir('violet/terminal')
 
 subdir('violet/anyhow')
 
+## ~^=w=^~ START: Noelware.Violet.Experimental.Time ~^=w=^~ ##
+subdir('violet/experimental/time')
+## ~^=w=^~ END: Noelware.Violet.Experimental.Threading ~^=w=^~ ##
+
 install_subdir(
     'include/violet',
     install_dir: get_option('prefix') / 'include',
