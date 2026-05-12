@@ -231,13 +231,19 @@ constexpr auto CheckedMul(T one, T two) -> Optional<T>
 #endif
 }
 
+#if (defined(__cpp_lib_constexpr_charconv) && __cpp_lib_constexpr_charconv >= 202207L)
+#define __violet_constexpr_charconv__ constexpr
+#else
+#define __violet_constexpr_charconv__ inline
+#endif
+
 /// Fallible, no-exception way to parse unsigned integrals from string input.
 /// @param input input to parse
 template<std::unsigned_integral N>
-auto ParseUnsigned(Str input) -> anyhow::Result<N>;
+__violet_constexpr_charconv__ auto ParseUnsigned(Str input) -> anyhow::Result<N>;
 
 template<>
-inline auto ParseUnsigned<UInt64>(Str input) -> anyhow::Result<UInt64>
+__violet_constexpr_charconv__ auto ParseUnsigned<UInt64>(Str input) -> anyhow::Result<UInt64>
 {
     CStr it = input.data();
     CStr end = input.data() + input.size();
@@ -258,7 +264,7 @@ inline auto ParseUnsigned<UInt64>(Str input) -> anyhow::Result<UInt64>
 
 #define __violet_impl_unsigned_parse__(type)                                                                           \
     template<>                                                                                                         \
-    inline auto ParseUnsigned<type>(Str input) -> anyhow::Result<type>                                                 \
+    __violet_constexpr_charconv__ auto ParseUnsigned<type>(Str input) -> anyhow::Result<type>                          \
     {                                                                                                                  \
         auto value = VIOLET_TRY(ParseUnsigned<UInt64>(input));                                                         \
         constexpr auto kMax = std::numeric_limits<type>::max();                                                        \
@@ -280,10 +286,10 @@ __violet_impl_unsigned_parse__(UInt32);
 /// Fallible, no-exception way to parse unsigned integrals from string input.
 /// @param input input to parse
 template<std::integral N>
-auto ParseSigned(Str input) -> anyhow::Result<N>;
+__violet_constexpr_charconv__ auto ParseSigned(Str input) -> anyhow::Result<N>;
 
 template<>
-inline auto ParseSigned<Int64>(Str input) -> anyhow::Result<Int64>
+__violet_constexpr_charconv__ auto ParseSigned<Int64>(Str input) -> anyhow::Result<Int64>
 {
     CStr it = input.data();
     CStr end = input.data() + input.size();
@@ -304,7 +310,7 @@ inline auto ParseSigned<Int64>(Str input) -> anyhow::Result<Int64>
 
 #define __violet_impl_signed_parse__(type)                                                                             \
     template<>                                                                                                         \
-    inline auto ParseSigned<type>(Str input) -> anyhow::Result<type>                                                   \
+    __violet_constexpr_charconv__ auto ParseSigned<type>(Str input) -> anyhow::Result<type>                            \
     {                                                                                                                  \
         auto value = VIOLET_TRY(ParseSigned<Int64>(input));                                                            \
         constexpr auto kMin = std::numeric_limits<type>::min();                                                        \
@@ -338,20 +344,21 @@ __violet_impl_signed_parse__(Int32);
 /// ```cpp
 /// #include <violet/Experimental/Numeric.h>
 ///
-/// auto value = violet::numeric::Parse("3.14");
-/// VIOLET_ASSERT0(value.IsOk() && *value == 3.14);
+/// auto value = violet::numeric::Parse<float>("3.14");
+/// VIOLET_ASSERT0(value.Ok() && *value == 3.14);
 ///
-/// auto bad = violet::numeric::Parse("3.14xyz");
-/// VIOLET_ASSERT0(bad.IsErr());
+/// auto bad = violet::numeric::Parse<double>("3.14xyz");
+/// VIOLET_ASSERT0(bad.Err());
 /// ```
 ///
-/// @param input string slice containing the textual representation to parse.
-inline auto Parse(Str input) -> anyhow::Result<double>
+/// @param input string slice containing the textual representation to parse
+template<std::floating_point T>
+__violet_constexpr_charconv__ auto Parse(Str input) -> anyhow::Result<T>
 {
     CStr it = input.data();
     CStr end = input.data() + input.size();
 
-    double tmp{ };
+    T tmp{ };
     auto [ptr, ec] = std::from_chars(it, end, tmp);
     if (ec != std::errc{ }) {
         std::error_code code(std::make_error_code(ec));
@@ -365,5 +372,7 @@ inline auto Parse(Str input) -> anyhow::Result<double>
 
     return tmp;
 }
+
+#undef __violet_constexpr_charconv__
 
 } // namespace violet::numeric

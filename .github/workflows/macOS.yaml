@@ -81,5 +81,6 @@ jobs:
               with:
                 bazelisk-cache: true
                 repository-cache: true
-                disk-cache: macos-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.exceptions == 'yes' && 'rtti' || 'nortti'}}
+                disk-cache: macos-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.exceptions == 'yes' && 'rtti' || 'nortti'}}-${{matrix.abseil == 'yes' && 'abseil' || 'no-abseil'}}
+
             - run: bazel test //... ${{env.BAZELFLAGS}}

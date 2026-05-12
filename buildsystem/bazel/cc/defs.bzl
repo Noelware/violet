@@ -175,6 +175,8 @@ copts = select({
         "-Wno-gcc-compat",
         "-Wno-gnu-statement-expression",
         "-Wno-c2y-extensions",
+        "-Wno-c++23-extensions",
+        "-Wno-c++26-extensions",
         "-Wno-unused-command-line-argument",
     ],
     "@rules_cc//cc/compiler:gcc": [
