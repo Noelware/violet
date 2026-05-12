@@ -345,7 +345,7 @@ TEST(OneOf, HoldsCorrectType)
     EXPECT_EQ(v.Index(), 2U);
 }
 
-#ifdef VIOLET_HAS_EXCEPTIONS
+#if VIOLET_FEATURE(EXCEPTIONS)
 namespace {
 
 struct throw_on_copy_t final {

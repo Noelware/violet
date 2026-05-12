@@ -45,7 +45,7 @@ Error::node_t::node_t(node_t&& other) noexcept
     , Location(std::exchange(other.Location, { }))
     , Next(std::exchange(other.Next, nullptr))
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     , Type(std::exchange(other.Type, typeid(node_t)))
 #endif
 {
@@ -66,7 +66,7 @@ auto Error::node_t::operator=(node_t&& other) noexcept -> node_t&
         this->Size = std::exchange(other.Size, 0);
         this->Next = std::exchange(other.Next, nullptr);
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
         this->Type = std::exchange(other.Type, typeid(node_t));
 #endif
     }

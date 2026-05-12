@@ -56,6 +56,45 @@ violet_cc_test(
 )
 
 violet_cc_library(
+    name = "mutex",
+    srcs = select({
+        "//buildsystem/bazel/flags:abseil_enabled": ["//src/experimental:Mutex.abseil.cc"],
+        "//conditions:default": ["//src/experimental:Mutex.std.cc"],
+    }),
+    hdrs = ["//include/violet/Experimental:Mutex.h"],
+    local_defines = select({
+        "//buildsystem/bazel/flags:abseil_enabled": ["VIOLET_FEATURE_ABSEIL"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "//violet",
+        "//violet/experimental/time:duration",
+    ] + select({
+        "//buildsystem/bazel/flags:abseil_enabled": [
+            "@absl//absl/base:core_headers",
+            "@absl//absl/synchronization",
+            "@absl//absl/time",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+violet_cc_library(
+    name = "numeric",
+    hdrs = ["//include/violet/Experimental:Numeric.h"],
+    deps = [
+        "//violet:anyhow",
+        "//violet/container:optional",
+    ],
+)
+
+violet_cc_test(
+    name = "numeric_test",
+    srcs = ["//tests/experimental:Numeric.test.cc"],
+    deps = [":numeric"],
+)
+
+violet_cc_library(
     name = "oneof",
     hdrs = ["//include/violet/Experimental:OneOf.h"],
     visibility = ["//visibility:public"],
@@ -69,4 +108,31 @@ violet_cc_test(
     name = "oneof_test",
     srcs = ["//tests/experimental:OneOf.test.cc"],
     deps = [":oneof"],
+)
+
+violet_cc_library(
+    name = "own",
+    hdrs = ["//include/violet/Experimental:Own.h"],
+    deps = ["//violet/container:optional"],
+)
+
+violet_cc_test(
+    name = "own_test",
+    srcs = ["//tests/experimental:Own.test.cc"],
+    deps = [":own"],
+)
+
+violet_cc_library(
+    name = "synchronized",
+    hdrs = ["//include/violet/Experimental:Synchronized.h"],
+    deps = [
+        ":mutex",
+        "//violet/container:optional",
+    ],
+)
+
+violet_cc_test(
+    name = "synchronized_test",
+    srcs = ["//tests/experimental:Synchronized.test.cc"],
+    deps = [":synchronized"],
 )

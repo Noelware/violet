@@ -19,8 +19,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Violet.h>
-
 #include <violet/Filesystem.h>
 #include <violet/Filesystem/File.h>
 #include <violet/Filesystem/Path.h>
@@ -55,7 +53,7 @@ struct WalkDirs::Impl final {
 
 auto WalkDirs::Next() noexcept -> Optional<WalkDirs::Item>
 {
-    abort();
+    return Nothing;
 }
 
 auto violet::filesystem::Exists(PathRef) -> bool

@@ -75,7 +75,7 @@ auto Any::operator=(Any&& other) noexcept -> Any&
     return *this;
 }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
 auto Any::TypeName() const noexcept -> String
 {
     return util::DemangleCXXName(this->n_type.name());
@@ -88,7 +88,7 @@ auto Any::ToString() const noexcept -> String
         return this->n_vtable.ToString(this->n_self);
     }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     return std::format("<type {}@{}>", this->TypeName(), this->n_type.hash_code());
 #else
     return "<type not stringifiable>";

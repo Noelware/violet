@@ -7,6 +7,24 @@ availableAt:
 ---
 
 ### unreleased
+#### Noelware.Violet
+- Move type traits and concepts into their own header: `violet/Traits.h` (still re-exported when using `violet/Violet.h` header) ([`@auguwu`])
+
+#### Noelware.Violet.Experimental
+- New types: **Mutex** (MutexLock, Condvar), **Synchronized**, and **Own**. ([`@auguwu`])
+    - Violet can use Abseil's Mutex types if provided via `--@violet//buildsystem/bazel/flags:abseil=True`. We set this to `False`; Noelware interally uses Abseil but for consumers that don't want to depend on Abseil.
+    - **Own** is a version of **std::shared_ptr** that works with shared base types that point to derived types and other fixes.
+- New integral-based functions arrive from Eous' codebase. ([`@auguwu`])
+- Deprecate **VIOLET_HAS_EXCEPTIONS**, **VIOLET_USE_RTTI**, **VIOLET_IS_LITTLE_ENDIAN**, and **VIOLET_IS_BIG_ENDIAN** for **VIOLET_FEATURE_{EXCEPTIONS|RTTI} / VIOLET_PLATFORM_{LITTLE|BIG}_ENDIAN** for consistency ([`@auguwu`])
+
+#### Noelware.Violet.Experimental.Time
+This is a brand new framework that was brought from Eous' codebase.
+
+This comes with **Duration**, **TimePoint**, and **Instant** for time manipulation and parsing that bridges C++'s `std::chrono`. Also provides `Clock` and `FakeClock`, which can be used instead of `std::chrono::{system|steady}_clock`. `FakeClock`'s primary use is for tests.
+
+#### Noelware.Violet.Filesystem
+- Fix bug where `CreateDirectories` using the full path instead of current segment ([`@auguwu`], [#47])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.06.04...master>
 
 ### 26.06.04
@@ -421,5 +439,6 @@ This release indicates that Violet is ready to be shipped as a **MVP**. Report a
 [`@auguwu`]: https://github.com/auguwu
 
 [PR #23]: https://github.com/Noelware/violet/pull/23
+[#47]: https://github.com/Noelware/violet/issues/47
 [#27]: https://github.com/Noelware/violet/issues/27
 [#22]: https://github.com/Noelware/violet/issues/22

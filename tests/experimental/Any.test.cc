@@ -19,11 +19,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// NOLINTBEGIN(readability-identifier-length,google-build-using-namespace,performance-unnecessary-copy-initialization)
-
 #include <gtest/gtest.h>
 #include <violet/Experimental/Any.h>
 
+// NOLINTBEGIN(readability-identifier-length,google-build-using-namespace,performance-unnecessary-copy-initialization)
 using namespace violet::experimental;
 using violet::Int32;
 using violet::String;
@@ -171,7 +170,7 @@ TEST(Any, OperatorOstream)
     EXPECT_EQ(os.str(), "7");
 }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
 TEST(Any, TypeNameInt)
 {
     auto value = Any::New<int>(0);

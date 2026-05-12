@@ -34,7 +34,7 @@
 #include <violet/SourceLocation.h>
 #include <violet/Violet.h>
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
 #include <violet/Support/Demangle.h>
 
 #include <typeindex>
@@ -128,7 +128,7 @@ private:
         violet::SourceLocation Location;
         node_t* Next;
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
         std::type_index Type = typeid(node_t); // placeholder: use `node_t`'s type index
 #endif
 
@@ -148,7 +148,7 @@ private:
             node->Size = sizeof(T);
             node->Next = next;
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
             node->Type = typeid(T);
 #endif
 
@@ -168,7 +168,7 @@ private:
                         return os.str();
                     }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
                     const auto& type = typeid(T);
                     return std::format("<type {}@{}>", violet::util::DemangleCXXName(type.name()), type.hash_code());
 #else
@@ -218,7 +218,7 @@ struct Chain final: public Iterator<Chain> {
 
         VIOLET_DISALLOW_CONSTRUCTOR(Frame);
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
         template<typename T>
         auto Downcast() const noexcept -> Optional<T>
         {
@@ -236,7 +236,7 @@ struct Chain final: public Iterator<Chain> {
         VIOLET_IMPLICIT Frame(const Error::node_t* node)
             : Location(node->Location)
             , n_object(node->Object)
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
             , n_type(node->Type)
 #endif
         {
@@ -247,7 +247,7 @@ struct Chain final: public Iterator<Chain> {
 
         const void* n_object;
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
         std::type_index n_type;
 #endif
     };

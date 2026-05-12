@@ -181,6 +181,7 @@
 #define VIOLET_COMPILER(compiler) VIOLET_COMPILER_##compiler
 #define VIOLET_BUILDSYSTEM(system) VIOLET_BUILDSYSTEM_##system
 #define VIOLET_SANITIZER(sanitizer) VIOLET_SANITIZER_##sanitizer
+#define VIOLET_FEATURE(feature) VIOLET_FEATURE_##feature
 
 #ifndef VIOLET_API
 #if VIOLET_COMPILER(MSVC) || VIOLET_COMPILER(CLANG_CL)
@@ -258,6 +259,26 @@
 #define VIOLET_USE_RTTI 1
 #else
 #define VIOLET_USE_RTTI 0
+#endif
+
+#ifdef VIOLET_FEATURE_RTTI
+#error "do not define `VIOLET_FEATURE_RTTI` yourself"
+#elif VIOLET_HAS_FEATURE(cxx_rtti)
+#define VIOLET_FEATURE_RTTI 1
+#elif (VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)) && defined(__GXX_RTTI)
+#define VIOLET_FEATURE_RTTI 1
+#elif VIOLET_COMPILER(MSVC) && defined(_CPPRTTI)
+#define VIOLET_FEATURE_RTTI 1
+#else
+#define VIOLET_FEATURE_RTTI 0
+#endif
+
+#ifdef VIOLET_FEATURE_EXCEPTIONS
+#error "do not define `VIOLET_FEATURE_EXCEPTIONS` yourself"
+#elif defined(_CPPUNWIND) || defined(__EXCEPTIONS) || defined(__cpp_exceptions)
+#define VIOLET_FEATURE_EXCEPTIONS 1
+#else
+#define VIOLET_FEATURE_EXCEPTIONS 0
 #endif
 
 #define VIOLET_FWD(TYPE, VALUE) ::std::forward<TYPE>(VALUE)
@@ -451,17 +472,27 @@
 #error "Do not pre-define `VIOLET_IS_LITTLE_ENDIAN`"
 #endif
 
+#ifdef VIOLET_PLATFORM_LITTLE_ENDIAN
+#error "Do not pre-define `VIOLET_PLATFORM_LITTLE_ENDIAN`"
+#endif
+
 #ifdef VIOLET_IS_BIG_ENDIAN
 #error "Do not pre-define `VIOLET_IS_BIG_ENDIAN`"
 #endif
 
+#ifdef VIOLET_PLATFORM_BIG_ENDIAN
+#error "Do not pre-define `VIOLET_PLATFORM_LITTLE_ENDIAN`"
+#endif
+
 #if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define VIOLET_IS_LITTLE_ENDIAN 1
-#elif defined(VIOLET_WINDOWS)
-// Windows is always little-endian
+#define VIOLET_PLATFORM_LITTLE_ENDIAN 1
+#elif VIOLET_PLATFORM(WINDOWS)
 #define VIOLET_IS_LITTLE_ENDIAN 1
+#define VIOLET_PLATFORM_LITTLE_ENDIAN 1
 #elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define VIOLET_IS_BIG_ENDIAN 1
+#define VIOLET_PLATFORM_BIG_ENDIAN 1
 #else
 #error "Cannot determine endianness"
 #endif
@@ -498,4 +529,12 @@
 #else
 #define VIOLET_IF_CONSTEVAL (std::is_constant_evaluated())
 #define VIOLET_IF_NOT_CONSTEVAL (!std::is_constant_evaluated())
+#endif
+
+#if VIOLET_HAS_CPP_ATTRIBUTE(msvc::no_unique_address)
+#define VIOLET_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#elif VIOLET_HAS_CPP_ATTRIBUTE(no_unique_address)
+#define VIOLET_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#else
+#define VIOLET_NO_UNIQUE_ADDRESS
 #endif

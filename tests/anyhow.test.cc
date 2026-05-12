@@ -168,7 +168,7 @@ TEST(Anyhow, ChainRangeFor)
     EXPECT_EQ(messages[1], "a");
 }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
 
 namespace {
 

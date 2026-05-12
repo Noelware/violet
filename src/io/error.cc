@@ -49,7 +49,7 @@ auto Error::RawOSError() const noexcept -> Optional<PlatformError::error_type>
         return Some<PlatformError::error_type>(pat->Get());
     }
 
-    return {};
+    return { };
 }
 
 auto Error::Kind() const noexcept -> ErrorKind
@@ -66,7 +66,7 @@ auto Error::Kind() const noexcept -> ErrorKind
         return *kind;
     }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     if (const auto* pair = std::get_if<Pair<ErrorKind, Any>>(&this->n_repr)) {
         return pair->first;
     }
@@ -95,7 +95,7 @@ auto Error::ToString() const noexcept -> String
         return os.str();
     }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     // Find the most common ways that users could possibly used:
     // - String, Str, CStr (use the `ErrorKind(Kind, Message)` constructor instead of this)
     if (auto msg = this->Downcast<String>()) {
@@ -114,12 +114,12 @@ auto Error::ToString() const noexcept -> String
     return os.str();
 }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
 template<typename T>
 auto Error::Downcast() const noexcept -> Optional<T>
 {
     if (const auto* pair = std::get_if<Pair<ErrorKind, Any>>(&this->n_repr)) {
-#ifdef VIOLET_HAS_EXCEPTIONS
+#if VIOLET_FEATURE(EXCEPTIONS)
         try {
             auto downcasted = std::any_cast<T>(pair->second);
             return Some<T>(downcasted);

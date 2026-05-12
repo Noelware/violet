@@ -266,7 +266,7 @@ struct VIOLET_API Error final {
     static auto OSError() -> Error;
     static auto FromOSError(PlatformError::error_type error) -> Error;
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     template<typename T, typename... Args>
     static auto New(ErrorKind kind, Args&&... args) noexcept -> Error
     {
@@ -285,7 +285,7 @@ struct VIOLET_API Error final {
         return os << self.ToString();
     }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     template<typename T>
     auto Downcast() const noexcept -> violet::Optional<T>;
 #endif
@@ -315,7 +315,7 @@ private:
         Str n_message;
     };
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     // clang-format off
     std::variant<
         std::monostate,      //< used for the private default constructor, considered invalid.
@@ -343,7 +343,7 @@ using Result = violet::Result<T, Error>;
 /// @internal
 namespace __detail {
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     template<typename T, typename... Args>
     auto __mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
     {

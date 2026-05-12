@@ -140,13 +140,7 @@ TempDir::TempDir(TempDir&& other) noexcept
 TempDir::~TempDir()
 {
     if (!this->n_released && !this->n_path.Empty()) {
-        VIOLET_DIAGNOSTIC_PUSH
-        VIOLET_DIAGNOSTIC_IGNORE("-Wunused-value")
-
-        filesystem::RemoveAllDirs(this->n_path);
-
-        VIOLET_DIAGNOSTIC_POP
-
+        (void)filesystem::RemoveAllDirs(this->n_path);
         this->n_path = { };
     }
 }
@@ -174,14 +168,9 @@ TempFile::~TempFile()
 {
     if (!this->n_persist) {
         if (this->n_explicitPath.HasValueAnd([](auto& value) -> bool { return !value.Empty(); })) {
-            VIOLET_DIAGNOSTIC_PUSH
-            VIOLET_DIAGNOSTIC_IGNORE("-Wunused-value")
-
             auto path = this->n_explicitPath.Value();
             filesystem::RemoveAllDirs(path);
             filesystem::RemoveFile(path);
-
-            VIOLET_DIAGNOSTIC_POP
 
             this->n_explicitPath.Reset();
         }

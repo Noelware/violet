@@ -25,7 +25,7 @@
 
 #include <violet/Container/Optional.h>
 
-#if !VIOLET_USE_RTTI
+#if !VIOLET_FEATURE(RTTI)
 #include <violet/Experimental/Language/TypeId.h>
 #else
 #include <violet/Support/Demangle.h>
@@ -101,7 +101,7 @@ struct VIOLET_API AnyVTable {
                 return os.str();
             }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
             const auto& type = typeid(T);
             return std::format("<type {}@{}>", util::DemangleCXXName(type.name()), type.hash_code());
 #else
@@ -168,7 +168,7 @@ struct VIOLET_API Any final {
     template<typename T>
         requires(!std::same_as<std::decay_t<T>, Any>)
     VIOLET_IMPLICIT Any(T&& value) // NOLINT(cppcoreguidelines-pro-type-member-init)
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
         : n_type(typeid(std::decay_t<T>))
 #else
         : n_type(TypeId::Of<std::decay_t<T>>())
@@ -190,7 +190,7 @@ struct VIOLET_API Any final {
     template<typename T, typename... Args>
         requires(std::constructible_from<T, Args...>)
     VIOLET_EXPLICIT Any(std::in_place_type_t<T>, Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
         : n_type(typeid(T))
 #else
         : n_type(TypeId::Of<T>())
@@ -235,7 +235,7 @@ struct VIOLET_API Any final {
     template<typename T>
     auto Downcast() const noexcept -> Optional<T>
     {
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
         if (this->n_type != typeid(T)) {
 #else
         if (this->n_type != TypeId::Of<T>()) {
@@ -256,7 +256,7 @@ struct VIOLET_API Any final {
         return *static_cast<const T*>(this->n_self);
     }
 
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     /// Returns the demangled name of the stored type.
     [[nodiscard]] auto TypeName() const noexcept -> String;
 #endif
@@ -269,7 +269,7 @@ struct VIOLET_API Any final {
     }
 
 private:
-#if VIOLET_USE_RTTI
+#if VIOLET_FEATURE(RTTI)
     using type_id = std::type_index;
 #else
     using type_id = TypeId;

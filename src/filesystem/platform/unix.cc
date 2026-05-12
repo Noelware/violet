@@ -300,10 +300,11 @@ auto violet::filesystem::CreateDirectories(PathRef path) -> io::Result<void>
         current.push_back(ch);
 
         if (ch == '/' || i + 1 == view.size()) {
-            if (current == "/")
+            if (current == "/") {
                 continue; // skips root
+            }
 
-            auto result = CreateDirectory(path);
+            auto result = CreateDirectory(Str(current.data(), current.size()));
             if (result.Err()) {
                 const auto& err = result.Error();
                 if (err.RawOSError().MapOr(false, [](Int err) -> bool { return err == EEXIST || err == EISDIR; })) {

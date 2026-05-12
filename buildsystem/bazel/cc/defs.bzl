@@ -161,6 +161,8 @@ copts = select({
         "-Wall",
         "-Wextra",
         "-Wpedantic",
+        "-Wmost",
+        "-Wthread-safety",
         "-Wconversion-null",
         "-Wmissing-declarations",
         "-Wnon-virtual-dtor",

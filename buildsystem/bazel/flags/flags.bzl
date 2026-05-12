@@ -45,6 +45,10 @@ BOOL_FLAGS = {
         When invoked on `cc_test`s, the C++ standard library implementation will require to be compiled with MemorySanitizer. This will always fail in libstdc++, but libc++
         has MSan support, but you will need to compile it yourself; default toolchains of libc++ don't compile with MSan by default.""",
     },
+    "portable_arithemtic": {
+        "default": False,
+        "doc": "Uses the portable versions of arithemtic-based functions (useful if compiler doesn't support `__builtin_{add|sub|mul}`)",
+    },
     "runfiles_logs": {
         "default": True,
         "doc": "Enables verbose logs in the console on each test that uses the Runfiles framework.",

@@ -62,6 +62,7 @@ violet_cc_library(
         ":macros",
         ":panic",
         ":policy_checks",
+        ":traits",
     ],
 )
 
@@ -170,4 +171,13 @@ violet_cc_test(
     name = "smol_string_test",
     srcs = ["//tests:SmolString.test.cc"],
     deps = [":smol_string"],
+)
+
+violet_cc_library(
+    name = "traits",
+    hdrs = ["//include/violet:Traits.h"],
+    deps = [
+        ":macros",
+        ":policy_checks",
+    ],
 )
