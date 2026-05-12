@@ -65,7 +65,7 @@ jobs:
     # This will exhaustively test Violet with Exceptions (-fno-exceptions/-fexceptions) and RTTI (-fno-rtti/-frtti) so that
     # if anything breaks, we know where and why.
     bazel-configuration:
-        name: "Bazel / Feature Configuration [exceptions=${{matrix.exceptions}} rtti=${{matrix.rtti}}]"
+        name: "Bazel / Feature Configuration [exceptions=${{matrix.exceptions}} rtti=${{matrix.rtti}} abseil=${{matrix.abseil}}]"
         runs-on: ubuntu-24.04
         container:
             image: ghcr.io/noelware/violet/ci:clang-22
@@ -73,10 +73,11 @@ jobs:
             fail-fast: false
             matrix:
                 exceptions: ["yes", "no"]
+                abseil: ["yes", "no"]
                 rtti: ["yes", "no"]
         env:
             USE_BAZEL_VERSION: "8.6.0"
-            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=CC --action_env=CXX --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}}"
+            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=CC --action_env=CXX --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} ${{matrix.abseil == 'yes' && '--//buildsystem/bazel/flags:abseil=True' || ''}}"
             CXX: "clang++-22"
             CC: "clang-22"
         steps:
@@ -85,7 +86,7 @@ jobs:
               with:
                 bazelisk-cache: true # avoid installing Bazel each time
                 repository-cache: true # cache repositories in `MODULE.bazel`
-                disk-cache: linux-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.rtti == 'yes' && 'rtti' || 'nortti'}}
+                disk-cache: linux-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.rtti == 'yes' && 'rtti' || 'nortti'}}-${{matrix.abseil == 'yes' && 'abseil' || 'no-abseil'}}
 
             - run: bazel test //... ${{env.BAZELFLAGS}}
 

@@ -40,6 +40,11 @@ void Mutex::Unlock()
     this->n_mux.unlock();
 }
 
+auto Mutex::TryLock() -> bool
+{
+    return this->n_mux.try_lock();
+}
+
 MutexLock::MutexLock(Mutex& mux)
     : n_mux(mux)
 {

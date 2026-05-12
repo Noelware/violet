@@ -63,16 +63,17 @@ concurrency:
     cancel-in-progress: true
 jobs:
     bazel:
-        name: "Bazel [exceptions=${{matrix.exceptions}} rtti=${{matrix.rtti}}]"
+        name: "Bazel [exceptions=${{matrix.exceptions}} rtti=${{matrix.rtti}} abseil=${{matrix.abseil}}]"
         runs-on: macos-26
         strategy:
             fail-fast: false
             matrix:
                 exceptions: ["yes", "no"]
+                abseil: ["yes", "no"]
                 rtti: ["yes", "no"]
         env:
             USE_BAZEL_VERSION: "8.6.0"
-            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=SDKROOT"
+            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=SDKROOT --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} ${{matrix.abseil == 'yes' && '--//buildsystem/bazel/flags:abseil=True' || ''}}"
         steps:
             - uses: actions/checkout@v6
             - uses: ./.github/actions/setup-macos
