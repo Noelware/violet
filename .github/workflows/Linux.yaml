@@ -169,12 +169,17 @@ jobs:
             matrix:
                 cxx-standard: [20, 23]
                 compiler:
+                    - gcc-16
                     - gcc-15
                     - gcc-14
                     - clang-22
                     - clang-21
                     - clang-20
                 include:
+                    - compiler: gcc-16
+                      flags: ""
+                      cxx: g++
+                      cc: gcc
                     - compiler: gcc-15
                       flags: ""
                       cxx: g++
@@ -239,8 +244,11 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                compiler: [gcc-15, gcc-14, clang-22, clang-21, clang-20]
+                compiler: [gcc-16, gcc-15, gcc-14, clang-22, clang-21, clang-20]
                 include:
+                    - compiler: gcc-16
+                      cxx: g++
+                      cc: gcc
                     - compiler: gcc-15
                       cxx: g++
                       cc: gcc

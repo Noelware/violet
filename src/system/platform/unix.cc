@@ -25,6 +25,7 @@
 
 #include <violet/System.h>
 
+#include <climits> // IWYU pragma: keep
 #include <unistd.h>
 
 auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
