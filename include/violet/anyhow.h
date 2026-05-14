@@ -273,7 +273,7 @@ struct Chain final: public Iterator<Chain> {
         Frame frame(this->n_current);
         this->n_current = this->n_current->Next;
 
-        return VIOLET_MOVE(frame);
+        return frame;
     }
 
 private:

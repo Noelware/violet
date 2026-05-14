@@ -105,7 +105,7 @@ struct VIOLET_API SourceLocation final {
     /// @param line line number; defaults to `__builtin_LINE()` at the call site.
     /// @param column column number; defaults to `__builtin_COLUMN()` at the call site or `0` if not supported
     /// @param func the function name; defaults to `__PRETTY_FUNCTION__` on GCC/Clang or `""` if not supported
-#if VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)
+#if VIOLET_COMPILER(CLANG)
     VIOLET_DIAGNOSTIC_PUSH
     VIOLET_DIAGNOSTIC_IGNORE("-Wpredefined-identifier-outside-function")
 #endif
@@ -118,7 +118,7 @@ struct VIOLET_API SourceLocation final {
     {
     }
 
-#if VIOLET_COMPILER(GCC) || VIOLET_COMPILER(CLANG)
+#if VIOLET_COMPILER(CLANG)
     VIOLET_DIAGNOSTIC_POP
 #endif
 

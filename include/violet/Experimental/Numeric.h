@@ -28,6 +28,33 @@
 
 #include <charconv>
 
+#if (defined(__cpp_lib_constexpr_charconv) && __cpp_lib_constexpr_charconv >= 202207L)
+#define __violet_constexpr_charconv__ constexpr
+#else
+#define __violet_constexpr_charconv__ inline
+#endif
+
+#if VIOLET_PLATFORM(APPLE_MACOS)
+#define __violet_has_from_chars_float__ 0
+#elif defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 170000
+#define __violet_has_from_chars_float__ 1
+#elif defined(__GLIBCXX__) && defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
+#define __violet_has_from_chars_float__ 1
+#else
+#define __violet_has_from_chars_float__ 0
+#endif
+
+#if __violet_has_from_chars_float__ == 0
+#if VIOLET_PLATFORM(APPLE_MACOS)
+#include <xlocale.h>
+#elif defined(_GNU_SOURCE) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L)
+#include <locale.h>
+#else
+#error                                                                                                                 \
+    "For platforms that don't suppport `from_chars<float/double>`, `_GNU_SOURCE` or `_POSIX_C_SOURCE >= 200809L` must be defined"
+#endif
+#endif
+
 namespace violet::numeric {
 
 /// Returns **true** if the possiblity of adding `one` and `two` could overflow. This is meant
@@ -231,10 +258,118 @@ constexpr auto CheckedMul(T one, T two) -> Optional<T>
 #endif
 }
 
-#if (defined(__cpp_lib_constexpr_charconv) && __cpp_lib_constexpr_charconv >= 202207L)
-#define __violet_constexpr_charconv__ constexpr
+#if __violet_has_from_chars_float__
+
+/// Fallible, no-exception way to parse a double-precision floating-point value
+/// from string input.
+///
+/// The full input must be consumed; trailing garbage results in an error.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Experimental/Numeric.h>
+///
+/// auto value = violet::numeric::Parse<float>("3.14");
+/// VIOLET_ASSERT0(value.Ok() && *value == 3.14);
+///
+/// auto bad = violet::numeric::Parse<double>("3.14xyz");
+/// VIOLET_ASSERT0(bad.Err());
+/// ```
+///
+/// @param input string slice containing the textual representation to parse
+template<std::floating_point T>
+__violet_constexpr_charconv__ auto Parse(Str input) -> anyhow::Result<T>
+{
+    CStr it = input.data();
+    CStr end = input.data() + input.size();
+
+    T tmp{ };
+    auto [ptr, ec] = std::from_chars(it, end, tmp);
+    if (ec != std::errc{ }) {
+        std::error_code code(std::make_error_code(ec));
+        return Err(ANYHOW_FMT("failed to parse double-precise floating point integral value: {}", input)
+                .Context(code.message()));
+    }
+
+    if (ptr != end) {
+        return Err(ANYHOW_FMT("trailing garbage in input: {}", input));
+    }
+
+    return tmp;
+}
+
 #else
-#define __violet_constexpr_charconv__ inline
+
+namespace detail {
+
+    inline auto getCLocale() -> locale_t
+    {
+        static locale_t cloc = ::newlocale(LC_NUMERIC_MASK, "C", nullptr);
+        return cloc;
+    }
+
+} // namespace detail
+
+/// Fallible, no-exception way to parse a double-precision floating-point value
+/// from string input.
+///
+/// The full input must be consumed; trailing garbage results in an error.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Experimental/Numeric.h>
+///
+/// auto value = violet::numeric::Parse<float>("3.14");
+/// VIOLET_ASSERT0(value.Ok() && *value == 3.14);
+///
+/// auto bad = violet::numeric::Parse<double>("3.14xyz");
+/// VIOLET_ASSERT0(bad.Err());
+/// ```
+///
+/// @param input string slice containing the textual representation to parse
+template<std::floating_point N>
+inline auto Parse(Str input) -> anyhow::Result<N>
+{
+    Array<char, 128> buf;
+    if (input.size() >= sizeof(buf)) {
+        return Err(ANYHOW_FMT("input too long for floating-point parse: {}", input));
+    }
+
+    ::memcpy(buf.data(), input.data(), input.size());
+    buf[input.size()] = '\0';
+
+    char* end = nullptr;
+    errno = 0; // reset errno from previous errors
+
+    double raw = ::strtod_l(buf.data(), &end, detail::getCLocale());
+    Int32 saved = errno;
+
+    if (end == buf.data()) {
+        return Err(ANYHOW_FMT("failed to parse floating-point value: {}", input));
+    }
+
+    if (end != buf.data() + input.size()) {
+        return Err(ANYHOW_FMT("trailing garbage in input: {}", input));
+    }
+
+    if (saved == ERANGE) {
+        return Err(ANYHOW_FMT("floating-point value out of range: {}", input));
+    }
+
+    if constexpr (std::same_as<N, float>) {
+        constexpr auto kMax = static_cast<double>(std::numeric_limits<float>::max());
+        constexpr auto kLowest = static_cast<double>(std::numeric_limits<float>::lowest());
+
+        if (raw > kMax || raw < kLowest) {
+            return Err(ANYHOW_FMT("value out of range for float: {}", input));
+        }
+
+        return static_cast<float>(raw);
+    } else {
+        return static_cast<N>(raw);
+    }
+}
+
 #endif
 
 /// Fallible, no-exception way to parse unsigned integrals from string input.
@@ -303,48 +438,7 @@ __violet_constexpr_charconv__ auto Parse(Str input) -> anyhow::Result<N>
     return static_cast<N>(tmp);
 }
 
-#if defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 170000
-
-/// Fallible, no-exception way to parse a double-precision floating-point value
-/// from string input.
-///
-/// The full input must be consumed; trailing garbage results in an error.
-///
-/// ## Example
-/// ```cpp
-/// #include <violet/Experimental/Numeric.h>
-///
-/// auto value = violet::numeric::Parse<float>("3.14");
-/// VIOLET_ASSERT0(value.Ok() && *value == 3.14);
-///
-/// auto bad = violet::numeric::Parse<double>("3.14xyz");
-/// VIOLET_ASSERT0(bad.Err());
-/// ```
-///
-/// @param input string slice containing the textual representation to parse
-template<std::floating_point T>
-__violet_constexpr_charconv__ auto Parse(Str input) -> anyhow::Result<T>
-{
-    CStr it = input.data();
-    CStr end = input.data() + input.size();
-
-    T tmp{ };
-    auto [ptr, ec] = std::from_chars(it, end, tmp);
-    if (ec != std::errc{ }) {
-        std::error_code code(std::make_error_code(ec));
-        return Err(ANYHOW_FMT("failed to parse double-precise floating point integral value: {}", input)
-                .Context(code.message()));
-    }
-
-    if (ptr != end) {
-        return Err(ANYHOW_FMT("trailing garbage in input: {}", input));
-    }
-
-    return tmp;
-}
-
-#endif
+} // namespace violet::numeric
 
 #undef __violet_constexpr_charconv__
-
-} // namespace violet::numeric
+#undef __violet_has_from_chars_float__

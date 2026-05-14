@@ -102,6 +102,7 @@ jobs:
                 compiler:
                     - gcc-15
                     - gcc-14
+                    - clang-22-libcxx
                     - clang-22
                     - clang-21
                     - clang-20
@@ -114,6 +115,10 @@ jobs:
                       flags: ""
                       cxx: g++
                       cc: gcc
+                    - compiler: clang-22-libcxx
+                      flags: "--config=libcxx --config=host-libcxx"
+                      cxx: clang++-22
+                      cc: clang-22
                     - compiler: clang-22
                       flags: ""
                       cxx: clang++-22

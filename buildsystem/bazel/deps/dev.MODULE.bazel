@@ -19,20 +19,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-bazel_dep(name = "rules_rust", version = "0.69.0", dev_dependency = True)
+bazel_dep(name = "rules_rust", version = "0.70.0", dev_dependency = True)
 single_version_override(
     module_name = "rules_rust",
     patch_strip = 1,
     patches = [
         "patches/rules_rust/0001-Remove-lresolv-in-darwin-and-macos-triple-mappings.patch",
     ],
-    version = "0.69.0",
+    version = "0.70.0",
 )
 
-bazel_dep(name = "rules_shell", version = "0.8.0", dev_dependency = True)
 bazel_dep(name = "minato", dev_dependency = True)
 git_override(
     module_name = "minato",
-    commit = "59e79d5a57e6defb5da276b4784dfe9538dce8eb",
+    commit = "f55a897e71360c9f4e2e61f30e7a80098f8e3ae5",
     remote = "https://github.com/auguwu/minato.git",
 )

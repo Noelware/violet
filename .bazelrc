@@ -44,12 +44,19 @@ build:macos --cxxopt=-fno-modules
 build:macos --features=-layering_check
 build:macos --features=-parse_headers
 
+build:linux --cxxopt=-Wno-unused-command-line-argument
+build:macos --cxxopt=-Wno-unused-command-line-argument
+build:linux --host_cxxopt=-Wno-unused-command-line-argument
+build:macos --host_cxxopt=-Wno-unused-command-line-argument
+
 # `--config=libcxx` (C++): Enables compilation and linking with libc++
+build:libcxx --cxxopt=-stdlib=libc++
 build:libcxx --linkopt=-stdlib=libc++
 build:libcxx --linkopt=-lc++
 build:libcxx --linkopt=-lc++abi
 
 # `--config=host-libcxx` (C++): Enables compilation and linking with libc++ on host platform
+build:host-libcxx --host_cxxopt=-stdlib=libc++
 build:host-libcxx --host_linkopt=-stdlib=libc++
 build:host-libcxx --host_linkopt=-lc++
 build:host-libcxx --host_linkopt=-lc++abi
