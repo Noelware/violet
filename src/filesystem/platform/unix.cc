@@ -28,6 +28,7 @@
 #include <violet/Filesystem/Path.h>
 #include <violet/IO/Error.h>
 
+#include <climits> // IWYU pragma: keep
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>

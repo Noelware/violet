@@ -27,6 +27,7 @@
 #include <violet/IO/Descriptor.h>
 #include <violet/IO/Error.h>
 
+#include <climits> // IWYU pragma: keep
 #include <unistd.h>
 
 using violet::Array;
