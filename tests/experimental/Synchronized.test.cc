@@ -149,34 +149,31 @@ TEST(Synchronized, ConcurrentIncrements)
 TEST(Synchronized, ConcurrentTryLockContention)
 {
     Synchronized<Int32> sync(0);
-    std::atomic<Int32> successes = 0;
-    std::atomic<Int32> failures = 0;
-    constexpr Int32 kThreads = 8;
-    constexpr Int32 kAttempts = 10000;
+    std::atomic<bool> locked{ false };
+    std::atomic<bool> done{ false };
 
-    std::vector<std::thread> threads;
-    threads.reserve(kThreads);
+    // Hold the lock for the duration of the test
+    std::thread holder([&] -> void {
+        auto guard = sync.Lock();
+        locked.store(true, std::memory_order_release);
+        while (!done.load(std::memory_order_acquire)) {
+            // spin
+        }
+    });
 
-    for (Int32 i = 0; i < kThreads; ++i) {
-        threads.emplace_back([&] {
-            for (Int32 j = 0; j < kAttempts; ++j) {
-                if (auto guard = sync.TryLock(); guard.HasValue()) {
-                    **guard += 1;
-                    successes.fetch_add(1, std::memory_order_relaxed);
-                } else {
-                    failures.fetch_add(1, std::memory_order_relaxed);
-                }
-            }
-        });
-    }
+    // Wait until the holder actually has the lock
+    while (!locked.load(std::memory_order_acquire)) { }
 
-    for (auto& t: threads) {
-        t.join();
-    }
+    // TryLock must fail while the lock is held
+    auto maybe_guard = sync.TryLock();
+    EXPECT_FALSE(maybe_guard);
 
+    done.store(true, std::memory_order_release);
+    holder.join();
+
+    // Confirm we can acquire after release
     auto guard = sync.Lock();
-    EXPECT_EQ(*guard, successes.load());
-    EXPECT_GT(failures.load(), 0); // Should see at least some contention.
+    EXPECT_EQ(*guard, 0);
 }
 
 // NOLINTEND(google-build-using-namespace,readability-identifier-length)

@@ -24,6 +24,7 @@
 # tests GCC coverage. Each tag corresponds to what GCC version we test, which as of
 # 2025-10-14, we test on the following GCC versions:
 #
+#    * `gcc-16` (as of 14/05/26)
 #    * `gcc-15`
 #    * `gcc-14`
 #
@@ -31,7 +32,7 @@
 # version of GCC is released, we provide tests and soft-deprecate the second latest
 # compiler.
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE}
+FROM gcc@${BASE_IMAGE}
 
 LABEL org.opencontainers.image.source="https://git.noelware.org/libraries/violet"
 LABEL org.opencontainers.image.licenses="MIT"

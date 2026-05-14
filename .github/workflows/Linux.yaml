@@ -95,7 +95,7 @@ jobs:
         name: "Bazel / Compiler Compatibility [compiler=${{matrix.compiler}}]"
         runs-on: ubuntu-24.04
         container:
-            image: ghcr.io/noelware/violet/ci:${{matrix.compiler}}
+            image: ghcr.io/noelware/violet/ci:${{matrix.image}}
         strategy:
             fail-fast: false
             matrix:
@@ -107,27 +107,38 @@ jobs:
                     - clang-21
                     - clang-20
                 include:
+                    - compiler: gcc-16
+                      image: gcc-16
+                      flags: ""
+                      cxx: g++
+                      cc: gcc
                     - compiler: gcc-15
+                      image: gcc-15
                       flags: ""
                       cxx: g++
                       cc: gcc
                     - compiler: gcc-14
+                      image: gcc-14
                       flags: ""
                       cxx: g++
                       cc: gcc
                     - compiler: clang-22-libcxx
+                      image: clang-22
                       flags: "--config=libcxx --config=host-libcxx"
                       cxx: clang++-22
                       cc: clang-22
                     - compiler: clang-22
+                      image: clang-22
                       flags: ""
                       cxx: clang++-22
                       cc: clang-22
                     - compiler: clang-21
+                      image: clang-21
                       flags: ""
                       cxx: clang++-21
                       cc: clang-21
                     - compiler: clang-20
+                      image: clang-20
                       flags: ""
                       cxx: clang++-20
                       cc: clang-20
