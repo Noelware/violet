@@ -72,3 +72,9 @@ runs:
 
         echo "::group::== .usr.bazelrc configuration =="
         cat "$GITHUB_WORKSPACE/.usr.bazelrc"
+    - name: Configure Crash Diagnostics
+      shell: bash
+      run: |
+        sudo sysctl kern.coredump=1
+        ulimit -c unlimited
+        date +%s >/tmp/testStartTime

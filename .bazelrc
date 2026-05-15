@@ -35,6 +35,7 @@ build:windows --enable_runfiles
 
 # macOS: set minimum macOS SDK to 14.0
 build:macos --macos_minimum_os=14.0
+build:macos --host_macos_minimum_os=14.0
 
 # macOS (C++): Disable modules as Violet doesn't support it (yet) on macOS.
 build:macos --cxxopt=-fno-modules

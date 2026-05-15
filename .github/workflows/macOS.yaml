@@ -24,20 +24,20 @@ on:
     workflow_dispatch: {}
     push:
         branches:
-            - 'issues/gh-**'
-            - 'feat/**'
+            - "issues/gh-**"
+            - "feat/**"
             - master
 
         paths-ignore:
-            - '.github/**'
-            - '.vscode/**'
-            - 'hack/**'
-            - '.ci/**'
-            - 'nix/**'
-            - 'docs/**'
+            - ".github/**"
+            - ".vscode/**"
+            - "hack/**"
+            - ".ci/**"
+            - "nix/**"
+            - "docs/**"
 
-            - 'tools/bazeldist'
-            - 'tools/hotpatch-release.py'
+            - "tools/bazeldist"
+            - "tools/hotpatch-release.py"
 
             - .noeldoc.yml
             - CHANGELOG.md
@@ -49,12 +49,12 @@ on:
     pull_request:
         types: [opened, synchronize]
         branches:
-            - 'issues/gh-**'
-            - 'noel/**'
-            - 'feat/**'
+            - "issues/gh-**"
+            - "noel/**"
+            - "feat/**"
             - master
         paths:
-            - '**'
+            - "**"
 permissions:
     contents: read
     checks: write
@@ -79,8 +79,47 @@ jobs:
             - uses: ./.github/actions/setup-macos
             - uses: bazel-contrib/setup-bazel@0.19.0
               with:
-                bazelisk-cache: true
-                repository-cache: true
-                disk-cache: macos-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.exceptions == 'yes' && 'rtti' || 'nortti'}}-${{matrix.abseil == 'yes' && 'abseil' || 'no-abseil'}}
+                  bazelisk-cache: true
+                  repository-cache: true
+                  disk-cache: macos-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.exceptions == 'yes' && 'rtti' || 'nortti'}}-${{matrix.abseil == 'yes' && 'abseil' || 'no-abseil'}}
 
             - run: bazel test //... ${{env.BAZELFLAGS}}
+              id: test
+              continue-on-error: true
+
+            - name: Collect Crash Diagnostics
+              if: steps.test.outcome == 'failure'
+              run: |
+                echo "::group::== Crash Reports =="
+                find ~/Library/Logs/DiagnosticReports -name "*.crash" -newer /tmp/testStartTime -print -exec cat {} \; 2>/dev/null || true
+                find ~/Library/Logs/DiagnosticReports -name "*.ips"
+
+                echo "::endgroup::"
+                echo "::group::== Core Dumps =="
+                find /cores -name "core.*" -newer /tmp/testStartDate 2>/dev/null | while read core; do
+                    echo "---- $core ----"
+                    lldb --batch -c "$core" -o "bt all" -o "quit" 2>/dev/null || true
+                done
+
+                echo "::endgroup::"
+                echo "::group::== Test Logs ==="
+                find bazel-testlogs -name "test.log" -exec grep -l "FAIL\|SEGV\|ABRT\|Segmentation" {} \; | while read log; do
+                    echo "--- $log ---"
+                    cat "$log"
+                done
+
+                echo "::endgroup::"
+            - name: upload crash artifacts
+              if: steps.test.outcome == 'failure'
+              uses: actions/upload-artifact@v7
+              with:
+                retention-days: 7
+                name: macos-crash-diagnostics
+                path: |
+                    ~/Library/Logs/DiagnosticReports/*.crash
+                    ~/Library/Logs/DiagnosticReports/*.ips
+                    bazel-testlogs/**/test.log
+                    /cores/core.*
+
+            - run: exit 1
+              if: steps.test.outcome == 'failure'
