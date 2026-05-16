@@ -62,7 +62,7 @@ violet_cc_library(
         "//conditions:default": ["//src/experimental:Mutex.std.cc"],
     }),
     hdrs = ["//include/violet/Experimental:Mutex.h"],
-    local_defines = select({
+    defines = select({
         "//buildsystem/bazel/flags:abseil_enabled": ["VIOLET_FEATURE_ABSEIL"],
         "//conditions:default": [],
     }),
