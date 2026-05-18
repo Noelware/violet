@@ -7,6 +7,9 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.06.05...master>
+
+### 26.06.05
 #### Noelware.Violet
 - Move type traits and concepts into their own header: `violet/Traits.h` (still re-exported when using `violet/Violet.h` header) ([`@auguwu`])
 
@@ -26,7 +29,7 @@ This comes with **Duration**, **TimePoint**, and **Instant** for time manipulati
 #### Noelware.Violet.Filesystem
 - Fix bug where `CreateDirectories` using the full path instead of current segment ([`@auguwu`], [#47])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.06.04...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.06.04...26.06.05>
 
 ### 26.06.04
 This is a patch revision, nothing much has changed than the Meson distribution.

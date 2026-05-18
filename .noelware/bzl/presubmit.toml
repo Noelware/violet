@@ -19,32 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION = "26.06.05"
-DEVBUILD = False
+platforms = ["gha:ubuntu-24.04", "gha:macos-26"]
+bazel = ["8.x", "9.x"]
 
-def encode_as_int():
-    parts = VERSION.split(".")
-    if len(parts) == 2:
-        yy, mm = parts
-        if mm.endswith("-dev"):
-            mm = mm[:2]
+[[task]]
+name         = "[build] ensure everything compiles"
+docker.image = "ghcr.io/noelware/violet/ci:clang-22"
+cmd          = "${{bazel}} build --config=ci --config=cxx26 --action_env=CC --action_env=CXX //violet/..."
 
-        dd = "00"
-        patch = "00"
-    elif len(parts) == 3:
-        yy, mm, dd = parts
-        if dd.endswith("-dev"):
-            dd = dd[:2]
-
-        patch = "00"
-    elif len(parts) == 4:
-        yy, mm, dd, patch = parts
-        if dd.endswith("-dev"):
-            dd = dd[:2]
-    else:
-        fail("invalid version format: %s" % VERSION)
-
-    return (int(yy) * 1000000 +
-            int(mm) * 10000 +
-            int(dd) * 100 +
-            int(patch))
+[[task]]
+name         = "[test] ensure all tests are valid"
+docker.image = "ghcr.io/noelware/violet/ci:clang-22"
+cmd          = "${{bazel}} test --config=ci --config=cxx26 --action_env=CC --action_env=CXX //violet/..."
