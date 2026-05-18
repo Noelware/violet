@@ -176,6 +176,12 @@
 #define VIOLET_BUILDSYSTEM_FOREIGN 1
 #endif
 
+#if defined(__NOELDOC__) || defined(NOELDOC)
+#define VIOLET_FEATURE_NOELDOC 1
+#else
+#define VIOLET_FEATURE_NOELDOC 0
+#endif
+
 #define VIOLET_PLATFORM(platform) VIOLET_PLATFORM_##platform
 #define VIOLET_ARCH(arch) VIOLET_ARCH_##arch
 #define VIOLET_COMPILER(compiler) VIOLET_COMPILER_##compiler
@@ -538,3 +544,21 @@
 #else
 #define VIOLET_NO_UNIQUE_ADDRESS
 #endif
+
+// TODO(@auguwu/Noel): once C++26 lands with full compiler support for custom attributes,
+// use `[[noeldoc::<thing>]]` (i.e, `[[noeldoc::hide]]`) and guard it under `VIOLET_FEATURE(NOELDOC)`.
+
+#if VIOLET_HAS_CPP_ATTRIBUTE(clang::annotate)
+#define VIOLET_ANNOTATE(...) [[clang::annotate(__VA_ARGS__)]]
+#define __noeldoc_annotate__(...) VIOLET_ANNOTATE("noeldoc(" __VA_ARGS__ ")")
+#elif VIOLET_HAS_ATTRIBUTE(annotate)
+#define VIOLET_ANNOTATE(...) attribute((annotate(__VA_ARGS__)))
+#define __noeldoc_annotate__(...) VIOLET_ANNOTATE("noeldoc(" __VA_ARGS__ ")")
+#else
+#define VIOLET_ANNOTATE(...)
+#define __noeldoc_annotate__(...)
+#endif
+
+#define NOELDOC_SINCE(ver) __noeldoc_annotate__("since:" ver)
+#define NOELDOC_SEE(ref) __noeldoc_annotate__("see:" #ref)
+#define NOELDOC_HIDE __noeldoc_annotate__("hide")

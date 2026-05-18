@@ -35,6 +35,7 @@ template<typename T>
 struct Optional;
 
 /// Marker for representing a empty `Optional<T>`.
+NOELDOC_SINCE("26.02")
 constexpr static std::nullopt_t Nothing = std::nullopt;
 
 /// Type trait that detects whether a type `T` is a `Optional<...>` or `std::optional<...>`.
@@ -92,7 +93,7 @@ template<class T>
 using optional_type_t = typename optional_type<T>::type;
 
 template<typename T>
-struct VIOLET_API Some final {
+struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
     static_assert(std::is_object_v<T>, "`Some<T>` requires `T` to be a object type");
     static_assert(!std::is_void_v<T>, "`Some<void>` is ill-formed");
     static_assert(!std::is_array_v<T>, "`Some<T>` must wrap an array type");
@@ -240,7 +241,7 @@ Some(T&&) -> Some<std::remove_cvref_t<T>>;
 /// This type also triggers debug assertions via the [`VIOLET_DEBUG_ASSERT`] macro. You can disable this in production
 /// with the `-DNDEBUG` flag, which will remove unnecessary assertions.
 template<typename T>
-struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional final {
+struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SINCE("26.02") Optional final {
     static_assert(std::is_object_v<T>, "`Optional<T>` requires `T` to be an object type");
     static_assert(!std::is_reference_v<T>, "`Optional<T>` cannot wrap a reference");
     static_assert(std::is_destructible_v<T>, "`Optional<T>` requires `T` to be destructible");
@@ -380,8 +381,9 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
                     if constexpr (std::is_copy_assignable_v<T>) {
                         this->getValueRef() = other.getValueRef();
                     } else {
-                        std::destroy_at(&this->n_value);
+                        this->destroy();
                         std::construct_at(&this->n_value, other.getValueRef());
+                        this->n_engaged = true;
                     }
                 } else {
                     std::construct_at(&this->n_value, other.getValueRef());
@@ -1288,10 +1290,7 @@ private:
     constexpr void destroy() noexcept(std::is_nothrow_destructible_v<T>)
     {
         if (this->n_engaged) {
-            if constexpr (!std::is_trivially_destructible_v<T>) {
-                this->n_value.~T();
-            }
-
+            std::destroy_at(&this->n_value);
             this->n_engaged = false;
         }
     }

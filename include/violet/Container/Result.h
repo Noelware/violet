@@ -156,7 +156,7 @@ using result_error_type_t = typename result_type<T>::error_type;
 /// - `E` must not be `void`
 /// - The contained error is always engaged
 template<typename E>
-struct VIOLET_API Err final {
+struct VIOLET_API NOELDOC_SINCE("26.02") Err final {
     static_assert(!std::is_void_v<E>, "`Err<void>` is ill-formed");
     static_assert(std::is_object_v<E>, "`Err<E>` requires `E` to be a object type");
     static_assert(!std::is_reference_v<E>, "`Err<E>` must not wrap a reference type");
@@ -422,7 +422,7 @@ Ok(T&&) -> Ok<std::decay_t<T>>;
 /// violet::println("the answer to life is: {}", res);
 /// ```
 template<typename T, typename E>
-struct [[nodiscard("always check the error state")]] VIOLET_API Result final {
+struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("26.02") Result final {
     static_assert(
         std::is_object_v<T> || std::is_void_v<T>, "`Result<T, E>` requires `T` to be a object type or `void`");
     static_assert(std::is_object_v<E>, "`Result<T, E>` requires `E` to be an object type");
@@ -1688,15 +1688,10 @@ private:
     constexpr void destroy() noexcept(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<E>)
     {
         if (this->n_ok) {
-            if constexpr (!std::is_trivially_destructible_v<T>) {
-                this->n_storage.Value.~T();
-            }
-
+            std::destroy_at(std::addressof(this->n_storage.Value));
             this->n_ok = false;
         } else {
-            if constexpr (!std::is_trivially_destructible_v<E>) {
-                this->n_storage.Error.~Err<E>();
-            }
+            std::destroy_at(std::addressof(this->n_storage.Error));
         }
     }
 
