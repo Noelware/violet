@@ -12,6 +12,8 @@ availableAt:
 ### 26.06.05
 #### Noelware.Violet
 - Move type traits and concepts into their own header: `violet/Traits.h` (still re-exported when using `violet/Violet.h` header) ([`@auguwu`])
+- **Optional**: Allow non-assignable copy/move operations to be available.
+    - This disallowed `Optional<std::pair<const K, V>>` (like Abseil's **absl::flat_hash_map**) when building iterators.
 
 #### Noelware.Violet.Experimental
 - New types: **Mutex** (MutexLock, Condvar), **Synchronized**, and **Own**. ([`@auguwu`])

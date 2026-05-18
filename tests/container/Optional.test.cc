@@ -35,34 +35,34 @@ using namespace violet;
 TEST(Optional, DefaultIsDisengaged)
 {
     Optional<Int32> opt;
-    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(opt);
     EXPECT_FALSE(static_cast<bool>(opt));
 }
 
 TEST(Optional, NothingIsDisengaged)
 {
     Optional<Int32> opt = Nothing;
-    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(opt);
 }
 
 TEST(Optional, ConstructFromValue)
 {
     Optional<Int32> opt = 42;
-    EXPECT_TRUE(opt.HasValue());
+    EXPECT_TRUE(opt);
     EXPECT_EQ(opt.Value(), 42);
 }
 
 TEST(Optional, ConstructFromRvalue)
 {
-    Optional<String> opt = std::string("hello");
-    EXPECT_TRUE(opt.HasValue());
+    Optional<String> opt = String("hello");
+    EXPECT_TRUE(opt);
     EXPECT_EQ(opt.Value(), "hello");
 }
 
 TEST(Optional, ConstructInPlace)
 {
     Optional<String> opt(std::in_place, 5, 'x');
-    EXPECT_TRUE(opt.HasValue());
+    EXPECT_TRUE(opt);
     EXPECT_EQ(opt.Value(), "xxxxx");
 }
 
@@ -70,14 +70,14 @@ TEST(Optional, ConstructFromSomeLvalue)
 {
     Some<Int32> s(42);
     Optional<Int32> opt(s);
-    EXPECT_TRUE(opt.HasValue());
+    EXPECT_TRUE(opt);
     EXPECT_EQ(opt.Value(), 42);
 }
 
 TEST(Optional, ConstructFromSomeRvalue)
 {
     Optional<Int32> opt(Some<Int32>(42));
-    EXPECT_TRUE(opt.HasValue());
+    EXPECT_TRUE(opt);
     EXPECT_EQ(opt.Value(), 42);
 }
 
@@ -85,7 +85,7 @@ TEST(Optional, ConstructFromStdOptionalEngaged)
 {
     std::optional<Int32> std_opt = 42;
     Optional<Int32> opt(std_opt);
-    EXPECT_TRUE(opt.HasValue());
+    EXPECT_TRUE(opt);
     EXPECT_EQ(opt.Value(), 42);
 }
 
@@ -93,13 +93,13 @@ TEST(Optional, ConstructFromStdOptionalEmpty)
 {
     std::optional<Int32> std_opt;
     Optional<Int32> opt(std_opt);
-    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(opt);
 }
 
 TEST(Optional, ConstructFromStdOptionalRvalue)
 {
     Optional<String> opt(std::optional<String>("hello"));
-    EXPECT_TRUE(opt.HasValue());
+    EXPECT_TRUE(opt);
     EXPECT_EQ(opt.Value(), "hello");
 }
 
@@ -107,7 +107,7 @@ TEST(Optional, CopyConstructEngaged)
 {
     Optional<Int32> a = 42;
     Optional<Int32> b(a);
-    EXPECT_TRUE(b.HasValue());
+    EXPECT_TRUE(b);
     EXPECT_EQ(b.Value(), 42);
 }
 
@@ -115,7 +115,7 @@ TEST(Optional, CopyConstructDisengaged)
 {
     Optional<Int32> a;
     Optional<Int32> b(a);
-    EXPECT_FALSE(b.HasValue());
+    EXPECT_FALSE(b);
 }
 
 TEST(Optional, CopyAssignEngagedToEngaged)
@@ -131,7 +131,7 @@ TEST(Optional, CopyAssignEngagedToDisengaged)
     Optional<Int32> a = 42;
     Optional<Int32> b;
     b = a;
-    EXPECT_TRUE(b.HasValue());
+    EXPECT_TRUE(b);
     EXPECT_EQ(b.Value(), 42);
 }
 
@@ -140,58 +140,58 @@ TEST(Optional, CopyAssignDisengagedToEngaged)
     Optional<Int32> a;
     Optional<Int32> b = 42;
     b = a;
-    EXPECT_FALSE(b.HasValue());
+    EXPECT_FALSE(b);
 }
 
 TEST(Optional, CopyAssignSelf)
 {
     Optional<Int32> a = 42;
     a = a;
-    EXPECT_TRUE(a.HasValue());
+    EXPECT_TRUE(a);
     EXPECT_EQ(a.Value(), 42);
 }
 
 TEST(Optional, MoveConstructEngaged)
 {
-    Optional<String> a = std::string("hello");
+    Optional<String> a = String("hello");
     Optional<String> b(VIOLET_MOVE(a));
-    EXPECT_TRUE(b.HasValue());
+    EXPECT_TRUE(b);
     EXPECT_EQ(b.Value(), "hello");
     // a should be disengaged after move
-    EXPECT_FALSE(a.HasValue()); // NOLINT(bugprone-use-after-move)
+    EXPECT_FALSE(a); // NOLINT(bugprone-use-after-move)
 }
 
 TEST(Optional, MoveConstructDisengaged)
 {
     Optional<Int32> a;
     Optional<Int32> b(VIOLET_MOVE(a));
-    EXPECT_FALSE(b.HasValue());
+    EXPECT_FALSE(b);
 }
 
 TEST(Optional, MoveAssignEngagedToEngaged)
 {
-    Optional<String> a = std::string("hello");
-    Optional<String> b = std::string("world");
+    Optional<String> a = String("hello");
+    Optional<String> b = String("world");
     b = VIOLET_MOVE(a);
-    EXPECT_TRUE(b.HasValue());
+    EXPECT_TRUE(b);
     EXPECT_EQ(b.Value(), "hello");
 }
 
 TEST(Optional, MoveAssignEngagedToDisengaged)
 {
-    Optional<String> a = std::string("hello");
+    Optional<String> a = String("hello");
     Optional<String> b;
     b = VIOLET_MOVE(a);
-    EXPECT_TRUE(b.HasValue());
+    EXPECT_TRUE(b);
     EXPECT_EQ(b.Value(), "hello");
 }
 
 TEST(Optional, MoveAssignDisengagedToEngaged)
 {
     Optional<String> a;
-    Optional<String> b = std::string("hello");
+    Optional<String> b = String("hello");
     b = VIOLET_MOVE(a);
-    EXPECT_FALSE(b.HasValue());
+    EXPECT_FALSE(b);
 }
 
 TEST(Optional, MoveAssignSelf)
@@ -199,21 +199,21 @@ TEST(Optional, MoveAssignSelf)
     Optional<Int32> a = 42;
     a = VIOLET_MOVE(a);
     // Should not crash; value may be in moved-from state
-    EXPECT_TRUE(a.HasValue());
+    EXPECT_TRUE(a);
 }
 
 TEST(Optional, AssignNothingToEngaged)
 {
     Optional<Int32> opt = 42;
     opt = Nothing;
-    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(opt);
 }
 
 TEST(Optional, AssignNothingToDisengaged)
 {
     Optional<Int32> opt;
     opt = Nothing;
-    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(opt);
 }
 
 TEST(Optional, AssignValueLvalue)
@@ -221,15 +221,15 @@ TEST(Optional, AssignValueLvalue)
     Optional<Int32> opt;
     int val = 42;
     opt = val;
-    EXPECT_TRUE(opt.HasValue());
+    EXPECT_TRUE(opt);
     EXPECT_EQ(opt.Value(), 42);
 }
 
 TEST(Optional, AssignValueRvalue)
 {
     Optional<String> opt;
-    opt = std::string("hello");
-    EXPECT_TRUE(opt.HasValue());
+    opt = String("hello");
+    EXPECT_TRUE(opt);
     EXPECT_EQ(opt.Value(), "hello");
 }
 
@@ -242,7 +242,7 @@ TEST(Optional, ReassignValue)
 
 TEST(Optional, ValueRefQualifiers)
 {
-    Optional<String> opt = std::string("hello");
+    Optional<String> opt = String("hello");
 
     // lvalue
     EXPECT_EQ(opt.Value(), "hello");
@@ -260,7 +260,7 @@ TEST(Optional, DerefOperator)
 
 TEST(Optional, ArrowOperator)
 {
-    Optional<String> opt = std::string("hello");
+    Optional<String> opt = String("hello");
     EXPECT_EQ(opt->size(), 5U);
 }
 
@@ -319,7 +319,7 @@ TEST(Optional, MapEngaged)
 {
     Optional<Int32> opt = 21;
     auto mapped = opt.Map([](int v) { return v * 2; });
-    EXPECT_TRUE(mapped.HasValue());
+    EXPECT_TRUE(mapped);
     EXPECT_EQ(mapped.Value(), 42);
 }
 
@@ -327,21 +327,21 @@ TEST(Optional, MapDisengaged)
 {
     Optional<Int32> opt;
     auto mapped = opt.Map([](int v) { return v * 2; });
-    EXPECT_FALSE(mapped.HasValue());
+    EXPECT_FALSE(mapped);
 }
 
 TEST(Optional, MapChangesType)
 {
     Optional<Int32> opt = 42;
     auto mapped = opt.Map([](int v) { return std::to_string(v); });
-    EXPECT_TRUE(mapped.HasValue());
+    EXPECT_TRUE(mapped);
     EXPECT_EQ(mapped.Value(), "42");
 }
 
 TEST(Optional, MapRvalue)
 {
     auto mapped = Optional<Int32>(21).Map([](int v) { return v * 2; });
-    EXPECT_TRUE(mapped.HasValue());
+    EXPECT_TRUE(mapped);
     EXPECT_EQ(mapped.Value(), 42);
 }
 
@@ -381,17 +381,17 @@ TEST(Optional, TakeEngaged)
 {
     Optional<Int32> opt = 42;
     auto taken = opt.Take();
-    EXPECT_TRUE(taken.HasValue());
+    EXPECT_TRUE(taken);
     EXPECT_EQ(taken.Value(), 42);
-    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(opt);
 }
 
 TEST(Optional, TakeDisengaged)
 {
     Optional<Int32> opt;
     auto taken = opt.Take();
-    EXPECT_FALSE(taken.HasValue());
-    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(taken);
+    EXPECT_FALSE(opt);
 }
 
 TEST(Optional, ReplaceEngaged)
@@ -407,21 +407,21 @@ TEST(Optional, ReplaceDisengaged)
     Optional<Int32> opt;
     auto& ref = opt.Replace(42);
     EXPECT_EQ(ref, 42);
-    EXPECT_TRUE(opt.HasValue());
+    EXPECT_TRUE(opt);
 }
 
 TEST(Optional, Reset)
 {
     Optional<Int32> opt = 42;
     opt.Reset();
-    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(opt);
 }
 
 TEST(Optional, ResetAlreadyDisengaged)
 {
     Optional<Int32> opt;
     opt.Reset();
-    EXPECT_FALSE(opt.HasValue());
+    EXPECT_FALSE(opt);
 }
 
 TEST(Optional, EqualityBothEngaged)
@@ -501,11 +501,11 @@ TEST(Optional, ConvertToStdOptionalDisengaged)
 TEST(Optional, MoveOnlyType)
 {
     Optional<std::unique_ptr<Int32>> opt = std::make_unique<Int32>(42);
-    EXPECT_TRUE(opt.HasValue());
+    EXPECT_TRUE(opt);
     EXPECT_EQ(**opt, 42);
 
     auto moved = VIOLET_MOVE(opt);
-    EXPECT_TRUE(moved.HasValue());
+    EXPECT_TRUE(moved);
     EXPECT_EQ(*moved.Value(), 42);
 }
 
@@ -513,8 +513,8 @@ TEST(Optional, VectorValue)
 {
     std::vector<Int32> v = { 1, 2, 3 };
     Optional<std::vector<Int32>> opt = VIOLET_MOVE(v);
-    EXPECT_TRUE(opt.HasValue());
-    EXPECT_EQ(opt.Value().size(), 3U);
+    EXPECT_TRUE(opt);
+    EXPECT_EQ(opt->size(), 3U);
 }
 
 TEST(Optional, DestructorCalledOnReset)
@@ -603,8 +603,8 @@ TEST(OptionalRef, NoneState)
 
 TEST(OptionalRef, ConstRef)
 {
-    const std::string s = "hello";
-    Optional<std::reference_wrapper<const std::string>> opt(std::cref(s));
+    const String s = "hello";
+    Optional<std::reference_wrapper<const String>> opt(std::cref(s));
 
     ASSERT_TRUE(opt);
     EXPECT_EQ(*opt, "hello");
@@ -842,40 +842,40 @@ TEST(OptionalTraits, IsOptional)
 TEST(OptionalTraits, OptionalType)
 {
     static_assert(std::same_as<optional_type_t<Optional<Int32>>, int>);
-    static_assert(std::same_as<optional_type_t<std::optional<String>>, std::string>);
+    static_assert(std::same_as<optional_type_t<std::optional<String>>, String>);
 }
 
 TEST(OptionalConstexpr, DefaultIsDisengaged)
 {
     constexpr Optional<Int32> opt;
-    static_assert(!opt.HasValue());
+    static_assert(!opt);
     static_assert(!static_cast<bool>(opt));
 }
 
 TEST(OptionalConstexpr, NothingIsDisengaged)
 {
     constexpr Optional<Int32> opt = Nothing;
-    static_assert(!opt.HasValue());
+    static_assert(!opt);
 }
 
 TEST(OptionalConstexpr, ConstructFromValue)
 {
     constexpr Optional<Int32> opt = 42;
-    static_assert(opt.HasValue());
+    static_assert(opt);
     static_assert(opt.Value() == 42);
 }
 
 TEST(OptionalConstexpr, ConstructInPlace)
 {
     constexpr Optional<Int32> opt(std::in_place, 42);
-    static_assert(opt.HasValue());
+    static_assert(opt);
     static_assert(opt.Value() == 42);
 }
 
 TEST(OptionalConstexpr, ConstructFromSome)
 {
     constexpr Optional<Int32> opt(Some<Int32>(42));
-    static_assert(opt.HasValue());
+    static_assert(opt);
     static_assert(opt.Value() == 42);
 }
 
@@ -933,14 +933,14 @@ TEST(OptionalConstexpr, UnwrapUnchecked)
 TEST(OptionalConstexpr, MapEngaged)
 {
     constexpr auto mapped = Optional<Int32>(21).Map([](int v) { return v * 2; });
-    static_assert(mapped.HasValue());
+    static_assert(mapped);
     static_assert(mapped.Value() == 42);
 }
 
 TEST(OptionalConstexpr, MapDisengaged)
 {
     constexpr auto mapped = Optional<Int32>().Map([](int v) { return v * 2; });
-    static_assert(!mapped.HasValue());
+    static_assert(!mapped);
 }
 
 TEST(OptionalConstexpr, MapOrEngaged)
@@ -1005,7 +1005,7 @@ TEST(OptionalConstexpr, CopyConstruct)
 {
     constexpr Optional<Int32> a = 42;
     constexpr Optional<Int32> b(a);
-    static_assert(b.HasValue());
+    static_assert(b);
     static_assert(b.Value() == 42);
 }
 
@@ -1013,7 +1013,7 @@ TEST(OptionalConstexpr, CopyConstructDisengaged)
 {
     constexpr Optional<Int32> a;
     constexpr Optional<Int32> b(a);
-    static_assert(!b.HasValue());
+    static_assert(!b);
 }
 
 namespace {
@@ -1027,7 +1027,7 @@ consteval auto ConstexprTakeAndReplace() -> int
 {
     Optional<Int32> opt = 42;
     auto taken = opt.Take();
-    if (opt.HasValue()) {
+    if (opt) {
         return -1; // should be disengaged
     }
 
@@ -1039,7 +1039,7 @@ consteval auto ConstexprMoveConstruct() -> int
 {
     Optional<Int32> a = 42;
     Optional<Int32> b(static_cast<Optional<Int32>&&>(a));
-    if (a.HasValue()) {
+    if (a) {
         return -1; // should be disengaged
     }
     return b.Value();
@@ -1075,6 +1075,265 @@ TEST(OptionalTraitsConstexpr, OptionalType)
     static_assert(std::same_as<optional_type_t<Optional<Int32>>, int>);
     static_assert(std::same_as<optional_type_t<Optional<double>>, double>);
     static_assert(std::same_as<optional_type_t<std::optional<Int32>>, int>);
+}
+
+namespace {
+
+struct NonAssignable final {
+    ~NonAssignable() = default;
+
+    const String Key; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    String Value;
+
+    VIOLET_IMPLICIT NonAssignable(String key, String value)
+        : Key(VIOLET_MOVE(key))
+        , Value(VIOLET_MOVE(value))
+    {
+    }
+
+    VIOLET_IMPLICIT NonAssignable(const NonAssignable&) = default;
+    VIOLET_IMPLICIT NonAssignable(NonAssignable&&) = default;
+
+    auto operator=(const NonAssignable&) -> NonAssignable& = delete;
+    auto operator=(NonAssignable&&) -> NonAssignable& = delete;
+
+    auto operator==(const NonAssignable& other) const -> bool
+    {
+        return this->Key == other.Key && this->Value == other.Value;
+    }
+};
+
+static_assert(!std::is_copy_assignable_v<NonAssignable>);
+static_assert(!std::is_move_assignable_v<NonAssignable>);
+static_assert(std::is_copy_constructible_v<NonAssignable>);
+static_assert(std::is_move_constructible_v<NonAssignable>);
+
+struct MoveOnlyNonAssignable final {
+    const Int32 ID; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    UniquePtr<Int32> Data;
+
+    VIOLET_IMPLICIT MoveOnlyNonAssignable(Int32 id, Int32 data)
+        : ID(id)
+        , Data(std::make_unique<Int32>(data))
+    {
+    }
+
+    MoveOnlyNonAssignable(MoveOnlyNonAssignable&&) = default;
+    MoveOnlyNonAssignable(const MoveOnlyNonAssignable&) = delete;
+
+    auto operator=(MoveOnlyNonAssignable&&) -> MoveOnlyNonAssignable& = delete;
+    auto operator=(const MoveOnlyNonAssignable&) -> MoveOnlyNonAssignable& = delete;
+};
+
+static_assert(!std::is_move_assignable_v<MoveOnlyNonAssignable>);
+static_assert(std::is_move_constructible_v<MoveOnlyNonAssignable>);
+
+} // namespace
+
+TEST(OptionalNonAssignable, CopyAssignBothEngaged)
+{
+    Optional<NonAssignable> a(NonAssignable{ "key1", "val1" });
+    Optional<NonAssignable> b(NonAssignable{ "key2", "val2" });
+
+    a = b;
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a->Key, "key2");
+    EXPECT_EQ(a->Value, "val2");
+}
+
+TEST(OptionalNonAssignable, CopyAssignFromEngagedToEmpty)
+{
+    Optional<NonAssignable> a;
+    Optional<NonAssignable> b{ NonAssignable{ "key", "val" } };
+
+    a = b;
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a->Key, "key");
+    EXPECT_EQ(a->Value, "val");
+}
+
+TEST(OptionalNonAssignable, CopyAssignFromEmptyToEngaged)
+{
+    Optional<NonAssignable> a{ NonAssignable{ "key", "val" } };
+    Optional<NonAssignable> b;
+
+    a = b;
+    EXPECT_FALSE(a);
+}
+
+TEST(OptionalNonAssignable, CopyAssignSelf)
+{
+    Optional<NonAssignable> a{ NonAssignable{ "key", "val" } };
+
+    a = a;
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a->Key, "key");
+}
+
+TEST(OptionalNonAssignable, CopyAssignBothEmpty)
+{
+    Optional<NonAssignable> a;
+    Optional<NonAssignable> b;
+
+    a = b;
+
+    EXPECT_FALSE(a);
+}
+
+TEST(OptionalNonAssignable, MoveAssignBothEngaged)
+{
+    Optional<NonAssignable> a{ NonAssignable{ "key1", "val1" } };
+    Optional<NonAssignable> b{ NonAssignable{ "key2", "val2" } };
+
+    a = VIOLET_MOVE(b);
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a->Key, "key2");
+    EXPECT_EQ(a->Value, "val2");
+    EXPECT_FALSE(b);
+}
+
+TEST(OptionalNonAssignable, MoveAssignFromEngagedToEmpty)
+{
+    Optional<NonAssignable> a;
+    Optional<NonAssignable> b{ NonAssignable{ "key", "val" } };
+
+    a = VIOLET_MOVE(b);
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a->Key, "key");
+    EXPECT_FALSE(b);
+}
+
+TEST(OptionalNonAssignable, MoveAssignFromEmptyToEngaged)
+{
+    Optional<NonAssignable> a{ NonAssignable{ "key", "val" } };
+    Optional<NonAssignable> b;
+
+    a = VIOLET_MOVE(b);
+
+    EXPECT_FALSE(a);
+}
+
+TEST(OptionalMoveOnlyNonAssignable, MoveAssignBothEngaged)
+{
+    Optional<MoveOnlyNonAssignable> a{ MoveOnlyNonAssignable{ 1, 100 } };
+    Optional<MoveOnlyNonAssignable> b{ MoveOnlyNonAssignable{ 2, 200 } };
+
+    a = VIOLET_MOVE(b);
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a->ID, 2);
+    EXPECT_EQ(*a->Data, 200);
+    EXPECT_FALSE(b);
+}
+
+TEST(OptionalMoveOnlyNonAssignable, MoveAssignFromEngagedToEmpty)
+{
+    Optional<MoveOnlyNonAssignable> a;
+    Optional<MoveOnlyNonAssignable> b{ MoveOnlyNonAssignable{ 3, 300 } };
+
+    a = VIOLET_MOVE(b);
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a->ID, 3);
+    EXPECT_EQ(*a->Data, 300);
+    EXPECT_FALSE(b);
+}
+
+TEST(OptionalMoveOnlyNonAssignable, MoveAssignFromEmptyToEngaged)
+{
+    Optional<MoveOnlyNonAssignable> a{ MoveOnlyNonAssignable{ 4, 400 } };
+    Optional<MoveOnlyNonAssignable> b;
+
+    a = VIOLET_MOVE(b);
+    EXPECT_FALSE(a);
+}
+
+TEST(OptionalSTLConstTemplate, CopyAssignBothEngaged)
+{
+    using P = std::pair<const String, String>;
+
+    Optional<P> a{ P{ "host", "localhost" } };
+    Optional<P> b{ P{ "host", "0.0.0.0" } };
+
+    a = b;
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a->first, "host");
+    EXPECT_EQ(a->second, "0.0.0.0");
+}
+
+TEST(OptionalSTLConstTemplate, MoveAssignBothEngaged)
+{
+    using P = std::pair<const String, String>;
+
+    Optional<P> a{ P{ "key1", "val1" } };
+    Optional<P> b{ P{ "key2", "val2" } };
+
+    a = VIOLET_MOVE(b);
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a->first, "key2");
+    EXPECT_EQ(a->second, "val2");
+    EXPECT_FALSE(b);
+}
+
+TEST(OptionalSTLConstTemplate, ChainedAssignment)
+{
+    using P = std::pair<const String, String>;
+
+    Optional<P> a{ P{ "a", "1" } };
+    Optional<P> b{ P{ "b", "2" } };
+    Optional<P> c{ P{ "c", "3" } };
+
+    a = b;
+    EXPECT_EQ(a->first, "b");
+
+    a = VIOLET_MOVE(c);
+    EXPECT_EQ(a->first, "c");
+    EXPECT_FALSE(c);
+
+    a = Optional<P>{ };
+    EXPECT_FALSE(a);
+}
+
+TEST(OptionalAssignable, CopyAssignBothEngaged)
+{
+    Optional<String> a{ "hello" };
+    Optional<String> b{ "world" };
+
+    a = b;
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a.Value(), "world");
+    ASSERT_TRUE(b);
+    EXPECT_EQ(b.Value(), "world");
+}
+
+TEST(OptionalAssignable, MoveAssignBothEngaged)
+{
+    Optional<String> a{ "hello" };
+    Optional<String> b{ "world" };
+
+    a = VIOLET_MOVE(b);
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a.Value(), "world");
+}
+
+TEST(OptionalAssignable, IntCopyAssign)
+{
+    Optional<Int32> a{ 42 };
+    Optional<Int32> b{ 99 };
+
+    a = b;
+
+    ASSERT_TRUE(a);
+    EXPECT_EQ(a.Value(), 99);
 }
 
 // NOLINTEND(google-build-using-namespace,readability-identifier-length,performance-unnecessary-copy-initialization,cppcoreguidelines-special-member-functions)

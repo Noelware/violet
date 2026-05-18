@@ -377,7 +377,12 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         if (this != &other) {
             if (other.n_engaged) {
                 if (this->n_engaged) {
-                    this->getValueRef() = other.getValueRef();
+                    if constexpr (std::is_copy_assignable_v<T>) {
+                        this->getValueRef() = other.getValueRef();
+                    } else {
+                        std::destroy_at(&this->n_value);
+                        std::construct_at(&this->n_value, other.getValueRef());
+                    }
                 } else {
                     std::construct_at(&this->n_value, other.getValueRef());
                     this->n_engaged = true;
@@ -406,7 +411,8 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
     /// Move-assigns from another `Optional`.
     ///
     /// - If both are engaged, move-assigns.
-    /// - If only `other` is engaged, constructs.
+    /// - If only `other` tatic_assert(!std::is_const_v<E> && !std::is_volatile_v<E>, "`Err<E>` must not be
+    /// cv-qualified");is engaged, constructs.
     /// - If `other` is disengaged, this becomes disengaged.
     ///
     /// Leaves `other` disengaged.
@@ -415,14 +421,20 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API Optional fi
         if (this != &other) {
             if (other.n_engaged) {
                 if (this->n_engaged) {
-                    this->getValueRef() = VIOLET_MOVE(other.getValueRef());
+                    if constexpr (std::is_move_assignable_v<T>) {
+                        this->getValueRef() = VIOLET_MOVE(other.getValueRef());
+                    } else {
+                        this->destroy();
+                        std::construct_at(&this->n_value, VIOLET_MOVE(other.getValueRef()));
+                        this->n_engaged = true;
+                    }
                 } else {
                     std::construct_at(&this->n_value, VIOLET_MOVE(other.getValueRef()));
                     this->n_engaged = true;
                 }
 
                 other.destroy();
-            } else if (this->HasValue()) {
+            } else {
                 this->destroy();
             }
         }
