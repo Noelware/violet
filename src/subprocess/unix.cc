@@ -65,6 +65,44 @@ Command::Command(Str program, Vec<String> args)
 {
 }
 
+Command::Command(const Command& other)
+    : n_impl(other.n_impl != nullptr ? new Impl(*other.n_impl) : nullptr)
+{
+}
+
+auto Command::operator=(const Command& other) -> Command&
+{
+    if (this != &other) {
+        if (this->n_impl != nullptr) {
+            delete this->n_impl;
+            this->n_impl = nullptr;
+        }
+
+        this->n_impl = other.n_impl != nullptr ? new Impl(*other.n_impl) : nullptr;
+    }
+
+    return *this;
+}
+
+Command::Command(Command&& command) noexcept
+    : n_impl(std::exchange(command.n_impl, nullptr))
+{
+}
+
+auto Command::operator=(Command&& other) noexcept -> Command&
+{
+    if (this != &other) {
+        if (this->n_impl != nullptr) {
+            delete this->n_impl;
+            this->n_impl = nullptr;
+        }
+
+        this->n_impl = std::exchange(other.n_impl, nullptr);
+    }
+
+    return *this;
+}
+
 Command::~Command()
 {
     if (this->n_impl != nullptr) {

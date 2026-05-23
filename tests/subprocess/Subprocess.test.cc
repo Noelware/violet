@@ -130,8 +130,8 @@ TEST(Output, StdoutEmptyForQuietCommand)
 
 TEST(Arguments, WithArgPassedToChild)
 {
-    auto program = runfiles::Get("tests/runfiles/print_args");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_args` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
     auto result = Command(*program).WithArg("hello").WithStdout(Stdio::Pipe()).Output();
     ASSERT_TRUE(result) << "output failed: " << result.Error();
@@ -143,8 +143,8 @@ TEST(Arguments, WithArgPassedToChild)
 
 TEST(Arguments, WithArgsInitializerList)
 {
-    auto program = runfiles::Get("tests/runfiles/print_args");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_args` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
     auto result = Command(*program).WithArgs({ "foo", "bar", "baz" }).WithStdout(Stdio::Pipe()).Output();
     ASSERT_TRUE(result) << "output failed: " << result.Error();
@@ -156,8 +156,8 @@ TEST(Arguments, WithArgsInitializerList)
 
 TEST(Arguments, WithArgsSpan)
 {
-    auto program = runfiles::Get("tests/runfiles/print_args");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_args` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
     Vec<String> args = { "one", "two" };
     auto result = Command(*program).WithArgs(args).WithStdout(Stdio::Pipe()).Output();
@@ -170,8 +170,8 @@ TEST(Arguments, WithArgsSpan)
 
 TEST(Arguments, ConstructorWithInitializerList)
 {
-    auto program = runfiles::Get("tests/runfiles/print_args");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_args` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
     auto result = Command(*program, { "alpha", "beta" }).WithStdout(Stdio::Pipe()).Output();
     ASSERT_TRUE(result) << "output failed: " << result.Error();
@@ -182,8 +182,8 @@ TEST(Arguments, ConstructorWithInitializerList)
 
 TEST(Arguments, ConstructorWithVector)
 {
-    auto program = runfiles::Get("tests/runfiles/print_args");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_args` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
     Vec<String> args = { "x", "y", "z" };
     auto result = Command(*program, args).WithStdout(Stdio::Pipe()).Output();
@@ -196,8 +196,8 @@ TEST(Arguments, ConstructorWithVector)
 TEST(Arguments, NoArgsExitsWithFailure)
 {
     // print_args returns 1 when invoked with no arguments
-    auto program = runfiles::Get("tests/runfiles/print_args");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_args` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
     auto result = Command(*program).Status();
     ASSERT_TRUE(result) << "status failed: " << result.Error();
@@ -206,8 +206,8 @@ TEST(Arguments, NoArgsExitsWithFailure)
 
 TEST(Environ, WithEnvMakesVariableVisibleToChild)
 {
-    auto program = runfiles::Get("tests/runfiles/print_env");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_env` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_env");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_env` failed";
 
     // Without the variable set, the child should return exit code 1 (not found)
     {
@@ -230,8 +230,8 @@ TEST(Environ, WithEnvMakesVariableVisibleToChild)
 
 TEST(Environ, WithEnvsInitializerList)
 {
-    auto program = runfiles::Get("tests/runfiles/print_env");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_env` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_env");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_env` failed";
 
     auto result = Command(*program)
                       .WithArg("VIOLET_MULTI_ENV_A")
@@ -244,8 +244,8 @@ TEST(Environ, WithEnvsInitializerList)
 
 TEST(Environ, WithEnvsSpan)
 {
-    auto program = runfiles::Get("tests/runfiles/print_env");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_env` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_env");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_env` failed";
 
     Vec<Pair<String, String>> envs = { { "VIOLET_SPAN_ENV_C", "42" } };
     auto result = Command(*program).WithArg("VIOLET_SPAN_ENV_C").WithEnvs(envs).Status();
@@ -390,8 +390,8 @@ TEST(Stdio, PipeIntoFileWritesOutput)
 
 TEST(SubprocessTimeout, DeathTimeoutKillsProcess)
 {
-    auto program = runfiles::Get("tests/runfiles/hang");
-    ASSERT_TRUE(program) << "runfile `tests/runfiles/hang' failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/hang");
+    ASSERT_TRUE(program) << "runfile `tests/subprocess/runfiles/hang' failed";
 
     auto before = std::chrono::steady_clock::now();
     auto result = Command(*program).WithDeathTimeout(200ms).Output();
@@ -403,8 +403,8 @@ TEST(SubprocessTimeout, DeathTimeoutKillsProcess)
 
 TEST(SubprocessTimeout, ZeroTimeoutImmediateKill)
 {
-    auto program = runfiles::Get("tests/runfiles/hang");
-    ASSERT_TRUE(program) << "runfile `tests/runfiles/hang' failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/hang");
+    ASSERT_TRUE(program) << "runfile `tests/subprocess/runfiles/hang' failed";
 
     auto before = std::chrono::steady_clock::now();
     auto result = Command(*program).WithDeathTimeout(0ms).Output();
@@ -416,8 +416,8 @@ TEST(SubprocessTimeout, ZeroTimeoutImmediateKill)
 
 TEST(SubprocessTimeout, ProcessExitsBeforeTimeout)
 {
-    auto program = runfiles::Get("tests/runfiles/hang");
-    ASSERT_TRUE(program) << "runfile `tests/runfiles/hang' failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/hang");
+    ASSERT_TRUE(program) << "runfile `tests/subprocess/runfiles/hang' failed";
 
     auto result = Command(*program).WithArg("--exit-after=100").WithDeathTimeout(5s).Output();
     ASSERT_TRUE(result) << "failed to spawn subprocess with program [" << *program << "]: " << result.Error();
@@ -426,8 +426,8 @@ TEST(SubprocessTimeout, ProcessExitsBeforeTimeout)
 
 TEST(SubprocessTimeout, ProcessRespectsSigterm)
 {
-    auto program = runfiles::Get("tests/runfiles/hang");
-    ASSERT_TRUE(program) << "runfile `tests/runfiles/hang' failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/hang");
+    ASSERT_TRUE(program) << "runfile `tests/subprocess/runfiles/hang' failed";
 
     auto child = Command(*program).WithArg("--respect-sigterm").WithDeathTimeout(1s).Spawn();
     ASSERT_TRUE(child) << "failed to spawn subprocess with program [" << *program << "]: " << child.Error();

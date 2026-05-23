@@ -28,9 +28,16 @@ namespace violet::subprocess {
 
 struct VIOLET_LOCAL Command::Impl final {
     VIOLET_DISALLOW_CONSTRUCTOR(Impl);
+    VIOLET_IMPLICIT_COPY_AND_MOVE(Impl);
+    ~Impl() = default;
 
 private:
     friend struct violet::subprocess::Command;
+    friend void violet::subprocess::ext::UID(violet::subprocess::Command&, uid_t);
+    friend void violet::subprocess::ext::GID(violet::subprocess::Command&, gid_t);
+    friend void violet::subprocess::ext::Groups(Command&, std::initializer_list<gid_t>);
+    friend void violet::subprocess::ext::Groups(Command&, Span<gid_t>);
+    friend void violet::subprocess::ext::PreExec(Command& command, ext::PreExecFun exec);
 
     VIOLET_IMPLICIT Impl(Str program);
     VIOLET_IMPLICIT Impl(Str program, Vec<String> args);

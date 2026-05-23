@@ -51,7 +51,7 @@ load(":flags.bzl", "BOOL_FLAGS", "STRING_FLAGS")
         value.lower(),
     ),
     flag_values = {
-        ("//bazel/flags:%s" % flag): value,
+        ("//buildsystem/bazel/flags:%s" % flag): value,
     },
     visibility = ["//:__subpackages__"],
 ) for (flag, map) in STRING_FLAGS.items() for value in map.get("values", [])]

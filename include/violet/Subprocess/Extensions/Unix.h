@@ -21,7 +21,15 @@
 
 #pragma once
 
-#include <violet/Subprocess.h>
+#include <violet/Violet.h>
+
+#include <functional>
+#include <initializer_list>
+#include <sys/types.h>
+
+namespace violet::subprocess {
+struct Command;
+}
 
 namespace violet::subprocess::ext {
 
@@ -66,7 +74,26 @@ namespace violet::subprocess::ext {
 ///
 /// auto child = command.Spawn();
 /// ```
-using PreExecFun = std::function<void()>;
+struct PreExecFun final {
+    VIOLET_DISALLOW_CONSTRUCTOR(PreExecFun);
+
+    template<typename Fun>
+        requires(callable<Fun> && callable_returns<Fun, void>)
+    VIOLET_IMPLICIT PreExecFun(Fun&& fun)
+        : n_fun(VIOLET_FWD(Fun, fun))
+    {
+    }
+
+    void operator()()
+    {
+        std::invoke(this->n_fun);
+    }
+
+private:
+    std::function<void()> n_fun;
+};
+
+// using PreExecFun = std::function<void()>;
 
 /// Sets the user identity the child process will run as.
 ///

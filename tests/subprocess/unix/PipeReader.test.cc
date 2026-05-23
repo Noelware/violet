@@ -79,8 +79,8 @@ auto SpawnWithPipe(const String& program, std::initializer_list<CStr> args) -> S
 
 TEST(PipeReader, CapturesOutputFromPrintArgs)
 {
-    auto program = runfiles::Get("tests/runfiles/print_args");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_args` failed?!";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed?!";
 
     auto [child, fd] = SpawnWithPipe(*program, { "hello", "world" });
     ASSERT_GE(fd, 0);
@@ -104,8 +104,8 @@ TEST(PipeReader, CapturesOutputFromPrintArgs)
 
 TEST(PipeReader, CapturesNoOutputFromPrintEnv)
 {
-    auto program = runfiles::Get("tests/runfiles/print_env");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_env` failed?!";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_env");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_env` failed?!";
 
     auto [child, fd] = SpawnWithPipe(*program, { "PATH" });
     ASSERT_GE(fd, 0);

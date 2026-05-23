@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "violet_cc_library")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_runfile_test")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -59,9 +59,9 @@ violet_cc_library(
     name = "pipe_reader",
     hdrs = ["//include/violet/Subprocess:PipeReader.h"],
     deps = [
-        "@violet//violet",
-        "@violet//violet/io:descriptor",
-        "@violet//violet/io:error",
+        "//violet",
+        "//violet/io:descriptor",
+        "//violet/io:error",
     ],
 )
 
@@ -69,8 +69,8 @@ violet_cc_library(
     name = "stdio",
     hdrs = ["//include/violet/Subprocess:Stdio.h"],
     deps = [
+        "//:io",
         "//violet",
-        "//violet//:io",
         "//violet/container:optional",
         "//violet/filesystem:path",
     ],
@@ -96,6 +96,11 @@ violet_cc_library(
         "@platforms//os:windows": ["//include/violet/Subprocess/__detail:Impl.windows.h"],
         "//conditions:default": [],
     }),
+    textual_hdrs = select({
+        "@platforms//os:linux": ["//include/violet/Subprocess/Extensions:Unix.h"],
+        "@platforms//os:macos": ["//include/violet/Subprocess/Extensions:Unix.h"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":exit_status",
         ":pid",
@@ -105,5 +110,20 @@ violet_cc_library(
         "//violet/container:optional",
         "//violet/filesystem:path",
         "//violet/subprocess/pipe_reader:platform_dependent",
+    ],
+)
+
+violet_cc_runfile_test(
+    name = "subprocess_test",
+    srcs = ["//tests/subprocess:Subprocess.test.cc"],
+    data = [
+        "//tests/subprocess/runfiles:hang",
+        "//tests/subprocess/runfiles:print_args",
+        "//tests/subprocess/runfiles:print_env",
+    ],
+    deps = [
+        ":subprocess",
+        "//violet/filesystem:file",
+        "//violet/filesystem:temporary",
     ],
 )

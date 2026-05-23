@@ -49,7 +49,10 @@ cc_binary(
         "//conditions:default": [],
     }),
     local_defines = ["VIOLET_BUILDING"],
-    visibility = ["//tests:__subpackages__"],
+    visibility = [
+        "//tests:__subpackages__",
+        "//violet/subprocess:__subpackages__",
+    ],
 )
 
 cc_binary(
@@ -62,7 +65,10 @@ cc_binary(
     }),
     conlyopts = ["-std=c23"],
     local_defines = ["VIOLET_BUILDING"],
-    visibility = ["//tests:__subpackages__"],
+    visibility = [
+        "//tests:__subpackages__",
+        "//violet/subprocess:__subpackages__",
+    ],
 )
 
 cc_binary(
@@ -75,5 +81,8 @@ cc_binary(
     }),
     conlyopts = ["-std=c23"],
     local_defines = ["VIOLET_BUILDING"],
-    visibility = ["//tests:__subpackages__"],
+    visibility = [
+        "//tests:__subpackages__",
+        "//violet/subprocess:__subpackages__",
+    ],
 )

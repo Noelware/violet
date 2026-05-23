@@ -34,8 +34,8 @@ using namespace violet::testing;
 
 TEST(UnixExt, WithPreExecRunsBeforeExec)
 {
-    auto program = runfiles::Get("tests/runfiles/print_env");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_env` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_env");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_env` failed";
 
     auto command = Command(*program).WithArg("VIOLET_PREEXEC_SENTINEL");
     ext::PreExec(command, [] -> void {
@@ -50,8 +50,8 @@ TEST(UnixExt, WithPreExecRunsBeforeExec)
 
 TEST(UnixExt, WithPreExecReplacedBySecondCall)
 {
-    auto program = runfiles::Get("tests/runfiles/print_env");
-    ASSERT_TRUE(program) << "runfile fetch for `tests/runfiles/print_env` failed";
+    auto program = runfiles::Get("tests/subprocess/runfiles/print_env");
+    ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_env` failed";
 
     auto command = Command(*program).WithArg("VIOLET_PREEXEC_SECOND");
     ext::PreExec(command, [] -> void {

@@ -36,6 +36,19 @@
 #endif
 
 namespace violet::subprocess {
+struct Command;
+
+#if VIOLET_PLATFORM(UNIX)
+namespace ext {
+    struct PreExecFun;
+
+    void UID(Command&, uid_t);
+    void GID(Command&, gid_t);
+    void Groups(Command&, std::initializer_list<gid_t>);
+    void Groups(Command&, Span<gid_t>);
+    void PreExec(Command& command, ext::PreExecFun exec);
+} // namespace ext
+#endif
 
 /// Represents a running or exited child process spawned by [`Command::Spawn()`].
 ///
@@ -189,6 +202,13 @@ struct VIOLET_API Output final {
 /// ```
 struct Command final {
     VIOLET_DISALLOW_CONSTRUCTOR(Command);
+
+    VIOLET_IMPLICIT Command(const Command& command);
+    auto operator=(const Command& command) -> Command&;
+
+    VIOLET_IMPLICIT Command(Command&& command) noexcept;
+    auto operator=(Command&& command) noexcept -> Command&;
+
     ~Command();
 
     /// Constructs a `Command` that will run `program` with no arguments.
@@ -345,6 +365,12 @@ struct Command final {
 
 private:
     struct Impl;
+
+    friend void violet::subprocess::ext::UID(violet::subprocess::Command&, uid_t);
+    friend void violet::subprocess::ext::GID(violet::subprocess::Command&, gid_t);
+    friend void violet::subprocess::ext::Groups(Command&, std::initializer_list<gid_t>);
+    friend void violet::subprocess::ext::Groups(Command&, Span<gid_t>);
+    friend void violet::subprocess::ext::PreExec(Command& command, ext::PreExecFun exec);
 
     // TODO(@auguwu/Noel): switch to `Own<Impl>` once stablized
     Impl* n_impl = nullptr;
