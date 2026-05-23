@@ -1,0 +1,109 @@
+# 🌺💜 Violet: Extended C++ standard library
+# Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
+    name = "exit_status",
+    srcs = select({
+        "@platforms//os:linux": ["//src/subprocess/exit_status:unix.cc"],
+        "@platforms//os:macos": ["//src/subprocess/exit_status:unix.cc"],
+        "@platforms//os:windows": ["//src/subprocess/exit_status:windows.cc"],
+        "//conditions:default": ["//src/subprocess/exit_status:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Subprocess:ExitStatus.h"],
+    deps = [
+        "//violet",
+        "//violet/container:optional",
+    ],
+)
+
+violet_cc_library(
+    name = "pid",
+    srcs = select({
+        "@platforms//os:linux": ["//src/subprocess/pid:unix.cc"],
+        "@platforms//os:macos": ["//src/subprocess/pid:unix.cc"],
+        "@platforms//os:windows": ["//src/subprocess/pid:windows.cc"],
+        "//conditions:default": ["//src/subprocess/pid:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Subprocess:PID.h"],
+    deps = [
+        "//violet",
+        "//violet/container:optional",
+    ],
+)
+
+violet_cc_library(
+    name = "pipe_reader",
+    hdrs = ["//include/violet/Subprocess:PipeReader.h"],
+    deps = [
+        "@violet//violet",
+        "@violet//violet/io:descriptor",
+        "@violet//violet/io:error",
+    ],
+)
+
+violet_cc_library(
+    name = "stdio",
+    hdrs = ["//include/violet/Subprocess:Stdio.h"],
+    deps = [
+        "//violet",
+        "//violet//:io",
+        "//violet/container:optional",
+        "//violet/filesystem:path",
+    ],
+)
+
+violet_cc_library(
+    name = "subprocess",
+    srcs = select({
+        "@platforms//os:linux": [
+            "//src/subprocess:linux.cc",
+            "//src/subprocess:unix.cc",
+        ],
+        "@platforms//os:macos": [
+            "//src/subprocess:macos.cc",
+            "//src/subprocess:unix.cc",
+        ],
+        "@platforms//os:windows": ["//src/subprocess:windows.cc"],
+        "//conditions:default": ["//src/subprocess:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet:Subprocess.h"] + select({
+        "@platforms//os:linux": ["//include/violet/Subprocess/__detail:Impl.unix.h"],
+        "@platforms//os:macos": ["//include/violet/Subprocess/__detail:Impl.unix.h"],
+        "@platforms//os:windows": ["//include/violet/Subprocess/__detail:Impl.windows.h"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":exit_status",
+        ":pid",
+        ":pipe_reader",
+        ":stdio",
+        "//violet",
+        "//violet/container:optional",
+        "//violet/filesystem:path",
+        "//violet/subprocess/pipe_reader:platform_dependent",
+    ],
+)

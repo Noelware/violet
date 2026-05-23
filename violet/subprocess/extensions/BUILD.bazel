@@ -19,6 +19,40 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
-bazel_dep(name = "abseil-cpp", version = "20260107.1", repo_name = "absl")
-bazel_dep(name = "liburing", version = "2.14")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
+    name = "unix",
+    hdrs = ["//include/violet/Subprocess/Extensions:Unix.h"],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = ["//violet/subprocess"],
+)
+
+violet_cc_test(
+    name = "unix_test",
+    srcs = ["//src/subprocess/unix:Subprocess.test.cc"],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [":unix"],
+)
+
+violet_cc_library(
+    name = "windows",
+    hdrs = ["//include/violet/Subprocess/Extensions:Windows.h"],
+    target_compatible_with = select({
+        "@platforms//os:windows": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = ["//violet/subprocess"],
+)
