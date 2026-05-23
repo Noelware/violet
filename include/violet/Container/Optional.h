@@ -244,9 +244,9 @@ template<typename T>
 struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SINCE("26.02") Optional final {
     static_assert(std::is_object_v<T>, "`Optional<T>` requires `T` to be an object type");
     static_assert(!std::is_reference_v<T>, "`Optional<T>` cannot wrap a reference");
-    // static_assert(
-    //     std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>, "Optional<T> must be movable or
-    //     copyable");
+    static_assert(std::is_destructible_v<T>, "`Optional<T>` requires `T` to be destructible");
+    static_assert(
+        std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>, "Optional<T> must be movable or copyable");
 
     /// Contained value type of this [`Optional`].
     using value_type = std::conditional_t<instanceof_v<std::reference_wrapper, T>,
