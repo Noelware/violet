@@ -262,6 +262,17 @@ auto Child::Kill(Int32 signal) const -> io::Result<void>
     return { };
 }
 
+auto violet::subprocess::detail::MakePipes(Int32 fds[2]) -> bool
+{
+    if (::pipe(fds) != 0) {
+        return false;
+    }
+
+    ::fcntl(fds[0], F_SETFD, FD_CLOEXEC);
+    ::fcntl(fds[1], F_SETFD, FD_CLOEXEC);
+    return true;
+}
+
 void violet::subprocess::detail::DrainPipes(
     violet::io::FileDescriptor::value_type stdoutFd, violet::io::FileDescriptor::value_type stderrFd, Output& out)
 {

@@ -135,17 +135,6 @@ private:
 
 } // namespace
 
-auto violet::subprocess::detail::MakePipes(Int32 fds[2]) -> bool
-{
-    if (::pipe(fds) != 0) {
-        return false;
-    }
-
-    ::fcntl(fds[0], F_SETFD, FD_CLOEXEC);
-    ::fcntl(fds[1], F_SETFD, FD_CLOEXEC);
-    return true;
-}
-
 auto violet::subprocess::detail::SpawnWithPosix(Command& command) -> io::Result<Child>
 {
     Int32 stdinPipes[2] = { -1, -1 };
