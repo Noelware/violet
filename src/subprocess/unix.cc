@@ -195,12 +195,14 @@ auto Command::Output() -> io::Result<struct Output>
     };
 
     bool needsMultiplexing = child.Stdout.HasValue() && child.Stderr.HasValue();
-
     if (auto stdout = child.Stdout; stdout.HasValue()) {
-        setFDAsNonBlocking(stdout->Descriptor.Get());
         if (!needsMultiplexing) {
             auto reader = GetPipeReader();
             VIOLET_ASSERT(reader != nullptr, "there is no unique PipeReader implementation available");
+
+            if (reader->WantsNonBlocking()) {
+                setFDAsNonBlocking(stdout->Descriptor.Get());
+            }
 
             reader->Register(stdout->Descriptor.Get());
             out.Stdout = VIOLET_TRY(reader->CaptureAll());
@@ -208,13 +210,16 @@ auto Command::Output() -> io::Result<struct Output>
     }
 
     if (auto stderr = child.Stderr; stderr.HasValue()) {
-        setFDAsNonBlocking(stderr->Descriptor.Get());
         if (!needsMultiplexing) {
             auto reader = GetPipeReader();
             VIOLET_ASSERT(reader != nullptr, "there is no unique PipeReader implementation available");
 
+            if (reader->WantsNonBlocking()) {
+                setFDAsNonBlocking(stderr->Descriptor.Get());
+            }
+
             reader->Register(stderr->Descriptor.Get());
-            out.Stderr = VIOLET_TRY(reader->CaptureAll());
+            out.Stdout = VIOLET_TRY(reader->CaptureAll());
         }
     }
 

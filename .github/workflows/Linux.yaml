@@ -89,22 +89,21 @@ jobs:
 
             - run: bazel test //... ${{env.BAZELFLAGS}}
 
-    # This will exhaustively test Violet with Exceptions (-fno-exceptions/-fexceptions) and RTTI (-fno-rtti/-frtti) so that
-    # if anything breaks, we know where and why.
+    # This will test the `//buildsystem/bazel/flags:pipe_reader_impl=iouring` flag, which uses iouring on Linux
+    # instead of epoll
     bazel-subprocess-iouring:
-        name: "Bazel / Feature Configuration [exceptions=${{matrix.exceptions}} rtti=${{matrix.rtti}} subprocess-iouring=${{matrix.subprocess-iouring}}]"
+        name: "Bazel / Feature Configuration / Subprocess (iouring Support) [exceptions=${{matrix.exceptions}} rtti=${{matrix.rtti}}]"
         runs-on: ubuntu-24.04
         container:
             image: ghcr.io/noelware/violet/ci:clang-22
         strategy:
             fail-fast: false
             matrix:
-                subprocess-iouring: ["yes", "no"]
                 exceptions: ["yes", "no"]
                 rtti: ["yes", "no"]
         env:
             USE_BAZEL_VERSION: "8.6.0"
-            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=CC --action_env=CXX --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} ${{matrix.subprocess-iouring == 'yes' && '--//buildsystem/bazel/flags:pipe_reader_impl=iouring' || ''}}"
+            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=CC --action_env=CXX --//buildsystem/bazel/flags:pipe_reader_impl=iouring --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}}"
             CXX: "clang++-22"
             CC: "clang-22"
         steps:
@@ -113,7 +112,7 @@ jobs:
               with:
                 bazelisk-cache: true # avoid installing Bazel each time
                 repository-cache: true # cache repositories in `MODULE.bazel`
-                disk-cache: linux-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.rtti == 'yes' && 'rtti' || 'nortti'}}-${{matrix.subprocess-iouring == 'yes' && 'subprocess-iouring' || 'no-subprocess-iouring'}}
+                disk-cache: linux-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.rtti == 'yes' && 'rtti' || 'nortti'}}-subprocess-iouring
 
             - run: bazel test //... ${{env.BAZELFLAGS}}
 

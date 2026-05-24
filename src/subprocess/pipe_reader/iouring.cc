@@ -41,6 +41,8 @@ using Fd = violet::io::FileDescriptor::value_type;
 constexpr unsigned kRingDepth = 8;
 constexpr UInt kBufferSize = 65535; // 64KiB per read
 
+namespace {
+
 struct IoUringPipeReader final: public PipeReader {
     VIOLET_IMPLICIT IoUringPipeReader() noexcept
     {
@@ -103,12 +105,19 @@ struct IoUringPipeReader final: public PipeReader {
         return out;
     }
 
+    auto WantsNonBlocking() const -> bool override
+    {
+        return false;
+    }
+
 private:
     mutable struct io_uring n_ring{ };
     mutable bool n_ringOk = false;
     mutable Vec<UInt8> n_buf;
     Fd n_pipeFD = -1;
 };
+
+} // namespace
 
 auto violet::subprocess::GetPipeReader() noexcept -> UniquePtr<PipeReader>
 {

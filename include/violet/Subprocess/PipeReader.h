@@ -60,6 +60,21 @@ struct VIOLET_API PipeReader {
     /// may be empty if the child produced no output or if the pipe was not registered
     /// via [`PipeReader::Register`].
     [[nodiscard]] virtual auto CaptureAll() const noexcept -> io::Result<Vec<UInt8>> = 0;
+
+    /// Returns whether the pipe reader requires the file descriptor to be set
+    /// to non-blocking mode (`O_NONBLOCK`) before reading.
+    ///
+    /// Readers that perform their own asynchronous I/O internally (such as
+    /// `io_uring`) should return `false`, as the kernel handles waiting for
+    /// data availability. Readers that rely on readiness-based multiplexing
+    /// (such as `epoll` or `kqueue`) should return `true` so that reads do
+    /// not block the calling thread.
+    ///
+    /// The default implementation returns `true`.
+    [[nodiscard]] virtual auto WantsNonBlocking() const -> bool
+    {
+        return true;
+    }
 };
 
 /// Returns the [`PipeReader`] implementation to use.
