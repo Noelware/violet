@@ -84,16 +84,19 @@ auto ExitStatus::ToString() const noexcept -> String
 
 auto ExitStatus::operator==(const ExitStatus& other) const noexcept -> bool
 {
+    auto lhs = this->AsNative();
+    auto rhs = other.AsNative();
+
     if (this->Exited() && other.Exited()) {
-        return WEXITSTATUS(this->AsNative()) == WEXITSTATUS(other.AsNative());
+        return WEXITSTATUS(lhs) == WEXITSTATUS(rhs);
     }
 
     if (this->Signaled() && other.Signaled()) {
-        return WTERMSIG(this->AsNative()) == WTERMSIG(other.AsNative());
+        return WTERMSIG(lhs) == WTERMSIG(rhs);
     }
 
     if (this->Stopped() && other.Stopped()) {
-        return WSTOPSIG(this->AsNative()) == WSTOPSIG(other.AsNative());
+        return WSTOPSIG(lhs) == WSTOPSIG(rhs);
     }
 
     return false;
@@ -106,7 +109,8 @@ auto ExitStatus::operator!=(const ExitStatus& other) const noexcept -> bool
 
 auto ExitStatus::operator==(value_type other) const noexcept -> bool
 {
-    return this->Exited() && WEXITSTATUS(this->AsNative()) == other;
+    auto me = this->AsNative();
+    return this->Exited() && WEXITSTATUS(me) == other;
 }
 
 auto ExitStatus::operator!=(value_type other) const noexcept -> bool

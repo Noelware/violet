@@ -25,6 +25,12 @@
 #include <violet/Subprocess/Extensions/Unix.h>
 
 namespace violet::subprocess {
+namespace detail {
+    void DrainPipes(violet::io::FileDescriptor::value_type stdoutFd, violet::io::FileDescriptor::value_type stderrFd,
+        Output& output);
+
+    auto MakePipes(Int32 fds[2]) -> bool;
+} // namespace detail
 
 struct VIOLET_LOCAL Command::Impl final {
     VIOLET_DISALLOW_CONSTRUCTOR(Impl);
@@ -38,6 +44,11 @@ private:
     friend void violet::subprocess::ext::Groups(Command&, std::initializer_list<gid_t>);
     friend void violet::subprocess::ext::Groups(Command&, Span<gid_t>);
     friend void violet::subprocess::ext::PreExec(Command& command, ext::PreExecFun exec);
+    friend auto violet::subprocess::detail::SpawnAsForkExec(Command&) -> violet::io::Result<Child>;
+
+#if VIOLET_PLATFORM(APPLE_MACOS)
+    friend auto violet::subprocess::detail::SpawnWithPosix(Command&) -> violet::io::Result<Child>;
+#endif
 
     VIOLET_IMPLICIT Impl(Str program);
     VIOLET_IMPLICIT Impl(Str program, Vec<String> args);

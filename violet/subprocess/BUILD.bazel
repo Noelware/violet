@@ -81,10 +81,13 @@ violet_cc_library(
     srcs = select({
         "@platforms//os:linux": [
             "//src/subprocess:linux.cc",
+            "//src/subprocess:spawner/forkexec.cc",
             "//src/subprocess:unix.cc",
         ],
         "@platforms//os:macos": [
             "//src/subprocess:macos.cc",
+            "//src/subprocess:spawner/forkexec.cc",
+            "//src/subprocess:spawner/posix_spawn.cc",
             "//src/subprocess:unix.cc",
         ],
         "@platforms//os:windows": ["//src/subprocess:windows.cc"],

@@ -31,12 +31,15 @@
 
 #if VIOLET_PLATFORM(UNIX)
 #include <csignal>
+
+#include <sys/types.h>
 #elif VIOLET_PLATFORM(WINDOWS)
 #include <windows.h>
 #endif
 
 namespace violet::subprocess {
 struct Command;
+struct Child;
 
 #if VIOLET_PLATFORM(UNIX)
 namespace ext {
@@ -48,6 +51,14 @@ namespace ext {
     void Groups(Command&, Span<gid_t>);
     void PreExec(Command& command, ext::PreExecFun exec);
 } // namespace ext
+
+namespace detail {
+    auto SpawnAsForkExec(Command&) -> violet::io::Result<Child>;
+
+#if VIOLET_PLATFORM(APPLE_MACOS)
+    auto SpawnWithPosix(Command&) -> violet::io::Result<Child>;
+#endif
+} // namespace detail
 #endif
 
 /// Represents a running or exited child process spawned by [`Command::Spawn()`].
@@ -343,7 +354,7 @@ struct Command final {
     ///
     /// @returns an [`Output`] containing the exit status and captured streams,
     /// or an I/O error if the process could not be spawned or waited on.
-    [[nodiscard]] auto Output() const -> io::Result<Output>;
+    [[nodiscard]] auto Output() -> io::Result<Output>;
 
     /// Spawns the child process, waits for it to finish, and returns its exit status.
     ///
@@ -351,7 +362,7 @@ struct Command final {
     /// [`Child`] handle.
     ///
     /// @returns the [`ExitStatus`] of the finished process, or an I/O error.
-    [[nodiscard]] auto Status() const -> io::Result<ExitStatus>;
+    [[nodiscard]] auto Status() -> io::Result<ExitStatus>;
 
     /// Spawns the child process and returns a [`Child`] handle immediately.
     ///
@@ -361,7 +372,7 @@ struct Command final {
     /// @returns a [`Child`] representing the running process, or an I/O error
     /// if the process could not be created (e.g., executable not found, permission
     /// denied, resource limits exceeded).
-    [[nodiscard]] auto Spawn() const -> io::Result<Child>;
+    [[nodiscard]] auto Spawn() -> io::Result<Child>;
 
 private:
     struct Impl;
@@ -372,10 +383,14 @@ private:
     friend void violet::subprocess::ext::Groups(Command&, Span<gid_t>);
     friend void violet::subprocess::ext::PreExec(Command& command, ext::PreExecFun exec);
 
+    friend auto violet::subprocess::detail::SpawnAsForkExec(Command&) -> violet::io::Result<Child>;
+
+#if VIOLET_PLATFORM(APPLE_MACOS)
+    friend auto violet::subprocess::detail::SpawnWithPosix(Command&) -> violet::io::Result<Child>;
+#endif
+
     // TODO(@auguwu/Noel): switch to `Own<Impl>` once stablized
     Impl* n_impl = nullptr;
-
-    [[nodiscard]] auto doSpawn() const -> io::Result<Child>;
 };
 
 } // namespace violet::subprocess

@@ -24,7 +24,12 @@
 #if VIOLET_PLATFORM(UNIX)
 
 #include <violet/Subprocess.h>
+#include <violet/Subprocess/PipeReader.h>
 #include <violet/Subprocess/__detail/Impl.unix.h>
+
+#include <fcntl.h>
+#include <sys/poll.h>
+#include <unistd.h>
 
 using violet::Array;
 using violet::UInt8;
@@ -177,6 +182,73 @@ auto Command::WithWorkingDirectory(filesystem::PathRef path) -> Command&
     return *this;
 }
 
+auto Command::Output() -> io::Result<struct Output>
+{
+    auto child = VIOLET_TRY(this->Spawn());
+    struct Output out;
+
+    auto setFDAsNonBlocking = [](Int32 fd) -> void {
+        if (fd >= 0) {
+            Int32 flags = ::fcntl(fd, F_GETFL, 0);
+            ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+        }
+    };
+
+    bool needsMultiplexing = child.Stdout.HasValue() && child.Stderr.HasValue();
+
+    if (auto stdout = child.Stdout; stdout.HasValue()) {
+        setFDAsNonBlocking(stdout->Descriptor.Get());
+        if (!needsMultiplexing) {
+            auto reader = GetPipeReader();
+            VIOLET_ASSERT(reader != nullptr, "there is no unique PipeReader implementation available");
+
+            reader->Register(stdout->Descriptor.Get());
+            out.Stdout = VIOLET_TRY(reader->CaptureAll());
+        }
+    }
+
+    if (auto stderr = child.Stderr; stderr.HasValue()) {
+        setFDAsNonBlocking(stderr->Descriptor.Get());
+        if (!needsMultiplexing) {
+            auto reader = GetPipeReader();
+            VIOLET_ASSERT(reader != nullptr, "there is no unique PipeReader implementation available");
+
+            reader->Register(stderr->Descriptor.Get());
+            out.Stderr = VIOLET_TRY(reader->CaptureAll());
+        }
+    }
+
+    if (needsMultiplexing) {
+        detail::DrainPipes(child.Stdout->Descriptor.Get(), child.Stderr->Descriptor.Get(), out);
+    }
+
+    out.Status = VIOLET_TRY(child.Wait());
+    return out;
+}
+
+auto Command::Status() -> io::Result<ExitStatus>
+{
+    auto child = VIOLET_TRY(this->Spawn());
+    if (auto stdin = child.Stdin; stdin.HasValue()) {
+        stdin->Descriptor.Close();
+    }
+
+    if (auto stdout = child.Stdout; stdout.HasValue()) {
+        stdout->Descriptor.Close();
+    }
+
+    if (auto stderr = child.Stderr; stderr.HasValue()) {
+        stderr->Descriptor.Close();
+    }
+
+    return child.Wait();
+}
+
+auto Child::ToString() const -> String
+{
+    return std::format("Child(pid={})", this->PID);
+}
+
 auto Child::Kill(Int32 signal) const -> io::Result<void>
 {
     if (!this->PID) {
@@ -188,6 +260,65 @@ auto Child::Kill(Int32 signal) const -> io::Result<void>
     }
 
     return { };
+}
+
+void violet::subprocess::detail::DrainPipes(
+    violet::io::FileDescriptor::value_type stdoutFd, violet::io::FileDescriptor::value_type stderrFd, Output& out)
+{
+    struct pollfd pfds[2]
+        = { { .fd = stdoutFd, .events = POLLIN, .revents = 0 }, { .fd = stderrFd, .events = POLLIN, .revents = 0 } };
+
+    Array<UInt8, 4096> chunk;
+    Int32 openFDs = (stdoutFd >= 0 ? 1 : 0) + (stderrFd >= 0 ? 1 : 0);
+
+    while (openFDs > 0) {
+        if (Int32 ret = ::poll(pfds, 2, -1); ret < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+
+            break;
+        }
+
+        for (Int32 i = 0; i < 2; i++) {
+            if (pfds[i].fd < 0) {
+                continue;
+            }
+
+            if ((pfds[i].revents & (POLLIN | POLLHUP | POLLERR)) == 0) {
+                continue;
+            }
+
+            while (true) {
+                Int64 num = ::read(pfds[i].fd, chunk.data(), chunk.size());
+                if (num > 0) {
+                    if (i == 0) {
+                        out.Stdout.insert(out.Stdout.end(), chunk.begin(), chunk.begin() + num);
+                    } else {
+                        out.Stderr.insert(out.Stderr.end(), chunk.begin(), chunk.begin() + num);
+                    }
+                } else if (num == 0) {
+                    ::close(pfds[i].fd);
+                    pfds[i].fd = -1;
+                    openFDs--;
+                    break;
+                } else {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        break;
+                    }
+
+                    if (errno == EINTR) {
+                        continue;
+                    }
+
+                    ::close(pfds[i].fd);
+                    pfds[i].fd = -1;
+                    openFDs--;
+                    break;
+                }
+            }
+        }
+    }
 }
 
 #endif
