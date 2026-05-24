@@ -27,7 +27,12 @@
 #include <violet/Subprocess/__detail/Impl.unix.h>
 
 #include <fcntl.h>
+#include <sys/wait.h>
 #include <unistd.h>
+
+#if VIOLET_PLATFORM(LINUX)
+#include <grp.h>
+#endif
 
 using violet::Int32;
 using violet::subprocess::Command;
