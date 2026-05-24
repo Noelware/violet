@@ -65,7 +65,7 @@ struct IoUringPipeReader final: public PipeReader {
 
         Int32 ret = ::io_uring_queue_init(kRingDepth, &this->n_ring, /*flags=*/0);
         if (ret < 0) {
-            return Err(Error::OSError());
+            return Err(Error::FromOSError(-ret));
         }
 
         this->n_ringOk = true;
