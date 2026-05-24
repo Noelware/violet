@@ -73,9 +73,10 @@ struct IoUringPipeReader final: public PipeReader {
 
         while (true) {
             struct io_uring_sqe* sqe = ::io_uring_get_sqe(&this->n_ring);
-            ::io_uring_prep_read(sqe, this->n_pipeFD, this->n_buf.data(), kBufferSize, static_cast<__u64>(-1));
-            ::io_uring_sqe_set_flags(sqe, 0);
+            ::io_uring_prep_read(
+                sqe, this->n_pipeFD, this->n_buf.data(), kBufferSize, /*offset=*/static_cast<violet::UInt64>(-1));
 
+            ::io_uring_sqe_set_flags(sqe, 0);
             if (Int32 ret = ::io_uring_submit(&this->n_ring); ret < 0) {
                 return Err(Error::OSError());
             }
@@ -86,17 +87,18 @@ struct IoUringPipeReader final: public PipeReader {
             }
 
             Int32 result = cqe->res;
+            fprintf(stderr, "cqe->res = %d\n", result);
             ::io_uring_cqe_seen(&this->n_ring, cqe);
             if (result == 0) {
                 break;
             }
 
             if (result < 0) {
-                // TODO(@auguwu/Noel): Violet doesn't support `io::Error::FromOSError(errno)`, so we
-                // set `errno` ourselves and return it.
+                if (-result == EAGAIN || -result == EINTR) {
+                    continue;
+                }
 
-                errno = -result;
-                return Err(Error::OSError());
+                return Err(Error::FromOSError(-result));
             }
 
             out.insert(out.end(), this->n_buf.data(), this->n_buf.data() + static_cast<UInt>(result));
