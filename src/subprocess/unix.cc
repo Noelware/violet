@@ -204,7 +204,7 @@ auto Command::Output() -> io::Result<struct Output>
                 setFDAsNonBlocking(stdout->Descriptor.Get());
             }
 
-            reader->Register(stdout->Descriptor.Get());
+            VIOLET_TRY_VOID(reader->Register(stdout->Descriptor.Get()));
             out.Stdout = VIOLET_TRY(reader->CaptureAll());
         }
     }
@@ -218,7 +218,7 @@ auto Command::Output() -> io::Result<struct Output>
                 setFDAsNonBlocking(stderr->Descriptor.Get());
             }
 
-            reader->Register(stderr->Descriptor.Get());
+            VIOLET_TRY_VOID(reader->Register(stderr->Descriptor.Get()));
             out.Stdout = VIOLET_TRY(reader->CaptureAll());
         }
     }

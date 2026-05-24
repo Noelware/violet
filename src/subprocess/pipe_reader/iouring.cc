@@ -30,6 +30,7 @@
 
 using violet::Err;
 using violet::Int32;
+using violet::String;
 using violet::UInt;
 using violet::UInt8;
 using violet::Vec;
@@ -58,19 +59,27 @@ struct IoUringPipeReader final: public PipeReader {
 
     VIOLET_IMPLICIT_COPY_AND_MOVE(IoUringPipeReader);
 
-    void Register(Fd fd) noexcept override
+    auto Register(Fd fd) -> violet::io::Result<void> override
     {
         this->n_pipeFD = fd;
-        this->n_ringOk = ::io_uring_queue_init(kRingDepth, &this->n_ring, /*flags=*/0) == 0;
+
+        Int32 ret = ::io_uring_queue_init(kRingDepth, &this->n_ring, /*flags=*/0);
+        if (ret < 0) {
+            return Err(Error::OSError());
+        }
+
+        this->n_ringOk = true;
+        return { };
     }
 
     [[nodiscard]] auto CaptureAll() const noexcept -> violet::io::Result<Vec<UInt8>> override
     {
-        Vec<UInt8> out;
         if (this->n_pipeFD < 0 || !this->n_ringOk) {
-            return out;
+            return Err(VIOLET_IO_ERROR(
+                InvalidData, String, "iouring is not setup, did you forget to call `PipeReader::Register`?"));
         }
 
+        Vec<UInt8> out;
         while (true) {
             struct io_uring_sqe* sqe = ::io_uring_get_sqe(&this->n_ring);
             ::io_uring_prep_read(
@@ -87,7 +96,6 @@ struct IoUringPipeReader final: public PipeReader {
             }
 
             Int32 result = cqe->res;
-            fprintf(stderr, "cqe->res = %d\n", result);
             ::io_uring_cqe_seen(&this->n_ring, cqe);
             if (result == 0) {
                 break;

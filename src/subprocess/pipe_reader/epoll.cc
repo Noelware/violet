@@ -33,6 +33,7 @@ using violet::Array;
 using violet::Err;
 using violet::Int32;
 using violet::Int64;
+using violet::String;
 using violet::UInt8;
 using violet::Vec;
 using violet::io::Error;
@@ -54,31 +55,40 @@ struct EpollPipeReader final: public PipeReader {
 
     VIOLET_IMPLICIT_COPY_AND_MOVE(EpollPipeReader);
 
-    void Register(Fd fd) noexcept override
+    auto Register(Fd fd) -> violet::io::Result<void> override
     {
         this->n_pipeFD = fd;
         this->n_epollFD = ::epoll_create1(EPOLL_CLOEXEC);
         if (this->n_epollFD < 0) {
-            return;
+            return Err(Error::OSError());
         }
 
         struct epoll_event event{ };
         event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLHUP;
         event.data.fd = fd;
 
-        ::epoll_ctl(this->n_epollFD, EPOLL_CTL_ADD, fd, &event);
+        if (::epoll_ctl(this->n_epollFD, EPOLL_CTL_ADD, fd, &event) < 0) {
+            return Err(Error::OSError());
+        }
 
         int flags = ::fcntl(fd, F_GETFL, 0);
-        if (flags >= 0) {
-            ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+        if (flags < 0) {
+            return Err(Error::OSError());
         }
+
+        if (::fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+            return Err(Error::OSError());
+        }
+
+        return { };
     }
 
-    [[nodiscard]] auto CaptureAll() const noexcept -> violet::io::Result<Vec<UInt8>> override
+    [[nodiscard]] auto CaptureAll() const -> violet::io::Result<Vec<UInt8>> override
     {
         Vec<UInt8> output;
         if (this->n_pipeFD < 0 || this->n_epollFD < 0) {
-            return output;
+            return Err(VIOLET_IO_ERROR(InvalidData, String,
+                "reader was not successfully initialized. did you forget to call `PipeReader::Register`?"));
         }
 
         Array<UInt8, 4096> chunk;

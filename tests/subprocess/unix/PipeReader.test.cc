@@ -88,7 +88,9 @@ TEST(PipeReader, CapturesOutputFromPrintArgs)
     auto reader = GetPipeReader();
     ASSERT_TRUE(reader) << "unable to find a proper pipe reader";
 
-    reader->Register(fd);
+    auto registered = reader->Register(fd);
+    ASSERT_TRUE(registered) << "failed to register file descriptor [" << fd << "]: " << registered.Error();
+
     auto result = reader->CaptureAll();
 
     // Wait for the child to finish
@@ -113,7 +115,9 @@ TEST(PipeReader, CapturesNoOutputFromPrintEnv)
     auto reader = GetPipeReader();
     ASSERT_TRUE(reader) << "unable to find a proper pipe reader";
 
-    reader->Register(fd);
+    auto registered = reader->Register(fd);
+    ASSERT_TRUE(registered) << "failed to register file descriptor [" << fd << "]: " << registered.Error();
+
     auto result = reader->CaptureAll();
 
     // Wait for the child to finish

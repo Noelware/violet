@@ -51,7 +51,7 @@ struct VIOLET_API PipeReader {
     /// store `fd` and prepare to drain it (e.g. by spawning a reader thread or asynchronous I/O).
     ///
     /// @param fd read end of the pipe connected to the child's standard output or error.
-    virtual void Register(io::FileDescriptor::value_type fd) noexcept = 0;
+    [[nodiscard]] virtual auto Register(io::FileDescriptor::value_type fd) -> violet::io::Result<void> = 0;
 
     /// Returns all bytes captured from the pipe so far.
     ///
@@ -59,7 +59,7 @@ struct VIOLET_API PipeReader {
     /// by the child process), then returned the accumulated bytes. The returned [`Vec`]
     /// may be empty if the child produced no output or if the pipe was not registered
     /// via [`PipeReader::Register`].
-    [[nodiscard]] virtual auto CaptureAll() const noexcept -> io::Result<Vec<UInt8>> = 0;
+    [[nodiscard]] virtual auto CaptureAll() const -> io::Result<Vec<UInt8>> = 0;
 
     /// Returns whether the pipe reader requires the file descriptor to be set
     /// to non-blocking mode (`O_NONBLOCK`) before reading.

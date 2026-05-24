@@ -54,25 +54,33 @@ struct KqueuePipeReader final: public PipeReader {
         }
     }
 
-    void Register(Fd fd) noexcept override
+    auto Register(Fd fd) noexcept -> violet::io::Result<void> override
     {
         this->n_pipeFD = fd;
         this->n_kqueueFD = ::kqueue();
         if (this->n_kqueueFD < 0) {
-            return;
+            return Err(Error::OSError());
         }
 
         struct kevent event{ };
         EV_SET(&event, fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, nullptr);
-        ::kevent(this->n_kqueueFD, &event, 1, nullptr, 0, nullptr);
-
-        Int32 flags = ::fcntl(fd, F_GETFL, 0);
-        if (flags >= 0) {
-            ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+        if (::kevent(this->n_kqueueFD, &event, 1, nullptr, 0, nullptr) < 0) {
+            return Err(Error::OSError());
         }
+
+        int flags = ::fcntl(fd, F_GETFL, 0);
+        if (flags < 0) {
+            return Err(Error::OSError());
+        }
+
+        if (::fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+            return Err(Error::OSError());
+        }
+
+        return { };
     }
 
-    [[nodiscard]] auto CaptureAll() const noexcept -> violet::io::Result<Vec<UInt8>> override
+    [[nodiscard]] auto CaptureAll() const -> violet::io::Result<Vec<UInt8>> override
     {
         Vec<UInt8> output;
         if (this->n_pipeFD < 0 || this->n_kqueueFD < 0) {
@@ -123,6 +131,11 @@ struct KqueuePipeReader final: public PipeReader {
                 return output;
             }
         }
+    }
+
+    auto WantsNonBlocking() const -> bool override
+    {
+        return false;
     }
 
 private:
