@@ -23,7 +23,7 @@
 
 #include <violet/Container/Optional.h>
 #include <violet/Container/Result.h>
-#include <violet/Violet.h>
+#include <violet/SourceLocation.h>
 
 #include <variant>
 
@@ -253,18 +253,21 @@ struct VIOLET_API Error final {
     VIOLET_IMPLICIT_COPY_AND_MOVE(Error);
     ~Error() = default;
 
-    constexpr VIOLET_IMPLICIT Error(ErrorKind kind)
-        : n_repr(kind)
+    constexpr VIOLET_IMPLICIT Error(ErrorKind kind, SourceLocation loc = std::source_location::current())
+        : n_loc(loc)
+        , n_repr(kind)
     {
     }
 
-    constexpr VIOLET_IMPLICIT Error(ErrorKind kind, Str message)
-        : n_repr(simple_message{ kind, message })
+    constexpr VIOLET_IMPLICIT Error(ErrorKind kind, Str message, SourceLocation loc = std::source_location::current())
+        : n_loc(loc)
+        , n_repr(simple_message{ kind, message })
     {
     }
 
-    static auto OSError() -> Error;
-    static auto FromOSError(PlatformError::error_type error) -> Error;
+    static auto OSError(SourceLocation loc = std::source_location::current()) -> Error;
+    static auto FromOSError(PlatformError::error_type error, SourceLocation loc = std::source_location::current())
+        -> Error;
 
 #if VIOLET_FEATURE(RTTI)
     template<typename T, typename... Args>
@@ -314,6 +317,8 @@ private:
         ErrorKind n_kind;
         Str n_message;
     };
+
+    SourceLocation n_loc;
 
 #if VIOLET_FEATURE(RTTI)
     // clang-format off

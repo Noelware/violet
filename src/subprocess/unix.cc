@@ -195,7 +195,7 @@ auto Command::Output() -> io::Result<struct Output>
     };
 
     bool needsMultiplexing = child.Stdout.HasValue() && child.Stderr.HasValue();
-    if (auto stdout = child.Stdout; stdout.HasValue()) {
+    if (auto& stdout = child.Stdout; stdout.HasValue()) {
         if (!needsMultiplexing) {
             auto reader = GetPipeReader();
             VIOLET_ASSERT(reader != nullptr, "there is no unique PipeReader implementation available");
@@ -209,7 +209,7 @@ auto Command::Output() -> io::Result<struct Output>
         }
     }
 
-    if (auto stderr = child.Stderr; stderr.HasValue()) {
+    if (auto& stderr = child.Stderr; stderr.HasValue()) {
         if (!needsMultiplexing) {
             auto reader = GetPipeReader();
             VIOLET_ASSERT(reader != nullptr, "there is no unique PipeReader implementation available");
