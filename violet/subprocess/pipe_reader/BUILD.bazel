@@ -1,0 +1,125 @@
+# 🌺💜 Violet: Extended C++ standard library
+# Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+selects.config_setting_group(
+    name = "linux_platform_default",
+    match_all = [
+        "@platforms//os:linux",
+        "//buildsystem/bazel/flags:pipe_reader_impl_platform-dependent",
+    ],
+    visibility = [":__pkg__"],
+)
+
+selects.config_setting_group(
+    name = "linux_iouring",
+    match_all = [
+        "@platforms//os:linux",
+        "//buildsystem/bazel/flags:pipe_reader_impl_iouring",
+    ],
+    visibility = [":__pkg__"],
+)
+
+violet_cc_library(
+    name = "platform_dependent",
+    deps = select({
+        "//buildsystem/bazel/flags:pipe_reader_impl_epoll": [":epoll"],
+        "//buildsystem/bazel/flags:pipe_reader_impl_kqueue": [":kqueue"],
+        "//buildsystem/bazel/flags:pipe_reader_impl_none": [],
+        "//buildsystem/bazel/flags:pipe_reader_impl_windows": [":windows"],
+        ":linux_iouring": [":iouring"],
+        ":linux_platform_default": [":epoll"],
+        "@platforms//os:macos": [":kqueue"],
+        "@platforms//os:windows": [":windows"],
+        "//conditions:default": [],
+    }),
+)
+
+violet_cc_library(
+    name = "epoll",
+    srcs = ["//src/subprocess/pipe_reader:epoll.cc"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["//violet/subprocess:pipe_reader"],
+)
+
+violet_cc_library(
+    name = "iouring",
+    srcs = ["//src/subprocess/pipe_reader:iouring.cc"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//violet/subprocess:pipe_reader",
+        "@liburing",
+    ],
+)
+
+violet_cc_library(
+    name = "kqueue",
+    srcs = ["//src/subprocess/pipe_reader:kqueue.cc"],
+    target_compatible_with = [
+        "@platforms//os:macos",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["//violet/subprocess:pipe_reader"],
+)
+
+violet_cc_test(
+    name = "unix_test",
+    srcs = ["//tests/subprocess/unix:PipeReader.test.cc"],
+    data = [
+        "//tests/subprocess/runfiles:print_args",
+        "//tests/subprocess/runfiles:print_env",
+    ],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    with_gtest_main = False,
+    deps = [
+        ":platform_dependent",
+        "//violet/subprocess:pid",
+        "//violet/subprocess:pipe_reader",
+        "//violet/testing:runfiles",
+        "//violet/testing:runfiles_main",
+    ],
+)
+
+violet_cc_library(
+    name = "windows",
+    srcs = ["windows.cc"],
+    target_compatible_with = [
+        "@platforms//os:windows",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["//violet/subprocess:pipe_reader"],
+)

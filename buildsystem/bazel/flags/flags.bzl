@@ -107,4 +107,14 @@ STRING_FLAGS = {
                   full control over the parsing yourself.""",
         "values": ["llvm", "violet", "disable", "none"],
     },
+    "pipe_reader_impl": {
+        "default": "platform-dependent",
+        "doc": """\
+This will select what PipeReader to use for non blocking reads for stdout and stderr when captured.
+
+This can be set to `"none"` to build an independent version of a pipe reader in case
+you really need it.
+""",
+        "values": ["platform-dependent", "kqueue", "epoll", "iouring", "windows", "none"],
+    },
 }

@@ -27,18 +27,20 @@
 
 using violet::io::Error;
 
-auto Error::OSError() -> Error
+auto Error::OSError(SourceLocation loc) -> Error
 {
     Error error;
     error.n_repr = PlatformError();
+    error.n_loc = loc;
 
     return error;
 }
 
-auto Error::FromOSError(PlatformError::error_type ecode) -> Error
+auto Error::FromOSError(PlatformError::error_type code, SourceLocation loc) -> Error
 {
     Error error;
-    error.n_repr = PlatformError(ecode);
+    error.n_repr = PlatformError(code);
+    error.n_loc = loc;
 
     return error;
 }
@@ -81,12 +83,16 @@ auto Error::ToString() const noexcept -> String
     os << "I/o error";
 
     if (const auto* pat = std::get_if<PlatformError>(&this->n_repr)) {
-        os << " (system error «" << pat->Get() << "»): " << pat->ToString();
+        os << " (system error «" << pat->Get() << "»): " << pat->ToString() << " [at " << this->n_loc.File << ':'
+           << this->n_loc.Line << ':' << this->n_loc.Column << ']';
+
         return os.str();
     }
 
     if (const auto* msg = std::get_if<simple_message>(&this->n_repr)) {
-        os << " (" << violet::ToString(msg->Kind()) << "): " << msg->Message();
+        os << " (" << violet::ToString(msg->Kind()) << "): " << msg->Message() << " [at " << this->n_loc.File << ':'
+           << this->n_loc.Line << ':' << this->n_loc.Column << ']';
+
         return os.str();
     }
 

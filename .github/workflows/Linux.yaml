@@ -62,9 +62,8 @@ concurrency:
     group: ${{github.workflow}}-${{github.ref}}
     cancel-in-progress: true
 jobs:
-    # This will exhaustively test Violet with Exceptions (-fno-exceptions/-fexceptions) and RTTI (-fno-rtti/-frtti) so that
-    # if anything breaks, we know where and why.
-    bazel-configuration:
+    # This will exhaustively test Violet with different feature configurations with and without RTTI and exceptions
+    bazel-abseil:
         name: "Bazel / Feature Configuration [exceptions=${{matrix.exceptions}} rtti=${{matrix.rtti}} abseil=${{matrix.abseil}}]"
         runs-on: ubuntu-24.04
         container:
