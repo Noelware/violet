@@ -23,15 +23,16 @@ violet_experimental_synchronization_srcs = files('../../../src/experimental/sync
 violet_experimental_synchronization_lib = library(
     'violet_experimental_synchronization',
     violet_experimental_synchronization_srcs,
+    dependencies: [violet_experimental_dep],
     include_directories: violet_include_dir,
     cpp_args: violet_build_defines + violet_experimental_build_defines,
     install: true,
 )
 
-violet_experimental_dep = declare_dependency(
+violet_experimental_synchronization_dep = declare_dependency(
     include_directories: violet_include_dir,
     link_with: [violet_experimental_synchronization_lib],
-    dependencies: violet_experimental_consumer_deps,
+    dependencies: [violet_experimental_dep],
     compile_args: violet_consumer_defines,
 )
 
