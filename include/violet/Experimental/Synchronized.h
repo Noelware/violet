@@ -26,6 +26,8 @@
 #include <violet/Container/Optional.h>
 #include <violet/Experimental/Mutex.h>
 
+#include <utility>
+
 namespace violet::experimental {
 
 /// A wrapper that pairs shared data with a [`Mutex`], enforcing that data is only accessible
