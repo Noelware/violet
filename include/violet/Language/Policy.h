@@ -31,28 +31,38 @@
 /**
  * @macro VIOLET_MIN_CPP_VERSION
  *
- * This macro defines the minimum C++ standard that Violet can be built with.
+ * The minimum C++ standard version that Violet can be built with.
+ * Currently set to C++20 (`202002L`).
+ *
+ * @since 26.02
  */
 #define VIOLET_MIN_CPP_VERSION 202002L
 
 /**
  * @macro VIOLET_MIN_CLANG_MAJOR_SUPPORTED
  *
- * This macro defines the minimum Clang version that Violet supports
+ * The minimum Clang major version that Violet supports.
+ *
+ * @since 26.02
  */
 #define VIOLET_MIN_CLANG_MAJOR_SUPPORTED 20
 
 /**
  * @macro VIOLET_MIN_GCC_MAJOR_SUPPORTED
  *
- * This macro defines the minimum GCC version that Violet supports
+ * The minimum GCC major version that Violet supports.
+ *
+ * @since 26.02
  */
 #define VIOLET_MIN_GCC_MAJOR_SUPPORTED 14
 
 /**
  * @macro VIOLET_MIN_MSVC_VERSION
  *
- * This macro defines the minimum Visual Studio (MSVC) version that Violet supports
+ * The minimum Visual Studio (MSVC) toolset version that Violet supports.
+ * `1920` corresponds to Visual Studio 2019 (16.0).
+ *
+ * @since 26.02
  */
 #define VIOLET_MIN_MSVC_VERSION 1920
 

@@ -58,13 +58,14 @@ namespace violet {
 /// @note Only detects the primary template; partial specializations of `Template` must match exactly.
 /// @note Can be used in `requires` clauses for SFINAE or concepts with [`violet::instanceof_v<Template, T>`].
 template<template<class...> typename Template, typename T>
-struct instanceof: std::false_type { };
+struct NOELDOC_SINCE("26.02") instanceof: std::false_type { };
 
 template<template<class...> typename Template, typename... Args>
-struct instanceof<Template, Template<Args...>>: std::true_type { };
+struct NOELDOC_SINCE("26.04.01") instanceof<Template, Template<Args...>>: std::true_type { };
 
 /// Returns the value from the [`instanceof<Template, Args...>`] type trait.
 template<template<class...> typename Template, typename T>
+NOELDOC_SINCE("26.02")
 inline constexpr bool instanceof_v = instanceof<Template, T>::value;
 
 /// A compile-time type trait that retrieves the type at the zero-based index `I`
@@ -84,12 +85,12 @@ inline constexpr bool instanceof_v = instanceof<Template, T>::value;
 /// @note Prefer the [`violet::pack_element_t`] alias to avoid the trailing `::type`.
 /// @note Index `I` must be less than `sizeof...(Ts)`; out-of-range access is a compile error.
 template<std::size_t I, typename T, typename... Ts>
-struct pack_element final {
+struct NOELDOC_SINCE("26.04.01") pack_element final {
     using type = typename pack_element<I - 1, Ts...>::type;
 };
 
 template<typename T, typename... Ts>
-struct pack_element<0, T, Ts...> final {
+struct NOELDOC_SINCE("26.04.01") pack_element<0, T, Ts...> final {
     using type = T;
 };
 
@@ -107,6 +108,8 @@ struct pack_element<0, T, Ts...> final {
 /// static_assert(std::is_same_v<violet::pack_element_t<0, int, float, double>, int>);
 /// static_assert(std::is_same_v<violet::pack_element_t<2, int, float, double>, double>);
 /// ```
+///
+/// @since 26.04.01
 template<std::size_t I, typename... Ts>
 using pack_element_t = Ts...[I];
 #else
@@ -119,6 +122,8 @@ using pack_element_t = Ts...[I];
 /// static_assert(std::is_same_v<violet::pack_element_t<0, int, float, double>, int>);
 /// static_assert(std::is_same_v<violet::pack_element_t<2, int, float, double>, double>);
 /// ```
+///
+/// @since 26.04.01
 template<size_t I, typename... Ts>
 using pack_element_t = typename pack_element<I, Ts...>::type;
 #endif
@@ -142,15 +147,15 @@ using pack_element_t = typename pack_element<I, Ts...>::type;
 /// @note If `T` does not appear in `Ts...`, instantiation produces an incomplete
 ///       type and the program is ill-formed.
 template<typename T, typename... Ts>
-struct pack_index;
+struct NOELDOC_SINCE("26.04.01") pack_index;
 
 template<typename T, typename... Ts>
-struct pack_index<T, T, Ts...> final {
+struct NOELDOC_SINCE("26.04.01") pack_index<T, T, Ts...> final {
     constexpr static std::size_t value = 0;
 };
 
 template<typename T, typename U, typename... Ts>
-struct pack_index<T, U, Ts...> {
+struct NOELDOC_SINCE("26.04.01") pack_index<T, U, Ts...> {
     constexpr static std::size_t value = 1 + pack_index<T, Ts...>::value;
 };
 
@@ -164,6 +169,7 @@ struct pack_index<T, U, Ts...> {
 /// static_assert(idx == 2);
 /// ```
 template<typename T, typename... Ts>
+NOELDOC_SINCE("26.04.01")
 constexpr inline std::size_t pack_index_v = pack_index<T, Ts...>::value;
 
 /// Compile-time predicate that is `true` when type `T` is present in the
@@ -180,14 +186,18 @@ constexpr inline std::size_t pack_index_v = pack_index<T, Ts...>::value;
 /// static_assert(!violet::pack_contains_v<char,  int, float, double>);
 /// ```
 template<typename T, typename... Ts>
+NOELDOC_SINCE("26.04.01")
 inline constexpr bool pack_contains_v = (std::is_same_v<T, Ts> || ...);
 
+/// @since 26.02
 template<typename Fun, typename... Args>
 concept callable = std::invocable<Fun, Args...>;
 
+/// @since 26.02
 template<typename Fun, typename Return, typename... Args>
 concept callable_returns = std::convertible_to<std::invoke_result_t<Fun, Args...>, Return>;
 
+/// @since 26.02
 template<typename T, typename Item>
 concept collectable = requires(T& ty, Item value) {
     { ty.insert(ty.end(), value) };
@@ -204,10 +214,10 @@ concept collectable = requires(T& ty, Item value) {
 /// static_assert(!violet::is_shared_ptr<violet::UniquePtr<int>>::value);
 /// ```
 template<typename T>
-struct is_shared_ptr final: std::false_type { };
+struct NOELDOC_SINCE("26.06.05") is_shared_ptr final: std::false_type { };
 
 template<typename T>
-struct is_shared_ptr<std::shared_ptr<T>>: std::true_type { };
+struct NOELDOC_SINCE("26.06.05") is_shared_ptr<std::shared_ptr<T>>: std::true_type { };
 
 /// Convenience variable template for [`is_shared_ptr`].
 ///
@@ -218,6 +228,7 @@ struct is_shared_ptr<std::shared_ptr<T>>: std::true_type { };
 /// static_assert(!is_shared_ptr_v<int>);
 /// ```
 template<typename T>
+NOELDOC_SINCE("26.06.05")
 constexpr static inline bool is_shared_ptr_v = is_shared_ptr<T>::value;
 
 /// Extracts the element type `T` from a `violet::SharedPtr<T>`.
@@ -232,14 +243,16 @@ constexpr static inline bool is_shared_ptr_v = is_shared_ptr<T>::value;
 /// static_assert(std::same_as<shared_ptr_type_t<violet::SharedPtr<Config>>, Config>);
 /// ```
 template<typename T>
-struct shared_ptr_type;
+struct NOELDOC_SINCE("26.06.05") shared_ptr_type;
 
 template<typename T>
-struct shared_ptr_type<std::shared_ptr<T>> {
+struct NOELDOC_SINCE("26.06.05") shared_ptr_type<std::shared_ptr<T>> {
     using type = T;
 };
 
 /// Convenience alias for `shared_ptr_type<T>::type`.
+///
+/// @since 26.06.05
 template<typename T>
 using shared_ptr_type_t = typename shared_ptr_type<T>::type;
 
@@ -252,10 +265,10 @@ using shared_ptr_type_t = typename shared_ptr_type<T>::type;
 /// Only the `R(Args...)` specialization is defined; passing a non-function
 /// type is a compile error.
 template<typename F>
-struct FunctionParams;
+struct NOELDOC_SINCE("26.06.05") FunctionParams;
 
 template<typename R, typename... Args>
-struct FunctionParams<R(Args...)> final {
+struct NOELDOC_SINCE("26.06.05") FunctionParams<R(Args...)> final {
     /// The parameter types packed into a `std::tuple`.
     using types = std::tuple<Args...>;
 

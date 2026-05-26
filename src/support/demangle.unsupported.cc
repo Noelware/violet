@@ -19,13 +19,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <violet/Support/Demangle.h>
 
-#include <violet/Violet.h>
+auto violet::util::DemangleCXXName(const char* name) -> std::string
+{
+    return name;
+}
 
-namespace violet::sys {
-
-/// Returns **true** if we are running in a CI system.
-VIOLET_API NOELDOC_SINCE("26.02") auto ContinuousIntegration() noexcept -> bool;
-
-} // namespace violet::sys
+auto violet::util::DemangleCXXException() -> std::string
+{
+    return "{unknown C++ type}";
+}

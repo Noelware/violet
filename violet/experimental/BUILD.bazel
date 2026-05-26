@@ -26,18 +26,6 @@ package(
 )
 
 violet_cc_library(
-    name = "smol_string",
-    hdrs = ["//include/violet/Experimental:SmolString.h"],
-    deprecation = "`smol_string` has been promoted to Noelware.Violet as of 26.06, use `@violet//violet:smol_string` instead",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//violet:assert",
-        "//violet:macros",
-        "//violet:policy_checks",
-    ],
-)
-
-violet_cc_library(
     name = "any",
     srcs = ["//src/experimental:Any.cc"],
     hdrs = ["//include/violet/Experimental:Any.h"],
@@ -120,6 +108,21 @@ violet_cc_test(
     name = "own_test",
     srcs = ["//tests/experimental:Own.test.cc"],
     deps = [":own"],
+)
+
+violet_cc_library(
+    name = "slice",
+    hdrs = ["//include/violet/Experimental:Slice.h"],
+    deps = [
+        "//violet:iterator",
+        "//violet/container:optional",
+    ],
+)
+
+violet_cc_test(
+    name = "slice_test",
+    srcs = ["//tests/experimental:Slice.test.cc"],
+    deps = [":slice"],
 )
 
 violet_cc_library(

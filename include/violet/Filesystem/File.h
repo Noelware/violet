@@ -53,7 +53,7 @@ namespace xattr {
 /// ```cpp
 /// /* TODO: this */
 /// ```
-struct VIOLET_API OpenOptions final {
+struct VIOLET_API NOELDOC_SINCE("26.02") OpenOptions final {
     /// Creates a new, default set of open options (all flags disabled).
     constexpr OpenOptions() = default;
 
@@ -99,14 +99,14 @@ struct VIOLET_API OpenOptions final {
         return *this;
     }
 
-#if VIOLET_PLATFORM(WINDOWS)
+#if VIOLET_PLATFORM(WINDOWS) || VIOLET_FEATURE(NOELDOC)
     /// Sets Windows-specific file attributes.
     constexpr auto Attributes(DWORD attrs) noexcept -> OpenOptions&
     {
         this->n_attributes = attrs;
         return *this;
     }
-#elif VIOLET_PLATFORM(UNIX)
+#elif VIOLET_PLATFORM(UNIX) || VIOLET_FEATURE(NOELDOC)
     /// Sets Unix permission mode bits.
     constexpr auto Mode(mode_t mode) noexcept -> OpenOptions&
     {
@@ -192,7 +192,7 @@ private:
 /// ## Invariants
 /// - `FileType` can represent multiple attributes simultaneously, like a symbolic link
 ///   to a directory.
-struct VIOLET_API FileType final {
+struct VIOLET_API NOELDOC_SINCE("26.02") FileType final {
     /// Creates an empty `FileType` with no tags set.
     constexpr FileType() = default;
 
@@ -249,7 +249,7 @@ struct VIOLET_API FileType final {
         return os << ')';
     }
 
-#if VIOLET_PLATFORM(UNIX)
+#if VIOLET_PLATFORM(UNIX) || VIOLET_FEATURE(NOELDOC)
     /// Returns **true** if this represents a block device.
     [[nodiscard]] constexpr auto BlockDevice() const noexcept -> bool
     {
@@ -381,7 +381,7 @@ private:
 ///
 /// On Windows, `Permissions` can be zeroed or partially emulated, as access control is managed
 /// as Access Control List (ACLs) rather than POSIX-style bits.
-struct VIOLET_API Metadata final {
+struct VIOLET_API NOELDOC_SINCE("26.02") Metadata final {
     /// The file's permissions.
     struct Permissions Permissions = { };
 
@@ -428,12 +428,12 @@ struct VIOLET_API Metadata final {
 /// This struct uses RAII to manage the lifetime of the underlying, low-level file descriptor. The file
 /// is automatically closed either from destruction or from an explicit [`File::Close`] call. Move semantics
 /// are supported, but copying is not supported.
-struct VIOLET_API File final {
+struct VIOLET_API NOELDOC_SINCE("26.02") File final {
     /// RAII helper that locks a file for the duration of a scope.
     ///
     /// Constructed via [`MkScopedLock`] or [`MkSharedScopedLock`] methods.
     /// Automatically releases the lock when the object is destroyed.
-    struct ScopeLock final {
+    struct NOELDOC_SINCE("26.02") ScopeLock final {
         VIOLET_DISALLOW_CONSTRUCTOR(ScopeLock);
         VIOLET_DISALLOW_COPY(ScopeLock);
 

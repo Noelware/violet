@@ -42,7 +42,7 @@ namespace violet::subprocess {
 ///     auto CaptureAll() const noexcept -> violet::io::Result<violet::Vec<violet::UInt8>> override { /*...*/ }
 /// };
 /// ```
-struct VIOLET_API PipeReader {
+struct VIOLET_API NOELDOC_SINCE("26.07") PipeReader {
     virtual ~PipeReader() = default;
 
     /// Associate this reader with a given pipe file descriptor.

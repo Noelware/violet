@@ -28,7 +28,7 @@
 namespace violet::sys {
 
 /// Returns a environment variable of `key`.
-VIOLET_API auto GetEnv(Str key) noexcept -> Optional<String>;
+VIOLET_API NOELDOC_SINCE("26.02") auto GetEnv(Str key) noexcept -> Optional<String>;
 
 /// Adds a variable to the system's environment variables.
 ///
@@ -44,16 +44,16 @@ VIOLET_API auto GetEnv(Str key) noexcept -> Optional<String>;
 /// @param key the name of the environment variable
 /// @param value the value to set
 /// @param replace does a overwrite if the key exists
-VIOLET_API void SetEnv(Unsafe, Str key, Str value, bool replace = true);
+VIOLET_API NOELDOC_SINCE("26.02") void SetEnv(Unsafe, Str key, Str value, bool replace = true);
 
 /// Deletes a variable name from the environment.
 /// @param key the name of the environment variable
-VIOLET_API void RemoveEnv(Unsafe, Str key);
+VIOLET_API NOELDOC_SINCE("26.02") void RemoveEnv(Unsafe, Str key);
 
 /// Returns the path of the working directory.
-VIOLET_API auto WorkingDirectory() noexcept -> io::Result<filesystem::Path>;
+VIOLET_API NOELDOC_SINCE("26.02") auto WorkingDirectory() noexcept -> io::Result<filesystem::Path>;
 
 /// Sets the working directory to `path`.
-VIOLET_API auto SetWorkingDir(filesystem::PathRef path) -> io::Result<void>;
+VIOLET_API NOELDOC_SINCE("26.02") auto SetWorkingDir(filesystem::PathRef path) -> io::Result<void>;
 
 } // namespace violet::sys

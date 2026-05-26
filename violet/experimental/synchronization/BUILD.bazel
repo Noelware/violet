@@ -19,13 +19,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-prefix=@PREFIX@
-exec_prefix=${prefix}
-includedir=${prefix}/include
-libdir=${prefix}/lib
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
-Name: violet_experimental_time
-Description: Violet's experimental utilities for time manipulation and parsing
-Version: @VERSION@
-Cflags: -I${includedir}
-Libs: -L${libdir} -lviolet -lviolet_experimental
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
+    name = "rwlock",
+    hdrs = ["//include/violet/Experimental/Synchronization:ReadWriteLock.h"],
+    deps = [
+        "//violet/container:optional",
+        "//violet/experimental:mutex",
+    ],
+)
+
+violet_cc_test(
+    name = "rwlock_test",
+    srcs = ["//tests/experimental/synchronization:ReadWriteLock.test.cc"],
+    deps = [":rwlock"],
+)
+
+violet_cc_library(
+    name = "wait_group",
+    srcs = ["//src/experimental/synchronization:WaitGroup.cc"],
+    hdrs = ["//include/violet/Experimental/Synchronization:WaitGroup.h"],
+    deps = [
+        "//violet/experimental:mutex",
+        "//violet/experimental:synchronized",
+    ],
+)
+
+violet_cc_test(
+    name = "wait_group_test",
+    srcs = ["//tests/experimental/synchronization:WaitGroup.test.cc"],
+    deps = [":wait_group"],
+)

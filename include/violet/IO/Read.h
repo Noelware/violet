@@ -35,19 +35,22 @@ namespace violet::io {
 /// @param data storage for the read data
 /// @param buf buffer to read from
 /// @returns I/O result representing the number of bytes read, or an error if any read fails.
-VIOLET_API auto Read(Vec<UInt8>& data, Span<UInt8> buf) -> Result<UInt>;
+VIOLET_API NOELDOC_SINCE("26.02") auto Read(Vec<UInt8>& data, Span<UInt8> buf) -> Result<UInt>;
 
+/// @since 26.02
 template<typename T>
 concept FreeMemberRead = requires(T& ty, Span<UInt8> buf) {
     { ::violet::io::Read(ty, buf) } -> std::same_as<Result<UInt>>;
 };
 
+/// @since 26.02
 template<typename T>
 concept MemberRead = requires(T& ty, Span<UInt8> buf) {
     { ty.Read(buf) } -> std::same_as<Result<UInt>>;
 };
 
 /// Concept to determine if `T` supports reading operations.
+/// @since 26.02
 template<typename T>
 concept Readable = FreeMemberRead<T> || MemberRead<T>;
 
@@ -60,7 +63,7 @@ concept Readable = FreeMemberRead<T> || MemberRead<T>;
 /// @param buf The buffer into which data is read.
 /// @return I/O result indicating the number of bytes successfully read or an error.
 template<typename T>
-VIOLET_API inline auto Read(T& reader, Span<UInt8> buf) -> Result<UInt>
+VIOLET_API NOELDOC_SINCE("26.02") inline auto Read(T& reader, Span<UInt8> buf) -> Result<UInt>
 {
     if constexpr (requires { reader.Read(buf); }) {
         return reader.Read(buf);
@@ -86,6 +89,7 @@ template<Readable R, typename StringType = String>
 
         { str.append(std::declval<const String::value_type*>(), std::declval<typename StringType::size_type>()) };
     } && !std::same_as<std::decay_t<StringType>, Str>)
+NOELDOC_SINCE("26.04.01")
 VIOLET_API auto ReadToString(R& reader) -> Result<StringType>
 {
     StringType out;

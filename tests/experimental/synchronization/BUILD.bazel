@@ -19,13 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-prefix=@PREFIX@
-exec_prefix=${prefix}
-includedir=${prefix}/include
-libdir=${prefix}/lib
-
-Name: violet_experimental_time
-Description: Violet's experimental utilities for time manipulation and parsing
-Version: @VERSION@
-Cflags: -I${includedir}
-Libs: -L${libdir} -lviolet -lviolet_experimental
+exports_files(glob(["*.test.cc"]))

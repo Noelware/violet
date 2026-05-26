@@ -37,7 +37,6 @@ constexpr static auto PathSeparator = '/';
 #endif
 
 namespace detail {
-
     template<typename StringType>
     constexpr auto computeTrailingSlashPosition(const StringType& val) noexcept -> Pair<Int64, StringType>
     {
@@ -121,7 +120,6 @@ namespace detail {
 
     template auto canonicalizeImpl(const String&) -> String;
     template auto canonicalizeImpl(const Str&) -> String;
-
 } // namespace detail
 
 struct Path;
@@ -138,7 +136,7 @@ struct PathRef;
 /// @tparam Derived The derived class
 /// @tparam StringType The underling string type to use
 template<typename Derived, typename StringType>
-struct VIOLET_API BasePath {
+struct VIOLET_API NOELDOC_SINCE("26.02") BasePath {
     [[nodiscard]] constexpr auto Data() const noexcept -> StringType
     {
         return getThisObject().storage();
@@ -407,7 +405,7 @@ private:
 };
 
 /// A non-owning, immutable view of a filesystem path.
-struct VIOLET_API PathRef final: public BasePath<PathRef, Str> {
+struct VIOLET_API NOELDOC_SINCE("26.02") PathRef final: public BasePath<PathRef, Str> {
     VIOLET_DISALLOW_CONSTRUCTOR(PathRef);
 
     /// Constructs a path from a C-style string.
@@ -492,7 +490,7 @@ private:
 };
 
 /// A owning, mutable filesystem path.
-struct VIOLET_API Path final: public BasePath<Path, String> {
+struct VIOLET_API NOELDOC_SINCE("26.02") Path final: public BasePath<Path, String> {
     constexpr VIOLET_IMPLICIT Path() = default;
 
     /// Constructs a path from a C-style string.

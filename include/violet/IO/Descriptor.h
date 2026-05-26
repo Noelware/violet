@@ -28,12 +28,18 @@
 namespace violet::io {
 
 /// A zero-cost, tiny abstraction around OS-related file descriptors.
-struct VIOLET_API FileDescriptor final {
-#if VIOLET_PLATFORM(UNIX)
+struct VIOLET_API NOELDOC_SINCE("26.02") FileDescriptor final {
+#if VIOLET_PLATFORM(UNIX) || VIOLET_FEATURE(NOELDOC)
     /// Value type on POSIX (macOS, Linux) that wraps a file descriptor.
+    /// @since 26.02
     using value_type = Int32;
+#elif VIOLET_PLATFORM(WINDOWS) || VIOLET_FEATURE(NOELDOC)
+    /// Value type for Windows.
+    /// @since 26.02
+    using value_type = void*;
 #else
-    /// Value type for Windows and unsupported systems.
+    /// Value type for unsupported platforms.
+    /// @since 26.02
     using value_type = void*;
 #endif
 

@@ -19,13 +19,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <violet/Experimental/Synchronization/WaitGroup.h>
 
-#include <violet/Violet.h>
+using violet::experimental::sync::WaitGroup;
 
-namespace violet::sys {
+void WaitGroup::Add(UInt32 delta)
+{
+    VIOLET_ASSERT(delta != 0, "`delta' cannot be set to zero");
 
-/// Returns **true** if we are running in a CI system.
-VIOLET_API NOELDOC_SINCE("26.02") auto ContinuousIntegration() noexcept -> bool;
+    auto count = this->n_count.Lock();
+    *count += delta;
+}
 
-} // namespace violet::sys
+void WaitGroup::Done()
+{
+    auto count = this->n_count.Lock();
+    if (--(*count) == 0) {
+        this->n_cv.SignalAll();
+    }
+}
+
+void WaitGroup::Wait()
+{
+    auto guard = this->n_count.Lock();
+    while (*guard != 0) {
+        this->n_cv.Wait(&this->n_count.Mutex());
+    }
+}

@@ -91,12 +91,20 @@ cc_library(
         "experimental",
         [
             "//violet/experimental:oneof",
+            "//violet/experimental:any",
+            "//violet/experimental:mutex",
+            "//violet/experimental:numeric",
+            "//violet/experimental:own",
+            "//violet/experimental:slice",
+            "//violet/experimental:synchronized",
             "//violet/experimental/language:typeid",
         ],
     ),
     (
         "experimental_synchronization",
-        [],
+        [
+            "//violet/experimental/synchronization:rwlock",
+        ],
     ),
     (
         "experimental_threading",
@@ -106,7 +114,13 @@ cc_library(
     ),
     (
         "experimental_time",
-        [],
+        [
+            "//violet/experimental/time:clock",
+            "//violet/experimental/time:duration",
+            "//violet/experimental/time:fake_clock",
+            "//violet/experimental/time:instant",
+            "//violet/experimental/time:time_point",
+        ],
     ),
     (
         "filesystem",

@@ -47,7 +47,7 @@ namespace violet::subprocess {
 ///     std::cout << "Parent PID: " << *parent << '\n';
 /// }
 /// ```
-struct VIOLET_API PID final {
+struct VIOLET_API NOELDOC_SINCE("26.07") PID final {
 #if VIOLET_PLATFORM(UNIX)
     using value_type = pid_t;
 #elif VIOLET_PLATFORM(WINDOWS)

@@ -45,7 +45,6 @@
 
 #pragma once
 
-#include <violet/Container/Optional.h>
 #include <violet/IO/Descriptor.h>
 #include <violet/IO/Error.h>
 #include <violet/Iterator.h>
@@ -61,29 +60,31 @@ struct Iter;
 /// @param fd the raw file descriptor
 /// @param key the key to append
 /// @param value the byte array that presents the value of this extended attribute
-VIOLET_API auto Set(io::FileDescriptor::value_type fd, Str key, Span<const UInt8> value) noexcept -> io::Result<void>;
+VIOLET_API NOELDOC_SINCE("26.04") auto Set(io::FileDescriptor::value_type fd, Str key, Span<const UInt8> value) noexcept
+    -> io::Result<void>;
 
 /// Retrieves the value of a file's extended attribute. Returns an error if the attribute
 /// doesn't exist depending on platform semantics.
 ///
 /// @param fd the raw file descriptor
 /// @param key the key to append
-VIOLET_API auto Get(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<Optional<Vec<UInt8>>>;
+VIOLET_API NOELDOC_SINCE("26.04") auto Get(io::FileDescriptor::value_type fd, Str key) noexcept
+    -> io::Result<Optional<Vec<UInt8>>>;
 
 /// Removes an extended attribute for the file.
 /// @param fd the raw file descriptor
 /// @param key the key to remove
-VIOLET_API auto Remove(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<void>;
+VIOLET_API NOELDOC_SINCE("26.04") auto Remove(io::FileDescriptor::value_type fd, Str key) noexcept -> io::Result<void>;
 
 /// Returns a iterator that lists all extended attributes present on this file.
 /// @param fd the raw file descriptor
-VIOLET_API auto List(io::FileDescriptor::value_type fd) noexcept -> io::Result<Iter>;
+VIOLET_API NOELDOC_SINCE("26.04") auto List(io::FileDescriptor::value_type fd) noexcept -> io::Result<Iter>;
 
 /// A iterator that provides a list of a file's extended attributes.
 ///
 /// If a platform doesn't support extended attributes, [`Next`] will always
 /// return [`violet::Nothing`].
-struct VIOLET_API Iter final: public Iterator<Iter> {
+struct VIOLET_API NOELDOC_SINCE("26.04") Iter final: public Iterator<Iter> {
     VIOLET_DISALLOW_CONSTRUCTOR(Iter);
     ~Iter() noexcept;
 

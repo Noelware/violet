@@ -35,9 +35,23 @@ namespace violet::util {
 ///
 /// @param name The mangled C++ type to demangle
 /// @return the demangled name, or the name itself if unsupported
-VIOLET_API auto DemangleCXXName(const char* name) -> std::string;
+VIOLET_API NOELDOC_SINCE("26.02") auto DemangleCXXName(const char* name) -> std::string;
 
-// VIOLET_API auto DemangleRustName(const char* name) -> std::string;
-// VIOLET_API auto DemangleMSVC(const char* name) -> std::string;
+/// Returns the demangled type name of the current in-flight C++ exception.
+///
+/// Must be called within a `catch` block. On Itanium ABI platforms (GCC, Clang),
+/// this will use [`abi::__cxa_current_exception_type()`] to retrieve the type
+/// information of the thrown object directly.
+///
+/// [`abi::__cxa_current_exception_type()`]: https://libcxxabi.llvm.org/spec.html
+///
+/// ## Remarks
+/// On Itanium ABI platforms, this works for any thrown type, including integrals, C strings, or user-defined
+/// types that weren't derived from [`std::exception`].
+///
+/// On unsupported platforms or if it couldn't be demangled, this will return `"unknown"`.
+VIOLET_API NOELDOC_SINCE("26.07") auto DemangleCXXException() -> std::string;
+
+// VIOLET_API auto DemangleRust(const char* name) -> std::string;
 
 } // namespace violet::util

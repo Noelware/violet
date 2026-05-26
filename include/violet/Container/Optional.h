@@ -50,15 +50,16 @@ constexpr static std::nullopt_t Nothing = std::nullopt;
 /// static_assert(!violet::is_optional_v<int>);
 /// ```
 template<typename T>
-struct is_optional: std::false_type { };
+struct NOELDOC_SINCE("26.02.03") is_optional: std::false_type { };
 
 template<typename T>
-struct is_optional<Optional<T>>: std::true_type { };
+struct NOELDOC_SINCE("26.02.03") is_optional<Optional<T>>: std::true_type { };
 
 template<typename T>
-struct is_optional<std::optional<T>>: std::true_type { };
+struct NOELDOC_SINCE("26.02.03") is_optional<std::optional<T>>: std::true_type { };
 
 template<typename T>
+NOELDOC_SINCE("26.02.03")
 static constexpr bool is_optional_v = is_optional<T>::value;
 
 /// Type trait to extract the inner type from an [`Optional`] or [`std::optional`].
@@ -68,18 +69,18 @@ static constexpr bool is_optional_v = is_optional<T>::value;
 ///
 /// @tparam T The type from which to extract an inner value type.
 template<class T>
-struct VIOLET_API optional_type;
+struct VIOLET_API NOELDOC_SINCE("26.03.05") optional_type;
 
 /// Specialization of [`optional_type`] for [`violet::Optional`].
 template<class U>
-struct VIOLET_API optional_type<Optional<U>> {
+struct VIOLET_API NOELDOC_SINCE("26.03.05") optional_type<Optional<U>> {
     /// Extracted inner type from [`violet::Optional`]
     using type = U;
 };
 
 /// Specialization of [`optional_type`] for [`std::optional`].
 template<class U>
-struct VIOLET_API optional_type<std::optional<U>> {
+struct VIOLET_API NOELDOC_SINCE("26.03.05") optional_type<std::optional<U>> {
     /// Extracted inner type from [`violet::Optional`]
     using type = U;
 };
@@ -89,6 +90,7 @@ struct VIOLET_API optional_type<std::optional<U>> {
 /// It is the equivalent to `typename violet::optional_type<T>::type`.
 ///
 /// @tparam T which optional wrapper whose inner type should be extracted.
+/// @since 26.03.05
 template<class T>
 using optional_type_t = typename optional_type<T>::type;
 
@@ -102,24 +104,28 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
         "`Some<T>` requires `T` to be movable or copyable");
     static_assert(!std::same_as<T, Some<T>>, "`Some<Some<T>>` is ill-formed");
 
-    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Some);
+    NOELDOC_SINCE("26.05.02") VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Some);
 
     template<typename Other>
         requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
+    NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_IMPLICIT Some(Some<std::decay_t<Other>>&) = delete;
 
     template<typename Other>
         requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
+    NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_IMPLICIT Some(Some<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
         : n_value(T(VIOLET_MOVE(other).Value()))
     {
     }
 
+    NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_EXPLICIT Some(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
         : n_value(value)
     {
     }
 
+    NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_EXPLICIT Some(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
         : n_value(VIOLET_MOVE(value))
     {
@@ -128,58 +134,19 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
     template<typename... Args>
         requires(std::constructible_from<T, Args...>
             && !(sizeof...(Args) == 1 && (std::same_as<std::decay_t<Args>, T> || ...)))
+    NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_EXPLICIT Some(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
         : n_value(VIOLET_FWD(Args, args)...)
     {
     }
 
-    constexpr auto Value() & noexcept VIOLET_LIFETIMEBOUND -> T&
-    {
-        return this->n_value;
-    }
-
-    constexpr auto Value() && noexcept VIOLET_LIFETIMEBOUND -> T&&
-    {
-        return VIOLET_MOVE(this->n_value);
-    }
-
-    constexpr auto Value() const& noexcept VIOLET_LIFETIMEBOUND -> const T&
-    {
-        return this->n_value;
-    }
-
-    constexpr auto Value() const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
-    {
-        return this->n_value;
-    }
-
-    constexpr auto operator==(const Some& other) const noexcept -> bool
-        requires(requires { this->Value() == other.Value(); })
-    {
-        return this->Value() == other.Value();
-    }
-
-    constexpr auto operator!=(const Some& other) const noexcept -> bool
-        requires(requires { this->Value() == other.Value(); })
-    {
-        return this->Value() != other.Value();
-    }
-
-    [[nodiscard]] auto ToString() const noexcept -> String
-    {
-        return violet::ToString(this->Value());
-    }
-
-    friend auto operator<<(std::ostream& os, const Some& self) noexcept -> std::ostream&
-    {
-        return os << self.ToString();
-    }
-
+    NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_EXPLICIT operator violet::Optional<T>() const noexcept
     {
         return violet::Optional<T>(std::in_place, VIOLET_MOVE(this->n_value));
     }
 
+    NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_EXPLICIT operator std::optional<T>() const noexcept
     {
         return std::optional<T>(std::in_place, VIOLET_MOVE(this->n_value));
@@ -193,9 +160,11 @@ private:
 };
 
 template<typename T, std::size_t N>
+NOELDOC_SINCE("26.05.02")
 Some(T (&)[N]) -> Some<const T*>;
 
 template<typename T>
+NOELDOC_SINCE("26.05.02")
 Some(T&&) -> Some<std::remove_cvref_t<T>>;
 
 // NOLINTBEGIN(cppcoreguidelines-pro-type-union-access)
@@ -245,8 +214,6 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     static_assert(std::is_object_v<T>, "`Optional<T>` requires `T` to be an object type");
     static_assert(!std::is_reference_v<T>, "`Optional<T>` cannot wrap a reference");
     static_assert(std::is_destructible_v<T>, "`Optional<T>` requires `T` to be destructible");
-    static_assert(
-        std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>, "Optional<T> must be movable or copyable");
 
     /// Contained value type of this [`Optional`].
     using value_type = std::conditional_t<instanceof_v<std::reference_wrapper, T>,
@@ -827,7 +794,8 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND -> value_type&
+    [[nodiscard]] NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
+        Unsafe) & noexcept VIOLET_LIFETIMEBOUND->value_type&
     {
         return this->getValueRef();
     }
@@ -836,7 +804,8 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const& noexcept VIOLET_LIFETIMEBOUND -> const value_type&
+    [[nodiscard]] NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
+        Unsafe) const& noexcept VIOLET_LIFETIMEBOUND->const value_type&
     {
         return this->getValueRef();
     }
@@ -845,7 +814,8 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND -> value_type&&
+    [[nodiscard]] NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
+        Unsafe) && noexcept VIOLET_LIFETIMEBOUND->value_type&&
     {
         return VIOLET_MOVE(this->getValueRef());
     }
@@ -854,7 +824,8 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     ///
     /// # Safety
     /// Undefined behavior if no value is present.
-    [[nodiscard]] constexpr auto UnwrapUnchecked(Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND -> const value_type&&
+    [[nodiscard]] NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
+        Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND->const value_type&&
     {
         return VIOLET_MOVE(this->getValueRef());
     }
@@ -1194,11 +1165,13 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
         return !(*this == other);
     }
 
+    NOELDOC_SINCE("26.05.08")
     constexpr auto operator<=>(std::nullopt_t) const -> std::strong_ordering
     {
         return this->HasValue() <=> false;
     }
 
+    NOELDOC_SINCE("26.05.08")
     constexpr auto operator<=>(const std::optional<T>& other) const -> std::strong_ordering
         requires(std::three_way_comparable<T>)
     {
@@ -1209,6 +1182,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
         return this->HasValue() <=> other.has_value();
     }
 
+    NOELDOC_SINCE("26.05.08")
     constexpr auto operator<=>(const std::optional<T>& other) const -> std::partial_ordering
         requires(!std::three_way_comparable<T> && std::totally_ordered<T>)
     {
@@ -1227,6 +1201,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
         return this->HasValue() <=> other.has_value();
     }
 
+    NOELDOC_SINCE("26.05.08")
     constexpr auto operator<=>(const Optional& other) const -> std::strong_ordering
         requires(std::three_way_comparable<T>)
     {
@@ -1237,6 +1212,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
         return this->HasValue() <=> other.HasValue();
     }
 
+    NOELDOC_SINCE("26.05.08")
     constexpr auto operator<=>(const Optional& other) const -> std::partial_ordering
         requires(!std::three_way_comparable<T> && std::totally_ordered<T>)
     {
@@ -1256,6 +1232,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     }
 
     template<typename U = T>
+    NOELDOC_SINCE("26.05.08")
     constexpr auto operator<=>(const T& rhs) const -> std::compare_three_way_result_t<U>
         requires std::three_way_comparable<U>
     {

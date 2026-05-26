@@ -74,7 +74,7 @@ namespace violet::subprocess::ext {
 ///
 /// auto child = command.Spawn();
 /// ```
-struct PreExecFun final {
+struct VIOLET_API NOELDOC_SINCE("26.07") PreExecFun final {
     VIOLET_DISALLOW_CONSTRUCTOR(PreExecFun);
 
     template<typename Fun>
@@ -107,7 +107,7 @@ private:
 ///
 /// @param command the command to use
 /// @param uid     the POSIX user identifier to switch to
-VIOLET_API void UID(Command& command, uid_t uid);
+NOELDOC_SINCE("26.07") VIOLET_API void UID(Command& command, uid_t uid);
 
 /// Sets the primary group identity the child process will run as.
 ///
@@ -120,7 +120,7 @@ VIOLET_API void UID(Command& command, uid_t uid);
 /// [`exec()`]: https://man7.org/linux/man-pages/man3/exec.3.html
 ///
 /// @param gid the POSIX group identifier to switch to.
-VIOLET_API void GID(Command& command, gid_t gid);
+NOELDOC_SINCE("26.07") VIOLET_API void GID(Command& command, gid_t gid);
 
 /// Replaces the child's supplementary group list.
 ///
@@ -132,12 +132,12 @@ VIOLET_API void GID(Command& command, gid_t gid);
 /// [`exec()`]: https://man7.org/linux/man-pages/man3/exec.3.html
 ///
 /// @param groups supplementary group identifiers to set.
-VIOLET_API void Groups(Command& command, std::initializer_list<gid_t> groups);
+NOELDOC_SINCE("26.07") VIOLET_API void Groups(Command& command, std::initializer_list<gid_t> groups);
 
 /// Replaces the child's supplementary group list from a span.
 ///
 /// @param groups supplementary group identifiers to set.
-VIOLET_API void Groups(Command& command, Span<gid_t> groups);
+NOELDOC_SINCE("26.07") VIOLET_API void Groups(Command& command, Span<gid_t> groups);
 
 /// Registers a [`PreExecFun`] callback to run after `fork()` but before `exec()`.
 ///
@@ -146,6 +146,6 @@ VIOLET_API void Groups(Command& command, Span<gid_t> groups);
 /// requirements and usage examples.
 ///
 /// @param exec the callback to invoke in the child process.
-VIOLET_API void PreExec(Command& command, PreExecFun exec);
+NOELDOC_SINCE("26.07") VIOLET_API void PreExec(Command& command, PreExecFun exec);
 
 } // namespace violet::subprocess::ext

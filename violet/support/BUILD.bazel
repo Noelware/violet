@@ -19,16 +19,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
 )
 
+selects.config_setting_group(
+    name = "itanium_cxxabi",
+    match_any = [
+        "@rules_cc//cc/compiler:clang",
+        "@rules_cc//cc/compiler:gcc",
+    ],
+    visibility = [":__pkg__"],
+)
+
+selects.config_setting_group(
+    name = "msvc_cxxabi",
+    match_any = [
+        "@rules_cc//cc/compiler:msvc-cl",
+        "@rules_cc//cc/compiler:clang-cl",
+    ],
+    visibility = [":__pkg__"],
+)
+
 violet_cc_library(
     name = "demangle",
-    srcs = ["//src/support:demangle.cc"],
+    srcs = select({
+        ":itanium_cxxabi": ["//src/support:demangle.itanium.cc"],
+        ":msvc_cxxabi": ["//src/support:demangle.msvc.cc"],
+        "//conditions:default": [],
+    }),
     hdrs = ["//include/violet/Support:Demangle.h"],
+    defines = select({
+        ":itanium_cxxabi": ["VIOLET_FEATURE_ITANIUM_CXXABI"],
+        ":msvc_cxxabi": ["VIOLET_FEATURE_MSVC_CXXABI"],
+        "//conditions:default": [],
+    }),
     deps = [
         "//violet:macros",
         "//violet:policy_checks",

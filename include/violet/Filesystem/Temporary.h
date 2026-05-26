@@ -32,10 +32,10 @@ struct TempFile;
 struct TempDir;
 
 /// Returns the system's temporary directory.
-VIOLET_API auto SystemTempDirectory() -> io::Result<Path>;
+VIOLET_API NOELDOC_SINCE("26.02") auto SystemTempDirectory() -> io::Result<Path>;
 
 /// A builder that is used to build [`TempDir`] or [`TempFile`]s.
-struct VIOLET_API TempBuilder final {
+struct VIOLET_API NOELDOC_SINCE("26.02") TempBuilder final {
     constexpr VIOLET_IMPLICIT TempBuilder() noexcept = default;
 
     constexpr auto WithRandomBytes(UInt32 bits) noexcept -> TempBuilder&
@@ -56,7 +56,7 @@ struct VIOLET_API TempBuilder final {
         return *this;
     }
 
-#if VIOLET_PLATFORM(UNIX)
+#if VIOLET_PLATFORM(UNIX) || VIOLET_FEATURE(NOELDOC)
     constexpr auto WithMode(Mode mode) noexcept -> TempBuilder&
     {
         this->n_mode = mode;
@@ -79,7 +79,7 @@ private:
 
 /// Represents a directory that is temporarily avaliable. This also acts
 /// like a RAII guard where, on drop, it'll remove the directory from disk.
-struct VIOLET_API TempDir final {
+struct VIOLET_API NOELDOC_SINCE("26.02") TempDir final {
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(TempDir);
     VIOLET_DISALLOW_CONSTEXPR_COPY(TempDir);
     ~TempDir();
@@ -111,8 +111,8 @@ struct VIOLET_API TempFile final {
     VIOLET_IMPLICIT TempFile(TempFile&& other) noexcept;
     auto operator=(TempFile&& other) noexcept -> TempFile&;
 
-    VIOLET_API auto File() const noexcept -> const File&;
-    VIOLET_API auto Path() const noexcept -> const Optional<Path>&;
+    VIOLET_API [[nodiscard]] auto File() const noexcept -> const File&;
+    VIOLET_API [[nodiscard]] auto Path() const noexcept -> const Optional<Path>&;
     VIOLET_API auto Persist(PathRef dst) noexcept -> io::Result<struct File>;
 
 private:

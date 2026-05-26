@@ -30,7 +30,8 @@
 namespace violet::io {
 
 /// A list of general categories of I/O errors.
-enum struct VIOLET_API ErrorKind : UInt8 {
+enum struct VIOLET_API NOELDOC_SINCE("26.02") ErrorKind : UInt8{
+    // clang-format off
     NotFound,
     PermissionDenied,
     ConnectionRefused,
@@ -75,6 +76,7 @@ enum struct VIOLET_API ErrorKind : UInt8 {
 
     /// @internal
     __other
+    // clang-format on
 };
 
 } // namespace violet::io
@@ -214,7 +216,7 @@ namespace violet::io {
 
 struct Error;
 
-struct VIOLET_API PlatformError final {
+struct VIOLET_API NOELDOC_SINCE("26.02") PlatformError final {
     VIOLET_IMPLICIT_COPY_AND_MOVE(PlatformError);
     ~PlatformError() = default;
 
@@ -249,7 +251,7 @@ private:
 #endif
 };
 
-struct VIOLET_API Error final {
+struct VIOLET_API NOELDOC_SINCE("26.02") Error final {
     VIOLET_IMPLICIT_COPY_AND_MOVE(Error);
     ~Error() = default;
 
@@ -342,32 +344,49 @@ private:
 #endif
 };
 
+/// @since 26.02
 template<typename T>
 using Result = violet::Result<T, Error>;
 
-/// @internal
-namespace __detail {
+// NOLINTBEGIN(google-readability-namespace-comments)
+namespace NOELDOC_HIDE detail {
 
 #if VIOLET_FEATURE(RTTI)
     template<typename T, typename... Args>
-    auto __mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
+    NOELDOC_HIDE auto mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
     {
         return io::Error(kind, VIOLET_FWD(Args, args)...);
     }
 #else
     template<typename /*T*/, typename... Args>
-    auto __mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
+    NOELDOC_HIDE auto mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
     {
         (void)sizeof...(args);
         return { kind };
     }
 #endif
 
-} // namespace __detail
+} // namespace NOELDOC_HIDE detail
+// NOLINTEND(google-readability-namespace-comments)
 
 } // namespace violet::io
 
+/**
+ * @macro VIOLET_IO_ERROR
+ * @since 26.02
+ * @param KIND The `violet::io::ErrorKind` variant (without qualification).
+ * @param T The error payload type.
+ * @param ... Additional arguments forwarded to the error constructor.
+ *
+ * Constructs a `violet::io::Error` with the given kind and payload type.
+ *
+ * # Example
+ *
+ * ```cpp
+ * return violet::Err(VIOLET_IO_ERROR(NotFound, std::string, "file not found"));
+ * ```
+ */
 #define VIOLET_IO_ERROR(KIND, T, ...)                                                                                  \
-    ::violet::io::__detail::__mk_io_error<T>(::violet::io::ErrorKind::KIND __VA_OPT__(, ) __VA_ARGS__)
+    ::violet::io::detail::mk_io_error<T>(::violet::io::ErrorKind::KIND __VA_OPT__(, ) __VA_ARGS__)
 
 VIOLET_FORMATTER(violet::io::Error);

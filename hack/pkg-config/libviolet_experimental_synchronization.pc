@@ -24,8 +24,8 @@ exec_prefix=${prefix}
 includedir=${prefix}/include
 libdir=${prefix}/lib
 
-Name: violet_experimental_time
-Description: Violet's experimental utilities for time manipulation and parsing
+Name: violet_experimental_synchronization
+Description: Violet's experimental synchronization primitives
 Version: @VERSION@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lviolet -lviolet_experimental

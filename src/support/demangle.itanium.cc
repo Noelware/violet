@@ -19,13 +19,48 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include <violet/Support/Demangle.h>
 
-#include <violet/Violet.h>
+#ifndef VIOLET_FEATURE_ITANIUM_CXXABI
+#if VIOLET_HAS_INCLUDE(<cxxabi.h>)
+#include <cxxabi.h>
 
-namespace violet::sys {
+#define VIOLET_FEATURE_ITANIUM_CXXABI 1
+#else
+#define VIOLET_FEATURE_ITANIUM_CXXABI 0
+#endif
+#elif VIOLET_FEATURE(ITANIUM_CXXABI)
+#include <cxxabi.h>
+#endif
 
-/// Returns **true** if we are running in a CI system.
-VIOLET_API NOELDOC_SINCE("26.02") auto ContinuousIntegration() noexcept -> bool;
+#if VIOLET_FEATURE(ITANIUM_CXXABI)
+#include <cstdlib>
+#include <typeinfo>
+#endif
 
-} // namespace violet::sys
+auto violet::util::DemangleCXXName(const char* name) -> std::string
+{
+#if VIOLET_FEATURE(ITANIUM_CXXABI)
+    int status = -1;
+    char* result = abi::__cxa_demangle(name, nullptr, nullptr, &status);
+    if (status == 0 && result != nullptr) {
+        std::string final(result);
+        ::free(result);
+
+        return final;
+    }
+#endif
+
+    return name;
+}
+
+auto violet::util::DemangleCXXException() -> std::string
+{
+#if VIOLET_FEATURE(ITANIUM_CXXABI)
+    if (auto* ti = abi::__cxa_current_exception_type()) {
+        return DemangleCXXName(ti->name());
+    }
+#endif
+
+    return "{unknown C++ type}";
+}

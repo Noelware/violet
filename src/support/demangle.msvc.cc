@@ -19,25 +19,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Language/Macros.h>
 #include <violet/Support/Demangle.h>
-
-#if VIOLET_HAS_INCLUDE(<cxxabi.h>)
-#include <cstdlib>
-#include <cxxabi.h>
-#include <memory>
-
-#define VIOLET_HAS_CXXABI_HDR
-#endif
 
 auto violet::util::DemangleCXXName(const char* name) -> std::string
 {
-#ifndef VIOLET_HAS_CXXABI_HDR
     return name;
-#else
-    int status = -1;
-    std::unique_ptr<char, void (*)(void*)> result(abi::__cxa_demangle(name, nullptr, nullptr, &status), free);
+}
 
-    return status == 0 ? result.get() : name;
-#endif
+auto violet::util::DemangleCXXException() -> std::string
+{
+    return "{unknown C++ type}";
 }

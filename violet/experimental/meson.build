@@ -20,8 +20,7 @@
 # SOFTWARE.
 
 libviolet_experimental_srcs = files('../../src/experimental/Any.cc')
-
-violet_build_defines += [
+violet_experimental_build_defines = [
     '-DVIOLET_FEATURE_ABSEIL=@0@'.format(get_option('abseil').enabled().to_int()),
 ]
 
@@ -43,7 +42,7 @@ violet_experimental_lib = library(
     libviolet_experimental_srcs,
     dependencies: libviolet_experimental_deps,
     include_directories: violet_include_dir,
-    cpp_args: violet_build_defines,
+    cpp_args: violet_build_defines + violet_experimental_build_defines,
     install: true,
 )
 

@@ -34,7 +34,7 @@
 
 namespace violet::filesystem {
 
-#if VIOLET_PLATFORM(UNIX)
+#if VIOLET_PLATFORM(UNIX) || VIOLET_FEATURE(NOELDOC)
 /// Represents a Unix file mode's permissions.
 ///
 /// This is a lightweight wrapper around the `mode_t` type that provides:
@@ -54,7 +54,7 @@ namespace violet::filesystem {
 /// Mode mode(st.st_mode);
 /// std::cout << mode << '\n'; // -rw-r--r--
 /// ```
-struct VIOLET_API Mode final {
+struct VIOLET_API NOELDOC_SINCE("26.02") Mode final {
     constexpr VIOLET_IMPLICIT Mode() = default;
     constexpr VIOLET_IMPLICIT Mode(mode_t mode) noexcept
         : n_mode(mode)
@@ -73,7 +73,7 @@ struct VIOLET_API Mode final {
     }
 
 #define IMPL_MODE(IDENT, BIT)                                                                                          \
-    constexpr auto IDENT() const noexcept -> bool                                                                      \
+    NOELDOC_SINCE("26.02") constexpr auto IDENT() const noexcept -> bool                                               \
     {                                                                                                                  \
         return (this->n_mode & BIT) != 0U;                                                                             \
     }
@@ -159,17 +159,17 @@ private:
 ///
 /// ## POSIX (Linux, macOS)
 /// On POSIX-compatible systems, this will hold a [`Mode`] struct that wraps around `mode_t`.
-struct VIOLET_API Permissions final {
+struct VIOLET_API NOELDOC_SINCE("26.02") Permissions final {
     constexpr VIOLET_IMPLICIT Permissions() noexcept = default;
 
-#if VIOLET_PLATFORM(WINDOWS)
+#if VIOLET_PLATFORM(WINDOWS) || VIOLET_FEATURE(NOELDOC)
     /// Constructs a [`Permissions`] object from a `DWORD` representing the file attributes.
     /// @param attrs the attributes that this file sets (i.e, `FILE_ATTRIBUTE_READONLY`).
     constexpr VIOLET_EXPLICIT Permissions(DWORD attrs) noexcept
         : n_attrs(attrs)
     {
     }
-#elif VIOLET_PLATFORM(UNIX)
+#elif VIOLET_PLATFORM(UNIX) || VIOLET_FEATURE(NOELDOC)
     constexpr VIOLET_EXPLICIT Permissions(struct Mode mode) noexcept
         : n_mode(mode)
     {
@@ -179,9 +179,9 @@ struct VIOLET_API Permissions final {
     [[nodiscard]] VIOLET_API auto Readonly() const noexcept -> bool;
     VIOLET_API void SetReadonly(bool readonly) noexcept;
 
-#if VIOLET_PLATFORM(WINDOWS)
+#if VIOLET_PLATFORM(WINDOWS) || VIOLET_FEATURE(NOELDOC)
     VIOLET_API auto Attributes() const noexcept -> DWORD;
-#elif VIOLET_PLATFORM(UNIX)
+#elif VIOLET_PLATFORM(UNIX) || VIOLET_FEATURE(NOELDOC)
     [[nodiscard]] VIOLET_API auto Mode() const noexcept -> struct Mode;
 #endif
 

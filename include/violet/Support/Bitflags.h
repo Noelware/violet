@@ -50,7 +50,7 @@ namespace violet {
 /// ```
 template<typename E>
     requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
-struct VIOLET_API Bitflags final {
+struct VIOLET_API NOELDOC_SINCE("26.02") Bitflags final {
     /// Type alias for the underlying type of enumeration `E`.
     using underlying_type = std::underlying_type_t<E>;
 
@@ -101,6 +101,7 @@ struct VIOLET_API Bitflags final {
         return this->n_bits;
     }
 
+    NOELDOC_SINCE("26.05.06")
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
     {
         return this->n_bits != 0;
@@ -152,6 +153,7 @@ private:
 
 template<typename E>
     requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
+NOELDOC_SINCE("26.02")
 constexpr auto operator|(E lhs, E rhs) noexcept -> violet::Bitflags<E>
 {
     return violet::Bitflags<E>(lhs) | violet::Bitflags<E>(rhs);
@@ -159,6 +161,7 @@ constexpr auto operator|(E lhs, E rhs) noexcept -> violet::Bitflags<E>
 
 template<typename E>
     requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
+NOELDOC_SINCE("26.02")
 constexpr auto operator&(E lhs, E rhs) noexcept -> violet::Bitflags<E>
 {
     return violet::Bitflags<E>(lhs) & violet::Bitflags<E>(rhs);
@@ -166,6 +169,7 @@ constexpr auto operator&(E lhs, E rhs) noexcept -> violet::Bitflags<E>
 
 template<typename E>
     requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
+NOELDOC_SINCE("26.02")
 constexpr auto operator^(E lhs, E rhs) noexcept -> violet::Bitflags<E>
 {
     return violet::Bitflags<E>(lhs) ^ violet::Bitflags<E>(rhs);
@@ -173,6 +177,7 @@ constexpr auto operator^(E lhs, E rhs) noexcept -> violet::Bitflags<E>
 
 template<typename E>
     requires(std::is_enum_v<E> && std::is_unsigned_v<std::underlying_type_t<E>>)
+NOELDOC_SINCE("26.02")
 constexpr auto operator~(E val) noexcept -> violet::Bitflags<E>
 {
     return ~violet::Bitflags<E>(val);

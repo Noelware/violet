@@ -33,7 +33,7 @@ namespace violet::subprocess {
 ///
 /// `ExitStatus` models how a subprocess finished execution in a
 /// platform-aware manner.
-struct VIOLET_API ExitStatus final {
+struct VIOLET_API NOELDOC_SINCE("26.07") ExitStatus final {
 #if VIOLET_PLATFORM(UNIX)
     /// Underlying integer type used to represent exit codes and signals.
     ///

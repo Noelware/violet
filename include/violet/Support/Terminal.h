@@ -40,7 +40,7 @@ namespace violet::terminal {
 /// * `Never` will never emit ANSI color sequences.
 /// * `Auto` will emit ANSI sequences only when the output stream
 ///   appears to be a terminal supporting them.
-enum struct ColorChoice : UInt8 {
+enum struct NOELDOC_SINCE("26.02.01") ColorChoice : UInt8 {
     Always = 0, ///< `--color=always`, `{CLI}_COLOR=always`
     Never = 1, ///< `--color=never`, `{CLI}_COLOR=never`
     Auto = 2 ///< `--color=auto`, auto detection
@@ -48,7 +48,7 @@ enum struct ColorChoice : UInt8 {
 
 /// Identifies which output stream should be inspected when determining
 /// terminal capabilities such as color support or window size.
-enum struct StreamSource : UInt8 {
+enum struct NOELDOC_SINCE("26.02.01") StreamSource : UInt8 {
     Stdout = 0, ///< inspect the file descriptor for stdout.
     Stderr = 1 ///< inspect the file descriptor for stderr.
 };
@@ -59,14 +59,14 @@ enum struct StreamSource : UInt8 {
 /// * Environment variables (e.g., `COLORTERM`)
 /// * `$TERM` values
 /// * Terminfo entries
-struct VIOLET_API ColorLevel final {
+struct VIOLET_API NOELDOC_SINCE("26.02.01") ColorLevel final {
     bool SupportsBasic = false; ///< provides support for 4-bit (16-color) SGR codes
     bool Supports256Bit = false; ///< provides support for 256-bit ANSI colours
     bool Supports16M = false; ///< provides support for 16-million (RGB) ANSI colours
 };
 
 /// Terminal window dimensions, measured in character cells.
-struct VIOLET_API Window final {
+struct VIOLET_API NOELDOC_SINCE("26.02.01") Window final {
     UInt16 Columns = 0; ///< width of the terminal in columns
     UInt16 Rows = 0; ///< height of the terminal in rows
 };
@@ -94,7 +94,7 @@ struct VIOLET_API Window final {
 /// // Colors compare by channel values only, ignoring `foreground` flag.
 /// assert(red == RGB(255, 0, 0, /*foreground=*/false));
 /// ```
-struct VIOLET_API RGB final {
+struct VIOLET_API NOELDOC_SINCE("26.02.01") RGB final {
     /// The red channel value, ranging from `0..=255`.
     UInt8 Red = 0;
 
@@ -153,11 +153,11 @@ struct VIOLET_API RGB final {
     }
 };
 
-struct VIOLET_API Style final {
+struct VIOLET_API NOELDOC_SINCE("26.02.01") Style final {
     constexpr VIOLET_IMPLICIT Style() noexcept = default;
 
 #define MK_STYLE_FN(NAME, FG, BG)                                                                                      \
-    constexpr static auto NAME(bool foreground = true) noexcept -> Style                                               \
+    NOELDOC_SINCE("26.02.01") constexpr static auto NAME(bool foreground = true) noexcept -> Style                     \
     {                                                                                                                  \
         Style style;                                                                                                   \
         if (foreground) {                                                                                              \
@@ -270,7 +270,7 @@ private:
 };
 
 template<typename T>
-struct VIOLET_API Styled final {
+struct VIOLET_API NOELDOC_SINCE("26.02.01") Styled final {
     T Target;
     struct Style Style;
 
@@ -296,7 +296,7 @@ struct VIOLET_API Styled final {
     }
 };
 
-#if VIOLET_PLATFORM(WINDOWS)
+#if VIOLET_PLATFORM(WINDOWS) || VIOLET_FEATURE(NOELDOC)
 /// On Windows, this will enable virtual terminal processing mode for terminals that don't support
 /// ANSI colour output via SGR.
 ///
@@ -309,21 +309,23 @@ struct VIOLET_API Styled final {
 ///
 /// @param source the source to enable virtual terminal processing
 /// @return the result of the operation, always check the error state before continuing.
-[[nodiscard("always check the error state")]] VIOLET_API auto EnableVTMode(StreamSource source = StreamSource::Stdout)
-    -> IO::Result<void>;
+[[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("26.02.01") auto EnableVTMode(
+    StreamSource source = StreamSource::Stdout) -> IO::Result<void>;
 #endif
 
 /// Returns **true** if we are in a terminal process instead of a pipe or child process.
 /// @param source source to check, by default, stdout.
-VIOLET_API auto IsTTY(StreamSource source = StreamSource::Stdout) noexcept -> bool;
+VIOLET_API NOELDOC_SINCE("26.02.01") auto IsTTY(StreamSource source = StreamSource::Stdout) noexcept -> bool;
 
 /// Queries information about the terminal window.
 /// @param source the stream source to check, by default, standard output.
-VIOLET_API auto QueryWindowInfo(StreamSource source = StreamSource::Stdout) noexcept -> io::Result<Window>;
+VIOLET_API NOELDOC_SINCE("26.02.01") auto QueryWindowInfo(StreamSource source = StreamSource::Stdout) noexcept
+    -> io::Result<Window>;
 
 /// Queries information about color displays for terminals.
 /// @param source the stream source to check, by default, standard output.
-VIOLET_API auto ColourLevel(StreamSource source = StreamSource::Stdout) noexcept -> ColorLevel;
+VIOLET_API NOELDOC_SINCE("26.02.01") auto ColourLevel(StreamSource source = StreamSource::Stdout) noexcept
+    -> ColorLevel;
 
 /// Sets the color choice.
 ///
@@ -331,11 +333,12 @@ VIOLET_API auto ColourLevel(StreamSource source = StreamSource::Stdout) noexcept
 /// depend on the terminal framework as well.
 ///
 /// @param choice the color choice to use
-VIOLET_API void SetColorChoice(violet::terminal::ColorChoice choice = violet::terminal::ColorChoice::Auto) noexcept;
+VIOLET_API NOELDOC_SINCE("26.02.01") void SetColorChoice(
+    violet::terminal::ColorChoice choice = violet::terminal::ColorChoice::Auto) noexcept;
 
 /// Returns **true** if the terminal framework is supported to use colors. This is usually determined
 /// either if a user has called [`SetColorChoice`] or by the [`ColourLevel`] function.
-VIOLET_API auto ColoursEnabled(StreamSource source = StreamSource::Stdout) noexcept -> bool;
+VIOLET_API NOELDOC_SINCE("26.02.01") auto ColoursEnabled(StreamSource source = StreamSource::Stdout) noexcept -> bool;
 
 } // namespace violet::terminal
 

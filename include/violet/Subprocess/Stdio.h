@@ -55,7 +55,7 @@ namespace violet::subprocess {
 ///     .WithStdout(Stdio::Null())
 ///     .WithStderr(Stdio::Inherit());
 /// ```
-struct VIOLET_API Stdio final {
+struct VIOLET_API NOELDOC_SINCE("26.07") Stdio final {
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Stdio);
 
     /// Creates a `Stdio` value that redirects the stream to `/dev/null`.

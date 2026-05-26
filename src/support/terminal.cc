@@ -231,7 +231,7 @@ auto violet::terminal::ColourLevel(StreamSource source) noexcept -> ColorLevel
     }
 
     if (violet::sys::GetEnv(kTerm).HasValueAnd(checkPlatformANSIColor)
-        || violet::sys::GetEnv("CLICOLOR").MapOr(false, [](const String& val) { return val != "0"; })
+        || violet::sys::GetEnv("CLICOLOR").MapOr(false, [](const String& val) -> bool { return val != "0"; })
         || violet::sys::ContinuousIntegration()) {
         level = 1;
         return { .SupportsBasic = level >= 1, .Supports256Bit = level >= 2, .Supports16M = level >= 3 };

@@ -26,13 +26,13 @@
 
 namespace violet::subprocess {
 namespace detail {
-    void DrainPipes(violet::io::FileDescriptor::value_type stdoutFd, violet::io::FileDescriptor::value_type stderrFd,
-        Output& output);
+    NOELDOC_HIDE VIOLET_LOCAL void DrainPipes(violet::io::FileDescriptor::value_type stdoutFd,
+        violet::io::FileDescriptor::value_type stderrFd, Output& output);
 
-    auto MakePipes(Int32 fds[2]) -> bool;
+    NOELDOC_HIDE VIOLET_LOCAL auto MakePipes(Int32 fds[2]) -> bool;
 } // namespace detail
 
-struct VIOLET_LOCAL Command::Impl final {
+struct VIOLET_LOCAL NOELDOC_HIDE Command::Impl final {
     VIOLET_DISALLOW_CONSTRUCTOR(Impl);
     VIOLET_IMPLICIT_COPY_AND_MOVE(Impl);
     ~Impl() = default;

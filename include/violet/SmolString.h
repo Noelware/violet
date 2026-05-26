@@ -60,12 +60,12 @@ namespace violet {
 /// VIOLET_ASSERT(hello.Size == 13, "size failure");
 /// ```
 template<size_t N>
-struct VIOLET_API SmolString final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.03.09") NOELDOC_STABLIZED_SINCE("26.06") SmolString final {
     /// The data that this string contains.
-    std::array<char, N> Data{ };
+    NOELDOC_SINCE("26.06.01") std::array<char, N> Data { };
 
     /// The size of the string.
-    size_t Size = 0;
+    NOELDOC_SINCE("26.06.01") size_t Size = 0;
 
     /// Construct a empty smol string.
     constexpr VIOLET_IMPLICIT SmolString() noexcept = default;

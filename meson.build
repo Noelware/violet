@@ -106,7 +106,11 @@ subdir('violet/anyhow')
 
 ## ~^=w=^~ START: Noelware.Violet.Experimental.Time ~^=w=^~ ##
 subdir('violet/experimental/time')
-## ~^=w=^~ END: Noelware.Violet.Experimental.Threading ~^=w=^~ ##
+## ~^=w=^~ END: Noelware.Violet.Experimental.Time ~^=w=^~ ##
+
+## ~^=w=^~ START: Noelware.Violet.Experimental.Synchronizationb ~^=w=^~ ##
+subdir('violet/experimental/synchronization')
+## ~^=w=^~ END: Noelware.Violet.Experimental.Synchronizationb ~^=w=^~ ##
 
 install_subdir(
     'include/violet',
@@ -118,6 +122,8 @@ install_subdir(
         './Experimental/BUILD.bazel',
         './Experimental/Language/BUILD.bazel',
         './Experimental/Threading/BUILD.bazel',
+        './Experimental/Synchronization/BUILD.bazel',
+        './Experimental/Time/BUILD.bazel',
         './Filesystem/BUILD.bazel',
         './Filesystem/Extensions/BUILD.bazel',
         './IO/BUILD.bazel',

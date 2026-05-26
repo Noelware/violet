@@ -21,7 +21,7 @@
 //
 //! # 🌺💜 `violet/Print.h`
 //! Provides [`violet::Print`], [`violet::Println`], [`violet::PrintErr`], and
-//! [`violet::PrintErrln`] — thin wrappers around [`std::format`] for writing
+//! [`violet::PrintErrln`], thin wrappers around [`std::format`] for writing
 //! formatted text to an output stream.
 //!
 //! On C++23 or later (`__cpp_lib_print` / `VIOLET_REQUIRE_STL(202302L)`), the
@@ -58,6 +58,7 @@ namespace violet {
 /// @param fmt  A compile-time-checked format string.
 /// @param args Arguments referenced by the format string.
 template<typename... Args>
+NOELDOC_SINCE("26.04.04")
 VIOLET_API void Print(std::format_string<Args...> fmt, Args&&... args)
 {
     return Print(std::cout, fmt, VIOLET_FWD(Args, args)...);
@@ -81,6 +82,7 @@ VIOLET_API void Print(std::format_string<Args...> fmt, Args&&... args)
 /// @param fmt    A compile-time-checked format string.
 /// @param args   Arguments referenced by the format string.
 template<typename... Args>
+NOELDOC_SINCE("26.04.04")
 VIOLET_API void Print(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
 {
 #if VIOLET_REQUIRE_STL(202302L)
@@ -106,6 +108,7 @@ VIOLET_API void Print(std::ostream& stream, std::format_string<Args...> fmt, Arg
 /// @param fmt    A compile-time-checked format string.
 /// @param args   Arguments referenced by the format string.
 template<typename... Args>
+NOELDOC_SINCE("26.04.04")
 VIOLET_API void Println(std::ostream& stream, std::format_string<Args...> fmt, Args&&... args)
 {
 #if VIOLET_REQUIRE_STL(202302L)
@@ -130,6 +133,7 @@ VIOLET_API void Println(std::ostream& stream, std::format_string<Args...> fmt, A
 /// @param fmt  A compile-time-checked format string.
 /// @param args Arguments referenced by the format string.
 template<typename... Args>
+NOELDOC_SINCE("26.04.04")
 VIOLET_API void Println(std::format_string<Args...> fmt, Args&&... args)
 {
     return Println(std::cout, fmt, VIOLET_FWD(Args, args)...);
@@ -149,6 +153,7 @@ VIOLET_API void Println(std::format_string<Args...> fmt, Args&&... args)
 /// @param fmt  A compile-time-checked format string.
 /// @param args Arguments referenced by the format string.
 template<typename... Args>
+NOELDOC_SINCE("26.04.04")
 VIOLET_API void PrintErr(std::format_string<Args...> fmt, Args&&... args)
 {
     return Print(std::cerr, fmt, VIOLET_FWD(Args, args)...);
@@ -168,7 +173,7 @@ VIOLET_API void PrintErr(std::format_string<Args...> fmt, Args&&... args)
 /// @param fmt  A compile-time-checked format string.
 /// @param args Arguments referenced by the format string.
 template<typename... Args>
-VIOLET_API void PrintErrln(std::format_string<Args...> fmt, Args&&... args)
+VIOLET_API NOELDOC_SINCE("26.04.04") void PrintErrln(std::format_string<Args...> fmt, Args&&... args)
 {
     return Println(std::cerr, fmt, VIOLET_FWD(Args, args)...);
 }

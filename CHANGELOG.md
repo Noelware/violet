@@ -7,6 +7,31 @@ availableAt:
 ---
 
 ### unreleased
+- **breaking**: Merge `Noelware.Violet.Subprocess` into the main repository. Everything is now available under `//violet/subprocess` rather than a separate framework package. ([`@auguwu`])
+- Every class, method, typedef, function, etc. is all marked with what versions they were introduced. Also, stablization points for experimental frameworks. ([`@auguwu`])
+
+#### Noelware.Violet
+- **breaking**: Removed `ThreadSafety` template paramter in `CancellableDefer` and added `LocalCancellableDefer` instead ([`@auguwu`])
+- **breaking**: Removed more deprecated macros ([`@auguwu`])
+- [events] Disallow copy and move on **events::Emitter\<Event\>** ([`@auguwu`])
+- [events] Allow persisted guards to cleanup itself rather than doing it manually ([`@auguwu`])
+- [support/demangle] Added initial support for MSVC C++'s ABI but is unavailable. This will properly be available once Windows support is available ([`@auguwu`])
+- [support/demangle] Added getting the demangled C++ exception type if we are in a `catch (...)` block ([`@auguwu`])
+- [container/optional] Allow **T** in `Optional` to have non-copyable and non-movable types ([`@auguwu`])
+- [container/optional] Remove **Value()** accessor and **operator==** from `Some<T>` ([`@auguwu`])
+- [container/result] Remove **Value()** accessor and **operator==** from `Ok<T>` ([`@auguwu`])
+- [system] Deprecate **sys::ContinuousIntegration** as it was never used and probably will never be ([`@auguwu`])
+
+#### Noelware.Violet.IO
+- Add source location tracking for OS-level errors ([`@auguwu`])
+
+#### Noelware.Violet.Experimental
+- Added **violet::experimental::Slice**, which is a `std::array`-like container ([`@auguwu`])
+
+#### Noelware.Violet.Experimental.Synchronization
+- Added **violet::experimental::sync::ReadWriteLock**, which is a shared-or-exclusive mutex ([`@auguwu`])
+- Added **violet::experimental::sync::WaitGroup** ([`@auguwu`])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.06.05...master>
 
 ### 26.06.05

@@ -36,7 +36,7 @@ namespace violet::io {
 /// @param data The target string to append bytes to.
 /// @param buf The source buffer containing bytes to write.
 /// @returns A `Result` holding the number of bytes written, or an error code on failure.
-VIOLET_API auto Write(String& data, Span<const UInt8> buf) -> Result<UInt>;
+VIOLET_API NOELDOC_SINCE("26.02") auto Write(String& data, Span<const UInt8> buf) -> Result<UInt>;
 
 /// Writes a byte buffer into a vector.
 ///
@@ -46,7 +46,7 @@ VIOLET_API auto Write(String& data, Span<const UInt8> buf) -> Result<UInt>;
 /// @param data The target vector to append bytes to.
 /// @param buf The source buffer containing bytes to write.
 /// @returns A `Result` holding the number of bytes written.
-VIOLET_API auto Write(Vec<UInt8>& data, Span<const UInt8> buf) -> Result<UInt>;
+VIOLET_API NOELDOC_SINCE("26.02") auto Write(Vec<UInt8>& data, Span<const UInt8> buf) -> Result<UInt>;
 
 /// Concept to ensure a type is "writable".
 ///
@@ -59,6 +59,8 @@ VIOLET_API auto Write(Vec<UInt8>& data, Span<const UInt8> buf) -> Result<UInt>;
 /// `Result<usize>`.
 ///
 /// This concept allows generic algorithms to work with strings, vectors, or any custom writable type or lambda.
+///
+/// @since 26.02
 template<typename T>
 concept Writable = requires(T ty, Span<const UInt8> cnt) {
     { ty.Write(cnt) } -> std::same_as<Result<UInt>>;
@@ -68,7 +70,7 @@ concept Writable = requires(T ty, Span<const UInt8> cnt) {
 };
 
 template<typename T>
-VIOLET_API inline auto Write(T& writer, Span<const UInt8> data) -> Result<UInt>
+VIOLET_API NOELDOC_SINCE("26.02") inline auto Write(T& writer, Span<const UInt8> data) -> Result<UInt>
 {
     if constexpr (requires { writer.Write(data); }) {
         return writer.Write(data);

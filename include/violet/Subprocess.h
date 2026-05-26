@@ -86,7 +86,7 @@ namespace detail {
 ///     auto status = child->Wait();
 /// }
 /// ```
-struct VIOLET_API Child final {
+struct VIOLET_API NOELDOC_SINCE("26.07") Child final {
     /// The platform process identifier for this child.
     struct PID PID;
 
@@ -157,7 +157,7 @@ struct VIOLET_API Child final {
 ///     std::cout << "captured stdout: " << captured << '\n';
 /// }
 /// ```
-struct VIOLET_API Output final {
+struct VIOLET_API NOELDOC_SINCE("26.07") Output final {
     ExitStatus Status; ///< the exit code of the subprocess
     Vec<UInt8> Stdout; ///< the standard output from the process
     Vec<UInt8> Stderr; ///< the standard error from the process
@@ -211,7 +211,7 @@ struct VIOLET_API Output final {
 ///     .WithWorkingDirectory("/home/user/myproject")
 ///     .Status();
 /// ```
-struct Command final {
+struct VIOLET_API NOELDOC_SINCE("26.07") Command final {
     VIOLET_DISALLOW_CONSTRUCTOR(Command);
 
     VIOLET_IMPLICIT Command(const Command& command);

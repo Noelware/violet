@@ -67,7 +67,7 @@ namespace violet::anyhow {
 /// auto ctx = error.Context("while trying to save `user_data.json`");
 /// std::println("{}", ctx);
 /// ```
-struct VIOLET_API Error final {
+struct VIOLET_API NOELDOC_SINCE("26.03.04") Error final {
     VIOLET_DISALLOW_COPY(Error);
 
     VIOLET_IMPLICIT Error(Error&& other) noexcept;
@@ -217,8 +217,8 @@ using Result = violet::Result<T, Error>;
 ///                  frame.Location.file_name(), frame.Location.line());
 /// }
 /// ```
-struct Chain final: public Iterator<Chain> {
-    struct Frame final {
+struct VIOLET_API NOELDOC_SINCE("26.03.09") Chain final: public Iterator<Chain> {
+    struct VIOLET_API NOELDOC_SINCE("26.03.09") Frame final {
         String Message;
         violet::SourceLocation Location;
 
@@ -282,14 +282,72 @@ private:
 
 } // namespace violet::anyhow
 
+/**
+ * @macro ANYHOW
+ * @param error A string or value convertible to `violet::anyhow::Error`.
+ *
+ * Constructs a `violet::anyhow::Error` from the given value. Analogous to
+ * Rust's `anyhow::anyhow!()` macro.
+ *
+ * @see ANYHOW_FMT
+ */
 #define ANYHOW(error) ::violet::anyhow::Error(error)
+
+/**
+ * @macro ANYHOW_FMT
+ * @since 26.05.06
+ * @param fmt A `std::format`-compatible format string.
+ * @param ... Arguments to the format string.
+ *
+ * Constructs a `violet::anyhow::Error` with a message formatted via
+ * `std::format`. Analogous to Rust's `anyhow::anyhow!()` with format args.
+ *
+ * # Example
+ *
+ * ```cpp
+ * return violet::Err(ANYHOW_FMT("failed to open {}: {}", path, ec.message()));
+ * ```
+ *
+ * @see ANYHOW
+ */
 #define ANYHOW_FMT(fmt, ...) ::violet::anyhow::Error(::std::format(fmt __VA_OPT__(, ) __VA_ARGS__))
 
+/**
+ * @macro ENSURE
+ * @since 26.05.06
+ * @param condition The expression to evaluate.
+ * @param error A string or value convertible to `violet::anyhow::Error`.
+ *
+ * Early-returns `Err<anyhow::Error>` from the enclosing function if
+ * @p condition is false. Analogous to Rust's `anyhow::ensure!()` macro.
+ *
+ * # Example
+ *
+ * ```cpp
+ * auto ParseConfig(std::string_view path) -> Result<Config, anyhow::Error> {
+ *     ENSURE(!path.empty(), "config path must not be empty");
+ *     // ...
+ * }
+ * ```
+ *
+ * @see ENSURE_FMT
+ */
 #define ENSURE(condition, error)                                                                                       \
     if (!(condition)) {                                                                                                \
         return ::violet::Err<::violet::anyhow::Error>(ANYHOW(error));                                                  \
     }
 
+/**
+ * @macro ENSURE_FMT
+ * @since 26.05.06
+ * @param condition The expression to evaluate.
+ * @param fmt A `std::format`-compatible format string.
+ * @param ... Arguments to the format string.
+ *
+ * Like `ENSURE`, but formats the error message via `std::format` on failure.
+ *
+ * @see ENSURE
+ */
 #define ENSURE_FMT(condition, fmt, ...)                                                                                \
     if (!(condition)) {                                                                                                \
         return ::violet::Err<::violet::anyhow::Error>(ANYHOW_FMT(fmt __VA_OPT__(, ) __VA_ARGS__));                     \

@@ -60,7 +60,7 @@ namespace violet {
 ///
 /// On GCC and Clang the `Function` field is populated with the pretty-printed signature
 /// (via `__PRETTY_FUNCTION__`), which includes template parameters and namespaces.
-struct VIOLET_API SourceLocation final {
+struct VIOLET_API NOELDOC_SINCE("26.04.05") SourceLocation final {
     /// Path to the source file, as reported by the compiler (typically `__builtin_FILE()`).
     std::string_view File;
 

@@ -21,6 +21,8 @@
 //
 //! # 🌺💜 `violet/Language/Panic.h`
 
+#pragma once
+
 #include <violet/SourceLocation.h>
 
 #include <cstdint>
@@ -29,7 +31,7 @@
 namespace violet::panic {
 
 /// The strategy to use when a panic occurs within the Noelware.Violet frameworks.
-enum struct Strategy : uint8_t {
+enum struct NOELDOC_SINCE("26.05.06") Strategy : uint8_t {
     /// Calls [`std::terminate()`], which may invoke [`std::terminate_handler`] and potentionally
     /// unwind or print diagnostics depending on the runtime.
     Unwind,
@@ -40,7 +42,7 @@ enum struct Strategy : uint8_t {
 };
 
 /// Information about a panic site, passed to panic hooks.
-struct VIOLET_API Info final {
+struct VIOLET_API NOELDOC_SINCE("26.05.06") Info final {
     /// The message that was sent through.
     std::string_view Message;
 
@@ -56,25 +58,27 @@ struct VIOLET_API Info final {
 ///
 /// Useful for flushing logs, printing backtraces, notifying crash reporters,
 /// etc. The hook MUST not throw exceptions.
+///
+/// @since 26.05.06
 using Hook = void (*)(const Info&);
 
 /// Installs Violet's default panic hook.
-VIOLET_API void InstallDefaultPanicHook() noexcept;
+VIOLET_API NOELDOC_SINCE("26.05.06") void InstallDefaultPanicHook() noexcept;
 
 /// Sets a global panic hook. Returns the previously installed hook (or nullptr if
 /// none was ever installed).
 ///
 /// This is not thread-safe. Call once during initialization.
-VIOLET_API auto SetHook(Hook hook) noexcept -> Hook;
+VIOLET_API NOELDOC_SINCE("26.05.06") auto SetHook(Hook hook) noexcept -> Hook;
 
 /// Set the global panic strategy.
-VIOLET_API void SetStrategy(Strategy strategy) noexcept;
+VIOLET_API NOELDOC_SINCE("26.05.06") void SetStrategy(Strategy strategy) noexcept;
 
 } // namespace violet::panic
 
 namespace violet::detail {
 
-VIOLET_API [[noreturn]] VIOLET_COLD void DoPanic(
+VIOLET_API NOELDOC_HIDE [[noreturn]] VIOLET_COLD void DoPanic(
     std::string_view message, SourceLocation* userland = nullptr, SourceLocation loc = std::source_location::current());
 
 }

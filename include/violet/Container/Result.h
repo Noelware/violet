@@ -21,7 +21,6 @@
 
 #pragma once
 
-#include <violet/Print.h>
 #include <violet/SourceLocation.h>
 #include <violet/Violet.h>
 
@@ -32,11 +31,15 @@
 #include <type_traits>
 #include <utility>
 
-namespace violet::detail {
+namespace violet {
 
-#if VIOLET_REQUIRE_STL(202302L)
+template<typename T, typename E>
+struct Result;
+
+#if VIOLET_REQUIRE_STL(202302L) || VIOLET_FEATURE(NOELDOC)
 /// Returns **true** if `T` is an instance of `std::expected<T, E>`.
 template<typename T>
+NOELDOC_SINCE("26.05.07")
 constexpr inline bool is_std_expected_v = instanceof_v<std::expected, T>;
 
 static_assert(is_std_expected_v<std::expected<String, Int32>>);
@@ -44,15 +47,9 @@ static_assert(!is_std_expected_v<bool>);
 #else
 /// Always returns **false** as `std::expected` is available in C++23 and higher
 template<typename T, typename E>
+NOELDOC_SINCE("26.05.07")
 constexpr inline bool is_std_expected_v = false;
 #endif
-
-} // namespace violet::detail
-
-namespace violet {
-
-template<typename T, typename E>
-struct Result;
 
 /// Concept for detecting nested [`violet::Result`] types.
 ///
@@ -70,6 +67,8 @@ struct Result;
 /// static_assert(violet::nested_result<outer, std::string>);
 /// static_assert(!violet::nested_result<int, std::string>);
 /// ```
+///
+/// @since 26.02.03
 template<typename T, typename E>
 concept nested_result = instanceof_v<Result, T> && std::same_as<typename T::error_type, E>;
 
@@ -84,17 +83,18 @@ concept nested_result = instanceof_v<Result, T> && std::same_as<typename T::erro
 /// static_assert(!violet::is_result_v<int>);
 /// ```
 template<typename T>
-struct VIOLET_API is_result: std::false_type { };
+struct VIOLET_API NOELDOC_SINCE("26.02.03") is_result: std::false_type { };
 
 template<typename T, typename E>
-struct VIOLET_API is_result<Result<T, E>>: std::true_type { };
+struct VIOLET_API NOELDOC_SINCE("26.02.03") is_result<Result<T, E>>: std::true_type { };
 
 #if VIOLET_REQUIRE_STL(202302L)
 template<typename T, typename E>
-struct VIOLET_API is_result<std::expected<T, E>>: std::true_type { };
+struct VIOLET_API NOELDOC_SINCE("26.02.03") is_result<std::expected<T, E>>: std::true_type { };
 #endif
 
 template<typename T>
+NOELDOC_SINCE("26.02.03")
 static constexpr bool is_result_v = is_result<T>::value;
 
 /// A type-trait to extract the inner value and error types from an [`Result`] type.
@@ -104,19 +104,19 @@ static constexpr bool is_result_v = is_result<T>::value;
 ///
 /// @tparam T The type from which to extract an inner value and error type.
 template<typename T>
-struct VIOLET_API result_type;
+struct VIOLET_API NOELDOC_SINCE("26.03.05") result_type;
 
 /// Specialization of [`result_type`] for [`violet::Result`].
 template<typename U, typename E>
-struct VIOLET_API result_type<Result<U, E>> final {
+struct VIOLET_API NOELDOC_SINCE("26.03.05") result_type<Result<U, E>> final {
     using value_type = U;
     using error_type = E;
 };
 
-#if VIOLET_REQUIRE_STL(202302L)
+#if VIOLET_REQUIRE_STL(202302L) || VIOLET_FEATURE(NOELDOC)
 /// Specialization of [`result_type`] for [`std::expected`].
 template<typename U, typename E>
-struct VIOLET_API result_type<std::expected<U, E>> final {
+struct VIOLET_API NOELDOC_SINCE("26.05.07") result_type<std::expected<U, E>> final {
     using value_type = U;
     using error_type = E;
 };
@@ -126,6 +126,7 @@ struct VIOLET_API result_type<std::expected<U, E>> final {
 ///
 /// It is the equivalent to `typename violet::result_type<T>::value_type`.
 ///
+/// @since 26.03.05
 /// @tparam T which optional wrapper whose inner type should be extracted.
 template<typename T>
 using result_value_type_t = typename result_type<T>::value_type;
@@ -134,6 +135,7 @@ using result_value_type_t = typename result_type<T>::value_type;
 ///
 /// It is the equivalent to `typename violet::result_type<T>::error_type`.
 ///
+/// @since 26.03.05
 /// @tparam T which optional wrapper whose inner type should be extracted.
 template<typename T>
 using result_error_type_t = typename result_type<T>::error_type;
@@ -220,9 +222,10 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Err final {
     {
     }
 
-#if VIOLET_REQUIRE_STL(202302L)
+#if VIOLET_REQUIRE_STL(202302L) || VIOLET_FEATURE(NOELDOC)
     template<typename Other>
         requires(!std::same_as<E, std::decay_t<Other>> && std::constructible_from<E, std::decay_t<Other>>)
+    NOELDOC_SINCE("26.05.07")
     constexpr VIOLET_IMPLICIT Err(std::unexpected<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<E>)
         : n_value(E(VIOLET_MOVE(other).error()))
     {
@@ -300,7 +303,7 @@ private:
 
 /// A tagged, explicit ok variant for [`violet::Result`].
 template<typename T>
-struct VIOLET_API Ok final {
+struct VIOLET_API NOELDOC_SINCE("26.02") Ok final {
     static_assert(std::is_object_v<T>, "`Ok<T>` requires `T` to be a object type");
     static_assert(!std::is_void_v<T>, "`Ok<void>` is ill-formed");
     static_assert(!std::is_array_v<T>, "`Ok<T>` must wrap an array type");
@@ -310,24 +313,28 @@ struct VIOLET_API Ok final {
     static_assert(!std::same_as<T, Ok<T>>, "`Ok<Ok<T>>` is ill-formed");
     static_assert(!std::same_as<T, std::in_place_t>, "`Ok<T>` must not wrap `std::in_place_t`");
 
-    VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Ok);
+    NOELDOC_SINCE("26.05.01") VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Ok);
 
     template<typename Other>
         requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
+    NOELDOC_SINCE("26.05.01")
     constexpr VIOLET_IMPLICIT Ok(Ok<std::decay_t<Other>>&) = delete;
 
     template<typename Other>
         requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
+    NOELDOC_SINCE("26.05.01")
     constexpr VIOLET_IMPLICIT Ok(Ok<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
         : n_value(T(VIOLET_MOVE(other).Value()))
     {
     }
 
+    NOELDOC_SINCE("26.05.01")
     constexpr VIOLET_EXPLICIT Ok(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
         : n_value(value)
     {
     }
 
+    NOELDOC_SINCE("26.05.01")
     constexpr VIOLET_EXPLICIT Ok(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
         : n_value(VIOLET_MOVE(value))
     {
@@ -336,78 +343,57 @@ struct VIOLET_API Ok final {
     template<typename... Args>
         requires(std::constructible_from<T, Args...>
             && !(sizeof...(Args) == 1 && (std::same_as<std::decay_t<Args>, T> || ...)))
+    NOELDOC_SINCE("26.05.01")
     constexpr VIOLET_EXPLICIT Ok(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
         : n_value(VIOLET_FWD(Args, args)...)
     {
     }
 
-    constexpr auto Value() & noexcept VIOLET_LIFETIMEBOUND -> T&
-    {
-        return this->n_value;
-    }
-
-    constexpr auto Value() && noexcept VIOLET_LIFETIMEBOUND -> T&&
-    {
-        return VIOLET_MOVE(this->n_value);
-    }
-
-    constexpr auto Value() const& noexcept VIOLET_LIFETIMEBOUND -> const T&
-    {
-        return this->n_value;
-    }
-
-    constexpr auto Value() const&& noexcept VIOLET_LIFETIMEBOUND -> const T&&
-    {
-        return this->n_value;
-    }
-
-    constexpr auto operator==(const Ok& other) const noexcept -> bool
-        requires(requires { this->Value() == other.Value(); })
-    {
-        return this->Value() == other.Value();
-    }
-
-    constexpr auto operator!=(const Ok& other) const noexcept -> bool
-        requires(requires { this->Value() == other.Value(); })
-    {
-        return this->Value() != other.Value();
-    }
-
     template<typename E>
+    NOELDOC_SINCE("26.05.01")
     constexpr VIOLET_EXPLICIT operator violet::Result<T, E>() const noexcept
     {
-        return Result<T, E>(std::in_place_index<0L>, this->Value());
+        return Result<T, E>(std::in_place_index<0L>, VIOLET_MOVE(this->n_value));
     }
 
-#if VIOLET_REQUIRE_STL(202302L)
+#if VIOLET_REQUIRE_STL(202302L) || VIOLET_FEATURE(NOELDOC)
     template<typename E>
+    NOELDOC_SINCE("26.05.01")
     constexpr VIOLET_EXPLICIT operator std::expected<T, E>() const noexcept
     {
-        return std::expected<T, E>(this->Value());
+        return std::expected<T, E>(VIOLET_MOVE(this->n_value));
     }
 #endif
 
+    NOELDOC_SINCE("26.05.01")
     [[nodiscard]] auto ToString() const noexcept -> String
     {
-        return violet::ToString(this->Value());
+        return violet::ToString(this->n_value);
     }
 
+    NOELDOC_SINCE("26.05.01")
     friend auto operator<<(std::ostream& os, const Ok& self) noexcept -> std::ostream&
     {
         return os << self.ToString();
     }
 
 private:
+    template<typename, typename>
+    friend struct Result;
+
     T n_value;
 };
 
 template<typename T, std::size_t N>
+NOELDOC_SINCE("26.05.01")
 Ok(T (&)[N]) -> Ok<const T*>;
 
 template<typename T>
+NOELDOC_SINCE("26.05.01")
 Ok(const T&) -> Ok<std::decay_t<T>>;
 
 template<typename T>
+NOELDOC_SINCE("26.05.01")
 Ok(T&&) -> Ok<std::decay_t<T>>;
 
 /// Representation of a successful or failed state, analgous of Rust's [`std::result::Result`].
@@ -470,14 +456,14 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
     template<typename U>
         requires(std::is_convertible_v<const U&, T>)
     constexpr VIOLET_IMPLICIT Result(const Ok<U>& ok)
-        : Result(ok.Value())
+        : Result(ok.n_value)
     {
     }
 
     template<typename U>
         requires(std::is_convertible_v<U &&, T>)
     constexpr VIOLET_IMPLICIT Result(Ok<U>&& ok)
-        : Result(VIOLET_MOVE(ok).Value())
+        : Result(VIOLET_MOVE(ok).n_value)
     {
     }
 
@@ -522,6 +508,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
     /// Constructs the `Err` variant from a convertible error type.
     template<typename F>
         requires(!std::same_as<std::remove_cvref_t<F>, E> && std::convertible_to<const F&, E>)
+    NOELDOC_SINCE("26.05.06")
     constexpr VIOLET_IMPLICIT Result(const violet::Err<F>& err)
     {
         std::construct_at(std::addressof(this->n_storage.Error), violet::Err<E>(E(err.Error())));
@@ -529,6 +516,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
 
     template<typename F>
         requires(!std::same_as<std::remove_cvref_t<F>, E> && std::convertible_to<F &&, E>)
+    NOELDOC_SINCE("26.05.06")
     constexpr VIOLET_IMPLICIT Result(violet::Err<F>&& err) noexcept(std::is_nothrow_constructible_v<E, F&&>)
     {
         std::construct_at(std::addressof(this->n_storage.Error), violet::Err<E>(E(VIOLET_MOVE(err).Error())));
@@ -602,10 +590,11 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
         return *this;
     }
 
-#if VIOLET_REQUIRE_STL(202302L)
+#if VIOLET_REQUIRE_STL(202302L) || VIOLET_FEATURE(NOELDOC)
     template<typename U, typename E2>
         requires(!std::same_as<std::remove_cvref_t<U>, Result> && std::constructible_from<T, U>
             && std::constructible_from<E, E2>)
+    NOELDOC_SINCE("26.05.07")
     constexpr VIOLET_IMPLICIT Result(const std::expected<U, E2>& other)
     {
         if (other.has_value()) {
@@ -620,6 +609,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
     template<typename U, typename E2>
         requires(!std::same_as<std::remove_cvref_t<U>, Result> && std::constructible_from<T, U>
             && std::constructible_from<E, E2>)
+    NOELDOC_SINCE("26.05.07")
     constexpr VIOLET_IMPLICIT Result(std::expected<U, E2>&& other)
     {
         if (other.has_value()) {
@@ -631,6 +621,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
         }
     }
 
+    NOELDOC_SINCE("26.05.07")
     constexpr auto operator=(std::expected<T, E>& other) -> Result&
     {
         this->destroy();
@@ -645,6 +636,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
         return *this;
     }
 
+    NOELDOC_SINCE("26.05.07")
     constexpr auto operator=(std::expected<T, E>&& other) -> Result&
     {
         this->destroy();

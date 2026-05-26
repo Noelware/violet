@@ -110,30 +110,38 @@ public:
         /// was constructed from.
         void Dispose() noexcept
         {
-            if (this->n_emitter == nullptr || this->n_id == -1 || this->n_persist) {
+            if (this->n_persist || this->n_id == -1) {
+                return;
+            }
+
+            if (this->n_alive.expired()) {
+                this->n_emitter = nullptr;
+                this->n_id = -1;
                 return;
             }
 
             this->n_emitter->removeListener(this->n_id);
-
             this->n_emitter = nullptr;
-            this->n_persist = false;
             this->n_id = -1;
         }
 
     private:
         friend class Emitter;
 
-        VIOLET_EXPLICIT Guard(Emitter* emitter, Int64 id)
-            : n_emitter(emitter)
+        VIOLET_EXPLICIT Guard(std::weak_ptr<void> alive, Emitter* emitter, Int64 id)
+            : n_alive(VIOLET_MOVE(alive))
+            , n_emitter(emitter)
             , n_id(id)
         {
         }
 
+        std::weak_ptr<void> n_alive;
         Emitter* n_emitter = nullptr;
         bool n_persist = false;
         Int64 n_id = -1;
     };
+
+    VIOLET_DISALLOW_COPY_AND_MOVE(Emitter);
 
     /// Construct a new [`Emitter`].
     VIOLET_IMPLICIT Emitter()
@@ -141,13 +149,15 @@ public:
     {
     }
 
+    ~Emitter() = default;
+
     /// Subscribes a listener to the emitter and returns a RAII guard.
     /// @param fun callback function to invoke when the event fires.
     /// @param persist whether if the listener should persist through the lifetime of this emitter.
-    auto On(func_t fun, bool persist = false) noexcept -> Guard
+    auto On(func_t fun, bool persist = false) -> Guard
     {
         auto id = this->addListener(fun);
-        auto guard = Guard(this, id);
+        auto guard = Guard(std::weak_ptr(this->n_alive), this, id);
 
         if (persist) {
             guard.Persist();
@@ -158,7 +168,7 @@ public:
 
     /// Subscribes a one-time listener to this emitter.
     /// @param fun callback function to invoke once when the event fires.
-    auto Once(func_t fun) noexcept -> Guard
+    auto Once(func_t fun) -> Guard
     {
         auto id = this->addListener(fun, true);
         return Guard(this, id);
@@ -166,14 +176,14 @@ public:
 
     /// Deregister a listener manually
     /// @param id the listener id (usually from [`Guard::ID`])
-    void Unsubscribe(Int64 id) noexcept
+    void Unsubscribe(Int64 id)
     {
         this->removeListener(id);
     }
 
     /// Fires a new event that all listeners will react to
     /// @param args the arguments the listener will receive
-    void Fire(Args&&... args) noexcept
+    void Fire(Args&&... args)
     {
         for (entry& ent: this->getSnapshot()) {
             std::invoke(ent.Callback, VIOLET_FWD(Args, args)...);
@@ -231,6 +241,7 @@ private:
     }
 
     event_t n_event;
+    std::shared_ptr<void> n_alive = std::make_shared<Int32>(0);
     mutable std::atomic<Int64> n_nextId = 0;
     mutable Mutex n_mu;
     mutable Vec<entry> n_listeners;
@@ -251,7 +262,7 @@ struct Event final {
     /// registering a new callback.
     ///
     /// @param fun callback function to attach.
-    auto operator()(Emitter<Args...>::func_t fun, bool persist = false) const noexcept -> Emitter<Args...>::Guard
+    auto operator()(Emitter<Args...>::func_t fun, bool persist = false) const -> Emitter<Args...>::Guard
     {
         return this->n_emitter->On(fun, persist);
     }
@@ -264,7 +275,7 @@ struct Event final {
     /// registering a new callback.
     ///
     /// @param fun callback function to attach.
-    auto Once(Emitter<Args...>::func_t fun) const noexcept -> Emitter<Args...>::Guard
+    auto Once(Emitter<Args...>::func_t fun) const -> Emitter<Args...>::Guard
     {
         return this->n_emitter->Once(fun);
     }

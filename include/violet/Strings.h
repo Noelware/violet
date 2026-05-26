@@ -23,7 +23,6 @@
 
 #include <violet/Container/Optional.h>
 #include <violet/Iterator.h>
-#include <violet/Violet.h>
 
 namespace violet::strings {
 
@@ -168,6 +167,51 @@ VIOLET_API auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> vi
 
     return result;
 }
+
+/// Replaces all occurrences of `pattern` in `input` with `replacement`.
+///
+/// Returns a new [`String`] with the substitutions applied. If `pattern` is not found,
+/// return a copy of `input` unchanged. If `pattern` is empty, returns a copy of `input`
+/// unchanged.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// auto result = violet::strings::ReplaceAll("hello %d world!", "%d", "420");
+/// assert(result == "hello 420 world!");
+/// ```
+NOELDOC_SINCE("26.07") constexpr auto ReplaceAll(Str input, Str pattern, Str replacement) -> String
+{
+    if (pattern.empty()) {
+        return String(input);
+    }
+
+    String result;
+    UInt pos = 0;
+
+    while (true) {
+        auto found = input.find(pattern, pos);
+        if (found == Str::npos) {
+            result.append(input.substr(pos));
+            break;
+        }
+
+        result.append(input.substr(pos, found - pos));
+        result.append(replacement);
+        pos = found + pattern.size();
+    }
+
+    return result;
+}
+
+static_assert(ReplaceAll("hello %d world!", "%d", "420") == "hello 420 world!");
+static_assert(ReplaceAll("%d-%d-%d", "%d", "x") == "x-x-x");
+static_assert(ReplaceAll("hello world", "%d", "42") == "hello world");
+static_assert(ReplaceAll("hello", "", "42") == "hello");
+static_assert(ReplaceAll("", "%t", "42").empty());
+static_assert(ReplaceAll("a%tb%tc", "%t", "") == "abc");
+static_assert(ReplaceAll("%t%t", "%t", "ab") == "abab");
 
 /// An iterator that yields substrings of `input` separated by a delimiter.
 ///
