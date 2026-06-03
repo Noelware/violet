@@ -22,7 +22,6 @@ availableAt:
 - Added **RefCnt** and **RefCntTraits**, a way to externally provide reference counting ([`@auguwu`])
 - Added **violet::Drop\<T\>**, a no-op sink to deliberately consume and destroy a value ([`@auguwu`])
 - Added **VIOLET_DISALLOW_COPY_SINCE** macro, for deleting copy operations with a `NOELDOC_SINCE` annotation ([`@auguwu`])
-- [smolstring] Fix off-by-one in the array deduction guide and literal-size constraint (`M <= N` rather than `M <= N + 1`) so that the
   capacity matches the requested `N` ([`@auguwu`])
 - [events] Disallow copy and move on **events::Emitter\<Event\>** ([`@auguwu`])
 - [events] Allow persisted guards to cleanup itself rather than doing it manually ([`@auguwu`])

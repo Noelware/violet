@@ -78,7 +78,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.03.09") NOELDOC_STABLIZED_SINCE
     ///
     /// @tparam M size of the string; deduced from the array size (including null-terminator).
     template<size_t M>
-        requires((M <= N))
+        requires((M <= N + 1))
     constexpr VIOLET_IMPLICIT SmolString(const char (&str)[M]) noexcept
         : Size(M - 1)
     {
@@ -96,7 +96,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.03.09") NOELDOC_STABLIZED_SINCE
     constexpr VIOLET_IMPLICIT SmolString(Str sv) noexcept(noexcept(sv.size() < N))
         : Size(sv.size())
     {
-        VIOLET_ASSERT0(sv.size() < N);
+        VIOLET_DEBUG_ASSERT0(sv.size() < N);
         std::copy_n(sv.data(), this->Size, this->Data.begin());
     }
 
@@ -239,6 +239,6 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.03.09") NOELDOC_STABLIZED_SINCE
 };
 
 template<std::size_t M>
-SmolString(const char (&)[M]) -> SmolString<M>;
+SmolString(const char (&)[M]) -> SmolString<M - 1>;
 
 } // namespace violet
