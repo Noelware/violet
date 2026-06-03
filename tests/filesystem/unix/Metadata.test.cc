@@ -94,7 +94,19 @@ TEST_F(MetadataUnixTest, OwnershipMatchesProcess)
     ASSERT_TRUE(md) << "failed to retrieve metadata for [" << Layout->A << "]: " << md.Error();
 
     EXPECT_EQ(md->UserID, ::geteuid());
+
+#if VIOLET_PLATFORM(APPLE_MACOS)
+    // on macOS (and when we port to the BSD family of systems), files inherit
+    // the parent directory's GID rather than the process' effective group ID,
+    // we will compare against `stat(2)`.
+    struct stat st{ };
+    ASSERT_EQ(Layout->A.WithCStr([&](CStr path) -> Int32 { return ::stat(path, &st); }), 0)
+        << "failed to `stat(2)` file [" << Layout->A << "]: " << io::Error::OSError();
+
+    EXPECT_EQ(md->GroupID, st.st_gid);
+#else
     EXPECT_EQ(md->GroupID, ::getegid());
+#endif
 }
 
 TEST_F(MetadataUnixTest, ChmodReflectsInModeAccessors)

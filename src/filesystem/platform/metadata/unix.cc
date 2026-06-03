@@ -29,6 +29,8 @@
 #if VIOLET_PLATFORM(LINUX)
 #include <sys/sysmacros.h>
 #elif VIOLET_PLATFORM(APPLE_MACOS)
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #endif
 
@@ -88,6 +90,58 @@ auto statToMetadata(struct stat st) -> Metadata
 }
 
 } // namespace
+
+auto Metadata::For(FileDescriptor::value_type dirfd, PathRef path, SymlinkResolution resolution) -> io::Result<Metadata>
+{
+    struct stat st{ };
+    if (path.Empty()) {
+        // `AT_EMPTY_PATH` doesn't exist on macOS, just `fstat` on the directory
+        if (::fstat(dirfd, &st) == -1) {
+            return Err(io::Error::OSError());
+        }
+    } else {
+        const Int32 flags = resolution == SymlinkResolution::NoFollow ? AT_SYMLINK_NOFOLLOW : 0;
+        if (path.WithCStr([&](CStr path) -> bool { return ::fstatat(dirfd, path, &st, flags) == -1; })) {
+            return Err(io::Error::OSError());
+        }
+    }
+
+    auto mt = statToMetadata(st);
+    switch (st.st_mode & S_IFMT) {
+    case S_IFREG:
+        mt.Type = FileType::mkfile();
+        break;
+
+    case S_IFDIR:
+        mt.Type = FileType::mkdir();
+        break;
+
+    case S_IFLNK:
+        mt.Type = FileType::mksymlink();
+        break;
+
+    case S_IFCHR:
+        mt.Type = FileType::mkchardev();
+        break;
+
+    case S_IFBLK:
+        mt.Type = FileType::mkblkdev();
+        break;
+
+    case S_IFIFO:
+        mt.Type = FileType::mkfifo();
+        break;
+
+    case S_IFSOCK:
+        mt.Type = FileType::mksocket();
+        break;
+
+    default:
+        break;
+    }
+
+    return mt;
+}
 
 auto Metadata::For(FileDescriptor::value_type fd) -> io::Result<Metadata>
 {

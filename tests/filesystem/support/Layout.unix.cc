@@ -98,12 +98,12 @@ auto hardlinkAt(PathRef target, PathRef path) -> violet::io::Result<void>
 }
 
 template<UInt N>
-constexpr auto toBytes(const char (&str)[N]) -> Span<const UInt8>
+inline auto toBytes(const char (&str)[N]) -> Span<const UInt8>
 {
     return { reinterpret_cast<const UInt8*>(str), N - 1 };
 }
 
-constexpr auto toBytes(Str str) -> Span<const UInt8>
+inline auto toBytes(Str str) -> Span<const UInt8>
 {
     return { reinterpret_cast<const UInt8*>(str.data()), str.size() };
 }
