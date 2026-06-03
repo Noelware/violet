@@ -30,17 +30,17 @@ jobs:
         runs-on: ubuntu-latest
         container:
             # TODO(@auguwu/Noel): switch to `cr.noelware.cloud/ci/base` once available
-            image: ghcr.io/noelware/violet/ci:clang-21
+            image: ghcr.io/noelware/violet/ci:clang-21@sha256:962751c8ac4a3f4390a14754a73427ed598b6a2ca75750eefdf25daf01c48fd8
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
             - run: ./tools/bazeldist
-            - uses: softprops/action-gh-release@v3
+            - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
               with:
                 files: ${{github.workspace}}/bazeldist.tgz
 
             - run: ./distribution/meson
-            - uses: softprops/action-gh-release@v3
+            - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
               with:
                 files: ${{github.workspace}}/mesondist.tgz
 
