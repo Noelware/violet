@@ -33,7 +33,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/cache@v5
+    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       with:
         key: homebrew-llvm${{inputs.llvm-version}}-${{hashFiles('.github/actions/setup-macos/action.yml')}}
         restore-keys: homebrew-llvm${{inputs.llvm-version}}
@@ -56,7 +56,7 @@ runs:
         echo "--> LLVM ${{inputs.llvm-version}} installed on runner"
         echo "    --> \`clang\`:   $prefix/bin/clang"
         echo "    --> \`clang++\`: $prefix/bin/clang++"
-    - uses: maxim-lobanov/setup-xcode@v1
+    - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
       with:
         xcode-version: ${{inputs.xcode-version}}
     - name: Setup SDK for Bazel
