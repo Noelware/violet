@@ -235,6 +235,26 @@ jobs:
 
             - run: bazel test //... ${{env.BAZELFLAGS}}
 
+    tsan:
+        name: "ThreadSanitizer"
+        runs-on: ubuntu-24.04
+        container:
+            image: ghcr.io/noelware/violet/ci:clang-22@sha256:6c057a06ae07ede419511e92a1b7ae4597a202aa9742b5e94fbd2ce233a0ec21
+        env:
+            USE_BAZEL_VERSION: "8.6.0"
+            BAZELFLAGS: "--config=ci --config=cxx26 --config=tsan --action_env=CC --action_env=CXX --test_env=TSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-22"
+            CXX: "clang++-22"
+            CC: "clang-22"
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+            - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+              with:
+                bazelisk-cache: true # avoid installing Bazel each time
+                repository-cache: true # cache repositories in `MODULE.bazel`
+                disk-cache: linux-asan-ubsan
+
+            - run: bazel test //... ${{env.BAZELFLAGS}}
+
     meson:
         name: "Meson"
         runs-on: ubuntu-24.04
