@@ -7,23 +7,64 @@ availableAt:
 ---
 
 ### unreleased
-- **breaking**: Merge `Noelware.Violet.Subprocess` into the main repository. Everything is now available under `//violet/subprocess` rather than a separate framework package. ([`@auguwu`])
-- Every class, method, typedef, function, etc. is all marked with what versions they were introduced. Also, stablization points for experimental frameworks. ([`@auguwu`])
+**Git History**: <https://github.com/Noelware/violet/compare/26.07...master>
+
+### 26.07
+- **breaking**: Merge `Noelware.Violet.Subprocess` into the main repository. Everything is now available under `//violet/subprocess`
+  rather than a separate framework package. ([`@auguwu`])
+- **breaking**: `VIOLET_DEPRECATED` / `VIOLET_DEPRECATED_BECAUSE` now take the version as a string literal (e.g. `"26.07"`) instead of a bare token; the previous form silently produced malformed deprecation messages ([`@auguwu`])
+- Some classes, methods, typedefs, functions, etc. is marked with what versions they were introduced. Also, stablization points for experimental frameworks. ([`@auguwu`])
+- Remove **violet::experimental::SmolString**, now use **violet::SmolString** ([`@auguwu`])
 
 #### Noelware.Violet
 - **breaking**: Removed `ThreadSafety` template paramter in `CancellableDefer` and added `LocalCancellableDefer` instead ([`@auguwu`])
 - **breaking**: Removed more deprecated macros ([`@auguwu`])
+- Added **RefCnt** and **RefCntTraits**, a way to externally provide reference counting ([`@auguwu`])
+- Added **violet::Drop\<T\>**, a no-op sink to deliberately consume and destroy a value ([`@auguwu`])
+- Added **VIOLET_DISALLOW_COPY_SINCE** macro, for deleting copy operations with a `NOELDOC_SINCE` annotation ([`@auguwu`])
+- [smolstring] Fix off-by-one in the array deduction guide and literal-size constraint (`M <= N` rather than `M <= N + 1`) so that the
+  capacity matches the requested `N` ([`@auguwu`])
 - [events] Disallow copy and move on **events::Emitter\<Event\>** ([`@auguwu`])
 - [events] Allow persisted guards to cleanup itself rather than doing it manually ([`@auguwu`])
-- [support/demangle] Added initial support for MSVC C++'s ABI but is unavailable. This will properly be available once Windows support is available ([`@auguwu`])
+- [support/demangle] Added initial support for MSVC C++'s ABI but is unavailable. This will properly be available once Windows support
+  is available ([`@auguwu`])
 - [support/demangle] Added getting the demangled C++ exception type if we are in a `catch (...)` block ([`@auguwu`])
 - [container/optional] Allow **T** in `Optional` to have non-copyable and non-movable types ([`@auguwu`])
 - [container/optional] Remove **Value()** accessor and **operator==** from `Some<T>` ([`@auguwu`])
+- [container/optional] Disallow copy and move operations if `T` is not copy or movable ([`@auguwu`])
 - [container/result] Remove **Value()** accessor and **operator==** from `Ok<T>` ([`@auguwu`])
-- [system] Deprecate **sys::ContinuousIntegration** as it was never used and probably will never be ([`@auguwu`])
 
 #### Noelware.Violet.IO
 - Add source location tracking for OS-level errors ([`@auguwu`])
+- Disallow copies on **FileDescriptor** ([`@auguwu`])
+- Add **FileDescriptor::Release()**, which will release the descriptor to the caller ([`@auguwu`])
+- **FileDescriptor** is now non-copyable ([`@auguwu`])
+- **FileDescriptor** is now from 16 bytes to 4 bytes on Unix platforms, the `SharedPtr<Impl>` indirection is gone and the descriptor is stored inline ([`@auguwu`])
+- Add `operator<<(std::ostream&, FileDescriptor)`. `ToString()` format changed from `FileDescriptor(<id>)` to `fd(<id>)` ([`@auguwu`])
+- On Windows, `FileDescriptor::value_type` is now `HANDLE` rather than `void*` ([`@auguwu`])
+
+#### Noelware.Violet.Filesystem
+- **breaking**: Deprecate the free `filesystem::Metadata(PathRef, bool followSymlinks)` function in favour of `Metadata::For(path, SymlinkResolution)` ([`@auguwu`])
+- Add **Metadata::For** overloads for an open `FileDescriptor`, a `(dirfd, path)` pair (resolved via `fstatat`), and `PathRef` ([`@auguwu`])
+- Add **SymlinkResolution** enum (`Follow` / `NoFollow`) to make symlink behaviour explicit at call sites ([`@auguwu`])
+- Extend **Metadata** on Unix with `Inode`, `Device`, `DeviceMajor`, `DeviceMinor`, `Rdev`, `RdevMajor`, `RdevMinor`, `UserID`, `GroupID`, and `HardLinks` ([`@auguwu`])
+- Add **Mode::GroupCanRead / GroupCanWrite / GroupCanExecute**, which had been missing from the POSIX mode accessors ([`@auguwu`])
+- Add **BasePath::WithCStr**, which invokes a callable with a NUL-terminated view of the path, borrowing the existing storage when possible and falling back to a stack buffer or temporary `String` otherwise ([`@auguwu`])
+- `Dirs` and `WalkDirs` now derive from `Iterator<...>`, are non-copyable but move-constructible, and expose **StopTraversing()** to end iteration early ([`@auguwu`])
+- `WalkDirs` no longer silently swallows directories it cannot descend into, the failing `openat` surfaces as an `io::Error` item on the next `Next()` call ([`@auguwu`])
+- `ReadDir`, `SetWorkingDir`, and `File::Open` route their paths through `WithCStr`, removing the implicit `static_cast<CStr>(path)` copies ([`@auguwu`])
+- `filesystem::Copy` on Linux now falls back to a userspace read/write loop when `copy_file_range` is unusable (cross-filesystem copies on kernels < 5.3 returning `EXDEV`, sandboxes that block the syscall with `ENOSYS`, and `EINVAL` / `EOPNOTSUPP` / `EPERM` / `EBADF` from certain filesystems and pseudo-files), instead of failing outright ([`@auguwu`])
+- `filesystem::Copy` on Linux now mirrors the source file's permission bits onto the destination rather than hardcoding `0644` ([`@auguwu`])
+- Fix `RemoveAllDirs` failing with `ENOTEMPTY`: directories are now removed after their contents (deepest-first) instead of on first visit during the pre-order walk ([`@auguwu`])
+
+#### Noelware.Violet.Filesystem.Experimental
+- Added **Dir**, analogus to `violet::filesystem::File` but for directories ([`@auguwu`])
+
+#### Noelware.Violet.Subprocess (from [`26.06`][subprocess-26.04])
+- `ChildStdin`, `ChildStdout`, and `ChildStderr` are now non-default-constructible, non-copyable, and move-only, they wrap an owning `FileDescriptor` and the previous implicit copies were unsound ([`@auguwu`])
+- [macOS] `Child::Wait` now falls back to `waitpid` when `kevent` registration fails with `ESRCH` (the child already exited between `Spawn` and `Wait`), instead of surfacing the error ([`@auguwu`])
+
+[subprocess-26.04]: https://github.com/Noelware/Violet.Subprocess/releases/tag/26.06
 
 #### Noelware.Violet.Experimental
 - Added **violet::experimental::Slice**, which is a `std::array`-like container ([`@auguwu`])

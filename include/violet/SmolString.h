@@ -73,12 +73,12 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.03.09") NOELDOC_STABLIZED_SINCE
     /// Construct a [`SmolString`] from a string literal.
     ///
     /// ## Constraints
-    /// - `M <= N + 1` :: literal string size cannot (minus null terminator) cannot exceed
+    /// - `M <= N` :: literal string size cannot (minus null terminator) cannot exceed
     ///   the capacity.
     ///
     /// @tparam M size of the string; deduced from the array size (including null-terminator).
     template<size_t M>
-        requires((M <= N + 1))
+        requires((M <= N))
     constexpr VIOLET_IMPLICIT SmolString(const char (&str)[M]) noexcept
         : Size(M - 1)
     {
@@ -239,10 +239,6 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.03.09") NOELDOC_STABLIZED_SINCE
 };
 
 template<std::size_t M>
-SmolString(const char (&)[M]) -> SmolString<M - 1>;
+SmolString(const char (&)[M]) -> SmolString<M>;
 
 } // namespace violet
-
-namespace violet::experimental {
-using violet::SmolString;
-}

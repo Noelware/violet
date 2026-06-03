@@ -167,7 +167,12 @@ private:
 ///
 /// Dropping (or not using) this handle will eventually cause the child to
 /// observe EOF on its stdin.
-struct VIOLET_API ChildStdin final {
+struct VIOLET_API NOELDOC_SINCE("26.07") ChildStdin final {
+    VIOLET_DISALLOW_CONSTRUCTOR(ChildStdin);
+    VIOLET_DISALLOW_COPY(ChildStdin);
+    VIOLET_IMPLICIT_MOVE(ChildStdin);
+    ~ChildStdin() = default;
+
     /// The underlying file descriptor for the write end of the pipe.
     io::FileDescriptor Descriptor;
 
@@ -202,7 +207,12 @@ static_assert(io::Writable<ChildStdin>, "`ChildStdin` doesn't conform to the `io
 /// [`Stdio::Pipe()`]. It wraps the read end of the OS pipe and satisfies the
 /// [`io::Readable`] concept, so data produced by the child can be consumed
 /// by the parent through this handle.
-struct VIOLET_API ChildStdout final {
+struct VIOLET_API NOELDOC_SINCE("26.07") ChildStdout final {
+    VIOLET_DISALLOW_CONSTRUCTOR(ChildStdout);
+    VIOLET_DISALLOW_COPY(ChildStdout);
+    VIOLET_IMPLICIT_MOVE(ChildStdout);
+    ~ChildStdout() = default;
+
     /// The underlying file descriptor for the read end of the pipe.
     io::FileDescriptor Descriptor;
 
@@ -229,7 +239,12 @@ static_assert(io::Readable<ChildStdout>, "`ChildStdout` doesn't conform to the `
 /// [`Stdio::Pipe()`]. It wraps the read end of the OS pipe and satisfies the
 /// [`io::Readable`] concept, allowing the parent to capture diagnostic output
 /// from the child.
-struct VIOLET_API ChildStderr final {
+struct VIOLET_API NOELDOC_SINCE("26.07") ChildStderr final {
+    VIOLET_DISALLOW_CONSTRUCTOR(ChildStderr);
+    VIOLET_DISALLOW_COPY(ChildStderr);
+    VIOLET_IMPLICIT_MOVE(ChildStderr);
+    ~ChildStderr() = default;
+
     /// The underlying file descriptor for the read end of the pipe.
     io::FileDescriptor Descriptor;
 

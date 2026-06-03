@@ -181,3 +181,15 @@ violet_cc_library(
         ":policy_checks",
     ],
 )
+
+violet_cc_library(
+    name = "refcnt",
+    hdrs = ["//include/violet:RefCnt.h"],
+    deps = [":violet"],
+)
+
+violet_cc_test(
+    name = "refcnt_test",
+    srcs = ["//tests:RefCnt.test.cc"],
+    deps = [":refcnt"],
+)

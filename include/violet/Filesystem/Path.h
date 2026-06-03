@@ -335,6 +335,47 @@ struct VIOLET_API NOELDOC_SINCE("26.02") BasePath {
     [[nodiscard]] constexpr auto AsWideStr() const noexcept -> std::wstring;
 #endif
 
+    /// Calls `fun` with a NUL-terminated view of this path. The pointer is valid only for the duration of the
+    /// call. Borrows when the storage is already terminated; otherwise materializes a temporary copy.
+    template<typename Fun>
+        requires(callable<Fun, CStr>)
+    [[nodiscard]] auto WithCStr(Fun&& fn) const -> decltype(auto)
+    {
+        auto fun = VIOLET_FWD(Fun, fn);
+        if constexpr (std::same_as<StringType, String> || requires(StringType str) {
+                          { str.c_str() } -> std::same_as<CStr>;
+                      }) {
+            return std::invoke(fun, getThisObject().storage().c_str());
+        } else {
+            const auto str = getThisObject().storage();
+            constexpr static UInt kStackBufferSize = 256;
+
+            if constexpr (requires {
+                              { str.size() };
+                              { str.data() };
+                          }) {
+                if (str.size() < kStackBufferSize) {
+                    Array<char, kStackBufferSize> buf{ };
+                    ::memcpy(buf.data(), str.data(), str.size());
+                    buf[str.size()] = '\0';
+
+                    return std::invoke(fun, buf.data());
+                }
+            } else {
+                if (str.Size() < kStackBufferSize) {
+                    Array<char, kStackBufferSize> buf{ };
+                    ::memcpy(buf.data(), str.Data(), str.Size());
+                    buf[str.Size()] = '\0';
+
+                    return std::invoke(fun, buf.data());
+                }
+            }
+
+            String temp(str);
+            return std::invoke(fun, temp.c_str());
+        }
+    }
+
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
     {
         return !this->Empty();

@@ -42,10 +42,38 @@ violet_cc_library(
     hdrs = ["//include/violet:Filesystem.h"],
     deps = [
         ":file",
+        ":metadata",
         ":path",
         ":permissions",
         "//violet",
         "//violet/io:error",
+    ],
+)
+
+violet_cc_test(
+    name = "filesystem_test",
+    srcs = ["//tests/filesystem:Filesystem.test.cc"],
+    deps = [
+        "//tests/filesystem/support:layout",
+        "//violet/filesystem",
+        "//violet/filesystem:metadata",
+    ],
+)
+
+violet_cc_test(
+    name = "filesystem_unix_test",
+    srcs = ["//tests/filesystem/unix:Filesystem.test.cc"],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "//tests/filesystem/support:layout",
+        "//violet/filesystem",
+        "//violet/filesystem:file",
+        "//violet/filesystem:metadata",
+        "//violet/io:descriptor",
     ],
 )
 
@@ -106,12 +134,42 @@ violet_cc_library(
     }),
     hdrs = ["//include/violet/Filesystem:File.h"],
     deps = [
+        ":metadata",
         ":path",
         ":permissions",
         "//violet",
         "//violet/filesystem/extensions:xattr",
         "//violet/io:descriptor",
         "//violet/support:bitflags",
+    ],
+)
+
+violet_cc_test(
+    name = "file_test",
+    srcs = ["//tests/filesystem:File.test.cc"],
+    deps = [
+        "//tests/filesystem/support:layout",
+        "//violet/filesystem",
+        "//violet/filesystem:file",
+        "//violet/filesystem:metadata",
+        "//violet/io:descriptor",
+    ],
+)
+
+violet_cc_test(
+    name = "file_unix_test",
+    srcs = ["//tests/filesystem/unix:File.test.cc"],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "//tests/filesystem/support:layout",
+        "//violet/filesystem",
+        "//violet/filesystem:file",
+        "//violet/filesystem:metadata",
+        "//violet/io:descriptor",
     ],
 )
 
@@ -135,4 +193,47 @@ violet_cc_test(
     name = "temporary_test",
     srcs = ["//tests/filesystem:Temporary.test.cc"],
     deps = [":temporary"],
+)
+
+violet_cc_library(
+    name = "metadata",
+    srcs = select({
+        "@platforms//os:linux": ["//src/filesystem/platform/metadata:linux.cc"],
+        "@platforms//os:macos": ["//src/filesystem/platform/metadata:unix.cc"],
+        "@platforms//os:windows": ["//src/filesystem/platform/metadata:windows.cc"],
+        "//conditions:default": ["//src/filesystem/platform/metadata:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Filesystem:Metadata.h"],
+    deps = [
+        ":path",
+        ":permissions",
+        "//violet",
+        "//violet/container:optional",
+        "//violet/io:descriptor",
+        "//violet/io:error",
+        "//violet/support:bitflags",
+    ],
+)
+
+violet_cc_test(
+    name = "metadata_test",
+    srcs = ["//tests/filesystem:Metadata.test.cc"],
+    deps = [
+        ":metadata",
+        "//tests/filesystem/support:layout",
+    ],
+)
+
+violet_cc_test(
+    name = "metadata_unix_test",
+    srcs = ["//tests/filesystem/unix:Metadata.test.cc"],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":metadata",
+        "//tests/filesystem/support:layout",
+    ],
 )

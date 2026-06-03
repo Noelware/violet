@@ -40,7 +40,7 @@ auto violet::sys::WorkingDirectory() noexcept -> io::Result<filesystem::Path>
 
 auto violet::sys::SetWorkingDir(filesystem::PathRef path) -> io::Result<void>
 {
-    if (::chdir(static_cast<CStr>(path)) != 0) {
+    if (path.WithCStr([&](CStr path) -> bool { return ::chdir(path) != 0; })) {
         return Err(io::Error::OSError());
     }
 

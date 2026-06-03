@@ -234,16 +234,16 @@ auto Command::Output() -> io::Result<struct Output>
 auto Command::Status() -> io::Result<ExitStatus>
 {
     auto child = VIOLET_TRY(this->Spawn());
-    if (auto stdin = child.Stdin; stdin.HasValue()) {
-        stdin->Descriptor.Close();
+    if (child.Stdin.HasValue()) {
+        child.Stdin->Descriptor.Close();
     }
 
-    if (auto stdout = child.Stdout; stdout.HasValue()) {
-        stdout->Descriptor.Close();
+    if (child.Stdout.HasValue()) {
+        child.Stdout->Descriptor.Close();
     }
 
-    if (auto stderr = child.Stderr; stderr.HasValue()) {
-        stderr->Descriptor.Close();
+    if (child.Stderr.HasValue()) {
+        child.Stderr->Descriptor.Close();
     }
 
     return child.Wait();

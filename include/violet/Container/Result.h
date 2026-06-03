@@ -2080,7 +2080,7 @@ struct std::formatter<violet::Result<T, E>> final: public std::formatter<std::st
         if ((variable).Err()) {                                                                                        \
             return ::violet::Err(VIOLET_MOVE((variable).Error()));                                                     \
         }                                                                                                              \
-        VIOLET_MOVE(variable.Value());                                                                                 \
+        static_cast<::violet::result_value_type_t<decltype(variable)>>(VIOLET_MOVE(variable).Value());                 \
     })
 
 #define VIOLET_TRY(expr) __violet_try_impl__(expr, VIOLET_UNIQUE_NAME(__violet_try_expr_))

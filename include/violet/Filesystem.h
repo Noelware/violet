@@ -22,12 +22,20 @@
 #pragma once
 
 #include <violet/Filesystem/File.h>
+#include <violet/Filesystem/Metadata.h>
 #include <violet/Filesystem/Path.h>
 #include <violet/Filesystem/Permissions.h>
 #include <violet/IO/Error.h>
-#include <violet/Violet.h>
+#include <violet/Iterator.h>
+
+#if VIOLET_PLATFORM(UNIX)
+#include <dirent.h>
+#endif
 
 namespace violet::filesystem {
+namespace experimental {
+    struct Dir;
+}
 
 struct Dirs;
 struct WalkDirs;
@@ -81,7 +89,12 @@ VIOLET_API NOELDOC_SINCE("26.02") auto Copy(PathRef src, PathRef dest) -> io::Re
 /// @param path the path to retrieve metadata from
 /// @param followSymlinks if true, this will follow the symlink tree.
 /// @returns the metadata about this file, directory, etc. or an error if any occurs.
-VIOLET_API NOELDOC_SINCE("26.02") auto Metadata(PathRef path, bool followSymlinks = true) -> io::Result<Metadata>;
+VIOLET_API
+NOELDOC_SINCE("26.02")
+VIOLET_DEPRECATED_BECAUSE("26.07",
+    "use `Metadata::For(path, followSymlinks ? SymlinkResolution::Follow : "
+    "SymlinkResolution::NoFollow) instead")
+auto Metadata(PathRef path, bool followSymlinks = true) -> io::Result<struct Metadata>;
 
 /// Returns **true** if the given path exists.
 ///
@@ -114,9 +127,13 @@ struct VIOLET_API NOELDOC_SINCE("26.02") DirEntry final {
 };
 
 /// A [`Iterator`] implementation that walks through a filesystem directory non-recursively.
-struct VIOLET_API NOELDOC_SINCE("26.02") Dirs final {
+struct VIOLET_API NOELDOC_SINCE("26.02") Dirs final: public Iterator<Dirs> {
     VIOLET_DISALLOW_CONSTRUCTOR(Dirs);
-    ~Dirs() noexcept;
+    VIOLET_DISALLOW_COPY(Dirs);
+    ~Dirs();
+
+    VIOLET_IMPLICIT Dirs(Dirs&& other) noexcept;
+    auto operator=(Dirs&& other) noexcept -> Dirs& = delete;
 
     /// The item that is returned from the iterator.
     using Item = io::Result<DirEntry>;
@@ -124,8 +141,12 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Dirs final {
     /// Returns the next entry in the filesystem directory.
     VIOLET_API auto Next() noexcept -> Optional<Item>;
 
+    /// When called, the iterator will be stopped and iterations will return [`violet::Nothing`].
+    NOELDOC_SINCE("26.07") void StopTraversing();
+
 private:
     friend auto violet::filesystem::ReadDir(PathRef) -> io::Result<Dirs>;
+    friend struct experimental::Dir;
 
     /// the implementation of the iteration itself.
     struct Impl;
@@ -137,9 +158,13 @@ private:
 };
 
 /// A [`Iterator`] implementation that walks through a filesystem directory recursively.
-struct VIOLET_API NOELDOC_SINCE("26.02") WalkDirs final {
+struct VIOLET_API NOELDOC_SINCE("26.02") WalkDirs final: public Iterator<WalkDirs> {
     VIOLET_DISALLOW_CONSTRUCTOR(WalkDirs);
+    VIOLET_DISALLOW_COPY(WalkDirs);
     ~WalkDirs();
+
+    VIOLET_IMPLICIT WalkDirs(WalkDirs&& other) noexcept;
+    auto operator=(WalkDirs&& other) noexcept -> WalkDirs& = delete;
 
     /// The item that is returned from the iterator.
     using Item = io::Result<DirEntry>;
@@ -147,8 +172,12 @@ struct VIOLET_API NOELDOC_SINCE("26.02") WalkDirs final {
     /// Returns the next entry in the filesystem directory.
     VIOLET_API auto Next() noexcept -> Optional<Item>;
 
+    /// When called, the iterator will be stopped and iterations will return [`violet::Nothing`].
+    NOELDOC_SINCE("26.07") void StopTraversing();
+
 private:
     friend auto violet::filesystem::WalkDir(PathRef) -> io::Result<WalkDirs>;
+    friend struct experimental::Dir;
 
     /// the implementation of the iteration itself.
     struct Impl;
@@ -157,6 +186,10 @@ private:
     VIOLET_EXPLICIT WalkDirs(Args&&... args);
 
     Impl* n_impl; ///< pointer to the implementation itself.
+
+#if VIOLET_PLATFORM(UNIX)
+    static auto fromRootStream(DIR* stream, Path base) -> WalkDirs;
+#endif
 };
 
 } // namespace violet::filesystem

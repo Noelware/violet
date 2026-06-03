@@ -23,7 +23,10 @@
 
 #include <violet/IO/Read.h>
 #include <violet/IO/Write.h>
-#include <violet/Violet.h>
+
+#if VIOLET_PLATFORM(WINDOWS)
+#include <windows.h>
+#endif
 
 namespace violet::io {
 
@@ -36,23 +39,22 @@ struct VIOLET_API NOELDOC_SINCE("26.02") FileDescriptor final {
 #elif VIOLET_PLATFORM(WINDOWS) || VIOLET_FEATURE(NOELDOC)
     /// Value type for Windows.
     /// @since 26.02
-    using value_type = void*;
+    using value_type = HANDLE;
 #else
     /// Value type for unsupported platforms.
     /// @since 26.02
     using value_type = void*;
 #endif
 
-    VIOLET_IMPLICIT_COPY_AND_MOVE(FileDescriptor);
-
-    VIOLET_IMPLICIT FileDescriptor() noexcept;
+    VIOLET_IMPLICIT FileDescriptor() noexcept = default;
     VIOLET_IMPLICIT FileDescriptor(value_type value) noexcept;
 
+    VIOLET_DISALLOW_COPY_SINCE("26.07", FileDescriptor);
+
+    VIOLET_IMPLICIT FileDescriptor(FileDescriptor&& other) noexcept;
+    auto operator=(FileDescriptor&& other) noexcept -> FileDescriptor&;
+
     /// This will clean up the resource that this file descriptor owns.
-    ///
-    /// ## Platform-specific Notes
-    /// - Windows: Calls `CloseHandle(HANDLE)`.
-    /// - POSIX: Calls `close(fd)`.
     ~FileDescriptor();
 
     /// Returns **true** if this file descriptor points to a valid handle.
@@ -66,18 +68,26 @@ struct VIOLET_API NOELDOC_SINCE("26.02") FileDescriptor final {
 
     /// Returns a text representation of this file descriptor.
     ///
-    /// - Windows: `Descriptor(<hex of handle>)`
-    /// - POSIX: `Descriptor(<id>)`
+    /// - Windows: `handle(<hex of handle>)`
+    /// - POSIX:   `fd(<id>)`
     [[nodiscard]] VIOLET_API auto ToString() const noexcept -> String;
 
+    NOELDOC_SINCE("26.07")
+    friend auto operator<<(std::ostream& os, const FileDescriptor& self) -> std::ostream&
+    {
+        return os << self.ToString();
+    }
+
     /// @see violet::io::Readable
-    [[nodiscard]] VIOLET_API auto Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>;
+    [[nodiscard]] VIOLET_API NOELDOC_SEE("violet::io::Readable") auto Read(Span<UInt8> buf) const noexcept
+        -> io::Result<UInt>;
 
     /// @see violet::io::Writable
-    [[nodiscard]] VIOLET_API auto Write(Span<const UInt8> buf) const noexcept -> io::Result<UInt>;
+    [[nodiscard]] VIOLET_API NOELDOC_SEE("violet::io::Writable") auto Write(Span<const UInt8> buf) const noexcept
+        -> io::Result<UInt>;
 
     /// @see violet::io::Writable
-    [[nodiscard]] VIOLET_API auto Flush() const noexcept -> io::Result<void>;
+    [[nodiscard]] VIOLET_API NOELDOC_SEE("violet::io::Writable") auto Flush() const noexcept -> io::Result<void>;
 
     VIOLET_EXPLICIT operator bool() const noexcept;
     VIOLET_EXPLICIT operator value_type() const noexcept;
@@ -88,9 +98,13 @@ struct VIOLET_API NOELDOC_SINCE("26.02") FileDescriptor final {
     auto operator!=(value_type rhs) const noexcept -> bool;
 
 private:
-    struct Impl;
-
-    SharedPtr<Impl> n_impl;
+#if VIOLET_PLATFORM(UNIX)
+    value_type n_fd = -1;
+#elif VIOLET_PLATFORM(WINDOWS)
+    value_type n_handle = INVALID_HANDLE_VALUE;
+#else
+    value_type n_fd = nullptr;
+#endif
 };
 
 static_assert(Readable<FileDescriptor>, "`FileDescriptor` doesn't conform to the `Readable` concept");

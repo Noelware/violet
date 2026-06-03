@@ -41,6 +41,7 @@ auto File::Lock() const noexcept -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
+    this->n_locked = true;
     return { };
 }
 
@@ -54,6 +55,7 @@ auto File::SharedLock() const noexcept -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
+    this->n_locked = true;
     return { };
 }
 
@@ -67,11 +69,19 @@ auto File::Unlock() const noexcept -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
+    this->n_locked = false;
     return { };
 }
 
 auto File::Locked() const noexcept -> io::Result<bool>
 {
+    // A lock we hold ourselves lives on the open file description: a non-blocking
+    // probe on our own descriptor would merely convert it (reporting "unlocked")
+    // and the trailing `LOCK_UN` would drop it entirely. Answer from our own state.
+    if (this->n_locked) {
+        return true;
+    }
+
     if (::flock(this->n_fd.Get(), LOCK_SH | LOCK_NB) == 0) {
         ::flock(this->n_fd.Get(), LOCK_UN);
         return false;

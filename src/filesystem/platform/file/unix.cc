@@ -25,6 +25,7 @@
 
 #include <violet/Filesystem/Extensions/XAttr.h>
 #include <violet/Filesystem/File.h>
+#include <violet/Filesystem/Metadata.h>
 #include <violet/Filesystem/Path.h>
 #include <violet/IO/Descriptor.h>
 #include <violet/IO/Error.h>
@@ -33,6 +34,13 @@
 #include <unistd.h>
 
 using violet::filesystem::File;
+using violet::filesystem::Metadata;
+using violet::filesystem::OpenOptions;
+
+auto OpenOptions::Open(PathRef path) -> io::Result<File>
+{
+    return File::Open(path, *this);
+}
 
 File::ScopeLock::ScopeLock(File::ScopeLock&& other) noexcept
     : n_file(std::exchange(other.n_file, nullptr))
@@ -42,6 +50,10 @@ File::ScopeLock::ScopeLock(File::ScopeLock&& other) noexcept
 auto File::ScopeLock::operator=(File::ScopeLock&& other) noexcept -> File::ScopeLock&
 {
     if (this != &other) {
+        if (this->n_file != nullptr) {
+            std::ignore = this->n_file->Unlock();
+        }
+
         this->n_file = std::exchange(other.n_file, nullptr);
     }
 
@@ -50,8 +62,10 @@ auto File::ScopeLock::operator=(File::ScopeLock&& other) noexcept -> File::Scope
 
 File::ScopeLock::~ScopeLock()
 {
-    std::ignore = this->n_file->Unlock();
-    this->n_file = nullptr;
+    if (this->n_file != nullptr) {
+        std::ignore = this->n_file->Unlock();
+        this->n_file = nullptr;
+    }
 }
 
 File::~File()
@@ -83,7 +97,16 @@ auto File::Open(PathRef path, OpenOptions opts) -> io::Result<File>
     }
 
     if (opts.n_bits.Contains(OpenOptions::flag::kCreateNew)) {
-        flags |= O_CREAT | O_EXCL | O_RDWR;
+        flags |= O_CREAT | O_EXCL;
+    }
+
+    // If a creation flag was set without an explicit access mode, fall back to O_RDWR
+    // so the resulting descriptor is actually usable. Combining `kCreate*` with `kWrite`
+    // alone previously produced `O_WRONLY | O_RDWR` (== O_ACCMODE), which the kernel
+    // accepts at open() time but rejects on the first read/write with EBADF.
+    if ((flags & O_ACCMODE) == 0
+        && (opts.n_bits.Contains(OpenOptions::flag::kCreate) || opts.n_bits.Contains(OpenOptions::flag::kCreateNew))) {
+        flags |= O_RDWR;
     }
 
     mode_t mode = 0666;
@@ -91,7 +114,7 @@ auto File::Open(PathRef path, OpenOptions opts) -> io::Result<File>
         mode = static_cast<mode_t>(opts.n_mode);
     }
 
-    Int32 fd = ::open(static_cast<CStr>(path), flags, mode);
+    const Int32 fd = path.WithCStr([&](CStr path) -> Int32 { return ::open(path, flags, mode); });
     if (fd < 0) {
         return Err(io::Error::OSError());
     }
@@ -116,14 +139,15 @@ auto File::Valid() const noexcept -> bool
 
 auto File::Close() noexcept -> io::Result<void>
 {
-    if (this->Valid()) {
-        if (::close(this->n_fd.Get()) == -1) {
-            return Err(io::Error::OSError());
-        }
-
-        this->n_fd = -1;
+    if (!this->Valid()) {
+        return { };
     }
 
+    if (::close(this->n_fd.Get()) == -1) {
+        return Err(io::Error::OSError());
+    }
+
+    this->n_fd = { };
     return { };
 }
 
@@ -166,6 +190,11 @@ auto File::MkSharedScopedLock() const noexcept -> io::Result<ScopeLock>
     }
 
     return Err(result.Error());
+}
+
+auto File::Metadata() const noexcept -> io::Result<struct Metadata>
+{
+    return Metadata::For(this->n_fd.Get());
 }
 
 auto File::Clone(bool shareFlags) const noexcept -> io::Result<File>

@@ -71,7 +71,7 @@ TEST(TempFiles, CreationAndAutoDelete)
 {
     Path path;
     {
-        auto tmpfile = TempBuilder{}.WithSuffix(".txt").MkFile();
+        auto tmpfile = TempBuilder{ }.WithSuffix(".txt").MkFile();
         ASSERT_TRUE(tmpfile) << "failed to build temporary file: " << tmpfile.Error();
 
         auto file = tmpfile->Path();
@@ -93,4 +93,70 @@ TEST(TempFiles, CreationAndAutoDelete)
     auto exists = filesystem::TryExists(path);
     ASSERT_TRUE(exists) << "failed to check existence of path [" << path << "]: " << exists.Error();
     ASSERT_FALSE(exists.Value()) << "file persisted out of scope?!";
+}
+
+TEST(TempFiles, PersistMovesFileAndTransfersDescriptor)
+{
+    auto tmpdir = TempBuilder().WithPrefix("gtest-persist-").MkDir();
+    ASSERT_TRUE(tmpdir) << "failed to build temporary directory: " << tmpdir.Error();
+
+    const Path dst = tmpdir->Path().Join("persisted.txt");
+    Path srcPath;
+    {
+        auto tmpfile = TempBuilder{ }.WithSuffix(".txt").MkFile();
+        ASSERT_TRUE(tmpfile) << "failed to build temporary file: " << tmpfile.Error();
+
+        ASSERT_TRUE(tmpfile->Path()) << "no path was registered";
+        srcPath = tmpfile->Path().Value();
+
+        Array<UInt8, 5> hello({ 'h', 'e', 'l', 'l', 'o' });
+        auto wrote = tmpfile->File().Write(hello);
+        ASSERT_TRUE(wrote) << "failed to write `hello': " << wrote.Error();
+        ASSERT_TRUE(tmpfile->File().Flush());
+
+        auto persisted = tmpfile->Persist(dst);
+        ASSERT_TRUE(persisted) << "failed to persist: " << persisted.Error();
+        EXPECT_FALSE(tmpfile->Path()) << "TempFile still tracks a path after Persist";
+
+        // If Persist did not transfer ownership of the descriptor, the moved-from
+        // TempFile would still hold a valid fd aliased with `persisted`. Writing
+        // through it would either succeed (corrupting `persisted`) or, after the
+        // returned File is destroyed, would double-close.
+        Array<UInt8, 3> bad({ 'b', 'a', 'd' });
+        auto leak = tmpfile->File().Write(bad);
+        EXPECT_FALSE(leak) << "TempFile retained the descriptor after Persist (double-close hazard)";
+    }
+
+    auto srcExists = filesystem::TryExists(srcPath);
+    ASSERT_TRUE(srcExists) << "failed to stat source path [" << srcPath << "]: " << srcExists.Error();
+    EXPECT_FALSE(srcExists.Value()) << "source path still exists after Persist";
+
+    auto dstExists = filesystem::TryExists(dst);
+    ASSERT_TRUE(dstExists) << "failed to stat destination [" << dst << "]: " << dstExists.Error();
+    ASSERT_TRUE(dstExists.Value()) << "destination [" << dst << "] does not exist";
+
+    auto reader = OpenOptions().Read().Open(dst);
+    ASSERT_TRUE(reader) << "failed to open persisted file: " << reader.Error();
+
+    Array<UInt8, 5> buf{ };
+    auto num = reader->Read(buf);
+    ASSERT_TRUE(num) << "failed to read back: " << num.Error();
+    EXPECT_EQ(num.Value(), buf.size());
+    EXPECT_EQ(::memcmp(buf.data(), "hello", 5), 0);
+}
+
+TEST(TempFiles, PersistFailsOnAlreadyPersistedHandle)
+{
+    auto tmpdir = TempBuilder().WithPrefix("gtest-persist2-").MkDir();
+    ASSERT_TRUE(tmpdir);
+
+    const Path first = tmpdir->Path().Join("first.txt");
+    const Path second = tmpdir->Path().Join("second.txt");
+
+    auto tmpfile = TempBuilder{ }.MkFile();
+    ASSERT_TRUE(tmpfile);
+
+    ASSERT_TRUE(tmpfile->Persist(first));
+    auto again = tmpfile->Persist(second);
+    EXPECT_FALSE(again) << "second Persist should have failed";
 }

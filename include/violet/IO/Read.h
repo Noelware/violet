@@ -74,6 +74,42 @@ VIOLET_API NOELDOC_SINCE("26.02") inline auto Read(T& reader, Span<UInt8> buf) -
     }
 }
 
+/// Reads all data from a readable source into a byte container.
+///
+/// This function reads all available data from any object satisfying the
+/// `Readable` concept and accumulates it into `Container`, which must be
+/// default-constructible and support range `insert` of `UInt8` values.
+///
+/// @tparam R A type that satisfies the `Readable` concept.
+/// @tparam Container The byte container to accumulate into (defaults to `Vec<UInt8>`).
+/// @param reader The readable source to read from.
+/// @return I/O result containing the accumulated bytes or an error.
+template<Readable R, typename Container = Vec<UInt8>>
+    requires(
+        // clang-format off
+        std::default_initializable<Container> &&
+        !std::same_as<Container, Span<UInt8>> && // disallow `Span` (and in the future, `Slice`)
+        requires(Container out, Array<UInt8, 1024> chunk) {
+            { out.insert(out.end(), chunk.begin(), chunk.end()) };
+        }
+    )
+// clang-format on
+NOELDOC_SINCE("26.07") VIOLET_API auto ReadToBytes(R& reader) -> Result<Container>
+{
+    Container out;
+    Array<UInt8, 1024> chunk{ };
+    while (true) {
+        const UInt bytes = VIOLET_TRY(violet::io::Read(reader, chunk));
+        if (bytes == 0) {
+            break;
+        }
+
+        out.insert(out.end(), chunk.begin(), chunk.begin() + bytes);
+    }
+
+    return out;
+}
+
 /// Reads all data from a readable source into a `String`.
 ///
 /// This function provides a convenient way to read all available data from

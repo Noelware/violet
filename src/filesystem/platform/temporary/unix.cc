@@ -40,19 +40,19 @@ using violet::filesystem::TempFile;
 using violet::io::Result;
 
 namespace {
-auto genRandomBytes(UInt32 bits) -> Result<String>
+auto genRandomBytes(UInt32 bytes) -> Result<String>
 {
     auto file = OpenOptions().Read().Open("/dev/urandom");
     if (!file) {
         return Err(VIOLET_MOVE(file.Error()));
     }
 
-    Vec<UInt8> out(bits, '\0');
+    Vec<UInt8> out(bytes, '\0');
     UInt read = 0;
 
-    while (read < bits) {
+    while (read < bytes) {
         auto* ptr = out.data() + read;
-        auto remaining = bits - read;
+        auto remaining = bytes - read;
 
         read += VIOLET_TRY(file->Read({ ptr, remaining }));
     }
@@ -72,8 +72,17 @@ auto genRandomBytes(UInt32 bits) -> Result<String>
 
 auto violet::filesystem::SystemTempDirectory() -> io::Result<Path>
 {
-    if (auto value = sys::GetEnv("TMPDIR")) {
-        return Path(*value);
+#if VIOLET_BUILDSYSTEM(BAZEL)
+    // Bazel's hermetic sandboxes set `$TEST_TMPDIR`, so this check is only available when
+    // being built on Bazel (or another build system sets `-DVIOLET_BUILDSYSTEM_BAZEL`, but
+    // generally, don't please.)
+    if (auto dir = sys::GetEnv("TEST_TMPDIR")) {
+        return dir.Value();
+    }
+#endif
+
+    if (auto dir = sys::GetEnv("TMPDIR")) {
+        return dir.Value();
     }
 
     // TODO(@auguwu/Noel): once we support macOS, we should
@@ -189,18 +198,15 @@ auto TempFile::Path() const noexcept -> const Optional<struct Path>&
 
 auto TempFile::Persist(PathRef dst) noexcept -> io::Result<struct File>
 {
-    if (!this->n_explicitPath) {
+    if (!this->n_explicitPath.HasValue()) {
         return Err(VIOLET_IO_ERROR(InvalidData, String, "this temporary file has already persisted somewhere else"));
     }
 
-    auto res = filesystem::Rename(*this->n_explicitPath, dst);
-    if (res.Err()) {
-        // TODO(@auguwu/Noel): deal with cross-device errors (fallback to copy+delete)
-        return Err(VIOLET_MOVE(res.Error()));
-    }
+    VIOLET_TRY_VOID(filesystem::Rename(this->n_explicitPath.Value(), dst));
 
     this->n_explicitPath.Reset();
-    return filesystem::File({ this->n_file.Descriptor() });
+    this->n_persist = true;
+    return VIOLET_MOVE(this->n_file);
 }
 
 #endif

@@ -18,12 +18,12 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//
-//! # 🌺💜 `violet/Experimental/SmolString.h`
 
-#pragma once
+#include "tests/filesystem/support/Layout.h"
 
-#warning                                                                                                               \
-    "`violet/Experimental/SmolString.h` has been promoted stable as of 26.06, please use `violet/SmolString.h` instead"
+using violet::filesystem::testing::Layout;
 
-#include <violet/SmolString.h>
+auto Layout::New() -> io::Result<Layout>
+{
+    return Err(VIOLET_IO_ERROR(Unsupported, String, "platform is not supported for filesystem tests"));
+}

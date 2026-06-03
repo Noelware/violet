@@ -69,7 +69,6 @@ TEST(ReadToString, ReadsAcrossMultipleChunks)
 
 TEST(ReadToString, ReadsExactlyOneBufBoundary)
 {
-    // Exactly 4096 bytes — the internal read buffer size — to hit the boundary cleanly
     const String expected(4096, 'x');
     Vec<UInt8> data(expected.begin(), expected.end());
     ByteArrayInputStream stream(data);

@@ -61,8 +61,30 @@ auto Child::Wait() const -> io::Result<ExitStatus>
     struct kevent event{ };
     EV_SET(&event, this->PID.Get(), EVFILT_PROC, EV_ADD | EV_ONESHOT, NOTE_EXIT, 0, nullptr);
     if (::kevent(queue, &event, 1, nullptr, 0, nullptr) < 0) {
+        Int32 savedErrno = errno;
         ::close(queue);
-        return Err(io::Error::OSError());
+
+        // `kqueue` cannot attach an `EVFILT_PROC` filter to a process that has already
+        // exited (it is now a zombie), so registration fails with `ESRCH`. This is racy:
+        // the child can die between `Spawn` and reaching here (e.g. it was just sent a
+        // signal it honours). In that case the child is still reapable, so fall through
+        // to `waitpid` instead of surfacing the error.
+        if (savedErrno != ESRCH) {
+            errno = savedErrno;
+            return Err(io::Error::OSError());
+        }
+
+        Int32 status = 0;
+        pid_t waited = -1;
+        do {
+            waited = ::waitpid(this->PID.Get(), &status, 0);
+        } while (waited < 0 && errno == EINTR);
+
+        if (waited < 0) {
+            return Err(io::Error::OSError());
+        }
+
+        return ExitStatus(status);
     }
 
     auto millis = this->DeathTimeout->count();

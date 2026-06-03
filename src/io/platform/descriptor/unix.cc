@@ -19,83 +19,62 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <unistd.h>
 #include <violet/Violet.h>
 
 #if VIOLET_PLATFORM(UNIX)
 
 #include <violet/IO/Descriptor.h>
 
+#include <unistd.h>
+
 using violet::Int32;
 using violet::io::FileDescriptor;
 
-struct FileDescriptor::Impl final {
-    VIOLET_IMPLICIT_COPY_AND_MOVE(Impl);
-
-    ~Impl()
-    {
-        this->doClose();
-    }
-
-    VIOLET_IMPLICIT Impl() noexcept = default;
-    VIOLET_IMPLICIT Impl(Int32 fd) noexcept
-        : n_fd(fd)
-    {
-    }
-
-    void doClose()
-    {
-        if (this->n_fd != -1) {
-            close(this->n_fd);
-            this->n_fd = -1;
-        }
-    }
-
-private:
-    friend struct FileDescriptor;
-
-    Int32 n_fd = -1;
-};
-
-FileDescriptor::FileDescriptor() noexcept
-    : n_impl(std::make_shared<FileDescriptor::Impl>())
-{
-}
-
 FileDescriptor::FileDescriptor(Int32 fd) noexcept
-    : n_impl(std::make_shared<FileDescriptor::Impl>(fd))
+    : n_fd(fd)
 {
 }
 
-FileDescriptor::~FileDescriptor() = default;
+FileDescriptor::FileDescriptor(FileDescriptor&& other) noexcept
+    : n_fd(std::exchange(other.n_fd, -1))
+{
+}
+
+auto FileDescriptor::operator=(FileDescriptor&& other) noexcept -> FileDescriptor&
+{
+    if (this != &other) {
+        this->Close();
+        this->n_fd = std::exchange(other.n_fd, -1);
+    }
+
+    return *this;
+}
+
+FileDescriptor::~FileDescriptor()
+{
+    this->Close();
+}
 
 auto FileDescriptor::Valid() const noexcept -> bool
 {
-    if (this->n_impl == nullptr) {
-        return false;
-    }
-
-    return this->n_impl->n_fd != -1;
+    return this->n_fd != -1;
 }
 
 auto FileDescriptor::Get() const noexcept -> Int32
 {
-    if (this->n_impl == nullptr) {
-        return -1;
-    }
-
-    return this->n_impl->n_fd;
+    return this->n_fd;
 }
 
 auto FileDescriptor::ToString() const noexcept -> String
 {
-    return std::format("FileDescriptor({})", this->Get());
+    return std::format("fd({})", this->Get());
 }
 
 void FileDescriptor::Close()
 {
-    if (this->n_impl != nullptr) {
-        this->n_impl->doClose();
+    if (this->n_fd != -1) {
+        close(this->n_fd);
+        this->n_fd = -1;
     }
 }
 
@@ -106,7 +85,7 @@ auto FileDescriptor::Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
     }
 
     ssize_t bytes = 0;
-    do { // NOLINT(cppcoreguidelines-avoid-do-while)
+    do {
         bytes = ::read(this->Get(), buf.data(), buf.size());
     } while (bytes == -1 && errno == EINTR);
 
@@ -120,7 +99,7 @@ auto FileDescriptor::Read(Span<UInt8> buf) const noexcept -> io::Result<UInt>
 auto FileDescriptor::Write(Span<const UInt8> buf) const noexcept -> Result<UInt>
 {
     if (!this->Valid()) {
-        return 0;
+        return Err(VIOLET_IO_ERROR(InvalidInput, String, "operation on an invalid file descriptor"));
     }
 
     UInt total = 0;

@@ -21,26 +21,22 @@
 
 #pragma once
 
-#include <violet/Filesystem/Path.h>
 #include <violet/Filesystem/Permissions.h>
 #include <violet/IO/Descriptor.h>
 #include <violet/Support/Bitflags.h>
-#include <violet/Violet.h>
-
-#include <sstream>
-
-#if VIOLET_PLATFORM(UNIX)
-#include <sys/stat.h>
-#endif
 
 namespace violet::filesystem {
-
-struct File;
-struct Metadata;
+namespace experimental {
+    struct Dir;
+}
 
 namespace xattr {
     struct Iter;
 }
+
+struct PathRef;
+struct File;
+struct Metadata;
 
 /// Configures options for opening a file.
 ///
@@ -134,6 +130,7 @@ struct VIOLET_API NOELDOC_SINCE("26.02") OpenOptions final {
 
 private:
     friend struct File;
+    friend struct experimental::Dir;
 
     /// Bitflags representing the basic open options.
     enum struct flag : UInt8 {
@@ -152,257 +149,6 @@ private:
 #elif VIOLET_PLATFORM(UNIX)
     struct Mode n_mode;
     Int32 n_flags;
-#endif
-};
-
-/// Representation of a filesystem entry's type.
-///
-/// This is a lightweight, value-type descriptor that classifies filesystem objects
-/// such as regular files, directories, symbolic links, et al.
-///
-/// This is usually returned when querying a file's metadata, i.e, [`violet::filesystem::Metadata`].
-///
-/// ## Example
-/// ```cpp
-/// #include <violet/Filesystem.h>
-///
-/// using namespace violet;
-///
-/// FileType t = filesystem::Metadata("/etc/passwd")
-///              .AndThen([](const Metadata& mt) -> FileType {
-///                   return mt.Type();
-///              });
-///
-/// if (t.File()) {
-///     std::cout << "/etc/passwd is a regular file\n";
-/// } else if (t.Directory()) {
-///     std::cout << "/etc/passwd is a directory\n";
-/// } else if (t.Symlink()) {
-///     std::cout << "/etc/passwd is a symbolic link\n";
-/// }
-/// ```
-///
-/// ## Remarks (Unix)
-/// Additional types like block, character devices, FIFOs, and sockets are supported.
-///
-/// ## Platform-specific behaviour
-/// On Unix systems, `FileType` also includes additional methods for detecting special files
-/// like block and character devices.
-///
-/// ## Invariants
-/// - `FileType` can represent multiple attributes simultaneously, like a symbolic link
-///   to a directory.
-struct VIOLET_API NOELDOC_SINCE("26.02") FileType final {
-    /// Creates an empty `FileType` with no tags set.
-    constexpr FileType() = default;
-
-    /// Returns **true** if this represents a regular file.
-    [[nodiscard]] constexpr auto File() const noexcept -> bool
-    {
-        return this->n_tag.Contains(tag::kFile);
-    }
-
-    /// Returns **true** if this represents a directory.
-    [[nodiscard]] constexpr auto Dir() const noexcept -> bool
-    {
-        return this->n_tag.Contains(tag::kDir);
-    }
-
-    /// Returns **true** if this represents a symbolic link.
-    [[nodiscard]] constexpr auto Symlink() const noexcept -> bool
-    {
-        return this->n_tag.Contains(tag::kSymlink);
-    }
-
-    [[nodiscard]] auto ToString() const noexcept -> String
-    {
-        std::ostringstream os;
-        os << *this;
-
-        return os.str();
-    }
-
-    friend auto operator<<(std::ostream& os, const FileType& self) noexcept -> std::ostream&
-    {
-        os << "FileType(type=";
-
-        if (self.n_tag.Contains(tag::kFile)) {
-            os << "file";
-        } else if (self.n_tag.Contains(tag::kDir)) {
-            os << "directory";
-        } else if (self.n_tag.Contains(tag::kSymlink)) {
-            os << "symbolic link";
-#if VIOLET_PLATFORM(UNIX)
-        } else if (self.n_tag.Contains(tag::kBlkDev)) {
-            os << "block device";
-        } else if (self.n_tag.Contains(tag::kCharDev)) {
-            os << "char device";
-        } else if (self.n_tag.Contains(tag::kFIFO)) {
-            os << "fifo";
-        } else if (self.n_tag.Contains(tag::kSocket)) {
-            os << "unix socket";
-        }
-#else
-        }
-#endif
-
-        return os << ')';
-    }
-
-#if VIOLET_PLATFORM(UNIX) || VIOLET_FEATURE(NOELDOC)
-    /// Returns **true** if this represents a block device.
-    [[nodiscard]] constexpr auto BlockDevice() const noexcept -> bool
-    {
-        return this->n_tag.Contains(tag::kBlkDev);
-    }
-
-    /// Returns **true** if this represents a character device.
-    [[nodiscard]] constexpr auto CharDevice() const noexcept -> bool
-    {
-        return this->n_tag.Contains(tag::kCharDev);
-    }
-
-    /// Returns **true** if this represents a FIFO pipe.
-    [[nodiscard]] constexpr auto FIFOPipe() const noexcept -> bool
-    {
-        return this->n_tag.Contains(tag::kFIFO);
-    }
-
-    /// Returns **true** if this represents a Unix socket.
-    [[nodiscard]] constexpr auto UnixSocket() const noexcept -> bool
-    {
-        return this->n_tag.Contains(tag::kSocket);
-    }
-#endif
-
-private:
-    friend struct violet::filesystem::File;
-    friend struct violet::filesystem::Metadata;
-
-    enum struct tag : UInt8 {
-        kFile = 1 << 0, ///< this is a file
-        kDir = 1 << 1, ///< this is a directory
-        kSymlink = 1 << 2, ///< this is a symlink
-
-#if VIOLET_PLATFORM(UNIX)
-        kBlkDev = 1 << 3, ///< this is a character device
-        kCharDev = 1 << 4, ///< this is a character device
-        kFIFO = 1 << 5, ///< this is a named pipe (FIFO).
-        kSocket = 1 << 6 ///< this is a unix socket
-#endif
-    };
-
-    Bitflags<tag> n_tag;
-
-    static constexpr auto mksymlink() noexcept -> FileType
-    {
-        FileType ft{ };
-        ft.n_tag |= tag::kSymlink;
-
-        return ft;
-    }
-
-    static constexpr auto mkfile() noexcept -> FileType
-    {
-        FileType ft = { };
-        ft.n_tag |= tag::kFile;
-
-        return ft;
-    }
-
-    static constexpr auto mkdir() noexcept -> FileType
-    {
-        FileType ft = { };
-        ft.n_tag |= tag::kDir;
-
-        return ft;
-    }
-
-#if VIOLET_PLATFORM(UNIX)
-    static constexpr auto mkblkdev() noexcept -> FileType
-    {
-        FileType ft = { };
-        ft.n_tag |= tag::kBlkDev;
-
-        return ft;
-    }
-
-    static constexpr auto mkchardev() noexcept -> FileType
-    {
-        FileType ft = { };
-        ft.n_tag |= tag::kCharDev;
-
-        return ft;
-    }
-
-    static constexpr auto mkfifo() noexcept -> FileType
-    {
-        FileType ft = { };
-        ft.n_tag |= tag::kFIFO;
-
-        return ft;
-    }
-
-    static constexpr auto mksocket() noexcept -> FileType
-    {
-        FileType ft = { };
-        ft.n_tag |= tag::kSocket;
-
-        return ft;
-    }
-#endif
-};
-
-/// Represents filesystem metadata for a regular file, directory, special entry, etc.
-///
-/// This struct provides low-level information about a filesystem object, including size,
-/// permissions, modification/creation timestamps, etc.
-///
-/// ## Example
-/// ```cpp
-/// #include <violet/Filesystem.h>
-///
-/// using namespace violet;
-///
-/// auto metadata = filesystem::Metadata("/etc/hosts").Unwrap();
-/// std::cout << "Size: " << metadata.Size << " bytes\n";
-///
-/// if (metadata.Type.Directory()) {
-///     std::cout << "`/etc/hosts` is a directory\n";
-/// }
-///
-/// std::cout << "Permissions: " << std::oct << meta.Permissions << '\n';
-/// std::cout << "Modified At: " << meta.ModifiedAt << '\n';
-/// ```
-///
-/// ## Platform-specific Behaviour
-/// On Unix systems, additional mode information is avaliable from the [`Mode`] struct, which exposes
-/// raw POSIX mode bits (owner, group, and others) and special flags.
-///
-/// On Windows, `Permissions` can be zeroed or partially emulated, as access control is managed
-/// as Access Control List (ACLs) rather than POSIX-style bits.
-struct VIOLET_API NOELDOC_SINCE("26.02") Metadata final {
-    /// The file's permissions.
-    struct Permissions Permissions = { };
-
-    /// Last modification timestamp (UNIX seconds since epoch)
-    UInt64 ModifiedAt = 0;
-
-    /// The file's type.
-    FileType Type = { };
-
-    /// The size of this file in bytes.
-    UInt64 Size = 0;
-
-    /// The creation timestamp, if avaliable.
-    Optional<UInt64> CreatedAt;
-
-    /// The accessed timestamp, if avaliable.
-    Optional<UInt64> AccessedAt;
-
-#if VIOLET_PLATFORM(UNIX)
-    /// Translates a POSIX [`stat`] call into this [`Metadata`] struct.
-    static auto FromPosix(struct stat st) noexcept -> Metadata;
 #endif
 };
 
@@ -454,6 +200,7 @@ struct VIOLET_API NOELDOC_SINCE("26.02") File final {
     };
 
     VIOLET_DISALLOW_COPY(File);
+    VIOLET_IMPLICIT_MOVE(File);
 
     /// Creates a invalid, empty file.
     VIOLET_IMPLICIT File() = default;
@@ -464,12 +211,6 @@ struct VIOLET_API NOELDOC_SINCE("26.02") File final {
         : n_fd(VIOLET_MOVE(descriptor))
     {
     }
-
-    /// Permit moving [`File`] objects.
-    VIOLET_IMPLICIT File(File&&) noexcept = default;
-
-    /// Allow replacing files with a moved file.
-    auto operator=(File&&) noexcept -> File& = default;
 
     /// Destructor.
     ~File();
@@ -563,12 +304,15 @@ struct VIOLET_API NOELDOC_SINCE("26.02") File final {
 
 private:
     io::FileDescriptor n_fd;
-};
 
-inline auto OpenOptions::Open(PathRef path) -> io::Result<File>
-{
-    return File::Open(path, *this);
-}
+    /// Tracks whether this handle currently holds an advisory lock.
+    ///
+    /// Advisory `flock` locks are associated with the open file description, so a
+    /// non-blocking probe on our own descriptor cannot observe (and would corrupt)
+    /// a lock we already hold. We record it here so [`Locked`] can report a
+    /// self-held lock without touching the kernel state.
+    mutable bool n_locked = false;
+};
 
 } // namespace violet::filesystem
 

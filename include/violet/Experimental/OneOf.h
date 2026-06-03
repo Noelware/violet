@@ -43,7 +43,7 @@ namespace detail {
     /// `storage`.
     ///
     /// # Panics
-    /// Out-of-bounds `I` is a hard compile error — the recursion hits
+    /// Out-of-bounds `I` is a hard compile error, the recursion hits
     /// `valueless_storage<>` which has no `Head` member.
     template<UInt I, typename... Ts>
     constexpr auto getElementInStorage(valueless_storage<Ts...>& storage) noexcept -> auto&;
@@ -65,7 +65,7 @@ namespace detail {
     /// argument produces a table whose entries accept a `const Storage&`,
     /// resolving to the const overload of `getElementInStorage` automatically.
     ///
-    /// There is intentionally only one overload — const-ness is encoded in
+    /// There is intentionally only one overload, const-ness is encoded in
     /// the `Storage` type parameter so overload resolution is never ambiguous.
     template<typename Ret, typename Visitor, typename Storage, UInt... Is>
     constexpr auto createVisitorTable(std::index_sequence<Is...>) -> Array<Ret (*)(Visitor&&, Storage&), sizeof...(Is)>;
@@ -465,7 +465,7 @@ void destroyActiveElementInStorage(UInt active, valueless_storage<Ts...>& storag
     }
 }
 
-/// Single overload — const-ness of the storage parameter is encoded in the
+/// Single overload; const-ness of the storage parameter is encoded in the
 /// `Storage` type argument, eliminating the ambiguity that arises when two
 /// overloads differ only in return type.
 template<typename Ret, typename Visitor, typename Storage, UInt... Is>

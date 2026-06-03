@@ -25,23 +25,37 @@
 
 #include <violet/Filesystem.h>
 #include <violet/Filesystem/File.h>
+#include <violet/Filesystem/Metadata.h>
 #include <violet/Filesystem/Path.h>
 
+#include <cerrno>
 #include <unistd.h>
 
+using violet::Span;
+using violet::UInt;
 using violet::UInt64;
+using violet::UInt8;
 using violet::filesystem::OpenOptions;
 using violet::filesystem::PathRef;
 
-auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
+auto violet::filesystem::Copy(PathRef src, PathRef dst) -> io::Result<UInt64>
 {
-    auto in = VIOLET_TRY(File::Open(src, OpenOptions().Read()));
-    auto out = VIOLET_TRY(File::Open(dest, OpenOptions().Write().Create().Truncate().Mode(0644)));
+    auto in = VIOLET_TRY(File::Open(src, OpenOptions{ }.Read()));
 
-    ssize_t bytes = 0;
-    ssize_t total = 0;
+    // Mirror the source's permission bits onto the destination, like `cp` does
+    auto mt = VIOLET_TRY(in.Metadata());
+    auto out = VIOLET_TRY(File::Open(dst, OpenOptions{ }.Create().Write().Truncate().Mode(mt.Permissions.Mode())));
+
+    UInt64 total = 0;
+
+    // Using `copy_file_range(2)` (ref: https://www.man7.org/linux/man-pages/man2/copy_file_range.2.html)
+    // is the fast-path on Linux (and Android if we plan on supporting it in the future). It lets the kernel
+    // copy in-place (reflinks, server-side copies, etc.). It is not always applicable though, cross-filesystem
+    // copies on kernels < 5.3 will fail with `EXDEV`, sandboxes that block the syscall report `ENOSYS`, and some
+    // filesystems / pseudo-files reject it with either EINVAL, EOPNOTSUPP, EPERM, or EBADF. If that's the case
+    // we fallthrough to the userspace read/write loop and resume from where we are.
     while (true) {
-        bytes = copy_file_range(
+        ssize_t bytes = copy_file_range(
             /*infd=*/in.Descriptor(),
             /*pinoff=*/nullptr,
             /*outfd=*/out.Descriptor(),
@@ -50,7 +64,7 @@ auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
             /*flags=*/0);
 
         if (bytes == 0) {
-            break;
+            return total;
         }
 
         if (bytes < 0) {
@@ -58,10 +72,32 @@ auto violet::filesystem::Copy(PathRef src, PathRef dest) -> io::Result<UInt64>
                 continue;
             }
 
+            // `copy_file_range(2)` is unusable in this context; use userspace read/write loop instead
+            if (errno == ENOSYS || errno == EXDEV || errno == EINVAL || errno == EOPNOTSUPP || errno == EPERM
+                || errno == EBADF) {
+                break;
+            }
+
             return Err(io::Error::OSError());
         }
 
-        total += bytes;
+        total += static_cast<UInt64>(bytes);
+    }
+
+    constexpr static auto kBufSize = 1 << 16; // 64KiB
+    Array<UInt8, kBufSize> buf{ };
+    while (true) {
+        UInt read = VIOLET_TRY(in.Read(buf));
+        if (read == 0) {
+            break;
+        }
+
+        UInt written = 0;
+        while (written < read) {
+            written += VIOLET_TRY(out.Write({ buf.data() + written, read - written }));
+        }
+
+        total += read;
     }
 
     return total;

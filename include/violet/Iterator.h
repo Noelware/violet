@@ -203,37 +203,29 @@ namespace iter {
 
             auto operator!=(detail::sentinel) -> bool
             {
-                if (!this->n_current) {
-                    this->n_current = this->n_iter.Next();
-                }
-
                 return this->n_current.HasValue();
             }
 
             void operator++()
             {
-                this->n_current = this->n_iter.Next();
+                this->n_current = this->n_iter->Next();
             }
 
-            auto operator*()
+            auto operator*() -> decltype(auto)
             {
-                return *this->n_current;
+                return this->n_current.Value();
             }
 
         private:
             friend struct violet::Iterator<Impl>;
 
             VIOLET_IMPLICIT STLRangeIterator(Impl& impl)
-                : n_iter(impl)
+                : n_iter(&impl)
+                , n_current(impl.Next())
             {
             }
 
-            VIOLET_IMPLICIT STLRangeIterator(Impl&& impl)
-                : n_iter(VIOLET_MOVE(impl))
-            {
-            }
-
-            Impl n_iter;
+            Impl* n_iter;
             Optional<violet::iter::TypeOf<Impl>> n_current;
         };
 
@@ -896,12 +888,17 @@ struct Iterator {
         return { };
     }
 
-    auto begin()
+    auto begin() &
     {
-        return iter::detail::STLRangeIterator(getThisObject());
+        return iter::detail::STLRangeIterator<Impl>(static_cast<Impl&>(*this));
     }
 
-    auto end()
+    auto begin() const&
+    {
+        return iter::detail::STLRangeIterator<const Impl>(static_cast<const Impl&>(*this));
+    }
+
+    auto end() const
     {
         return iter::detail::sentinel{ };
     }

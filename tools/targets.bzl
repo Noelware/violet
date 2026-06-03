@@ -69,7 +69,7 @@ def _try_extract_selects(_):
     NOTE: Bazel aspects see the *resolved* configuration, not raw selects.
     This is a best-effort extraction from rule attributes; full select()
     introspection requires `bazel query --output=build` or buildozer.
-    Returns an empty dict as a placeholder — the generator script should
+    Returns an empty dict as a placeholder, the generator script should
     merge in select data from a separate `bazel query` pass.
     """
     return {}

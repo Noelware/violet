@@ -528,7 +528,6 @@ TEST(DurationFromStr, RejectsNegativePrefix)
 
 TEST(DurationFromStr, RejectsPositivePrefix)
 {
-    // Even '+' is rejected — consistent with "no signs at all."
     EXPECT_FALSE(Duration::FromStr("+5s"));
 }
 

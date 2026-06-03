@@ -647,7 +647,7 @@ TEST(OneOfVisit, StatefulFunctorIsInvoked)
 
 TEST(OneOfVisit, TypeTaggedDispatch)
 {
-    // Simulate a message-dispatch pattern — each alternative has its
+    // Simulate a message-dispatch pattern, each alternative has its
     // own handler, and the visitor picks the right one at runtime.
     OneOf<Mono, int, String, double> msg;
     msg = String{ "hello" };

@@ -442,7 +442,6 @@ TEST(Optional, EqualityBothDisengaged)
 {
     Optional<Int32> a;
     Optional<Int32> b;
-    // Both are Nothing — compare via nullopt
     EXPECT_EQ(a, Nothing);
     EXPECT_EQ(b, Nothing);
 }
@@ -656,8 +655,6 @@ TEST(OptionalRef, EqualityBetweenRefs)
     Optional<std::reference_wrapper<Int32>> opt_b(std::ref(b));
     Optional<std::reference_wrapper<Int32>> none;
 
-    // Both wrap value 42, but different objects — depends on your == semantics.
-    // std::reference_wrapper::operator== compares the underlying values.
     EXPECT_EQ(*opt_a, *opt_b);
     EXPECT_NE(none, opt_a);
 }

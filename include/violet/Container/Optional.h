@@ -311,13 +311,19 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     /// Copy-constructs from another `Optional`.
     ///
     /// If `other` is engaged, the contained value is copy-constructed. Otherwise, the result is disengaged.
-    constexpr VIOLET_IMPLICIT Optional(const Optional& other)
+    constexpr VIOLET_IMPLICIT Optional(const Optional& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires(std::copy_constructible<T>)
         : n_engaged(other.n_engaged)
     {
         if (other.n_engaged) {
             std::construct_at(&this->n_value, other.n_value);
         }
     }
+
+    NOELDOC_SINCE("26.07")
+    constexpr VIOLET_IMPLICIT Optional(const Optional& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires(!std::copy_constructible<T>)
+    = delete;
 
     template<typename U>
         requires(std::is_convertible_v<const U&, T>)
@@ -369,6 +375,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     /// If engaged, move-constructs the contained value
     /// and disengages `other`.
     constexpr VIOLET_IMPLICIT Optional(Optional&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires(std::move_constructible<T>)
         : n_engaged(other.n_engaged)
     {
         if (other.n_engaged) {
@@ -377,15 +384,20 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
         }
     }
 
+    NOELDOC_SINCE("26.07")
+    constexpr VIOLET_IMPLICIT Optional(Optional&& other)
+        requires(!std::move_constructible<T>)
+    = delete;
+
     /// Move-assigns from another `Optional`.
     ///
     /// - If both are engaged, move-assigns.
-    /// - If only `other` tatic_assert(!std::is_const_v<E> && !std::is_volatile_v<E>, "`Err<E>` must not be
-    /// cv-qualified");is engaged, constructs.
+    /// - If only `other` is engaged, constructs.
     /// - If `other` is disengaged, this becomes disengaged.
     ///
     /// Leaves `other` disengaged.
     constexpr auto operator=(Optional&& other) noexcept(std::is_nothrow_move_constructible_v<T>) -> Optional&
+        requires(std::is_move_assignable_v<T> || std::is_move_constructible_v<T>)
     {
         if (this != &other) {
             if (other.n_engaged) {

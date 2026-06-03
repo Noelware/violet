@@ -72,23 +72,27 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Mode final {
         return os << self.ToString();
     }
 
-#define IMPL_MODE(IDENT, BIT)                                                                                          \
-    NOELDOC_SINCE("26.02") constexpr auto IDENT() const noexcept -> bool                                               \
+#define IMPL_MODE(SINCE, IDENT, BIT)                                                                                   \
+    NOELDOC_SINCE(SINCE) constexpr auto IDENT() const noexcept -> bool                                                 \
     {                                                                                                                  \
         return (this->n_mode & BIT) != 0U;                                                                             \
     }
 
-    IMPL_MODE(OwnerCanRead, S_IRUSR);
-    IMPL_MODE(OwnerCanWrite, S_IWUSR);
-    IMPL_MODE(OwnerCanExecute, S_IXUSR);
+    IMPL_MODE("26.02", OwnerCanRead, S_IRUSR);
+    IMPL_MODE("26.02", OwnerCanWrite, S_IWUSR);
+    IMPL_MODE("26.02", OwnerCanExecute, S_IXUSR);
 
-    IMPL_MODE(OtherCanRead, S_IROTH);
-    IMPL_MODE(OtherCanWrite, S_IWOTH);
-    IMPL_MODE(OtherCanExecute, S_IXOTH);
+    IMPL_MODE("26.07", GroupCanRead, S_IRGRP);
+    IMPL_MODE("26.07", GroupCanWrite, S_IWGRP);
+    IMPL_MODE("26.07", GroupCanExecute, S_IXGRP);
 
-    IMPL_MODE(HasSetUID, S_ISUID);
-    IMPL_MODE(HasSetGID, S_ISGID);
-    IMPL_MODE(Sticky, S_ISVTX);
+    IMPL_MODE("26.02", OtherCanRead, S_IROTH);
+    IMPL_MODE("26.02", OtherCanWrite, S_IWOTH);
+    IMPL_MODE("26.02", OtherCanExecute, S_IXOTH);
+
+    IMPL_MODE("26.02", HasSetUID, S_ISUID);
+    IMPL_MODE("26.02", HasSetGID, S_ISGID);
+    IMPL_MODE("26.02", Sticky, S_ISVTX);
 
 #undef IMPL_MODE
 

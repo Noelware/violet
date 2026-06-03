@@ -943,6 +943,19 @@
     auto operator=(const Type&) noexcept -> Type& = delete;
 
 /**
+ * @macro VIOLET_DISALLOW_COPY_SINCE
+ * @since 26.07
+ * @param Since when the copy assignment and constructor were deleted
+ * @param Type The class name.
+ *
+ * Deletes the copy constructor and copy assignment operator and appends [`NOELDOC_SEE`]
+ * on each line.
+ */
+#define VIOLET_DISALLOW_COPY_SINCE(Since, Type)                                                                        \
+    NOELDOC_SINCE(Since) VIOLET_IMPLICIT Type(const Type&) noexcept = delete;                                          \
+    NOELDOC_SINCE(Since) auto operator=(const Type&) noexcept -> Type& = delete;
+
+/**
  * @macro VIOLET_DISALLOW_MOVE
  * @since 26.02
  * @param Type The class name.
@@ -1172,8 +1185,8 @@
  * Marks a declaration as deprecated with a version tag and explanatory message.
  */
 #if VIOLET_HAS_ATTRIBUTE(deprecated)
-#define VIOLET_DEPRECATED(since) [[deprecated("since " #since)]]
-#define VIOLET_DEPRECATED_BECAUSE(since, message) [[deprecated("since " #since ": " message)]]
+#define VIOLET_DEPRECATED(since) [[deprecated("since " since)]]
+#define VIOLET_DEPRECATED_BECAUSE(since, message) [[deprecated("since " since ": " message)]]
 #else
 #define VIOLET_DEPRECATED(since)
 #define VIOLET_DEPRECATED_BECAUSE(since, message)
