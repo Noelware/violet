@@ -1,26 +1,10 @@
-// This is the Renovate configuration for this repository.
+// This is the Renovate configuration for Violet.
 //
 // Visit https://github.com/Noelware/.github/blob/master/default.json for the Renovate configuration
 // for all repositories.
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "description": "Renovate configuration for Noelware repositories",
     "extends": [
-        "config:recommended",
-        "config:best-practices",
-        "customManagers:dockerfileVersions",
-        ":automergeStableNonMajor",
-        "docker:disableMajor",
-        "schedule:earlyMondays"
-    ],
-    "addLabels": ["deps"],
-    "assigneesFromCodeOwners": true,
-    "minimumReleaseAge": "3 days",
-    "vulnerabilityAlerts": {
-        "enabled": true,
-        "labels": ["security"],
-        "commitMessagePrefix": "[SECURITY]",
-        "branchTopic": "{{{datasource}}}-{{{depNameSanitized}}}-vulnerability",
-        "prCreation": "immediate"
-    }
+        "github>Noelware/.github:default.jsonc"
+    ]
 }

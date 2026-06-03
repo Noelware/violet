@@ -26,6 +26,7 @@
 #include <violet/IO/Error.h>
 #include <violet/Violet.h>
 
+#include <cstring>
 #include <ostream>
 
 namespace violet::filesystem {
