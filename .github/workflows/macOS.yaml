@@ -73,7 +73,7 @@ jobs:
                 rtti: ["yes", "no"]
         env:
             USE_BAZEL_VERSION: "8.6.0"
-            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=SDKROOT --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} ${{matrix.abseil == 'yes' && '--//buildsystem/bazel/flags:abseil=True' || ''}}"
+            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=SDKROOT --host_action_env=SDKROOT --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} ${{matrix.abseil == 'yes' && '--//buildsystem/bazel/flags:abseil=True' || ''}}"
         steps:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
             - uses: ./.github/actions/setup-macos
