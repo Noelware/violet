@@ -91,7 +91,7 @@ struct Layout final {
 
 struct LayoutFixture: public ::testing::Test {
 protected:
-    Optional<Layout> Layout;
+    Optional<struct Layout> Layout;
 
     void SetUp() override
     {
