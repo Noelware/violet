@@ -41,7 +41,7 @@ TEST(Spawn, ReturnsChildWithValidPID)
     auto result = Command("true").Spawn();
     ASSERT_TRUE(result) << "failed to spawn `true` command: " << result.Error();
 
-    auto child = result.Unwrap();
+    auto& child = result.Value();
     EXPECT_GT(child.PID, 0);
 
     auto status = child.Wait();
@@ -60,7 +60,7 @@ TEST(Spawn, StdioAbsentByDefault)
     auto result = Command("true").Spawn();
     ASSERT_TRUE(result) << "failed to spawn `true` command: " << result.Error();
 
-    auto child = result.Unwrap();
+    auto& child = result.Value();
     EXPECT_GT(child.PID, 0);
     EXPECT_FALSE(child.Stdin) << "expected stdin to not be present";
     EXPECT_FALSE(child.Stdout) << "expected stdout to not be present";
@@ -269,7 +269,7 @@ TEST(Stdio, PipedStdoutGivesHandle)
     auto result = Command("true").WithStdout(Stdio::Pipe()).Spawn();
     ASSERT_TRUE(result) << "spawn failed: " << result.Error();
 
-    auto child = result.Unwrap();
+    auto& child = result.Value();
     ASSERT_TRUE(child.Stdout) << "expected stdout pipe handle";
 
     ::close(child.Stdout->Descriptor.Get());
@@ -284,7 +284,7 @@ TEST(Stdio, PipedStderrGivesHandle)
     auto result = Command("true").WithStderr(Stdio::Pipe()).Spawn();
     ASSERT_TRUE(result) << "spawn failed: " << result.Error();
 
-    auto child = result.Unwrap();
+    auto& child = result.Value();
     ASSERT_TRUE(child.Stderr) << "expected stderr pipe handle";
 
     ::close(child.Stderr->Descriptor.Get());
@@ -299,7 +299,7 @@ TEST(Stdio, PipedStdinGivesHandle)
     auto result = Command("cat").WithStdin(Stdio::Pipe()).WithStdout(Stdio::Null()).WithStderr(Stdio::Null()).Spawn();
     ASSERT_TRUE(result) << "spawn failed: " << result.Error();
 
-    auto child = result.Unwrap();
+    auto& child = result.Value();
     ASSERT_TRUE(child.Stdin) << "expected stdin pipe handle";
 
     ::close(child.Stdin->Descriptor.Get());
@@ -314,7 +314,7 @@ TEST(Stdio, NullStdoutDiscardsOutput)
     auto result = Command("echo").WithArg("this should be discarded").WithStdout(Stdio::Null()).Spawn();
     ASSERT_TRUE(result) << "spawn failed: " << result.Error();
 
-    auto child = result.Unwrap();
+    auto& child = result.Value();
     EXPECT_FALSE(child.Stdout) << "Null stdout should not produce a pipe handle";
 
     auto status = child.Wait();
@@ -327,7 +327,7 @@ TEST(Stdio, NullStderrDiscardsErrorOutput)
     auto result = Command("sh").WithArgs({ "-c", "echo error >&2" }).WithStderr(Stdio::Null()).Spawn();
     ASSERT_TRUE(result) << "spawn failed: " << result.Error();
 
-    auto child = result.Unwrap();
+    auto& child = result.Value();
     EXPECT_FALSE(child.Stderr.HasValue()) << "Null stderr should not produce a pipe handle";
 
     auto status = child.Wait();
@@ -340,7 +340,7 @@ TEST(Stdio, PipedStdinAndStdoutAllowDataRoundtrip)
     auto result = Command("cat").WithStdin(Stdio::Pipe()).WithStdout(Stdio::Pipe()).WithStderr(Stdio::Null()).Spawn();
     ASSERT_TRUE(result) << "spawn failed: " << result.Error();
 
-    auto child = result.Unwrap();
+    auto& child = result.Value();
     ASSERT_TRUE(child.Stdin);
     ASSERT_TRUE(child.Stdout);
 

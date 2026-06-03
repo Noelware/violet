@@ -22,6 +22,7 @@
 #pragma once
 
 #include <violet/Filesystem/File.h>
+#include <violet/Filesystem/Path.h>
 #include <violet/IO/Error.h>
 #include <violet/IO/Experimental/InputStream.h>
 
