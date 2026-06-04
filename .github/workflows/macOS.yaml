@@ -29,20 +29,23 @@ on:
             - master
 
         paths-ignore:
-            - ".github/**"
-            - ".vscode/**"
-            - "hack/**"
-            - ".ci/**"
-            - "nix/**"
-            - "docs/**"
+            - '.github/**'
+            - '.vscode/**'
+            - 'hack/**'
+            - '.ci/**'
+            - 'nix/**'
+            - 'docs/**'
 
-            - "tools/bazeldist"
-            - "tools/hotpatch-release.py"
+            - 'buildsystem/bazel/version.bzl'
+
+            - 'tools/bazeldist'
+            - 'tools/hotpatch-release.py'
 
             - .noeldoc.yml
             - CHANGELOG.md
             - renovate.json
             - flake.lock
+            - .violet-version
             - .*ignore
             - .clangd
             - .envrc

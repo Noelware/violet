@@ -36,6 +36,8 @@ on:
             - 'nix/**'
             - 'docs/**'
 
+            - 'buildsystem/bazel/version.bzl'
+
             - 'tools/bazeldist'
             - 'tools/hotpatch-release.py'
 
@@ -43,6 +45,7 @@ on:
             - CHANGELOG.md
             - renovate.json
             - flake.lock
+            - .violet-version
             - .*ignore
             - .clangd
             - .envrc
