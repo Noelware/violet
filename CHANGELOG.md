@@ -7,6 +7,12 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.07.01...master>
+
+### 26.07.01
+#### Noelware.Violet
+- Fix compilation error in `Runtime/Info.h` header ([`@auguwu`])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.07...master>
 
 ### 26.07

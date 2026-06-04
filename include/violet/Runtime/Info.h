@@ -95,7 +95,7 @@ VIOLET_DIAGNOSTIC_POP
 /// ```cpp
 /// Version() == "2026.01-dev.5"
 /// ```
-constexpr auto Version() noexcept -> experimental::SmolString<256>
+constexpr auto Version() noexcept -> SmolString<256>
 {
     SmolString<256> smol;
     smol.AppendFormatted("{}.{:02}", YEAR, MONTH);
