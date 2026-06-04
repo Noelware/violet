@@ -30,6 +30,7 @@ if host_machine.system() == 'linux'
         '../../src/filesystem/platform/path/linux.cc',
         '../../src/filesystem/platform/file/linux.cc',
         '../../src/filesystem/platform/file/unix.cc',
+        '../../src/filesystem/platform/metadata/linux.cc',
         '../../src/filesystem/platform/extensions/xattr/unix.cc'
     )
 elif host_machine.system() == 'darwin'
@@ -41,6 +42,7 @@ elif host_machine.system() == 'darwin'
         '../../src/filesystem/platform/path/macos.cc',
         '../../src/filesystem/platform/file/macos.cc',
         '../../src/filesystem/platform/file/unix.cc',
+        '../../src/filesystem/platform/metadata/unix.cc',
         '../../src/filesystem/platform/extensions/xattr/macos.cc'
     )
 elif host_machine.system() == 'windows'
@@ -50,6 +52,7 @@ elif host_machine.system() == 'windows'
         '../../src/filesystem/platform/permissions/windows.cc',
         '../../src/filesystem/platform/path/windows.cc',
         '../../src/filesystem/platform/file/windows.cc',
+        '../../src/filesystem/platform/metadata/windows.cc',
         '../../src/filesystem/platform/extensions/xattr/unsupported.cc'
     )
 else
@@ -59,6 +62,7 @@ else
         '../../src/filesystem/platform/permissions/unsupported.cc',
         '../../src/filesystem/platform/path/unsupported.cc',
         '../../src/filesystem/platform/file/unsupported.cc',
+        '../../src/filesystem/platform/metadata/unsupported.cc',
         '../../src/filesystem/platform/extensions/xattr/unsupported.cc'
     )
 endif
