@@ -7,13 +7,19 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.07.01...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.07.02...master>
+
+### 26.07.02
+#### Noelware.Violet
+- Add include guard in `Traits.h` ([`@auguwu`])
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.07.01...26.07.02>
 
 ### 26.07.01
 #### Noelware.Violet
 - Fix compilation error in `Runtime/Info.h` header ([`@auguwu`])
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.07...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.07...26.07.01>
 
 ### 26.07
 - **breaking**: Merge `Noelware.Violet.Subprocess` into the main repository. Everything is now available under `//violet/subprocess`

@@ -21,6 +21,8 @@
 //
 //! # 🌺💜 `violet/Traits.h`
 
+#pragma once
+
 #include <violet/Language/Macros.h> // IWYU pragma: export
 #include <violet/Language/Policy.h> // IWYU pragma: export
 
