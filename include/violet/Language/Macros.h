@@ -1318,3 +1318,11 @@
  * Hides the annotated declaration from generated documentation.
  */
 #define NOELDOC_HIDE __noeldoc_annotate__("hide")
+
+/**
+ * @macro NOELDOC_CONSTEXPR_SINCE
+ * @since 26.07.03
+ *
+ * Marks a declaration `constexpr` since a given version if it was non-`constexpr`
+ */
+#define NOELDOC_CONSTEXPR_SINCE(ver) __noeldoc_annotate__("constexpr(since:" ver ")")

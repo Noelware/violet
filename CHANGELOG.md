@@ -3,10 +3,16 @@ title: Violet | Changelog
 description: "Changelog for all of Noelware.Violet base frameworks"
 availableAt:
     - https://github.com/Noelware/violet/blob/master/CHANGELOG.md
-    - https://noelware.org/changelogs/violet
+    - https://docs.noelware.org/violet/changelog
 ---
 
 ### unreleased
+#### Noelware.Violet.Experimental
+- [own] Add type traits for `Weak<T>` ([`@auguwu`])
+- [own] Add **DynamicCast**, **StaticCast**, and **ConstCast** for `Own<T>` to act like C++'s [`std::dynamic_pointer_cast`][cpp-pointer-cast], [`std::static_pointer_cast`][cpp-pointer-cast], and [`std::const_pointer_cast`][cpp-pointer-cast]. ([`@auguwu`])
+
+[cpp-pointer-cast]: https://en.cppreference.com/cpp/memory/shared_ptr/pointer_cast
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.07.02...master>
 
 ### 26.07.02
@@ -510,7 +516,7 @@ This is a patch revision, nothing much has changed than the Meson distribution.
 ### 26.02
 This release indicates that Violet is ready to be shipped as a **MVP**. Report any issues you might have to our [issue tracker](https://github.com/Noelware/violet/issues/new).
 
-## Available Frameworks
+#### Available Frameworks
 - **Noelware.Violet** (`@violet//violet`, `@violet//violet/container`, `@violet//violet/iterator`, `@violet//violet/system`, `@violet//violet/support`, `@violet//violet/numeric`)
 - **Noelware.Violet.Events** (`@violet//violet/events`)
 - **Noelware.Violet.Filesystem** (`@violet//violet/filesystem`)

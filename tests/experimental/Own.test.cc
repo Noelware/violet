@@ -105,6 +105,15 @@ struct Cat final: public Animal { // NOLINT(cppcoreguidelines-special-member-fun
 
 std::atomic<Int32> Cat::Destructed{ 0 };
 
+struct Dog final: public Animal { // NOLINT(cppcoreguidelines-special-member-functions)
+    VIOLET_EXPLICIT Dog(Int32 legs)
+        : Animal(legs)
+    {
+    }
+
+    ~Dog() override = default;
+};
+
 } // namespace
 
 TEST(Own, ConstructsNullFromNullptr)
@@ -450,6 +459,179 @@ TEST(Own, ConcurrentWeakUpgradeRace)
 
     EXPECT_GT(upgrade_successes.load(), 0);
     EXPECT_EQ(strong.StrongRefs(), 1U);
+}
+
+TEST(Own, StaticCastUpcastSharesControlBlock)
+{
+    auto cat = Own<Cat>::New<Cat>("Mochi", 4);
+    EXPECT_EQ(cat.StrongRefs(), 1U);
+
+    auto animal = cat.StaticCast<Animal>();
+    ASSERT_TRUE(animal);
+    EXPECT_EQ(cat.StrongRefs(), 2U);
+    EXPECT_EQ(animal.StrongRefs(), 2U);
+    EXPECT_EQ(animal->Legs, 4);
+}
+
+TEST(Own, StaticCastDowncastRecoversDerived)
+{
+    Own<Animal> pet = Own<Animal>::New<Cat>("Luna", 4);
+
+    auto cat = pet.StaticCast<Cat>();
+    ASSERT_TRUE(cat);
+    EXPECT_EQ(cat->Name, "Luna");
+    EXPECT_EQ(pet.StrongRefs(), 2U);
+}
+
+TEST(Own, StaticCastOnEmptyYieldsEmpty)
+{
+    Own<Cat> empty(nullptr);
+
+    auto animal = empty.StaticCast<Animal>();
+    EXPECT_FALSE(animal);
+    EXPECT_EQ(animal.Get(), nullptr);
+    EXPECT_EQ(animal.StrongRefs(), 0U);
+}
+
+TEST(Own, StaticCastKeepsObjectAliveUntilAllDrop)
+{
+    Cat::Destructed.store(0);
+    {
+        auto cat = Own<Cat>::New<Cat>("Tama", 4);
+        auto animal = cat.StaticCast<Animal>();
+
+        cat.Reset();
+        EXPECT_EQ(Cat::Destructed.load(), 0); // animal still holds the block
+        EXPECT_EQ(animal.StrongRefs(), 1U);
+    }
+
+    EXPECT_EQ(Cat::Destructed.load(), 1);
+}
+
+TEST(Own, ConstCastAddsAndRemovesConst)
+{
+    auto mut = Own<Int32>::New(7);
+    EXPECT_EQ(mut.StrongRefs(), 1U);
+
+    Own<const Int32> immut = mut.ConstCast<const Int32>();
+    ASSERT_TRUE(immut);
+    EXPECT_EQ(*immut, 7);
+    EXPECT_EQ(mut.StrongRefs(), 2U);
+
+    auto back = immut.ConstCast<Int32>();
+    ASSERT_TRUE(back);
+    *back = 21;
+    EXPECT_EQ(*mut, 21); // same underlying object
+    EXPECT_EQ(mut.StrongRefs(), 3U);
+}
+
+TEST(Own, ConstCastOnEmptyYieldsEmpty)
+{
+    Own<Int32> empty(nullptr);
+
+    auto immut = empty.ConstCast<const Int32>();
+    EXPECT_FALSE(immut);
+    EXPECT_EQ(immut.StrongRefs(), 0U);
+}
+
+#if VIOLET_FEATURE(RTTI)
+TEST(Own, DynamicCastDowncastSucceedsForActualType)
+{
+    Own<Animal> pet = Own<Animal>::New<Cat>("Mochi", 4);
+    EXPECT_EQ(pet.StrongRefs(), 1U);
+
+    auto cat = pet.DynamicCast<Cat>();
+    ASSERT_TRUE(cat);
+    EXPECT_EQ(cat->Name, "Mochi");
+    EXPECT_EQ(cat->Legs, 4);
+    EXPECT_EQ(pet.StrongRefs(), 2U);
+    EXPECT_EQ(cat.StrongRefs(), 2U);
+}
+
+TEST(Own, DynamicCastFailsForWrongTypeWithoutBumpingRefs)
+{
+    Own<Animal> pet = Own<Animal>::New<Dog>(4);
+    EXPECT_EQ(pet.StrongRefs(), 1U);
+
+    auto cat = pet.DynamicCast<Cat>();
+    EXPECT_FALSE(cat);
+    EXPECT_EQ(cat.Get(), nullptr);
+    EXPECT_EQ(pet.StrongRefs(), 1U); // failed cast must not share ownership
+}
+
+TEST(Own, DynamicCastOnEmptyYieldsEmpty)
+{
+    Own<Animal> empty(nullptr);
+
+    auto cat = empty.DynamicCast<Cat>();
+    EXPECT_FALSE(cat);
+    EXPECT_EQ(cat.StrongRefs(), 0U);
+}
+
+TEST(Own, DynamicCastKeepsObjectAliveUntilAllDrop)
+{
+    Cat::Destructed.store(0);
+    {
+        Own<Animal> pet = Own<Animal>::New<Cat>("Sora", 4);
+        auto cat = pet.DynamicCast<Cat>();
+        ASSERT_TRUE(cat);
+
+        pet.Reset();
+        EXPECT_EQ(Cat::Destructed.load(), 0);
+        EXPECT_EQ(cat.StrongRefs(), 1U);
+    }
+
+    EXPECT_EQ(Cat::Destructed.load(), 1);
+}
+
+TEST(Own, RvalueDynamicCastSuccessConsumesSource)
+{
+    Own<Animal> pet = Own<Animal>::New<Cat>("Mochi", 4);
+
+    auto cat = VIOLET_MOVE(pet).DynamicCast<Cat>();
+    ASSERT_TRUE(cat);
+    EXPECT_EQ(cat->Name, "Mochi");
+    EXPECT_EQ(cat.StrongRefs(), 1U); // moved, not shared
+    EXPECT_FALSE(pet); // source consumed
+    EXPECT_EQ(pet.Get(), nullptr);
+}
+
+TEST(Own, RvalueDynamicCastConsumesSourceOnFailure)
+{
+    Cat::Destructed.store(0);
+    {
+        Own<Animal> pet = Own<Animal>::New<Dog>(4);
+
+        auto cat = VIOLET_MOVE(pet).DynamicCast<Cat>();
+        EXPECT_FALSE(cat); // cast failed
+        EXPECT_FALSE(pet); // source still consumed
+        EXPECT_EQ(pet.Get(), nullptr);
+    }
+
+    EXPECT_EQ(Cat::Destructed.load(), 0); // the Dog was managed, not a Cat
+}
+#endif
+
+TEST(Own, RvalueStaticCastConsumesSource)
+{
+    auto cat = Own<Cat>::New<Cat>("Luna", 4);
+
+    auto animal = VIOLET_MOVE(cat).StaticCast<Animal>();
+    ASSERT_TRUE(animal);
+    EXPECT_EQ(animal->Legs, 4);
+    EXPECT_EQ(animal.StrongRefs(), 1U); // moved, not shared
+    EXPECT_FALSE(cat); // source consumed
+}
+
+TEST(Own, RvalueConstCastConsumesSource)
+{
+    auto mut = Own<Int32>::New(7);
+
+    Own<const Int32> immut = VIOLET_MOVE(mut).ConstCast<const Int32>();
+    ASSERT_TRUE(immut);
+    EXPECT_EQ(*immut, 7);
+    EXPECT_EQ(immut.StrongRefs(), 1U); // moved, not shared
+    EXPECT_FALSE(mut); // source consumed
 }
 
 // NOLINTEND(google-build-using-namespace,readability-identifier-length,cppcoreguidelines-owning-memory,performance-unnecessary-copy-initialization)

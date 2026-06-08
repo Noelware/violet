@@ -150,31 +150,106 @@ struct Weak;
 template<typename T>
 struct Own;
 
+/// Detects whether `T` is a specialization of [`Own`].
+///
+/// Follows the convention of the standard `is_*` traits: the primary template
+/// derives from [`std::false_type`], and the partial specialization for `Own<U>`
+/// derives from [`std::true_type`]. Prefer the [`is_owned_v`] variable template in
+/// most call sites.
 template<typename T>
-struct is_owned final: std::false_type { };
+struct NOELDOC_SINCE("26.06.05") is_owned final: std::false_type { };
 
 template<typename T>
 struct is_owned<Own<T>>: std::true_type { };
 
+/// `true` if `T` is a specialization of [`Own`], `false` otherwise.
 template<typename T>
+NOELDOC_SINCE("26.06.05")
 constexpr static inline bool is_owned_v = is_owned<T>::value;
 
+/// Extracts the managed type from an [`Own`] specialization.
+///
+/// `owned_type<Own<U>>::type` is `U`. The primary template is left incomplete and
+/// is only specialized for [`Own`], so naming `owned_type<T>::type` for any other
+/// `T` is ill-formed; useful as a hard constraint. Prefer the [`owned_type_t`]
+/// alias.
 template<typename T>
-struct owned_type;
+struct NOELDOC_SINCE("26.06.05") owned_type;
 
 template<typename T>
 struct owned_type<Own<T>> final {
     using type = T;
 };
 
+/// The managed type of an [`Own`] specialization, i.e. `owned_type_t<Own<U>>` is `U`.
+///
+/// @since 26.06.05
 template<typename T>
 using owned_type_t = typename owned_type<T>::type;
+
+/// Detects whether `T` is a specialization of [`Weak`].
+///
+/// The [`Weak`] counterpart to [`is_owned`]. Prefer the [`is_weak_v`] variable
+/// template in most call sites.
+template<typename T>
+struct NOELDOC_SINCE("26.07.03") is_weak final: std::false_type { };
+
+template<typename T>
+struct is_weak<Weak<T>>: std::true_type { };
+
+/// `true` if `T` is a specialization of [`Weak`], `false` otherwise.
+template<typename T>
+NOELDOC_SINCE("26.07.03")
+constexpr static inline bool is_weak_v = is_weak<T>::value;
+
+/// Extracts the referenced type from a [`Weak`] specialization.
+///
+/// `weak_type<Weak<U>>::type` is `U`. The [`Weak`] counterpart to [`owned_type`];
+/// the primary template is incomplete, so naming `::type` for a non-[`Weak`] type
+/// is ill-formed. Prefer the [`weak_type_t`] alias.
+template<typename T>
+struct NOELDOC_SINCE("26.07.03") weak_type;
+
+template<typename T>
+struct weak_type<Weak<T>> final {
+    using type = T;
+};
+
+/// The referenced type of a [`Weak`] specialization, i.e. `weak_type_t<Weak<U>>` is `U`.
+///
+/// @since 26.07.03
+template<typename T>
+using weak_type_t = typename weak_type<T>::type;
+
+/// A stateless deleter that does nothing when invoked.
+///
+/// Pass this as the deleter to [`Own`]'s raw-pointer constructor when the handle
+/// should participate in shared ownership without ever freeing the pointee. For
+/// example when the managed object has automatic or static storage duration, or
+/// is owned elsewhere:
+///
+/// ```cpp
+/// int y = 32;
+/// Own<int> ref(&y, NoOpDeleter());   // shares `&y`, never deletes it
+/// ```
+struct NOELDOC_SINCE("26.07.03") NoOpDeleter final {
+    /// Constructs a [`NoOpDeleter`]. Stateless, so this is trivial.
+    constexpr VIOLET_IMPLICIT NoOpDeleter() = default;
+
+    /// Does nothing. The pointee is intentionally left untouched.
+    template<typename T>
+    constexpr void operator()(T*) const noexcept
+    {
+        static_assert(!std::is_function_v<T>, "`NoOpDeleter` cannot be instantiated for function types");
+        static_assert(sizeof(T) >= 0 && !std::is_void_v<T>, "cannot delete an incomplete type");
+    }
+};
 
 /// A thread-safe, reference-counted smart pointer with shared ownership.
 ///
 /// View the [module documentation](#) for more information.
 template<typename T>
-struct Own final {
+struct NOELDOC_SINCE("26.06.05") Own final {
     using value_type = T;
 
     ~Own()
@@ -230,6 +305,42 @@ struct Own final {
         };
 
         this->n_blk = blk;
+    }
+
+    /// Shares ownership with `owner` but exposes `ptr`.
+    ///
+    /// The new handle joins `owner`'s control block (incrementing the strong
+    /// count), keeping the managed object alive, while [`Get`] returns `ptr`. `ptr`
+    /// must address a subobject whose lifetime is bound by `owner`. No independent
+    /// lifetime is tracked for it. A null `owner` yields a null handle regardless
+    /// of `ptr`.
+    template<typename U>
+    NOELDOC_SINCE("26.07.03")
+    VIOLET_EXPLICIT Own(const Own<U>& owner, T* ptr) noexcept
+        : n_data(owner.n_blk != nullptr ? ptr : nullptr)
+        , n_blk(owner.n_blk)
+    {
+        if (this->n_blk != nullptr) {
+            this->n_blk->Strong.fetch_add(1, std::memory_order_relaxed);
+        }
+    }
+
+    /// Assumes ownership from `owner` while exposing `ptr`.
+    ///
+    /// The aliasing analogue of the move constructor: rather than incrementing the
+    /// strong count, it steals `owner`'s control block and leaves `owner` null. `ptr`
+    /// must address a subobject whose lifetime is bound by the managed object. No
+    /// independent lifetime is tracked for it. A null `owner` yields a null handle
+    /// regardless of `ptr`. Saves the atomic increment/decrement pair that the
+    /// copying overload incurs.
+    template<typename U>
+    NOELDOC_SINCE("26.07.03")
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    VIOLET_EXPLICIT Own(Own<U>&& owner, T* ptr) noexcept
+        : n_data(owner.n_blk != nullptr ? ptr : nullptr)
+        , n_blk(std::exchange(owner.n_blk, nullptr))
+    {
+        owner.n_data = nullptr;
     }
 
     /// Constructs a new [`Own<T>`] from an [`Own<U>`] where `U*` is convertible
@@ -450,15 +561,150 @@ struct Own final {
     }
 
     /// Returns a mutable pointer to the managed object, or `nullptr`.
-    auto Get() -> T*
+    NOELDOC_CONSTEXPR_SINCE("26.07.03") constexpr auto Get() -> T*
     {
         return this->n_data;
     }
 
     /// Returns a immutable pointer to the managed object, or `nullptr`.
-    auto Get() const -> const T*
+    NOELDOC_CONSTEXPR_SINCE("26.07.03") constexpr auto Get() const -> const T*
     {
         return this->n_data;
+    }
+
+#if VIOLET_FEATURE(RTTI) || VIOLET_FEATURE(NOELDOC)
+    /// Shares ownership while attempting a checked `dynamic_cast` to `U`.
+    ///
+    /// On success the returned [`Own<U>`] joins this handle's control block
+    /// (incrementing the strong count); this handle stays valid. Returns an empty
+    /// [`Own`] if the `dynamic_cast` fails or this handle is empty. Requires `T` to
+    /// be polymorphic.
+    template<typename U>
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto DynamicCast() & -> Own<U>
+        requires std::is_polymorphic_v<T>
+    {
+        auto* casted = dynamic_cast<U*>(this->n_data);
+        if (casted != nullptr) {
+            return Own<U>(*this, casted);
+        }
+
+        return nullptr;
+    }
+
+    /// Shares ownership while attempting a checked `dynamic_cast` to `U`.
+    ///
+    /// The `const`-lvalue overload; identical in behavior to the non-`const` one.
+    /// On success the returned [`Own<U>`] joins this handle's control block
+    /// (incrementing the strong count); this handle stays valid. Returns an empty
+    /// [`Own`] if the `dynamic_cast` fails or this handle is empty. Requires `T` to
+    /// be polymorphic.
+    template<typename U>
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto DynamicCast() const& -> Own<U>
+        requires std::is_polymorphic_v<T>
+    {
+        auto* casted = dynamic_cast<U*>(this->n_data);
+        if (casted != nullptr) {
+            return Own<U>(*this, casted);
+        }
+
+        return nullptr;
+    }
+
+    /// Steals ownership while attempting a checked `dynamic_cast` to `U`.
+    ///
+    /// **Always consumes this handle, leaving it empty**, regardless of whether the
+    /// cast succeeds. On success the returned [`Own<U>`] takes over the control
+    /// block without touching the strong count; on failure this handle is still
+    /// released and an empty [`Own`] is returned. This keeps the moved-from state
+    /// predictable rather than dependent on the runtime cast result. Requires `T`
+    /// to be polymorphic.
+    template<typename U>
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto DynamicCast() && -> Own<U>
+        requires std::is_polymorphic_v<T>
+    {
+        auto* casted = dynamic_cast<U*>(this->n_data);
+        if (casted != nullptr) {
+            return Own<U>(VIOLET_MOVE(*this), casted);
+        }
+
+        // The cast failed, but this is an rvalue overload: consume `*this`
+        // unconditionally so the moved-from state never depends on the result.
+        this->Reset();
+        return nullptr;
+    }
+#endif
+
+    /// Shares ownership while reinterpreting the managed pointer via `static_cast`.
+    ///
+    /// No RTTI required. The conversion must be statically valid (an up- or
+    /// downcast within a known hierarchy); use [`DynamicCast`] when the
+    /// relationship must be verified at runtime. Joins this handle's control block
+    /// (incrementing the strong count); this handle stays valid. Yields an empty
+    /// [`Own`] when this handle is empty.
+    template<typename U>
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto StaticCast() & -> Own<U>
+    {
+        return Own<U>(*this, static_cast<U*>(this->n_data));
+    }
+
+    /// Shares ownership while reinterpreting the managed pointer via `static_cast`.
+    ///
+    /// No RTTI required. The conversion must be statically valid (an up- or
+    /// downcast within a known hierarchy); use [`DynamicCast`] when the
+    /// relationship must be verified at runtime. Yields an empty [`Own`] when this
+    /// handle is empty.
+    template<typename U>
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto StaticCast() const& -> Own<U>
+    {
+        return Own<U>(*this, static_cast<U*>(this->n_data));
+    }
+
+    /// Steals ownership while reinterpreting the managed pointer via `static_cast`.
+    ///
+    /// The moving counterpart of the lvalue overloads: transfers this handle's
+    /// control block to the result without touching the strong count, leaving this
+    /// handle empty. No RTTI required; the conversion must be statically valid (an
+    /// up- or downcast within a known hierarchy). Yields an empty [`Own`] when this
+    /// handle is empty.
+    template<typename U>
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto StaticCast() && -> Own<U>
+    {
+        return Own<U>(VIOLET_MOVE(*this), static_cast<U*>(this->n_data));
+    }
+
+    /// Shares ownership while adding or removing `const` via `const_cast`.
+    ///
+    /// The canonical way to convert between `Own<T>` and `Own<const T>` without
+    /// allocating a fresh control block. Joins this handle's control block
+    /// (incrementing the strong count); this handle stays valid. Yields an empty
+    /// [`Own`] when this handle is empty.
+    template<typename U>
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto ConstCast() & -> Own<U>
+    {
+        return Own<U>(*this, const_cast<U*>(this->n_data));
+    }
+
+    /// Shares ownership while adding or removing `const` via `const_cast`.
+    ///
+    /// The canonical way to convert between `Own<T>` and `Own<const T>` without
+    /// allocating a fresh control block. Yields an empty [`Own`] when this handle
+    /// is empty.
+    template<typename U>
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto ConstCast() const& -> Own<U>
+    {
+        return Own<U>(*this, const_cast<U*>(this->n_data));
+    }
+
+    /// Steals ownership while adding or removing `const` via `const_cast`.
+    ///
+    /// The moving counterpart of the lvalue overloads: transfers the control block
+    /// to the result without touching the strong count, leaving this handle empty.
+    /// The allocation-free way to convert between `Own<T>` and `Own<const T>`.
+    /// Yields an empty [`Own`] when this handle is empty.
+    template<typename U>
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto ConstCast() && -> Own<U>
+    {
+        return Own<U>(VIOLET_MOVE(*this), const_cast<U*>(this->n_data));
     }
 
     /// Releases ownership and resets this handle to null.
@@ -490,7 +736,18 @@ struct Own final {
         if (this->n_blk != nullptr) {
             if (this->n_blk->Strong.fetch_sub(1, std::memory_order_acq_rel) == 1) {
                 if (this->n_blk->Destruct != nullptr) {
-                    this->n_blk->Destruct(this->n_blk, this->n_data);
+                    if constexpr (std::is_const_v<T> || std::is_volatile_v<T>) {
+                        // SAFETY: This is only used in `Own<const T>`/`Own<volatile T>`, which
+                        // is produced most likely by `ConstCast` but the `Destruct` vtable function
+                        // erases its argument to `void*`. The captured
+                        // destructor was bound to the unqualified type, so stripping `const`
+                        // here is sound.
+                        this->n_blk->Destruct(
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+                            this->n_blk, const_cast<void*>(static_cast<const volatile void*>(this->n_data)));
+                    } else {
+                        this->n_blk->Destruct(this->n_blk, this->n_data);
+                    }
                 }
 
                 if (this->n_blk->Weak.load(std::memory_order_acquire) == 0) {
@@ -525,29 +782,60 @@ struct Own final {
         }
     }
 
-    VIOLET_IMPLICIT operator bool() const
+    NOELDOC_CONSTEXPR_SINCE("26.07.03") constexpr VIOLET_EXPLICIT operator bool() const
     {
         return this->n_data != nullptr;
     }
 
-    auto operator->() -> T*
+    NOELDOC_CONSTEXPR_SINCE("26.07.03") constexpr auto operator->() -> T*
     {
         return this->Get();
     }
 
-    auto operator->() const -> const T*
+    NOELDOC_CONSTEXPR_SINCE("26.07.03") constexpr auto operator->() const -> const T*
     {
         return this->Get();
     }
 
-    auto operator*() -> T&
+    NOELDOC_CONSTEXPR_SINCE("26.07.03") constexpr auto operator*() -> T&
     {
         return *this->n_data;
     }
 
-    auto operator*() const -> const T&
+    NOELDOC_CONSTEXPR_SINCE("26.07.03") constexpr auto operator*() const -> const T&
     {
         return *this->n_data;
+    }
+
+    NOELDOC_SINCE("26.07.03") constexpr auto operator==(std::nullptr_t) const -> bool
+    {
+        return this->n_data == nullptr;
+    }
+
+    NOELDOC_SINCE("26.07.03") constexpr auto operator!=(std::nullptr_t) const -> bool
+    {
+        return this->n_data != nullptr;
+    }
+
+    NOELDOC_SINCE("26.07.03") constexpr auto operator<=>(std::nullptr_t) const -> std::strong_ordering
+    {
+        constexpr auto cmp = std::compare_three_way{ };
+        return cmp(this->Get(), static_cast<const T*>(nullptr));
+    }
+
+    template<typename U>
+        requires(std::three_way_comparable_with<T, U>)
+    NOELDOC_SINCE("26.07.03")
+    constexpr auto operator<=>(const Own<U>& other) const -> std::compare_three_way_result_t<T, U>
+    {
+        // If either `*this` or `other` is null, then order by nulls first, let
+        // pointer identity break the tie.
+        if (this->Get() == nullptr || other.Get() == nullptr) {
+            constexpr auto cmp = std::compare_three_way{ };
+            return cmp(this->Get(), other.Get());
+        }
+
+        return *this->Get() <=> *other.Get();
     }
 
 private:
