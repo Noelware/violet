@@ -157,14 +157,14 @@ struct Own;
 /// derives from [`std::true_type`]. Prefer the [`is_owned_v`] variable template in
 /// most call sites.
 template<typename T>
-struct NOELDOC_SINCE("26.06.05") is_owned final: std::false_type { };
+struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") is_owned final: std::false_type { };
 
 template<typename T>
 struct is_owned<Own<T>>: std::true_type { };
 
 /// `true` if `T` is a specialization of [`Own`], `false` otherwise.
 template<typename T>
-NOELDOC_SINCE("26.06.05")
+NOELDOC_EXPERIMENTAL_SINCE("26.06.05")
 constexpr static inline bool is_owned_v = is_owned<T>::value;
 
 /// Extracts the managed type from an [`Own`] specialization.
@@ -174,7 +174,7 @@ constexpr static inline bool is_owned_v = is_owned<T>::value;
 /// `T` is ill-formed; useful as a hard constraint. Prefer the [`owned_type_t`]
 /// alias.
 template<typename T>
-struct NOELDOC_SINCE("26.06.05") owned_type;
+struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") owned_type;
 
 template<typename T>
 struct owned_type<Own<T>> final {
@@ -192,14 +192,14 @@ using owned_type_t = typename owned_type<T>::type;
 /// The [`Weak`] counterpart to [`is_owned`]. Prefer the [`is_weak_v`] variable
 /// template in most call sites.
 template<typename T>
-struct NOELDOC_SINCE("26.07.03") is_weak final: std::false_type { };
+struct NOELDOC_EXPERIMENTAL_SINCE("26.07.03") is_weak final: std::false_type { };
 
 template<typename T>
 struct is_weak<Weak<T>>: std::true_type { };
 
 /// `true` if `T` is a specialization of [`Weak`], `false` otherwise.
 template<typename T>
-NOELDOC_SINCE("26.07.03")
+NOELDOC_EXPERIMENTAL_SINCE("26.07.03")
 constexpr static inline bool is_weak_v = is_weak<T>::value;
 
 /// Extracts the referenced type from a [`Weak`] specialization.
@@ -208,7 +208,7 @@ constexpr static inline bool is_weak_v = is_weak<T>::value;
 /// the primary template is incomplete, so naming `::type` for a non-[`Weak`] type
 /// is ill-formed. Prefer the [`weak_type_t`] alias.
 template<typename T>
-struct NOELDOC_SINCE("26.07.03") weak_type;
+struct NOELDOC_EXPERIMENTAL_SINCE("26.07.03") weak_type;
 
 template<typename T>
 struct weak_type<Weak<T>> final {
@@ -232,7 +232,7 @@ using weak_type_t = typename weak_type<T>::type;
 /// int y = 32;
 /// Own<int> ref(&y, NoOpDeleter());   // shares `&y`, never deletes it
 /// ```
-struct NOELDOC_SINCE("26.07.03") NoOpDeleter final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.07.03") NoOpDeleter final {
     /// Constructs a [`NoOpDeleter`]. Stateless, so this is trivial.
     constexpr VIOLET_IMPLICIT NoOpDeleter() = default;
 
@@ -249,7 +249,7 @@ struct NOELDOC_SINCE("26.07.03") NoOpDeleter final {
 ///
 /// View the [module documentation](#) for more information.
 template<typename T>
-struct NOELDOC_SINCE("26.06.05") Own final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Own final {
     using value_type = T;
 
     ~Own()
@@ -315,7 +315,7 @@ struct NOELDOC_SINCE("26.06.05") Own final {
     /// lifetime is tracked for it. A null `owner` yields a null handle regardless
     /// of `ptr`.
     template<typename U>
-    NOELDOC_SINCE("26.07.03")
+    NOELDOC_EXPERIMENTAL_SINCE("26.07.03")
     VIOLET_EXPLICIT Own(const Own<U>& owner, T* ptr) noexcept
         : n_data(owner.n_blk != nullptr ? ptr : nullptr)
         , n_blk(owner.n_blk)
@@ -334,7 +334,7 @@ struct NOELDOC_SINCE("26.06.05") Own final {
     /// regardless of `ptr`. Saves the atomic increment/decrement pair that the
     /// copying overload incurs.
     template<typename U>
-    NOELDOC_SINCE("26.07.03")
+    NOELDOC_EXPERIMENTAL_SINCE("26.07.03")
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     VIOLET_EXPLICIT Own(Own<U>&& owner, T* ptr) noexcept
         : n_data(owner.n_blk != nullptr ? ptr : nullptr)

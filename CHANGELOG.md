@@ -10,6 +10,8 @@ availableAt:
 #### Noelware.Violet.Experimental
 - [own] Add type traits for `Weak<T>` ([`@auguwu`])
 - [own] Add **DynamicCast**, **StaticCast**, and **ConstCast** for `Own<T>` to act like C++'s [`std::dynamic_pointer_cast`][cpp-pointer-cast], [`std::static_pointer_cast`][cpp-pointer-cast], and [`std::const_pointer_cast`][cpp-pointer-cast]. ([`@auguwu`])
+- [own] Add **==**, **!=**, and **<=>** operators for `Own<T>` ([`@auguwu`])
+- [own] Add **NoOpDeleter** deleter ([`@auguwu`])
 
 [cpp-pointer-cast]: https://en.cppreference.com/cpp/memory/shared_ptr/pointer_cast
 
