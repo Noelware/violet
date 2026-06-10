@@ -398,14 +398,15 @@ TEST(ReadWriteLock, TryReadUntilTimesOutWhileWriterHolds)
 TEST(ReadWriteLock, TryReadUntilSucceedsAfterWriterReleases)
 {
     ReadWriteLock<Int32> lock(0);
+    std::latch acquired(1);
     std::thread writer([&] -> void {
         auto guard = lock.Write();
         *guard = 7;
+        acquired.count_down();
         std::this_thread::sleep_for(20ms);
     });
 
-    // Give writer time to acquire.
-    std::this_thread::sleep_for(5ms);
+    acquired.wait();
 
     auto result = lock.TryReadUntil(200ms);
     ASSERT_TRUE(result);
