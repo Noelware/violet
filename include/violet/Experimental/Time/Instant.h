@@ -59,7 +59,7 @@ namespace violet::experimental::chrono {
 ///     doWork();
 /// }
 /// ```
-struct Instant final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Instant final {
     /// The C++-backed type for this object.
     using std_type = std::chrono::steady_clock::time_point;
 
@@ -106,7 +106,15 @@ struct Instant final {
         return *this;
     }
 
-    constexpr auto operator<=>(const Instant&) const -> std::strong_ordering = default;
+    constexpr auto operator<=>(const Instant& other) const -> std::strong_ordering
+    {
+        return this->n_tp <=> other.n_tp;
+    }
+
+    constexpr auto operator<=>(const std_type& other) const -> std::strong_ordering
+    {
+        return this->n_tp <=> other;
+    }
 
 private:
     std_type n_tp;

@@ -50,7 +50,7 @@ namespace violet::experimental {
 ///
 /// VIOLET_ASSERT0((clock.Now() - start).AsSeconds(), 5);
 /// ```
-struct FakeClock final: public Clock {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") FakeClock final: public Clock {
     VIOLET_IMPLICIT FakeClock();
     VIOLET_IMPLICIT FakeClock(chrono::TimePoint tp);
 

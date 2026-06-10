@@ -125,3 +125,56 @@ auto Duration::FromStr(Str input) noexcept -> violet::anyhow::Result<Duration>
 
     return total;
 }
+
+auto Duration::ToString() const -> String
+{
+    auto nanos = this->AsNanos();
+    if (nanos < 0) {
+        return std::format("-{}", (-*this).ToString());
+    }
+
+    if (nanos == 0) {
+        return "0ns";
+    }
+
+    String out;
+    auto remaining = *this;
+    bool coarse = false;
+
+    if (auto hours = remaining.AsHours(); hours > 0) {
+        out.append(std::format("{}h", hours));
+        remaining = remaining - Duration::Hours(hours);
+        coarse = true;
+    }
+
+    if (auto mins = remaining.AsMinutes(); mins > 0) {
+        out.append(std::format("{}m", mins));
+        remaining = remaining - Duration::Minutes(mins);
+        coarse = true;
+    }
+
+    if (auto secs = remaining.AsSeconds(); secs > 0) {
+        out.append(std::format("{}s", secs));
+        remaining = remaining - Duration::Seconds(secs);
+        coarse = true;
+    }
+
+    if (auto ms = remaining.AsMillis(); ms > 0) {
+        out.append(std::format("{}ms", ms));
+        remaining = remaining - Duration::Milliseconds(ms);
+        coarse = true;
+    }
+
+    if (!coarse) {
+        if (auto us = remaining.AsMicros(); us > 0) {
+            out.append(std::format("{}µs", us));
+            remaining = remaining - Duration::Microseconds(us);
+        }
+
+        if (auto ns = remaining.AsNanos(); ns > 0) {
+            out.append(std::format("{}ns", ns));
+        }
+    }
+
+    return out;
+}

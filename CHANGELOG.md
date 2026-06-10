@@ -7,15 +7,22 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.07.02...master>
+
+### 26.07.03
 #### Noelware.Violet.Experimental
 - [own] Add type traits for `Weak<T>` ([`@auguwu`])
 - [own] Add **DynamicCast**, **StaticCast**, and **ConstCast** for `Own<T>` to act like C++'s [`std::dynamic_pointer_cast`][cpp-pointer-cast], [`std::static_pointer_cast`][cpp-pointer-cast], and [`std::const_pointer_cast`][cpp-pointer-cast]. ([`@auguwu`])
 - [own] Add **==**, **!=**, and **<=>** operators for `Own<T>` ([`@auguwu`])
 - [own] Add **NoOpDeleter** deleter ([`@auguwu`])
 
+#### Noelware.Violet.Experimental.Time
+- [duration] Added **ToString** and specialize `std::formatter` ([`@auguwu`])
+- Document which version what object was added ([`@auguwu`])
+
 [cpp-pointer-cast]: https://en.cppreference.com/cpp/memory/shared_ptr/pointer_cast
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.07.02...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.07.02...26.07.03>
 
 ### 26.07.02
 #### Noelware.Violet

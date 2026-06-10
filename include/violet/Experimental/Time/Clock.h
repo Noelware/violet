@@ -34,7 +34,7 @@ namespace violet::experimental {
 /// ## Thread Safety
 /// Implementations must be safe to call concurrently from any thread. Both the built-in
 /// system clock, wall clock and mock-fake clock are thread-safe.
-struct Clock {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Clock {
     virtual ~Clock() = default;
 
     /// Returns the system-implementation clock.
@@ -50,7 +50,7 @@ struct Clock {
 
 /// A real clock backed by C++'s [`std::chrono::steady_clock`] and [`std::chrono::system_clock`]
 /// primitives.
-struct SystemClock final: public Clock {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") SystemClock final: public Clock {
     /// @see violet::experimental::Clock::Now()
     [[nodiscard]] auto Now() const -> chrono::Instant override;
 

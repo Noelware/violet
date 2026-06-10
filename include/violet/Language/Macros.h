@@ -691,6 +691,27 @@
     };
 
 /**
+ * @macro VIOLET_FORMATTER_SINCE
+ * @since 26.07.03
+ * @param Since the version that added this specialization
+ * @param TYPE The type to specialize `std::formatter` for.
+ *
+ * Generates a `std::formatter` specialization that delegates to
+ * `value.ToString()`. The type must have a `ToString() const` member
+ * returning something convertible to `std::string`.
+ */
+#define VIOLET_FORMATTER_SINCE(Since, TYPE)                                                                            \
+    template<>                                                                                                         \
+    struct NOELDOC_SINCE(Since) std::formatter<TYPE> final: public std::formatter<std::string> {                       \
+        constexpr formatter() = default;                                                                               \
+        template<class FC>                                                                                             \
+        auto format(const TYPE& value, FC& cx) const                                                                   \
+        {                                                                                                              \
+            return ::std::formatter<std::string>::format(value.ToString(), cx);                                        \
+        }                                                                                                              \
+    };
+
+/**
  * @macro VIOLET_FORMATTER_TEMPLATE
  * @since 26.02
  * @param TYPE The (possibly dependent) type to specialize `std::formatter` for.
