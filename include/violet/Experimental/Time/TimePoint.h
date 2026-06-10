@@ -228,6 +228,19 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
         return *this;
     }
 
+    constexpr auto operator==(const TimePoint&) const -> bool = default;
+    constexpr auto operator!=(const TimePoint&) const -> bool = default;
+
+    constexpr auto operator==(const std_type& other) const -> bool
+    {
+        return this->n_ns_since_epoch == other.time_since_epoch().count();
+    }
+
+    constexpr auto operator!=(const std_type& other) const -> bool
+    {
+        return this->n_ns_since_epoch != other.time_since_epoch().count();
+    }
+
     constexpr auto operator<=>(const TimePoint& other) const -> std::strong_ordering
     {
         return this->n_ns_since_epoch <=> other.n_ns_since_epoch;

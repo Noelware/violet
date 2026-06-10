@@ -106,6 +106,19 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Instant final {
         return *this;
     }
 
+    constexpr auto operator==(const Instant&) const -> bool = default;
+    constexpr auto operator!=(const Instant&) const -> bool = default;
+
+    constexpr auto operator==(const std_type& other) const -> bool
+    {
+        return this->n_tp == other;
+    }
+
+    constexpr auto operator!=(const std_type& other) const -> bool
+    {
+        return this->n_tp != other;
+    }
+
     constexpr auto operator<=>(const Instant& other) const -> std::strong_ordering
     {
         return this->n_tp <=> other.n_tp;
