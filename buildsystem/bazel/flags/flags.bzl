@@ -61,6 +61,20 @@ BOOL_FLAGS = {
         "default": False,
         "doc": "Enables the **Undefined Behaviour** Sanitizer on each C++ target. Usually, this is meant for Bazel workspaces that don't provide custom C++ toolchain definitions.",
     },
+    "unsafe_polymorphic_relocation": {
+        "default": False,
+        "doc": """\
+Allows polymorphic types to be declared trivially relocatable via `VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE`.
+
+This setting is off by default: relocating a polymorphic object copies its vptr, which is *correct* on every ABI that violet targets
+but it is not guaranteed by the standard, and the committee isn't settled whether it should be. Enabling this does not make any type
+relocatable on its own; it only removes the `static_assert` declaration from the `VIOLET_DECLARE_TRIVIALLY_RELOCATABLE` macro, so each
+type must still be opted in explicitly.
+
+Types with virtual bases remain rejected regardless of this setting. Leave this off unless you have audited every polymorphic
+type you annotate and confirmed none is self-referential or externally registered.
+""",
+    },
 }
 
 STRING_FLAGS = {

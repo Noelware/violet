@@ -173,6 +173,24 @@ struct VIOLET_API VIOLET_LOCKABLE Synchronized final {
 
     // NOLINTEND(modernize-use-trailing-return-type)
 
+    template<typename Fun>
+        requires(callable<Fun, T&>)
+    [[nodiscard]] NOELDOC_SINCE("26.08") auto With(Fun&& fun) noexcept(noexcept(std::invoke(fun, std::declval<T&>())))
+        -> decltype(auto)
+    {
+        auto data = this->Lock();
+        return std::invoke(VIOLET_FWD(Fun, fun), *data);
+    }
+
+    template<typename Fun>
+        requires(callable<Fun, const T&>)
+    [[nodiscard]] NOELDOC_SINCE("26.08") auto With(Fun&& fun) const
+        noexcept(noexcept(std::invoke(fun, std::declval<const T&>()))) -> decltype(auto)
+    {
+        auto data = this->Lock();
+        return std::invoke(VIOLET_FWD(Fun, fun), *data);
+    }
+
     /// Returns a reference to the underlying mutex.
     ///
     /// This is primarily useful for passing the mutex to a conditional variable ([`Condvar`]). It does

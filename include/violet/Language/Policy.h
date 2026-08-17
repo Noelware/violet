@@ -34,9 +34,18 @@
  * The minimum C++ standard version that Violet can be built with.
  * Currently set to C++20 (`202002L`).
  *
+ * As of 26.08, you can set this to any C++ standard you like (lower than C++20
+ * is a hard error).
+ *
  * @since 26.02
  */
+#ifndef VIOLET_MIN_CPP_VERSION
 #define VIOLET_MIN_CPP_VERSION 202002L
+#else
+#if VIOLET_MIN_CPP_VERSION < 202002L
+#error "Using Violet under C++20 is not supported"
+#endif
+#endif
 
 /**
  * @macro VIOLET_MIN_CLANG_MAJOR_SUPPORTED

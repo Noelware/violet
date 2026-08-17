@@ -40,7 +40,7 @@ VIOLET_COLD void defaultPanicHook(const Info& info)
 {
     violet::PrintErr("[{}:{}:{}] panic reached", info.Location.File, info.Location.Line, info.Location.Column);
     if (info.Userland != nullptr) {
-        violet::PrintErr("in userland [{}:{}:{}]", info.Userland->File, info.Userland->Line, info.Userland->Column);
+        violet::PrintErr(" in userland [{}:{}:{}]", info.Userland->File, info.Userland->Line, info.Userland->Column);
     }
 
     violet::PrintErrln(": {}", info.Message);

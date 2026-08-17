@@ -207,6 +207,11 @@ concept collectable = requires(T& ty, Item value) {
     { cnt.push_back(value) };
 };
 
+/// @since 26.08
+template<typename T, typename... Args>
+concept constructible
+    = std::constructible_from<T, Args...> && !(sizeof...(Args) == 1 && (std::same_as<std::decay_t<Args>, T> || ...));
+
 /// Detects whenever `T` is a [`violet::SharedPtr`] instantiation.
 ///
 /// ## Examples
@@ -278,4 +283,131 @@ struct NOELDOC_SINCE("26.06.05") FunctionParams<R(Args...)> final {
     constexpr static std::size_t arity = sizeof...(Args);
 };
 
+/// Satisfied when `T` is a complete object type; one whose size is known.
+///
+/// This excludes `void`, function types, incomplete class types, and arrays of
+/// unknown bound.
+///
+/// @since 26.09
+template<typename T>
+concept complete_object = requires { sizeof(T); };
+static_assert(complete_object<int32_t>);
+static_assert(!complete_object<void>);
+static_assert(!complete_object<int32_t[]>);
+
+/// Satisfied when `T` has a known alignment requirement.
+///
+/// Nearly coextensive with [`complete_object`], but permits arrays of unknown bound (`alignof(T[])`
+/// is valid where `sizeof(T[])` is not).
+///
+/// @since 26.09
+template<typename T>
+concept alignable = requires { alignof(T); };
+
+namespace NOELDOC_HIDE traits_internal {
+
+#if VIOLET_FEATURE(TRIVIAL_RELOCATION)
+template<typename T>
+constexpr inline bool detect_relocatable_v = std::is_trivially_relocatable_v<T>;
+#else
+template<typename T>
+constexpr inline bool detect_relocatable_v = std::is_trivially_copyable_v<T>;
+#endif
+
+} // namespace NOELDOC_HIDE traits_internal
+
+/// Customization point declaring whether `T` can be relocated safely by copying its bytes.
+///
+/// A type is *trivially relocatable* when moving it to fresh storage and destroying the original
+/// is equivalent to copying its object representation to that storage; i.e. when a move-construct-then-destroy
+/// pair can be replaced by a `memcpy`. Containers in violet use this to grow a buffer with a single
+/// `memcpy` instead of an per-element move loop.
+///
+/// The primary template is answered conseravtively: it says **true** for types the compiler can prove
+/// by either being copyable or with `std::is_trivially_relocatable_v` in C++26. Many types are
+/// trivially relocatable without being *detectable* so; violet's `Own<T>`, `Unique<T>`, `Vec<T>`, etc
+/// have non-trivial move constructors that nonetheless cancel out against their destructors. No language
+/// facility can detect that, so those types must opt in explicitly via [`VIOLET_DECLARE_TRIVIALLY_RELOCATABLE`].
+///
+/// Being wrong in the permissive direction is not a missed optimization, but silent memory corruption, so the
+/// default never guesses. A type is safe to opt in when **no pointer inside of the object points at the object itself,
+/// and nothing outside holds a pointer to it**. Disqualifying patterns:
+///
+/// * self-referential SBO (`libstdc++` (GCC)'s `std::string` points as its own internal buffer for SBO)
+/// * embedded sentinel nodes (`libstdc++` (GCC) and libc++ (LLVM) store a list/tree end node inside
+///   the container; heap nodes point back at it.)
+/// * type erasure over unknown types ([`std::function`], [`std::any`], [`violet::experimental::Any`]; the stored
+///   object may itself be self-referential)
+/// * registration with some external resource ([`std::mutex`] may have published its address to the kernel).
+///
+/// Note that this is a property of implementation rather than interface: `std::string` is trivially relocatable
+/// on libc++ and MSVC STL but not on stdlibc++.
+///
+/// @tparam T type that is being queried. Must be a complete type; cv-qualification are stripped by
+///           [`is_trivially_relocatable_v`] before reaching the template, so specialization are
+///           written for unqualified CV types.
+template<typename T>
+struct NOELDOC_SINCE("26.09") trivially_relocatable: std::bool_constant<traits_internal::detect_relocatable_v<T>> { };
+
+template<typename T, std::size_t N>
+struct NOELDOC_SINCE("26.09") NOELDOC_SEE("violet::trivially_relocatable") trivially_relocatable<T[N]> final
+    : trivially_relocatable<std::remove_cv_t<T>> { };
+
+/// Whether `T` is trivially relocatable.
+///
+/// The interface to [`trivially_relocatable_v`]; strips CV qualification before querying, so
+/// `const T` and `T` always agree and specializations need to be only written once.
+///
+/// @tparam T The type being queried; must be complete.
+template<typename T>
+NOELDOC_SINCE("26.09")
+constexpr inline bool is_trivially_relocatable_v = trivially_relocatable<std::remove_cv_t<T>>::value;
+
 } // namespace violet
+
+/**
+ * @macro VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE
+ * @since 26.09
+ *
+ * Permits polymorphic types to be opted into trivial relocation. Disabled by default.
+ *
+ * Relocating a polymorphic object copies its vptr along-side everything else. Because
+ * virtual dispatch tables are static per-class object at a fixed address, the copied vptr
+ * remains correct on every ABI that Violet targets (libstdc++, libc++, MSVC STL); so
+ * in practice, this works. The C++ standard doesn't guarantee it, and the committee hasn't
+ * settled whether it should: [`P2786` (*"Trivial Relocatability For C++26"*)][P2786] treats
+ * unannotated polymorphic types as eligible for trivial relocation, while [`P1144` (*"Object relocation in terms of
+ * move plus destroy"*)][P1144] argues that it is unsound and can segfault in supposedly well-defined code.
+ * Disagreements is the sharpest around virtual bases, where an implementation may lay out *offset-to-virtual-base*
+ * entries such that a byte copy to a different address is not an equivalent to a move.
+ *
+ * Defining this macro to `1` only removes the static assertion that rejects polymorphic types
+ * at the declaration site, it doesn't make any type relocatable on its own; each type must still
+ * opt-in individualy with [`VIOLET_DECLARE_TRIVIALLY_RELOCATABLE`].
+ *
+ * > [!WARNING]
+ * > * Never valid for any types with virtual bases, regardless of this setting.
+ * > * This is a TU-wide switch, so enabling it for one type disables the guardrail for every other type
+ *     in the same translation unit. Prefer scoping it to the narrowest build target that needs it.
+ *
+ * [P2786]: https://wg21.link/p2786
+ * [P1144]: https://wg21.link/p1144
+ */
+#ifndef VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE
+#define VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE 0
+#endif
+
+/**
+ * @macro VIOLET_DECLARE_TRIVIALLY_RELOCATABLE
+ * @since 26.09
+ */
+#define VIOLET_DECLARE_TRIVIALLY_RELOCATABLE(...)                                                                      \
+    template<>                                                                                                         \
+    struct violet::trivially_relocatable<__VA_ARGS__> final: std::true_type {                                          \
+        static_assert(std::is_move_constructible_v<__VA_ARGS__> && std::is_destructible_v<__VA_ARGS__>,                \
+            "type must be movable and destructible to be relocatable");                                                \
+                                                                                                                       \
+        static_assert(!std::is_polymorphic_v<__VA_ARGS__> || VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE,              \
+            "relocating a polymorphic type is a footgun; define `VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE` to "     \
+            "opt-in deliberately (read the documentation for more information: (TODO: this))");                        \
+    };

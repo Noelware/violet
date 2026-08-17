@@ -7,7 +7,24 @@ availableAt:
 ---
 
 ### unreleased
-**Git History**: <https://github.com/Noelware/violet/compare/26.07.02...master>
+#### Noelware.Violet
+- Add **VIOLET_ASSUME** macro, expanding to `[[assume(expr)]]` when available ([`@auguwu`])
+- Add **violet::trivially_relocatable** / **is_trivially_relocatable_v**, plus **VIOLET_DECLARE_TRIVIALLY_RELOCATABLE** and **VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE** to opt types into relocation-by-memcpy ([`@auguwu`])
+- Add **complete_object**, **alignable**, and **constructible** concepts ([`@auguwu`])
+- Add **VIOLET_STD_LIBCXX**, **VIOLET_STD_GNU**, **VIOLET_STD_MSVC**, and **VIOLET_STDLIB** macros for detecting the active standard library implementation ([`@auguwu`])
+- Add **VIOLET_CORO_AWAIT_ELIDABLE** macro ([`@auguwu`])
+- Add **VIOLET_RETURN_ADDRESS** macro ([`@auguwu`])
+- `VIOLET_MIN_CPP_VERSION` can now be overridden by the embedder; defining it below C++20 is a hard error ([`@auguwu`])
+- Fix missing leading space in the default panic hook's userland location message ([`@auguwu`])
+- Add `unsafe_polymorphic_relocation` Bazel build flag, gating `VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE` ([`@auguwu`])
+
+#### Noelware.Violet.Experimental
+- [**Synchronized.h**] Added **With(<lambda>)** method ([`@auguwu`])
+- Add **NonNull\<T\>**, a non-nullable non-owning pointer wrapper modeled after Rust's `std::ptr::NonNull<T>` ([`@auguwu`])
+
+[`std::ptr::NonNull`]: https://doc.rust-lang.org/std/ptr/struct.NonNull.html
+
+**Git History**: <https://github.com/Noelware/violet/compare/26.07.03...master>
 
 ### 26.07.03
 #### Noelware.Violet.Experimental
