@@ -1347,3 +1347,101 @@
  * Marks a declaration `constexpr` since a given version if it was non-`constexpr`
  */
 #define NOELDOC_CONSTEXPR_SINCE(ver) __noeldoc_annotate__("constexpr(since:" ver ")")
+
+/**
+ * @macro VIOLET_ASSUME
+ * @param expr A boolean expression the optimizer may assume to always be `true`.
+ * @since 26.09
+ *
+ * Tells the compiler that `expr` is always true at this point, without evaluating it, so it
+ * can be optimized accordingly; behaviour is undefined if `expr` is actually `false` at runtime.
+ *
+ * This will expand to `[[assume(expr)]]` when avaliable, otherwise expands to nothing.
+ */
+#if VIOLET_REQUIRE_STL(202302L) && VIOLET_HAS_CPP_ATTRIBUTE(assume)
+#define VIOLET_ASSUME(expr) [[assume(expr)]]
+#else
+#define VIOLET_ASSUME(expr)
+#endif
+
+/**
+ * @macro VIOLET_FEATURE_TRIVIAL_RELOCATION
+ * @since 26.09
+ *
+ * Defined to `1` when the standard library provides `std::is_trivially_relocatable`, `0` otherwise.
+ */
+#if defined(__cpp_lib_trivially_relocatable) && __cpp_lib_trivially_relocatable >= 202502L
+#define VIOLET_FEATURE_TRIVIAL_RELOCATION 1
+#else
+#define VIOLET_FEATURE_TRIVIAL_RELOCATION 0
+#endif
+
+#include <version>
+
+/**
+ * @macro VIOLET_STD_LIBCXX
+ * @since 26.09
+ *
+ * Defined to `1` when the active standard library is LLVM `libc++`, detected
+ * via `_LIBCPP_VERSION`. Undefined otherwise.
+ */
+
+/**
+ * @macro VIOLET_STD_GNU
+ * @since 26.09
+ *
+ * Defined to `1` when the active standard library is GNU `libstdc++`, detected
+ * via `__GLIBCXX__`/`__GLIBCPP__`. Undefined otherwise.
+ */
+
+/**
+ * @macro VIOLET_STD_MSVC
+ * @since 26.09
+ *
+ * Defined to `1` when the active standard library is Microsoft's STL (https://github.com/microsoft/stl),
+ * detected via `_MSVC_STL_VERSION`. Undefined otherwise.
+ */
+#ifdef _LIBCPP_VERSION
+#define VIOLET_STD_LIBCXX 1
+#elif defined(__GLIBCXX__) || defined(__GLIBCPP__)
+#define VIOLET_STD_GNU 1
+#elif defined(_MSVC_STL_VERSION) || defined(_CPPLIB_VER)
+#define VIOLET_STD_MSVC 1
+#else
+#error "unrecognized STL implementation"
+#endif
+
+/**
+ * @macro VIOLET_STDLIB
+ * @since 26.09
+ */
+#define VIOLET_STDLIB(x) VIOLET_STD_##x
+
+/**
+ * @macro VIOLET_CORO_AWAIT_ELIABLE
+ * @since 26.09
+ *
+ * Expands to `[[clang::coro_await_elidable]]` when the compiler supports it, marking
+ * a coroutine-returning function as eligible for HALO (heap allocation elision) at
+ * its `co_await` points. Expands to nothing otherwise.
+ */
+#if VIOLET_HAS_CPP_ATTRIBUTE(clang::coro_await_elidable)
+#define VIOLET_CORO_AWAIT_ELIDABLE [[clang::coro_await_elidable]]
+#else
+#define VIOLET_CORO_AWAIT_ELIDABLE
+#endif
+
+/**
+ * @macro VIOLET_RETURN_ADDRESS
+ * @since 26.09
+ *
+ * Returns the return address of the current function, i.e, the address execution
+ * resumes after this function returns.
+ */
+#if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
+#define VIOLET_RETURN_ADDRESS() __builtin_return_address(0)
+#elif VIOLET_COMPILER(MSVC) || VIOLET_COMPILER(CLANG_CL)
+#define VIOLET_RETURN_ADDRESS() _ReturnAddress()
+#else
+#define VIOLET_RETURN_ADDRESS() nullptr
+#endif

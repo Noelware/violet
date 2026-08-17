@@ -38,4 +38,6 @@ AllowShortFunctionsOnASingleLine: Empty
 PPIndentWidth: 4
 AllowShortEnumsOnASingleLine: false
 EnumTrailingComma: Remove
+Cpp11BracedListStyle: true
+NamespaceIndentation: None
 ...

@@ -7,5 +7,6 @@
 .agents/
 build/
 external/
+tools/
 
 compile_commands.json

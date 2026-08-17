@@ -25,6 +25,7 @@
 VIOLET_API auto main(int argc, char* argv[]) -> int
 {
     testing::InitGoogleTest(&argc, argv);
+    violet::panic::InstallDefaultPanicHook();
     violet::testing::runfiles::Init(argv[0]);
 
     return RUN_ALL_TESTS();

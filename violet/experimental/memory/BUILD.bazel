@@ -19,47 +19,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-load("//buildsystem/bazel:cc.bzl", "violet_cc_library")
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
 )
 
 violet_cc_library(
-    name = "runfiles",
-    srcs = ["//src/testing/impls/runfiles:bazel.cc"],
-    hdrs = ["//include/violet/Testing:Runfiles.h"],
-    local_defines = select({
-        "//buildsystem/bazel/flags:runfiles_logs_enabled": ["VIOLET_RUNFILES_LOGS"],
-        "//conditions:default": [],
-    }),
+    name = "non_null",
+    hdrs = ["//include/violet/Experimental/Memory:NonNull.h"],
+    deps = ["//violet/container:optional"],
+)
+
+violet_cc_test(
+    name = "non_null_test",
+    srcs = ["//tests/experimental/memory:NonNull.test.cc"],
     deps = [
-        "//violet",
-        "//violet:strings",
+        ":non_null",
         "//violet/container:optional",
-        "//violet/filesystem",
-        "//violet/system",
-        "@rules_cc//cc/runfiles",
+        "//violet/experimental:slice",
     ],
-)
-
-violet_cc_library(
-    name = "capture_stream",
-    srcs = ["//src/testing:CaptureStream.cc"],
-    hdrs = ["//include/violet/Testing:CaptureStream.h"],
-    deps = [
-        "//violet:macros",
-        "//violet:policy_checks",
-    ],
-)
-
-violet_cc_library(
-    name = "runfiles_main",
-    srcs = ["//src/testing:Runfiles.main.cc"],
-    deps = [
-        ":runfiles",
-        "//violet:panic",
-        "@googletest//:gtest",
-    ],
-    alwayslink = True,
 )

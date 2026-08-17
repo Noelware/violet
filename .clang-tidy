@@ -41,7 +41,8 @@ Checks: >
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-avoid-do-while, -readability-use-anyofallof,
   -cppcoreguidelines-pro-type-reinterpret-cast,
-  -cppcoreguidelines-pro-type-union-access, -cppcoreguidelines-no-malloc
+  -cppcoreguidelines-pro-type-union-access, -cppcoreguidelines-no-malloc, -google-build-using-namespace,
+  -google-readability-namespace-comments, -cppcoreguidelines-avoid-non-const-global-variables
 
 CheckOptions:
   cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
