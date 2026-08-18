@@ -300,9 +300,24 @@ static_assert(!complete_object<int32_t[]>);
 /// Nearly coextensive with [`complete_object`], but permits arrays of unknown bound (`alignof(T[])`
 /// is valid where `sizeof(T[])` is not).
 ///
+/// ## Compatibility
+/// On Clang/MSVC, function types with `alignof`/`sizeof` is ill-formed, per the standard, but GCC
+/// accepts it as a GNU extension (which returns `1`, which makes it "alignable"). So, function types
+/// are permitted on GCC only, Clang/MSVC are a hard error.
+///
 /// @since 26.09
+#if VIOLET_COMPILER(GCC)
+template<typename T>
+concept alignable = requires { alignof(T); } && !std::is_function_v<T>;
+#else
 template<typename T>
 concept alignable = requires { alignof(T); };
+#endif
+
+static_assert(alignable<int32_t>);
+static_assert(alignable<int32_t[]>);
+static_assert(!alignable<void>);
+static_assert(!alignable<void()>);
 
 namespace NOELDOC_HIDE traits_internal {
 
