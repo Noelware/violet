@@ -78,7 +78,10 @@ violet_cc_library(
     name = "time_point",
     srcs = ["//src/experimental/time:TimePoint.cc"],
     hdrs = ["//include/violet/Experimental/Time:TimePoint.h"],
-    deps = [":duration"],
+    deps = [
+        ":duration",
+        "//violet/experimental:slice",
+    ],
 )
 
 violet_cc_test(

@@ -22,15 +22,15 @@
 #include <gtest/gtest.h>
 #include <violet/Container/Optional.h>
 
+namespace violet {
+// NOLINTBEGIN(readability-identifier-length,performance-unnecessary-copy-initialization,cppcoreguidelines-special-member-functions)
+
 VIOLET_DIAGNOSTIC_PUSH
 
 #if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
 VIOLET_DIAGNOSTIC_IGNORE("-Wself-move")
 VIOLET_DIAGNOSTIC_IGNORE("-Wself-assign-overloaded")
 #endif
-
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length,performance-unnecessary-copy-initialization,cppcoreguidelines-special-member-functions)
-using namespace violet;
 
 TEST(Optional, DefaultIsDisengaged)
 {
@@ -510,7 +510,7 @@ TEST(Optional, MoveOnlyType)
 
 TEST(Optional, VectorValue)
 {
-    std::vector<Int32> v = { 1, 2, 3 };
+    std::vector<Int32> v = {1, 2, 3};
     Optional<std::vector<Int32>> opt = VIOLET_MOVE(v);
     EXPECT_TRUE(opt);
     EXPECT_EQ(opt->size(), 3U);
@@ -792,7 +792,7 @@ TEST(OptionalFromStd, WithStruct)
         int y;
     };
 
-    std::optional<Point> std_opt = Point{ .x = 3, .y = 4 };
+    std::optional<Point> std_opt = Point{.x = 3, .y = 4};
     Optional<Point> opt(std_opt);
 
     ASSERT_TRUE(opt);
@@ -1129,8 +1129,8 @@ static_assert(std::is_move_constructible_v<MoveOnlyNonAssignable>);
 
 TEST(OptionalNonAssignable, CopyAssignBothEngaged)
 {
-    Optional<NonAssignable> a(NonAssignable{ "key1", "val1" });
-    Optional<NonAssignable> b(NonAssignable{ "key2", "val2" });
+    Optional<NonAssignable> a(NonAssignable{"key1", "val1"});
+    Optional<NonAssignable> b(NonAssignable{"key2", "val2"});
 
     a = b;
 
@@ -1142,7 +1142,7 @@ TEST(OptionalNonAssignable, CopyAssignBothEngaged)
 TEST(OptionalNonAssignable, CopyAssignFromEngagedToEmpty)
 {
     Optional<NonAssignable> a;
-    Optional<NonAssignable> b{ NonAssignable{ "key", "val" } };
+    Optional<NonAssignable> b{NonAssignable{"key", "val"}};
 
     a = b;
 
@@ -1153,7 +1153,7 @@ TEST(OptionalNonAssignable, CopyAssignFromEngagedToEmpty)
 
 TEST(OptionalNonAssignable, CopyAssignFromEmptyToEngaged)
 {
-    Optional<NonAssignable> a{ NonAssignable{ "key", "val" } };
+    Optional<NonAssignable> a{NonAssignable{"key", "val"}};
     Optional<NonAssignable> b;
 
     a = b;
@@ -1162,7 +1162,7 @@ TEST(OptionalNonAssignable, CopyAssignFromEmptyToEngaged)
 
 TEST(OptionalNonAssignable, CopyAssignSelf)
 {
-    Optional<NonAssignable> a{ NonAssignable{ "key", "val" } };
+    Optional<NonAssignable> a{NonAssignable{"key", "val"}};
 
     a = a;
 
@@ -1182,8 +1182,8 @@ TEST(OptionalNonAssignable, CopyAssignBothEmpty)
 
 TEST(OptionalNonAssignable, MoveAssignBothEngaged)
 {
-    Optional<NonAssignable> a{ NonAssignable{ "key1", "val1" } };
-    Optional<NonAssignable> b{ NonAssignable{ "key2", "val2" } };
+    Optional<NonAssignable> a{NonAssignable{"key1", "val1"}};
+    Optional<NonAssignable> b{NonAssignable{"key2", "val2"}};
 
     a = VIOLET_MOVE(b);
 
@@ -1196,7 +1196,7 @@ TEST(OptionalNonAssignable, MoveAssignBothEngaged)
 TEST(OptionalNonAssignable, MoveAssignFromEngagedToEmpty)
 {
     Optional<NonAssignable> a;
-    Optional<NonAssignable> b{ NonAssignable{ "key", "val" } };
+    Optional<NonAssignable> b{NonAssignable{"key", "val"}};
 
     a = VIOLET_MOVE(b);
 
@@ -1207,7 +1207,7 @@ TEST(OptionalNonAssignable, MoveAssignFromEngagedToEmpty)
 
 TEST(OptionalNonAssignable, MoveAssignFromEmptyToEngaged)
 {
-    Optional<NonAssignable> a{ NonAssignable{ "key", "val" } };
+    Optional<NonAssignable> a{NonAssignable{"key", "val"}};
     Optional<NonAssignable> b;
 
     a = VIOLET_MOVE(b);
@@ -1217,8 +1217,8 @@ TEST(OptionalNonAssignable, MoveAssignFromEmptyToEngaged)
 
 TEST(OptionalMoveOnlyNonAssignable, MoveAssignBothEngaged)
 {
-    Optional<MoveOnlyNonAssignable> a{ MoveOnlyNonAssignable{ 1, 100 } };
-    Optional<MoveOnlyNonAssignable> b{ MoveOnlyNonAssignable{ 2, 200 } };
+    Optional<MoveOnlyNonAssignable> a{MoveOnlyNonAssignable{1, 100}};
+    Optional<MoveOnlyNonAssignable> b{MoveOnlyNonAssignable{2, 200}};
 
     a = VIOLET_MOVE(b);
 
@@ -1231,7 +1231,7 @@ TEST(OptionalMoveOnlyNonAssignable, MoveAssignBothEngaged)
 TEST(OptionalMoveOnlyNonAssignable, MoveAssignFromEngagedToEmpty)
 {
     Optional<MoveOnlyNonAssignable> a;
-    Optional<MoveOnlyNonAssignable> b{ MoveOnlyNonAssignable{ 3, 300 } };
+    Optional<MoveOnlyNonAssignable> b{MoveOnlyNonAssignable{3, 300}};
 
     a = VIOLET_MOVE(b);
 
@@ -1243,7 +1243,7 @@ TEST(OptionalMoveOnlyNonAssignable, MoveAssignFromEngagedToEmpty)
 
 TEST(OptionalMoveOnlyNonAssignable, MoveAssignFromEmptyToEngaged)
 {
-    Optional<MoveOnlyNonAssignable> a{ MoveOnlyNonAssignable{ 4, 400 } };
+    Optional<MoveOnlyNonAssignable> a{MoveOnlyNonAssignable{4, 400}};
     Optional<MoveOnlyNonAssignable> b;
 
     a = VIOLET_MOVE(b);
@@ -1254,8 +1254,8 @@ TEST(OptionalSTLConstTemplate, CopyAssignBothEngaged)
 {
     using P = std::pair<const String, String>;
 
-    Optional<P> a{ P{ "host", "localhost" } };
-    Optional<P> b{ P{ "host", "0.0.0.0" } };
+    Optional<P> a{P{"host", "localhost"}};
+    Optional<P> b{P{"host", "0.0.0.0"}};
 
     a = b;
 
@@ -1268,8 +1268,8 @@ TEST(OptionalSTLConstTemplate, MoveAssignBothEngaged)
 {
     using P = std::pair<const String, String>;
 
-    Optional<P> a{ P{ "key1", "val1" } };
-    Optional<P> b{ P{ "key2", "val2" } };
+    Optional<P> a{P{"key1", "val1"}};
+    Optional<P> b{P{"key2", "val2"}};
 
     a = VIOLET_MOVE(b);
 
@@ -1283,9 +1283,9 @@ TEST(OptionalSTLConstTemplate, ChainedAssignment)
 {
     using P = std::pair<const String, String>;
 
-    Optional<P> a{ P{ "a", "1" } };
-    Optional<P> b{ P{ "b", "2" } };
-    Optional<P> c{ P{ "c", "3" } };
+    Optional<P> a{P{"a", "1"}};
+    Optional<P> b{P{"b", "2"}};
+    Optional<P> c{P{"c", "3"}};
 
     a = b;
     EXPECT_EQ(a->first, "b");
@@ -1294,14 +1294,14 @@ TEST(OptionalSTLConstTemplate, ChainedAssignment)
     EXPECT_EQ(a->first, "c");
     EXPECT_FALSE(c);
 
-    a = Optional<P>{ };
+    a = Optional<P>{};
     EXPECT_FALSE(a);
 }
 
 TEST(OptionalAssignable, CopyAssignBothEngaged)
 {
-    Optional<String> a{ "hello" };
-    Optional<String> b{ "world" };
+    Optional<String> a{"hello"};
+    Optional<String> b{"world"};
 
     a = b;
 
@@ -1313,8 +1313,8 @@ TEST(OptionalAssignable, CopyAssignBothEngaged)
 
 TEST(OptionalAssignable, MoveAssignBothEngaged)
 {
-    Optional<String> a{ "hello" };
-    Optional<String> b{ "world" };
+    Optional<String> a{"hello"};
+    Optional<String> b{"world"};
 
     a = VIOLET_MOVE(b);
 
@@ -1324,8 +1324,8 @@ TEST(OptionalAssignable, MoveAssignBothEngaged)
 
 TEST(OptionalAssignable, IntCopyAssign)
 {
-    Optional<Int32> a{ 42 };
-    Optional<Int32> b{ 99 };
+    Optional<Int32> a{42};
+    Optional<Int32> b{99};
 
     a = b;
 
@@ -1333,6 +1333,7 @@ TEST(OptionalAssignable, IntCopyAssign)
     EXPECT_EQ(a.Value(), 99);
 }
 
-// NOLINTEND(google-build-using-namespace,readability-identifier-length,performance-unnecessary-copy-initialization,cppcoreguidelines-special-member-functions)
-
 VIOLET_DIAGNOSTIC_POP
+
+// NOLINTEND(readability-identifier-length,performance-unnecessary-copy-initialization,cppcoreguidelines-special-member-functions)
+} // namespace violet

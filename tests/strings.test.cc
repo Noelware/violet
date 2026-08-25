@@ -22,8 +22,7 @@
 #include <gtest/gtest.h>
 #include <violet/Strings.h>
 
-using namespace violet::strings; // NOLINT(google-build-using-namespace)
-using namespace violet; // NOLINT(google-build-using-namespace)
+namespace violet::strings {
 
 TEST(Strings, TrimStart)
 {
@@ -172,3 +171,5 @@ TEST(Strings, SplitNMaxSplitsExact)
     ASSERT_EQ(*it.Next(), "d:e");
     EXPECT_FALSE(it.Next());
 }
+
+} // namespace violet::strings

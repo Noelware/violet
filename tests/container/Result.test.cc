@@ -23,6 +23,9 @@
 #include <violet/Container/Optional.h>
 #include <violet/Container/Result.h>
 
+namespace violet {
+// NOLINTBEGIN(readability-identifier-length,performance-unnecessary-copy-initialization)
+
 VIOLET_DIAGNOSTIC_PUSH
 
 #if VIOLET_COMPILER(CLANG) || VIOLET_COMPILER(GCC)
@@ -30,8 +33,39 @@ VIOLET_DIAGNOSTIC_IGNORE("-Wself-move")
 VIOLET_DIAGNOSTIC_IGNORE("-Wself-assign-overloaded")
 #endif
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length,performance-unnecessary-copy-initialization)
-using namespace violet;
+TEST(Result, LargeValue)
+{
+    struct Big {
+        Int32 data[256] = {};
+    };
+
+    Big b;
+    b.data[0] = 42;
+    b.data[255] = 99;
+
+    Result<Big, String> r = b;
+    EXPECT_TRUE(r.Ok());
+    EXPECT_EQ(r.Value().data[0], 42);
+    EXPECT_EQ(r.Value().data[255], 99);
+}
+
+TEST(Result, SelfMoveAssign)
+{
+    Result<String, Int32> r = String("hello");
+    r = VIOLET_MOVE(r);
+
+    // Just verify no crash; value may be in moved-from state
+    EXPECT_TRUE(r);
+}
+
+TEST(Result, ChainedMap)
+{
+    Result<Int32, String> r = 10;
+    auto final_val
+        = VIOLET_MOVE(r).Map([](Int32 v) -> int { return v * 2; }).Map([](Int32 v) -> int { return v + 2; }).Unwrap();
+
+    EXPECT_EQ(final_val, 22);
+}
 
 TEST(Result, ConstructOkImplicit)
 {
@@ -371,7 +405,7 @@ TEST(Result, MoveOnlyUnwrap)
 
 TEST(Result, VectorValue)
 {
-    std::vector<Int32> v = { 1, 2, 3 };
+    std::vector<Int32> v = {1, 2, 3};
     Result<std::vector<Int32>, String> r = VIOLET_MOVE(v);
     EXPECT_TRUE(r.Ok());
     EXPECT_EQ(r.Value().size(), 3U);
@@ -715,7 +749,7 @@ auto ReturnsErr() -> Result<Int32, String>
 
 auto ReturnsVoidOk() -> Result<void, String>
 {
-    return { };
+    return {};
 }
 
 auto ReturnsVoidErr() -> Result<void, String>
@@ -738,13 +772,13 @@ auto TryErrChain() -> Result<Int32, String>
 auto TryVoidOkChain() -> Result<void, String>
 {
     VIOLET_TRY_VOID(ReturnsVoidOk());
-    return { };
+    return {};
 }
 
 auto TryVoidErrChain() -> Result<void, String>
 {
     VIOLET_TRY_VOID(ReturnsVoidErr());
-    return { };
+    return {};
 }
 
 // Error conversion: Int32 -> Int64
@@ -795,224 +829,169 @@ TEST(VioletTry, ErrorConversion)
     EXPECT_EQ(r.Error(), 42L);
 }
 
-TEST(ResultTraits, IsResult)
-{
-    static_assert(is_result_v<Result<Int32, String>>);
-    static_assert(is_result_v<Result<void, Int32>>);
-    static_assert(!is_result_v<Int32>);
-    static_assert(!is_result_v<String>);
-}
+VIOLET_DIAGNOSTIC_POP
 
-TEST(ResultTraits, ResultTypeExtraction)
-{
-    static_assert(std::same_as<result_value_type_t<Result<Int32, String>>, Int32>);
-    static_assert(std::same_as<result_error_type_t<Result<Int32, String>>, String>);
-    static_assert(std::same_as<result_value_type_t<Result<void, Int32>>, void>);
-}
-
-TEST(ResultTraits, NestedResult)
-{
-    using Inner = Result<Int32, String>;
-    using Outer = Result<Inner, String>;
-
-    static_assert(nested_result<Inner, String>);
-    static_assert(!nested_result<Int32, String>);
-    (void)sizeof(Outer); // suppress unused
-}
-
-TEST(Result, LargeValue)
-{
-    struct Big {
-        Int32 data[256] = { };
-    };
-
-    Big b;
-    b.data[0] = 42;
-    b.data[255] = 99;
-
-    Result<Big, String> r = b;
-    EXPECT_TRUE(r.Ok());
-    EXPECT_EQ(r.Value().data[0], 42);
-    EXPECT_EQ(r.Value().data[255], 99);
-}
-
-TEST(Result, SelfMoveAssign)
-{
-    Result<String, Int32> r = String("hello");
-    r = VIOLET_MOVE(r);
-
-    // Just verify no crash; value may be in moved-from state
-    EXPECT_TRUE(r);
-}
-
-TEST(Result, ChainedMap)
-{
-    Result<Int32, String> r = 10;
-    auto final_val
-        = VIOLET_MOVE(r).Map([](Int32 v) -> int { return v * 2; }).Map([](Int32 v) -> int { return v + 2; }).Unwrap();
-
-    EXPECT_EQ(final_val, 22);
-}
-
-TEST(ResultConstexpr, ConstructOkImplicit)
-{
-    constexpr Result<Int32, Int32> r = 42;
-    static_assert(r.Ok());
-    static_assert(!r.Err());
-    static_assert(r.Value() == 42);
-}
-
-TEST(ResultConstexpr, ConstructOkFromTag)
-{
-    constexpr Result<Int32, Int32> r = Ok<Int32>(42);
-    static_assert(r.Ok());
-    static_assert(r.Value() == 42);
-}
-
-TEST(ResultConstexpr, ConstructErrFromTag)
-{
-    constexpr Result<Int32, Int32> r = Err<Int32>(99);
-    static_assert(r.Err());
-    static_assert(r.Error() == 99);
-}
-
-TEST(ResultConstexpr, ConstructOkInPlace)
-{
-    constexpr Result<Int32, Int32> r(std::in_place_index<0>, 42);
-    static_assert(r.Ok());
-    static_assert(r.Value() == 42);
-}
-
-TEST(ResultConstexpr, ConstructErrInPlace)
-{
-    constexpr Result<Int32, Int32> r(std::in_place_index<1>, 99);
-    static_assert(r.Err());
-    static_assert(r.Error() == 99);
-}
-
-TEST(ResultConstexpr, BoolConversion)
-{
-    constexpr Result<Int32, Int32> ok = 42;
-    constexpr Result<Int32, Int32> err = Err<Int32>(1);
-
-    static_assert(static_cast<bool>(ok));
-    static_assert(!static_cast<bool>(err));
-}
-
-TEST(ResultConstexpr, DerefOperator)
-{
-    constexpr Result<Int32, Int32> r = 42;
-    static_assert(*r == 42);
-}
-
-TEST(ResultConstexpr, UnwrapOrOnOk)
-{
-    constexpr Result<Int32, Int32> r = 42;
-    static_assert(r.UnwrapOr(0) == 42);
-}
-
-TEST(ResultConstexpr, UnwrapOrOnErr)
-{
-    constexpr Result<Int32, Int32> r = Err<Int32>(1);
-    static_assert(r.UnwrapOr(99) == 99);
-}
-
-TEST(ResultConstexpr, UnwrapOrDefaultOnOk)
-{
-    constexpr Result<Int32, Int32> r = 42;
-    static_assert(r.UnwrapOrDefault() == 42);
-}
-
-TEST(ResultConstexpr, UnwrapOrDefaultOnErr)
-{
-    constexpr Result<Int32, Int32> r = Err<Int32>(1);
-    static_assert(r.UnwrapOrDefault() == 0);
-}
-
-TEST(ResultConstexpr, OkAnd)
-{
-    constexpr Result<Int32, Int32> r = 42;
-    static_assert(r.OkAnd([](int v) { return v > 0; }));
-    static_assert(!r.OkAnd([](int v) { return v < 0; }));
-}
-
-TEST(ResultConstexpr, OkAndOnErr)
-{
-    constexpr Result<Int32, Int32> r = Err<Int32>(1);
-    static_assert(!r.OkAnd([](int) { return true; }));
-}
-
-TEST(ResultConstexpr, ErrAnd)
-{
-    constexpr Result<Int32, Int32> r = Err<Int32>(42);
-    static_assert(r.ErrAnd([](int v) { return v > 0; }));
-    static_assert(!r.ErrAnd([](int v) { return v < 0; }));
-}
-
-TEST(ResultConstexpr, ErrAndOnOk)
-{
-    constexpr Result<Int32, Int32> r = 42;
-    static_assert(!r.ErrAnd([](int) { return true; }));
-}
-
-TEST(ResultConstexpr, MapOnOk)
-{
-    constexpr auto r = Result<Int32, Int32>(21).Map([](int v) { return v * 2; });
-    static_assert(r.Ok());
-    static_assert(r.Value() == 42);
-}
-
-TEST(ResultConstexpr, MapOnErr)
-{
-    constexpr auto r = Result<Int32, Int32>(Err<Int32>(1)).Map([](int v) { return v * 2; });
-    static_assert(r.Err());
-    static_assert(r.Error() == 1);
-}
-
-TEST(ResultConstexpr, MapOrOnOk)
-{
-    constexpr Result<Int32, Int32> r = 21;
-    constexpr auto val = r.MapOr(0, [](int v) { return v * 2; });
-    static_assert(val == 42);
-}
-
-TEST(ResultConstexpr, MapOrOnErr)
-{
-    constexpr Result<Int32, Int32> r = Err<Int32>(1);
-    constexpr auto val = r.MapOr(99, [](int v) { return v * 2; });
-    static_assert(val == 99);
-}
-
-TEST(ResultConstexpr, CopyConstruct)
-{
-    constexpr Result<Int32, Int32> a = 42;
-    constexpr Result<Int32, Int32> b(a);
-    static_assert(b.Ok());
-    static_assert(b.Value() == 42);
-}
-
-TEST(ResultConstexpr, CopyConstructErr)
-{
-    constexpr Result<Int32, Int32> a = Err<Int32>(99);
-    constexpr Result<Int32, Int32> b(a);
-    static_assert(b.Err());
-    static_assert(b.Error() == 99);
-}
+static_assert(is_result_v<Result<Int32, String>>);
+static_assert(is_result_v<Result<void, Int32>>);
+static_assert(!is_result_v<Int32>);
+static_assert(!is_result_v<String>);
 
 namespace {
 
-consteval auto ConstexprTryChain() -> Result<Int32, Int32>
+template<typename Result, typename Expected>
+    requires is_result_v<Result>
+consteval auto ResultValueTypeExtraction() noexcept -> bool
+{
+    return std::same_as<result_value_type_t<Result>, Expected>;
+}
+
+template<typename Result, typename Expected>
+    requires is_result_v<Result>
+consteval auto ResultErrorTypeExtraction() noexcept -> bool
+{
+    return std::same_as<result_error_type_t<Result>, Expected>;
+}
+
+} // namespace
+
+static_assert(ResultValueTypeExtraction<Result<Int32, String>, Int32>());
+static_assert(ResultValueTypeExtraction<Result<void, Int32>, void>());
+static_assert(ResultErrorTypeExtraction<Result<Int32, String>, String>());
+
+using inner1 = Result<Int32, String>;
+using outer1 = Result<inner1, String>;
+
+static_assert(nested_result<outer1, String>);
+static_assert(!nested_result<Int32, String>);
+
+namespace {
+
+consteval auto ConstructOk() noexcept -> Result<Int32, String>
+{
+    constexpr Result<Int32, String> x = 42;
+    return x;
+}
+
+static_assert(ConstructOk().Ok());
+static_assert(!ConstructOk().Err());
+static_assert(ConstructOk().Value() == 42);
+
+consteval auto ConstructOkFromTag() noexcept -> Result<Int32, String>
+{
+    constexpr Result<Int32, String> x = Ok(42);
+    return x;
+}
+
+static_assert(ConstructOkFromTag().Ok());
+static_assert(ConstructOkFromTag().Value() == 42);
+
+consteval auto ConstructErrFromTag() noexcept -> Result<String, Int32>
+{
+    constexpr Result<String, Int32> x = Err(42);
+    return x;
+}
+
+static_assert(ConstructErrFromTag().Err());
+static_assert(ConstructErrFromTag().Error() == 42);
+
+consteval auto ConstructOkInPlace() noexcept -> Result<Int32, String>
+{
+    constexpr Result<Int32, String> result(std::in_place_index<0L>, 42);
+    return result;
+}
+
+static_assert(ConstructOkInPlace().Ok());
+static_assert(ConstructOkInPlace().Value() == 42);
+
+consteval auto ConstructErrInPlace() noexcept -> Result<Int32, Int32>
+{
+    constexpr Result<Int32, Int32> result(std::in_place_index<1L>, 42);
+    return result;
+}
+
+static_assert(ConstructErrInPlace().Err());
+static_assert(ConstructErrInPlace().Error() == 42);
+
+// bool conversion tests
+static_assert(static_cast<bool>(ConstructOk()));
+static_assert(!static_cast<bool>(ConstructErrInPlace()));
+
+// deref
+static_assert(*ConstructOk() == 42);
+
+// unwraps
+static_assert(ConstructOk().UnwrapOr(0) == 42);
+static_assert(ConstructErrInPlace().UnwrapOr(0) == 0);
+static_assert(ConstructOk().UnwrapOrDefault() == 42);
+static_assert(ConstructErrInPlace().UnwrapOrDefault() == 0);
+
+// combinators
+static_assert(ConstructOk().OkAnd([](auto value) -> bool { return value > 0; }));
+static_assert(!ConstructOk().OkAnd([](auto value) -> bool { return value < 0; }));
+static_assert(!ConstructErrInPlace().OkAnd([](auto) -> bool { return true; }));
+
+static_assert(ConstructErrInPlace().ErrAnd([](auto value) -> bool { return value > 0; }));
+static_assert(!ConstructErrInPlace().ErrAnd([](auto value) -> bool { return value < 0; }));
+static_assert(!ConstructOk().ErrAnd([](auto&) -> bool { return true; }));
+
+static_assert(ConstructOk().Map([](auto value) -> auto { return value * 2; }).UnwrapOr(0) == 84);
+static_assert(ConstructErrInPlace().Map([](auto value) -> auto { return value * 2; }).UnwrapOr(0) == 0);
+
+consteval auto MapOrOnOk() noexcept -> bool
+{
+    constexpr Result<Int32, Int32> r = 21;
+    constexpr auto val = r.MapOr(0, [](auto v) -> auto { return v * 2; });
+    return val == 42;
+}
+
+static_assert(MapOrOnOk());
+
+consteval auto MapOrOnErr() noexcept -> bool
+{
+    constexpr Result<Int32, Int32> r = Err<Int32>(1);
+    constexpr auto val = r.MapOr(99, [](auto v) -> auto { return v * 2; });
+    return val == 99;
+}
+
+static_assert(MapOrOnErr());
+
+consteval auto CopyConstruct() noexcept -> bool
+{
+    constexpr Result<Int32, Int32> a = 42;
+    constexpr Result<Int32, Int32> b(a);
+    return b.Ok() && b.Value() == 42;
+}
+
+static_assert(CopyConstruct());
+
+consteval auto CopyConstructErr() noexcept -> bool
+{
+    constexpr Result<Int32, Int32> a = Err<Int32>(99);
+    constexpr Result<Int32, Int32> b(a);
+    return b.Err() && b.Error() == 99;
+}
+
+static_assert(CopyConstructErr());
+
+consteval auto TryChain() noexcept -> Result<Int32, Int32>
 {
     constexpr Result<Int32, Int32> inner = 21;
-    // Can't use VIOLET_TRY in consteval (statement expressions),
-    // so test the manual pattern
     if (inner.Err()) {
         return Err<Int32>(inner.Error());
     }
+
     return inner.Value() * 2;
 }
 
-consteval auto ConstexprErrChain() -> Result<Int32, Int32>
+consteval auto TryChainOk() noexcept -> bool
+{
+    constexpr auto r = TryChain();
+    return r.Ok() && r.Value() == 42;
+}
+
+static_assert(TryChainOk());
+
+consteval auto ErrChain() noexcept -> Result<Int32, Int32>
 {
     constexpr Result<Int32, Int32> inner = Err<Int32>(7);
     if (inner.Err()) {
@@ -1021,66 +1000,26 @@ consteval auto ConstexprErrChain() -> Result<Int32, Int32>
     return inner.Value() * 2;
 }
 
-consteval auto ConstexprMapChain() -> int
+consteval auto TryChainErr() noexcept -> bool
 {
-    return Result<Int32, Int32>(10).Map([](int v) { return v + 5; }).Map([](int v) { return v * 2; }).UnwrapOr(0);
+    constexpr auto r = ErrChain();
+    return r.Err() && r.Error() == 7;
 }
+
+static_assert(TryChainErr());
+
+consteval auto MapChain() noexcept -> bool
+{
+    return Result<Int32, Int32>(10)
+               .Map([](auto v) -> auto { return v + 5; })
+               .Map([](int v) { return v * 2; })
+               .UnwrapOr(0)
+        == 30;
+}
+
+static_assert(MapChain());
 
 } // namespace
 
-TEST(ResultConsteval, TryChainOk)
-{
-    constexpr auto r = ConstexprTryChain();
-    static_assert(r.Ok());
-    static_assert(r.Value() == 42);
-}
-
-TEST(ResultConsteval, TryChainErr)
-{
-    constexpr auto r = ConstexprErrChain();
-    static_assert(r.Err());
-    static_assert(r.Error() == 7);
-}
-
-TEST(ResultConsteval, MapChain)
-{
-    static_assert(ConstexprMapChain() == 30);
-}
-
-#if __cpp_constexpr_dynamic_alloc >= 201907L
-
-TEST(ResultVoidConstexpr, DefaultIsOk)
-{
-    constexpr Result<void, Int32> r;
-    static_assert(r.Ok());
-    static_assert(!r.Err());
-    static_assert(static_cast<bool>(r));
-}
-
-#endif
-
-TEST(ResultTraitsConstexpr, IsResult)
-{
-    static_assert(is_result_v<Result<Int32, Int32>>);
-    static_assert(is_result_v<Result<void, Int32>>);
-    static_assert(!is_result_v<Int32>);
-    static_assert(!is_result_v<Ok<Int32>>);
-    static_assert(!is_result_v<Err<Int32>>);
-}
-
-TEST(ResultTraitsConstexpr, NestedResult)
-{
-    using Inner = Result<Int32, Int32>;
-    static_assert(nested_result<Inner, Int32>);
-    static_assert(!nested_result<Int32, Int32>);
-}
-
-TEST(ResultTraitsConstexpr, ValueAndErrorTypes)
-{
-    static_assert(std::same_as<result_value_type_t<Result<Int32, Int64>>, Int32>);
-    static_assert(std::same_as<result_error_type_t<Result<Int32, Int64>>, Int64>);
-}
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length,performance-unnecessary-copy-initialization)
-
-VIOLET_DIAGNOSTIC_POP
+// NOLINTEND(readability-identifier-length,performance-unnecessary-copy-initialization)
+} // namespace violet

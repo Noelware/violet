@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <violet/Experimental/Slice.h>
 #include <violet/Experimental/Time/TimePoint.h>
 
 #include <cstdio>
@@ -38,7 +39,7 @@ auto TimePoint::FromISO8601(Str input) -> violet::anyhow::Result<TimePoint>
     ENSURE_FMT(input.size() >= 20, "ISO-8601 input was too sore: {}", input);
 
     String buf(input);
-    std::tm tm{ };
+    std::tm tm{};
 
     Int32 year = 0;
     Int32 month = 0;
@@ -151,12 +152,15 @@ auto TimePoint::IntoISO8601() const -> String
     }
 
     auto time = static_cast<time_t>(secs);
-    std::tm tm{ };
+    std::tm tm{};
     ::gmtime_r(&time, &tm);
 
-    char buf[32];
-    std::snprintf(buf, sizeof(buf), "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-        tm.tm_hour, tm.tm_min, tm.tm_sec, frac);
+    Slice<char, 96> buf;
+    const Int32 written = ::snprintf(buf.Data(), buf.Size(), "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", tm.tm_year + 1900,
+        tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, frac);
 
-    return { buf };
+    VIOLET_ASSERT(
+        written >= 0 && static_cast<UInt>(written) < buf.Size(), "failed to write to buffer or exceeded buffer size");
+
+    return {buf.Data()};
 }

@@ -175,7 +175,7 @@ struct VIOLET_API VIOLET_LOCKABLE Synchronized final {
 
     template<typename Fun>
         requires(callable<Fun, T&>)
-    [[nodiscard]] NOELDOC_SINCE("26.08") auto With(Fun&& fun) noexcept(noexcept(std::invoke(fun, std::declval<T&>())))
+    [[nodiscard]] NOELDOC_SINCE("current") auto With(Fun&& fun) noexcept(noexcept(std::invoke(fun, std::declval<T&>())))
         -> decltype(auto)
     {
         auto data = this->Lock();
@@ -184,7 +184,7 @@ struct VIOLET_API VIOLET_LOCKABLE Synchronized final {
 
     template<typename Fun>
         requires(callable<Fun, const T&>)
-    [[nodiscard]] NOELDOC_SINCE("26.08") auto With(Fun&& fun) const
+    [[nodiscard]] NOELDOC_SINCE("current") auto With(Fun&& fun) const
         noexcept(noexcept(std::invoke(fun, std::declval<const T&>()))) -> decltype(auto)
     {
         auto data = this->Lock();
@@ -203,7 +203,7 @@ struct VIOLET_API VIOLET_LOCKABLE Synchronized final {
 private:
     friend struct Guard;
 
-    T n_data{ };
+    T n_data{};
     mutable violet::experimental::Mutex n_mux;
 };
 

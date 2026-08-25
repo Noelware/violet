@@ -24,11 +24,11 @@
 #include <gtest/gtest.h>
 #include <violet/SmolString.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
-using namespace violet;
 using namespace std::string_view_literals;
-// NOLINTEND(google-build-using-namespace)
 
+namespace violet {
+
+// NOLINTBEGIN(readability-identifier-length)
 TEST(SmolStrings, DefaultConstructionResultsInEmpty)
 {
     constexpr SmolString<16> str;
@@ -395,5 +395,6 @@ TEST(SmolStrings, TriviallyCopyable)
 {
     static_assert(std::is_trivially_copyable_v<SmolString<16>>);
 }
-
 // NOLINTEND(readability-identifier-length)
+
+} // namespace violet

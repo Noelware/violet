@@ -22,9 +22,7 @@
 #include <gtest/gtest.h>
 #include <violet/RefCnt.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
-using namespace violet;
-
+namespace violet {
 namespace {
 struct Counter final {
     Int32 References = 0; ///< live reference count
@@ -36,7 +34,7 @@ using Ref = RefCnt<Counter*>;
 } // namespace
 
 template<>
-struct violet::RefCntTraits<Counter*> final {
+struct RefCntTraits<Counter*> final {
     static auto Default() noexcept -> Counter*
     {
         return nullptr;
@@ -63,6 +61,8 @@ struct violet::RefCntTraits<Counter*> final {
         }
     }
 };
+
+// NOLINTBEGIN(readability-identifier-length)
 
 TEST(RefCnt, DefaultOwnsNothing)
 {
@@ -202,7 +202,8 @@ TEST(RefCnt, SelfMoveAssignIsStable)
         auto r = Ref::Retain(&c);
         Ref& alias = r; // dodge -Wself-move
         r = VIOLET_MOVE(alias);
-        EXPECT_TRUE(r.Valid()); // guarded self-move leaves it intact
+
+        EXPECT_TRUE(r.Valid());
         EXPECT_EQ(c.References, 1);
     }
 
@@ -214,7 +215,8 @@ TEST(RefCnt, GetDoesNotRetain)
     Counter c;
     auto r = Ref::Retain(&c);
     EXPECT_EQ(r.Get(), &c);
-    EXPECT_EQ(c.Bumps, 1); // Get borrows; no extra bump
+    EXPECT_EQ(c.Bumps, 1);
 }
+// NOLINTEND(readability-identifier-length)
 
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)
+} // namespace violet

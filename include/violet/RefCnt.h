@@ -61,14 +61,28 @@ concept ValidRefCntTraits = requires(T handle) {
 /// @tparam T the handle type.
 /// @tparam Traits the reference-counting policy; defaults to `RefCntTraits<T>`.
 template<typename T, typename Traits = RefCntTraits<T>>
-struct VIOLET_API NOELDOC_SINCE("26.07") RefCnt {
+struct NOELDOC_SINCE("26.07") RefCnt {
     static_assert(ValidRefCntTraits<T>, "`T` doesn't specialize `RefCntTraits`");
-    static_assert(noexcept(Traits::BumpRef(std::declval<T>())),
-        "`BumpRef(T)` should be marked as `noexcept` as throwing exceptions is ill-formed");
-    static_assert(noexcept(Traits::DecRef(std::declval<T>())),
-        "`DecRef(T)` should be marked as `noexcept` as throwing exceptions is ill-formed");
-    static_assert(noexcept(Traits::Valid(std::declval<T>())),
-        "`Valid(T)` should be marked as `noexcept` as throwing exceptions is ill-formed");
+    static_assert(
+        // clang-format off
+        std::is_nothrow_invocable_v<decltype(Traits::BumpRef), T>,
+        "`Traits::BumpRef(T)` should be marked as `noexcept` as throwing exceptions in a ref-counted object is ill-formed"
+        // clang-format on
+    );
+
+    static_assert(
+        // clang-format off
+        std::is_nothrow_invocable_v<decltype(Traits::DecRef), T>,
+        "`Traits::DecRef(T)` should be marked as `noexcept` as throwing exceptions in a ref-counted object is ill-formed"
+        // clang-format on
+    );
+
+    static_assert(
+        // clang-format off
+        std::is_nothrow_invocable_v<decltype(Traits::Valid), T>,
+        "`Traits::Valid(T)` should be marked as `noexcept` as throwing exceptions in a ref-counted object is ill-formed"
+        // clang-format on
+    );
 
     /// Constructs a `RefCnt` that owns nothing (holds `Traits::Default()`).
     VIOLET_IMPLICIT RefCnt() noexcept(noexcept(Traits::Default()))

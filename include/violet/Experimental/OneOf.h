@@ -24,53 +24,123 @@
 #pragma once
 
 #include <violet/Container/Optional.h>
+#include <violet/Experimental/Slice.h>
 
 namespace violet::experimental {
+namespace oneof_internal {
 
-namespace detail {
+/// A recursive union that never enters a valueless state. Every member is
+/// formally active from the union's perspective; construction, destruction,
+/// and access are managed manually via placement-new and explicit destructor
+/// calls, tracked by the owning [`OneOf`]'s active index.
+///
+/// The empty specialisation `storage<>` acts as the recursion terminator and carries no data.
+template<typename... Ts>
+union storage;
 
-    /// A recursive union that never enters a valueless state. Every member is
-    /// formally active from the union's perspective; construction, destruction,
-    /// and access are managed manually via placement-new and explicit destructor
-    /// calls, tracked by the owning [`OneOf`]'s active index.
-    ///
-    /// The empty specialisation `valueless_storage<>` acts as the recursion
-    /// terminator and carries no data.
-    template<typename... Ts>
-    union valueless_storage;
+template<typename T, typename... Ts>
+union storage<T, Ts...> final { // NOLINT(cppcoreguidelines-special-member-functions)
+    T Head;
+    storage<Ts...> Tail;
 
-    /// Returns a reference to the element at compile-time index `I` inside
-    /// `storage`.
-    ///
-    /// # Panics
-    /// Out-of-bounds `I` is a hard compile error, the recursion hits
-    /// `valueless_storage<>` which has no `Head` member.
-    template<UInt I, typename... Ts>
-    constexpr auto getElementInStorage(valueless_storage<Ts...>& storage) noexcept -> auto&;
+    constexpr storage() noexcept { }
+    constexpr ~storage() noexcept { }
+};
 
-    /// Returns a const reference to the element at compile-time index `I`
-    /// inside `storage`.
-    template<UInt I, typename... Ts>
-    constexpr auto getElementInStorage(const valueless_storage<Ts...>& storage) noexcept -> const auto&;
+template<>
+union storage<> final {
+};
 
-    /// Calls the destructor of the element at runtime index `active` inside
-    /// `storage`, then returns. Does nothing if `Index >= sizeof...(Ts)`.
-    template<UInt Index, typename... Ts>
-    void destroyActiveElementInStorage(UInt active, valueless_storage<Ts...>& storage);
+/// Returns a reference to the element at compile-time index `I` inside
+/// `storage`.
+///
+/// ## Panics
+/// Out-of-bounds `I` is a hard compile error, the recursion hits `storage<>` which has no `Head` member.
+template<UInt Index, typename... Ts>
+constexpr auto GetElement(storage<Ts...>& storage) noexcept -> auto&
+{
+    if constexpr (Index == 0) {
+        return storage.Head;
+    } else {
+        return GetElement<Index - 1>(storage.Tail);
+    }
+}
 
-    /// Builds a constexpr jump table of `sizeof...(Is)` function pointers.
-    ///
-    /// Each entry `table[I]` calls `visitor` with the element at index `I`
-    /// inside `storage`. Passing `const Storage` as the `Storage` template
-    /// argument produces a table whose entries accept a `const Storage&`,
-    /// resolving to the const overload of `getElementInStorage` automatically.
-    ///
-    /// There is intentionally only one overload, const-ness is encoded in
-    /// the `Storage` type parameter so overload resolution is never ambiguous.
-    template<typename Ret, typename Visitor, typename Storage, UInt... Is>
-    constexpr auto createVisitorTable(std::index_sequence<Is...>) -> Array<Ret (*)(Visitor&&, Storage&), sizeof...(Is)>;
+/// Returns a const reference to the element at compile-time index `I` inside
+/// `storage`.
+///
+/// ## Panics
+/// Out-of-bounds `I` is a hard compile error, the recursion hits `storage<>` which has no `Head` member.
+template<UInt Index, typename... Ts>
+constexpr auto GetElement(const storage<Ts...>& storage) noexcept -> const auto&
+{
+    if constexpr (Index == 0) {
+        return storage.Head;
+    } else {
+        return GetElement<Index - 1>(storage.Tail);
+    }
+}
 
-} // namespace detail
+/// Placement-constructs the element at compile-time index `Index` inside `storage`, activating every
+/// intermediate `Tail` union along the way.
+///
+/// This is required for the construction to be valid in a constant expression: a nested union member can
+/// only be placement-constructed once its immediate parent union has itself been made active, which a plain
+/// `::new (std::addressof(GetElement<Index>(storage))) T(...)` does not do for `Index > 0`.
+template<UInt Index, typename... Ts, typename... Args>
+constexpr void ConstructElement(storage<Ts...>& storage, Args&&... args)
+{
+    if constexpr (Index == 0) {
+        ::new (std::addressof(storage.Head)) pack_element_t<0, Ts...>(VIOLET_FWD(Args, args)...);
+    } else {
+        ::new (std::addressof(storage.Tail)) std::decay_t<decltype(storage.Tail)>();
+        ConstructElement<Index - 1>(storage.Tail, VIOLET_FWD(Args, args)...);
+    }
+}
+
+/// Calls the destructor of the element at runtime index `active` inside `storage`, then returns. Does nothing if
+/// `Index >= sizeof...(Ts)`.
+template<UInt Index, typename... Ts>
+constexpr void DestroyActiveElementInStorage(UInt active, storage<Ts...>& storage)
+{
+    if constexpr (Index < sizeof...(Ts)) {
+        if (active == Index) {
+            std::destroy_at(std::addressof(GetElement<Index>(storage)));
+            return;
+        }
+
+        DestroyActiveElementInStorage<Index + 1, Ts...>(active, storage);
+    }
+}
+
+/// Builds a constexpr jump table of `sizeof...(Is)` function pointers.
+///
+/// Each entry `table[I]` calls `visitor` with the element at index `I`
+/// inside `storage`. Passing `const Storage` as the `Storage` template
+/// argument produces a table whose entries accept a `const Storage&`,
+/// resolving to the const overload of `getElementInStorage` automatically.
+///
+/// There is intentionally only one overload, const-ness is encoded in
+/// the `Storage` type parameter so overload resolution is never ambiguous.
+template<typename ReturnType, typename Visitor, typename Storage, UInt... Is>
+constexpr auto CreateVisitorDispatchTable(std::index_sequence<Is...>)
+    -> Slice<ReturnType (*)(Visitor&&, Storage&), sizeof...(Is)>
+{
+    using function = ReturnType (*)(Visitor&&, Storage&);
+    return Slice<function, sizeof...(Is)>{
+        // clang-format off
+        +[](Visitor&& visitor, Storage& storage) -> ReturnType {
+            return std::invoke(VIOLET_MOVE(visitor), GetElement<Is>(storage));
+        }...
+        // clang-format on
+    };
+}
+
+template<typename ReturnType, typename Visitor, typename Storage, typename... Ts>
+constexpr inline auto DispatchTableFor
+    = CreateVisitorDispatchTable<ReturnType, Visitor, Storage>(std::index_sequence_for<Ts...>{});
+
+} // namespace oneof_internal
 
 /// A well-behaved, empty type that is usable as a placeholder alternative in
 /// a [`OneOf`] object to represent the absense of a value.
@@ -96,10 +166,13 @@ struct VIOLET_API Mono final {
     }
 };
 
-/// A discriminated union similar to [`std::visit`] but possess no valueless_by_exception state,
-/// O(1) jump-table visitation, and much more.
+template<typename... Fs>
+struct Overloaded final: std::decay_t<Fs>... {
+    using std::decay_t<Fs>::operator()...;
+};
+
 template<typename... Ts>
-struct VIOLET_API OneOf final {
+struct OneOf {
     static_assert(sizeof...(Ts) > 0, "`OneOf` requires atleast one type to be present");
     static_assert((std::is_destructible_v<Ts> && ...), "`OneOf` requires all types to be destructible");
 
@@ -107,48 +180,49 @@ struct VIOLET_API OneOf final {
     using TypeAt = pack_element_t<Index, Ts...>;
 
     template<typename T>
-        requires(pack_contains_v<std::decay_t<T>, Ts...>)
-    constexpr static UInt IndexOf = pack_index_v<std::decay_t<T>, Ts...>;
+        requires pack_contains_v<T, Ts...>
+    constexpr static UInt IndexOf = pack_index_v<T, Ts...>;
 
-    template<typename T, typename... Args>
-        requires(pack_contains_v<T, Ts...> && std::is_constructible_v<T, Args...>)
-    static auto New(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>) -> OneOf
+    constexpr VIOLET_IMPLICIT OneOf() noexcept
+        requires(std::default_initializable<TypeAt<0L>>)
+        : OneOf(static_cast<UInt>(0))
     {
-        OneOf result;
-        ::new (std::addressof(detail::getElementInStorage<IndexOf<T>>(result.n_storage))) T(VIOLET_FWD(Args, args)...);
-
-        result.n_index = IndexOf<T>;
-        return result;
+        oneof_internal::ConstructElement<0>(this->n_storage);
     }
 
-    VIOLET_IMPLICIT OneOf() noexcept
-        requires(std::is_default_constructible_v<TypeAt<0>>)
-    = default;
-
-    template<typename T>
-        requires(pack_contains_v<std::decay_t<T>, Ts...> && (!std::is_same_v<std::decay_t<T>, OneOf>))
-    VIOLET_IMPLICIT OneOf(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
-        : n_index(IndexOf<T>)
+    template<typename U>
+        requires(pack_contains_v<U, Ts...> && (!std::same_as<U, OneOf>))
+    constexpr VIOLET_IMPLICIT OneOf(U&& value) noexcept(std::is_nothrow_move_constructible_v<U>)
+        : OneOf(IndexOf<U>)
     {
-        ::new (std::addressof(detail::getElementInStorage<IndexOf<T>>(this->n_storage)))
-            std::decay_t<T>(VIOLET_FWD(T, value));
+        oneof_internal::ConstructElement<IndexOf<U>>(this->n_storage, VIOLET_FWD(U, value));
     }
 
-    VIOLET_IMPLICIT OneOf(const OneOf& other)
+    template<typename U>
+        requires(pack_contains_v<U, Ts...> && (!std::same_as<U, OneOf>))
+    constexpr auto operator=(U&& value) -> OneOf&
+    {
+        OneOf tmp(VIOLET_FWD(U, value));
+        swap(*this, tmp);
+
+        return *this;
+    }
+
+    constexpr VIOLET_IMPLICIT OneOf(const OneOf& other)
         requires(std::is_copy_constructible_v<Ts> && ...)
-        : n_index(other.n_index)
+        : OneOf(other.n_index)
     {
         other.Visit([&](const auto& value) -> void {
-            using T = std::decay_t<decltype(value)>;
-            ::new (std::addressof(detail::getElementInStorage<IndexOf<T>>(this->n_storage))) T(value);
+            using type = std::decay_t<decltype(value)>;
+            oneof_internal::ConstructElement<IndexOf<type>>(this->n_storage, value);
         });
     }
 
     VIOLET_IMPLICIT OneOf(const OneOf&)
         requires(!(std::is_copy_constructible_v<Ts> && ...))
-    = delete;
+    = delete; // reason: one of `T` in `Ts` is not copy-constructible
 
-    auto operator=(const OneOf& other) -> OneOf&
+    constexpr auto operator=(const OneOf& other) -> OneOf&
         requires(std::is_copy_constructible_v<Ts> && ...)
     {
         if (this != &other) {
@@ -159,20 +233,20 @@ struct VIOLET_API OneOf final {
         return *this;
     }
 
-    auto operator=(const OneOf&) noexcept -> OneOf&
+    auto operator=(const OneOf& other) noexcept -> OneOf
         requires(!(std::is_copy_constructible_v<Ts> && ...))
-    = delete;
+    = delete; // cannot assign a copy because one of `T` in `Ts` is not copy-constructible
 
-    VIOLET_IMPLICIT OneOf(OneOf&& other) noexcept
-        : n_index(other.n_index)
+    constexpr VIOLET_IMPLICIT OneOf(OneOf&& other) noexcept
+        : OneOf(other.n_index)
     {
         VIOLET_MOVE(other).Visit([&](auto&& value) -> void {
-            using T = std::decay_t<decltype(value)>;
-            ::new (std::addressof(detail::getElementInStorage<IndexOf<T>>(this->n_storage))) T(VIOLET_MOVE(value));
+            using type = std::decay_t<decltype(value)>;
+            oneof_internal::ConstructElement<IndexOf<type>>(this->n_storage, VIOLET_MOVE(value));
         });
     }
 
-    auto operator=(OneOf&& other) noexcept -> OneOf&
+    constexpr auto operator=(OneOf&& other) noexcept -> OneOf&
     {
         if (this != &other) {
             OneOf tmp(VIOLET_MOVE(other));
@@ -182,202 +256,170 @@ struct VIOLET_API OneOf final {
         return *this;
     }
 
-    template<typename T>
-        requires(pack_contains_v<std::decay_t<T>, Ts...> && (!std::is_same_v<std::decay_t<T>, OneOf>))
-    auto operator=(T&& value) -> OneOf&
+    constexpr ~OneOf()
     {
-        OneOf tmp(VIOLET_FWD(T, value));
-        swap(*this, tmp);
-
-        return *this;
+        oneof_internal::DestroyActiveElementInStorage<0, Ts...>(this->n_index, this->n_storage);
     }
 
-    ~OneOf()
+    template<typename T, typename... Args>
+        requires(pack_contains_v<T, Ts...> && std::is_constructible_v<T, Args...>)
+    constexpr static auto New(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>) -> OneOf
     {
-        detail::destroyActiveElementInStorage<0, Ts...>(this->n_index, this->n_storage);
+        return OneOf::make<IndexOf<T>>(T(VIOLET_FWD(Args, args)...));
     }
 
-    /// Returns the zero-based index of the currently active type.
     [[nodiscard]] constexpr auto Index() const noexcept -> UInt
     {
         return this->n_index;
     }
 
-    /// Returns `true` if the currently active type is `T`.
     template<typename T>
     [[nodiscard]] constexpr auto Holds() const noexcept -> bool
     {
         return this->n_index == IndexOf<T>;
     }
 
-    /// Returns `Some(reference)` if the active type is `T`, or `Nothing` if
-    /// it is not. Never throws.
     template<typename T>
-        requires(pack_contains_v<T, Ts...>)
+        requires pack_contains_v<T, Ts...>
     constexpr auto Get() noexcept -> Optional<std::reference_wrapper<T>>
     {
         if (this->n_index != IndexOf<T>) {
             return Nothing;
         }
 
-        auto* ptr = std::addressof(detail::getElementInStorage<IndexOf<T>>(this->n_storage));
-        return Some(std::ref(*ptr));
+        return Some(std::ref(oneof_internal::GetElement<IndexOf<T>>(this->n_storage)));
     }
 
-    /// Const overload of [`Get`]. Returns `Optional<std::reference_wrapper<const T>>`.
     template<typename T>
-        requires(pack_contains_v<T, Ts...>)
+        requires pack_contains_v<T, Ts...>
+    constexpr auto GetUnchecked(Unsafe) noexcept -> std::reference_wrapper<T>
+    {
+        VIOLET_ASSUME(this->n_index == IndexOf<T>);
+        return std::ref(oneof_internal::GetElement<IndexOf<T>>(this->n_storage));
+    }
+
+    template<typename T>
+        requires pack_contains_v<T, Ts...>
     constexpr auto Get() const noexcept -> Optional<std::reference_wrapper<const T>>
     {
         if (this->n_index != IndexOf<T>) {
             return Nothing;
         }
 
-        const auto* ptr = std::addressof(detail::getElementInStorage<IndexOf<T>>(this->n_storage));
-        return Some(std::cref(*ptr));
+        return Some(std::cref(oneof_internal::GetElement<IndexOf<T>>(this->n_storage)));
     }
 
-    /// Dispatches a visitor implementation to the active element via a constexpr jump table.
-    ///
-    /// `Visitor` must be callable with every type in `Ts&...` and all
-    /// branches must share a common return type. Missing cases are a hard
-    /// error at the `std::common_type_t` deduction.
-    template<typename Visitor>
-    auto Visit(Visitor&& visitor) & -> decltype(auto)
+    template<typename T>
+        requires pack_contains_v<T, Ts...>
+    constexpr auto GetUnchecked(Unsafe) const noexcept -> std::reference_wrapper<T>
     {
-        using return_type_t = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&>;
-        static_assert((std::is_same_v<return_type_t, std::invoke_result_t<Visitor, Ts&>> && ...),
-            "all OneOf::Visit alternatives must return the same type");
-
-        constexpr static auto DISPATCH_TABLE
-            = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{ });
-
-        return DISPATCH_TABLE[this->n_index](VIOLET_FWD(Visitor, visitor), this->n_storage);
+        VIOLET_ASSUME(this->n_index == IndexOf<T>);
+        return std::ref(oneof_internal::GetElement<IndexOf<T>>(this->n_storage));
     }
 
-    /// Const lvalue overload of [`Visit`]. Passes `const T&` to the visitor.
     template<typename Visitor>
-    auto Visit(Visitor&& visitor) const& -> decltype(auto)
+    constexpr auto Visit(Visitor&& visitor) & -> decltype(auto)
     {
-        using return_type_t = std::invoke_result_t<Visitor, std::tuple_element_t<0, const std::tuple<Ts...>>&>;
-        static_assert((std::is_same_v<return_type_t, std::invoke_result_t<Visitor, const Ts&>> && ...),
-            "all OneOf::Visit alternatives must return the same type");
+        using return_type = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&>;
+        static_assert((std::is_same_v<return_type, std::invoke_result_t<Visitor, Ts&>> && ...),
+            "all `OneOf::Visit` alternatives must return the same type");
 
-        constexpr static auto DISPATCH_TABLE
-            = detail::createVisitorTable<return_type_t, Visitor, const storage_t>(std::index_sequence_for<Ts...>{ });
-
-        return DISPATCH_TABLE[this->n_index](VIOLET_FWD(Visitor, visitor), this->n_storage);
+        return std::invoke(
+            // clang-format off
+            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, oneof_internal::storage<Ts...>, Ts...>[this->n_index],
+            VIOLET_FWD(Visitor, visitor), this->n_storage
+            // clang-format on
+        );
     }
 
-    /// Rvalue overload of [`Visit`]. Passes `T&&` to the visitor, enabling
-    /// move-only types to be consumed.
     template<typename Visitor>
-    auto Visit(Visitor&& visitor) && -> decltype(auto)
+    constexpr auto Visit(Visitor&& visitor) const& -> decltype(auto)
     {
-        using return_type_t = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&&>;
-        static_assert((std::is_same_v<return_type_t, std::invoke_result_t<Visitor, Ts&&>> && ...),
-            "all OneOf::Visit alternatives must return the same type");
+        using return_type = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&>;
+        static_assert((std::is_same_v<return_type, std::invoke_result_t<Visitor, const Ts&>> && ...),
+            "all `OneOf::Visit` alternatives must return the same type");
 
-        constexpr static auto DISPATCH_TABLE
-            = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{ });
-
-        return DISPATCH_TABLE[this->n_index](VIOLET_FWD(Visitor, visitor), this->n_storage);
+        return std::invoke(
+            // clang-format off
+            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, const oneof_internal::storage<Ts...>, Ts...>[this->n_index],
+            VIOLET_FWD(Visitor, visitor), this->n_storage
+            // clang-format on
+        );
     }
 
-    /// Rvalue overload of [`Visit`]. Passes `const T&&` to the visitor, enabling
-    /// move-only types to be consumed.
     template<typename Visitor>
-    auto Visit(Visitor&& visitor) const&& -> decltype(auto)
+    constexpr auto Visit(Visitor&& visitor) && -> decltype(auto)
     {
-        using return_type_t = std::invoke_result_t<Visitor, std::tuple_element_t<0, const std::tuple<Ts...>>&&>;
-        static_assert((std::is_same_v<return_type_t, std::invoke_result_t<Visitor, const Ts&&>> && ...),
-            "all OneOf::Visit alternatives must return the same type");
+        using return_type = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&>;
+        static_assert((std::is_same_v<return_type, std::invoke_result_t<Visitor, Ts&&>> && ...),
+            "all `OneOf::Visit` alternatives must return the same type");
 
-        constexpr static auto DISPATCH_TABLE
-            = detail::createVisitorTable<return_type_t, Visitor, storage_t>(std::index_sequence_for<Ts...>{ });
-
-        return DISPATCH_TABLE[this->n_index](VIOLET_FWD(Visitor, visitor), this->n_storage);
+        return std::invoke(
+            // clang-format off
+            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, oneof_internal::storage<Ts...>, Ts...>[this->n_index],
+            VIOLET_FWD(Visitor, visitor), this->n_storage
+            // clang-format on
+        );
     }
 
-    /// An exhausitive pattern match utility. Builds a loca overload set from `funs` and
-    /// forwards it to a visitor implementation.
-    ///
-    /// Every type of `Ts...` must have a corresponding callable in `funs`, a missing
-    /// case is a hard compile-time error.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// #include <violet/Experimental/OneOf.h>
-    ///
-    /// using violet::experimental::OneOf;
-    ///
-    /// OneOf<int, float, double> x = 42;
-    /// auto value = x.Match(
-    ///      [](int value) -> int { return value; },
-    ///      [](float) -> int     { return 0; },
-    ///      [](double) -> int    { return 0; }
-    /// );
-    ///
-    /// assert(value == 42);
-    /// ```
+    template<typename Visitor>
+    constexpr auto Visit(Visitor&& visitor) const&& -> decltype(auto)
+    {
+        using return_type = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&>;
+        static_assert((std::is_same_v<return_type, std::invoke_result_t<Visitor, const Ts&&>> && ...),
+            "all `OneOf::Visit` alternatives must return the same type");
+
+        return std::invoke(
+            // clang-format off
+            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, const oneof_internal::storage<Ts...>, Ts...>[this->n_index],
+            VIOLET_FWD(Visitor, visitor), this->n_storage
+            // clang-format on
+        );
+    }
+
     template<typename... Fs>
-    auto Match(Fs&&... funs) & -> decltype(auto)
+    constexpr auto Match(Fs&&... funcs) & -> decltype(auto)
     {
-        struct overload_t: std::decay_t<Fs>... {
-            using std::decay_t<Fs>::operator()...;
-        };
-
-        return this->Visit(overload_t{ VIOLET_FWD(Fs, funs)... });
+        return this->Visit(Overloaded<Fs...>{VIOLET_FWD(Fs, funcs)...});
     }
 
-    /// Const lvalue overload of [`Match`].
     template<typename... Fs>
-    auto Match(Fs&&... funs) const& -> decltype(auto)
+    constexpr auto Match(Fs&&... funcs) const& -> decltype(auto)
     {
-        struct overload_t: std::decay_t<Fs>... {
-            using std::decay_t<Fs>::operator()...;
-        };
-
-        return this->Visit(overload_t{ VIOLET_FWD(Fs, funs)... });
+        return this->Visit(Overloaded<Fs...>{VIOLET_FWD(Fs, funcs)...});
     }
 
-    /// Rvalue overload of [`Match`]. Forwards `*this` as an rvalue into
-    /// [`Visit`], enabling move-only types to be consumed in-place.
     template<typename... Fs>
-    auto Match(Fs&&... funs) && -> decltype(auto)
+    constexpr auto Match(Fs&&... funcs) && -> decltype(auto)
     {
-        struct overload_t: std::decay_t<Fs>... {
-            using std::decay_t<Fs>::operator()...;
-        };
-
-        return VIOLET_MOVE(*this).Visit(overload_t{ VIOLET_FWD(Fs, funs)... });
+        return VIOLET_MOVE(*this).Visit(Overloaded<Fs...>{VIOLET_FWD(Fs, funcs)...});
     }
 
-    /// Swaps the contents of `o1` and `o2`.
-    ///
-    /// If both hold the same type, delegates to that type's `swap`.
-    /// Otherwise, moves each side through a temporary so neither object is
-    /// ever left in a partially-constructed state.
-    friend void swap(OneOf& o1, OneOf& o2) noexcept
+    constexpr friend void swap(OneOf& o1, OneOf& o2) noexcept
     {
         if (o1.n_index == o2.n_index) {
             o1.Visit([&](auto& av) -> void {
-                using T = std::decay_t<decltype(av)>;
+                using type = std::decay_t<decltype(av)>;
 
-                // Move through a temporary; requires only move-constructibility,
-                // not move-assignability, so types like tracked_object work fine.
-                T tmp(VIOLET_MOVE(av));
-                ::new (std::addressof(av)) T(VIOLET_MOVE(*o2.template Get<T>()));
-                ::new (std::addressof(detail::getElementInStorage<IndexOf<T>>(o2.n_storage))) T(VIOLET_MOVE(tmp));
+                type tmp(VIOLET_MOVE(av));
+                std::destroy_at(std::addressof(av));
+                std::construct_at(std::addressof(av),
+                    VIOLET_MOVE(o2.GetUnchecked<type>(Unsafe("already checked if we are at the same index")).get()));
+
+                std::construct_at(
+                    std::addressof(oneof_internal::GetElement<IndexOf<type>>(o2.n_storage)), VIOLET_MOVE(tmp));
             });
         } else {
             OneOf tmp(VIOLET_MOVE(o1));
-            ::new (&o1) OneOf(VIOLET_MOVE(o2));
-            ::new (&o2) OneOf(VIOLET_MOVE(tmp));
+            std::destroy_at(&o1);
+            std::construct_at(&o1, VIOLET_MOVE(o2));
+
+            std::destroy_at(&o2);
+            std::construct_at(&o2, VIOLET_MOVE(tmp));
         }
     }
 
-    auto operator==(const OneOf& other) const -> bool
+    constexpr auto operator==(const OneOf& other) const noexcept -> bool
         requires(std::equality_comparable<Ts> && ...)
     {
         if (this->Index() != other.Index()) {
@@ -385,100 +427,37 @@ struct VIOLET_API OneOf final {
         }
 
         return this->Visit([&](const auto& value) -> bool {
-            using T = std::decay_t<decltype(value)>;
-            return value == *other.template Get<T>();
+            using type = std::decay_t<decltype(value)>;
+            return value == *other.Get<type>();
         });
     }
 
-    [[nodiscard]] auto operator!=(const OneOf& other) const -> bool
+    constexpr auto operator!=(const OneOf& other) const noexcept -> bool
         requires(std::equality_comparable<Ts> && ...)
     {
         return !(*this == other);
     }
 
 private:
-    using storage_t = detail::valueless_storage<Ts...>;
+    UInt n_index = 0;
+    oneof_internal::storage<Ts...> n_storage;
+
+    constexpr VIOLET_EXPLICIT OneOf(UInt index) noexcept
+        : n_index(index)
+    {
+    }
 
     template<UInt Index, typename U>
-    static auto make(U&& value) noexcept(std::is_nothrow_move_constructible_v<U>) -> OneOf
+    constexpr static auto make(U&& value) noexcept(std::is_nothrow_move_constructible_v<U>) -> OneOf
     {
-        OneOf result;
-        ::new (std::addressof(detail::getElementInStorage<Index>(result.n_storage)))
-            TypeAt<Index>(VIOLET_FWD(U, value));
+        OneOf result(Index);
+        oneof_internal::ConstructElement<Index>(result.n_storage, VIOLET_FWD(U, value));
 
-        result.n_index = Index;
         return result;
     }
-
-    storage_t n_storage;
-    UInt n_index = 0;
 };
-
-template<typename T>
-OneOf(T) -> OneOf<T>;
 
 } // namespace violet::experimental
-
-namespace violet::experimental::detail {
-
-template<typename T, typename... Ts>
-union valueless_storage<T, Ts...> final { // NOLINT(cppcoreguidelines-special-member-functions)
-    T Head;
-    valueless_storage<Ts...> Tail;
-
-    valueless_storage() { };
-    ~valueless_storage() { };
-};
-
-template<>
-union valueless_storage<> final {
-};
-
-template<UInt I, typename... Ts>
-constexpr auto getElementInStorage(valueless_storage<Ts...>& storage) noexcept -> auto&
-{
-    if constexpr (I == 0)
-        return storage.Head;
-    else
-        return getElementInStorage<I - 1>(storage.Tail);
-}
-
-template<UInt I, typename... Ts>
-constexpr auto getElementInStorage(const valueless_storage<Ts...>& storage) noexcept -> const auto&
-{
-    if constexpr (I == 0)
-        return storage.Head;
-    else
-        return getElementInStorage<I - 1>(storage.Tail);
-}
-
-template<UInt Index, typename... Ts>
-void destroyActiveElementInStorage(UInt active, valueless_storage<Ts...>& storage)
-{
-    if constexpr (Index < sizeof...(Ts)) {
-        if (active == Index) {
-            getElementInStorage<Index>(storage).~pack_element_t<Index, Ts...>();
-            return;
-        }
-
-        destroyActiveElementInStorage<Index + 1, Ts...>(active, storage);
-    }
-}
-
-/// Single overload; const-ness of the storage parameter is encoded in the
-/// `Storage` type argument, eliminating the ambiguity that arises when two
-/// overloads differ only in return type.
-template<typename Ret, typename Visitor, typename Storage, UInt... Is>
-constexpr auto createVisitorTable(std::index_sequence<Is...>) -> Array<Ret (*)(Visitor&&, Storage&), sizeof...(Is)>
-{
-    using FnPtr = Ret (*)(Visitor&&, Storage&);
-    return Array<FnPtr, sizeof...(Is)>{ +[](Visitor&& visitor, Storage& storage) -> Ret {
-        auto vis = VIOLET_MOVE(visitor);
-        return vis(getElementInStorage<Is>(storage));
-    }... };
-}
-
-} // namespace violet::experimental::detail
 
 template<>
 struct std::hash<violet::experimental::Mono> final {

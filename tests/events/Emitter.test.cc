@@ -21,12 +21,10 @@
 
 #include <gtest/gtest.h>
 #include <violet/Events/EventEmitter.h>
-#include <violet/Violet.h>
 
 #include <thread>
 
-using namespace violet; // NOLINT(google-build-using-namespace)
-using namespace violet::events; // NOLINT(google-build-using-namespace)
+namespace violet::events {
 
 TEST(Events, ReceivesEvents)
 {
@@ -143,3 +141,5 @@ TEST(Events, EmitterThreadSafe)
 
     ASSERT_EQ(ids.size(), 1300);
 }
+
+} // namespace violet::events

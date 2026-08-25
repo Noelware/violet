@@ -89,6 +89,7 @@ violet_cc_library(
     deps = [
         "//violet",
         "//violet/container:optional",
+        ":slice",
     ],
 )
 

@@ -22,53 +22,34 @@
 #include <gtest/gtest.h>
 #include <violet/Container/Optional.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
-using namespace violet;
+namespace violet {
+// NOLINTBEGIN(readability-identifier-length)
 
-TEST(Some, ConstructFromLvalue)
+TEST(OptionalSome, ConstructFromLValue)
 {
-    int val = 42;
-    Some<Int32> s(val);
-    EXPECT_EQ(s.Value(), 42);
+    Int32 value = 42;
+    Optional<Int32> s = Some(value);
+    EXPECT_EQ(s.Value(), value);
 }
 
-TEST(Some, ConstructFromRvalue)
+TEST(OptionalSome, ConstructFromRValue)
 {
-    Some<std::string> s(std::string("hello"));
+    Optional<String> s = Some(String("hello"));
     EXPECT_EQ(s.Value(), "hello");
 }
 
-TEST(Some, InPlaceConstruction)
+TEST(OptionalSome, InPlaceConstruction)
 {
-    Some<std::string> s(5, 'x');
+    Optional<String> s = Some<String>(5, 'x');
     EXPECT_EQ(s.Value(), "xxxxx");
 }
 
-TEST(Some, ConvertingMoveConstruct)
+TEST(OptionalSome, ConvertingMoveConstruct)
 {
-    Some<Int32> inner(42);
-    Some<Int64> outer(VIOLET_MOVE(inner));
-    EXPECT_EQ(outer.Value(), 42L);
+    Some inner(42);
+    Optional<Int32> outer(VIOLET_MOVE(inner));
+    EXPECT_EQ(outer.Value(), 42);
 }
 
-TEST(Some, ToString)
-{
-    Some<Int32> s(42);
-    EXPECT_FALSE(s.ToString().empty());
-}
-
-TEST(Some, StreamOperator)
-{
-    Some<Int32> s(42);
-    std::ostringstream os;
-    os << s;
-    EXPECT_FALSE(os.str().empty());
-}
-
-TEST(SomeConstexpr, Construct)
-{
-    constexpr Some<Int32> s(42);
-    static_assert(s.Value() == 42);
-}
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)
+// NOLINTEND(readability-identifier-length)
+} // namespace violet

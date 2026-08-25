@@ -115,7 +115,7 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
         requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
     NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_IMPLICIT Some(Some<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
-        : n_value(T(VIOLET_MOVE(other).Value()))
+        : n_value(T(VIOLET_MOVE(other).n_value))
     {
     }
 
@@ -140,14 +140,26 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
     {
     }
 
-    NOELDOC_SINCE("26.05.02")
-    constexpr VIOLET_EXPLICIT operator violet::Optional<T>() const noexcept
+    NOELDOC_SINCE("current")
+    constexpr VIOLET_IMPLICIT operator Optional<T>() const noexcept
     {
-        return violet::Optional<T>(std::in_place, VIOLET_MOVE(this->n_value));
+        return Optional<T>(std::in_place, this->n_value);
     }
 
     NOELDOC_SINCE("26.05.02")
-    constexpr VIOLET_EXPLICIT operator std::optional<T>() const noexcept
+    constexpr VIOLET_IMPLICIT operator Optional<T>() && noexcept
+    {
+        return Optional<T>(std::in_place, VIOLET_MOVE(this->n_value));
+    }
+
+    NOELDOC_SINCE("current")
+    constexpr VIOLET_IMPLICIT operator std::optional<T>() const noexcept
+    {
+        return std::optional<T>(std::in_place, this->n_value);
+    }
+
+    NOELDOC_SINCE("26.05.02")
+    constexpr VIOLET_IMPLICIT operator std::optional<T>() && noexcept
     {
         return std::optional<T>(std::in_place, VIOLET_MOVE(this->n_value));
     }
@@ -486,6 +498,52 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
         return *this;
     }
 
+    template<typename U>
+        requires(std::is_convertible_v<const U&, T>)
+    NOELDOC_SINCE("current")
+    constexpr auto operator=(const Some<U>& other) noexcept(
+        std::is_nothrow_copy_assignable_v<T> || std::is_nothrow_copy_constructible_v<T>) -> Optional&
+        requires(std::is_copy_assignable_v<T> || std::is_copy_constructible_v<T>)
+    {
+        if (this->n_engaged) {
+            if constexpr (std::is_copy_assignable_v<T>) {
+                this->getValueRef() = other.n_value;
+            } else {
+                this->destroy();
+                std::construct_at(&this->n_value, other.n_value);
+                this->n_engaged = true;
+            }
+        } else {
+            std::construct_at(&this->n_value, other.n_value);
+            this->n_engaged = true;
+        }
+
+        return *this;
+    }
+
+    template<typename U>
+        requires(std::is_convertible_v<U &&, T>)
+    NOELDOC_SINCE("current")
+    constexpr auto operator=(Some<U>&& other) noexcept(
+        std::is_nothrow_move_assignable_v<T> || std::is_nothrow_move_constructible_v<T>) -> Optional&
+        requires(std::is_move_assignable_v<T> || std::is_move_constructible_v<T>)
+    {
+        if (this->n_engaged) {
+            if constexpr (std::is_copy_assignable_v<T>) {
+                this->getValueRef() = VIOLET_MOVE(other).n_value;
+            } else {
+                this->destroy();
+                std::construct_at(&this->n_value, VIOLET_MOVE(other).n_value);
+                this->n_engaged = true;
+            }
+        } else {
+            std::construct_at(&this->n_value, VIOLET_MOVE(other).n_value);
+            this->n_engaged = true;
+        }
+
+        return *this;
+    }
+
     /// Assigns a new value to the `Optional`.
     ///
     /// If engaged, assigns to the contained value. Otherwise, constructs a new value in-place.
@@ -778,28 +836,28 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     constexpr auto UnwrapOrDefault() & noexcept -> value_type
         requires(std::is_default_constructible_v<value_type>)
     {
-        return this->HasValue() ? this->getValueRef() : value_type{ };
+        return this->HasValue() ? this->getValueRef() : value_type{};
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() const& noexcept -> value_type
         requires(std::is_default_constructible_v<value_type>)
     {
-        return this->HasValue() ? this->getValueRef() : value_type{ };
+        return this->HasValue() ? this->getValueRef() : value_type{};
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() && noexcept -> value_type
         requires(std::is_default_constructible_v<value_type>)
     {
-        return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : value_type{ };
+        return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : value_type{};
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() const&& noexcept -> value_type
         requires(std::is_default_constructible_v<value_type>)
     {
-        return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : value_type{ };
+        return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : value_type{};
     }
 
     /// Returns the contained value without checking engagement.
@@ -1040,7 +1098,7 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
         requires(!instanceof_v<std::reference_wrapper, T>)
     {
         if (!this->HasValue()) {
-            return { };
+            return {};
         }
 
         Optional tmp(VIOLET_MOVE(this->getValueRef()));
@@ -1161,6 +1219,20 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
 
     constexpr auto operator!=(const std::optional<T>& other) const noexcept -> bool
         requires(requires { this->Value() == *other; })
+    {
+        return !(*this == other);
+    }
+
+    NOELDOC_SINCE("current")
+    constexpr auto operator==(const Some<T>& other) const noexcept -> bool
+        requires(std::equality_comparable<T>)
+    {
+        return this->HasValue() && this->Value() == other.n_value;
+    }
+
+    NOELDOC_SINCE("current")
+    constexpr auto operator!=(const Some<T>& other) const noexcept -> bool
+        requires(std::equality_comparable<T>)
     {
         return !(*this == other);
     }

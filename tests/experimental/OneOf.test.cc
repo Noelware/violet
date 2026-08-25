@@ -173,7 +173,7 @@ TEST(OneOf, ConstGetReturnsNullptrOnMismatch)
 
 TEST(OneOf, CopyConstructor)
 {
-    OneOf<int, String> a = String{ "hello" };
+    OneOf<int, String> a = String{"hello"};
     auto b = a;
     ASSERT_TRUE(b.Holds<String>());
     EXPECT_EQ(*b.Get<String>(), "hello");
@@ -181,7 +181,7 @@ TEST(OneOf, CopyConstructor)
 
 TEST(OneOf, CopyDoesNotAliasStorage)
 {
-    OneOf<String, int> a = String{ "abc" };
+    OneOf<String, int> a = String{"abc"};
     auto b = a;
     *b.Get<String>() = "xyz";
     EXPECT_EQ(*a.Get<String>(), "abc"); // a is unaffected
@@ -189,7 +189,7 @@ TEST(OneOf, CopyDoesNotAliasStorage)
 
 TEST(OneOf, MoveConstructor)
 {
-    OneOf<move_only<Int32>, int> a = move_only<Int32>{ 42 };
+    OneOf<move_only<Int32>, int> a = move_only<Int32>{42};
     auto b = std::move(a);
     ASSERT_TRUE(b.Holds<move_only<Int32>>());
     EXPECT_EQ(b.Get<move_only<Int32>>()->Value(), 42);
@@ -282,8 +282,8 @@ TEST(OneOf, VisitRvalue)
 TEST(OneOf, MatchExhaustive)
 {
     OneOf<int, float, String> v = String("hi");
-    String result = v.Match([](int) -> String { return String{ "int" }; },
-        [](float) -> String { return String{ "float" }; }, [](String& s) -> String { return s; });
+    String result = v.Match([](int) -> String { return String{"int"}; },
+        [](float) -> String { return String{"float"}; }, [](String& s) -> String { return s; });
 
     EXPECT_EQ(result, "hi");
 }
@@ -371,7 +371,7 @@ struct throw_on_copy_t final {
 TEST(OneOfs, CopyAssignmentLeavesLhsIntactOnThrow)
 {
     OneOf<throw_on_copy_t, int> a = 42;
-    OneOf<throw_on_copy_t, int> b = throw_on_copy_t{ };
+    OneOf<throw_on_copy_t, int> b = throw_on_copy_t{};
 
     EXPECT_THROW({ a = b; }, std::runtime_error);
 
@@ -480,7 +480,7 @@ TEST(OneOfVisit, ConstLvalueRejectsMutation)
 TEST(OneOfVisit, RvalueVoidReturn)
 {
     OneOf<Mono, int, String> o;
-    o = String{ "hello" };
+    o = String{"hello"};
 
     String seen;
     VIOLET_MOVE(o).Visit([&](auto&& x) -> void {
@@ -603,7 +603,7 @@ TEST(OneOfVisit, DispatchesToCorrectAlternativeDouble)
 TEST(OneOfVisit, DispatchesToCorrectAlternativeString)
 {
     OneOf<Mono, int, double, String> o;
-    o = String{ "hi" };
+    o = String{"hi"};
 
     auto tag = o.Visit([](auto& x) -> int {
         using T = std::decay_t<decltype(x)>;
@@ -650,7 +650,7 @@ TEST(OneOfVisit, TypeTaggedDispatch)
     // Simulate a message-dispatch pattern, each alternative has its
     // own handler, and the visitor picks the right one at runtime.
     OneOf<Mono, int, String, double> msg;
-    msg = String{ "hello" };
+    msg = String{"hello"};
 
     String out = msg.Visit([](auto& m) -> String {
         using T = std::decay_t<decltype(m)>;
@@ -668,4 +668,70 @@ TEST(OneOfVisit, TypeTaggedDispatch)
     EXPECT_EQ(out, "str(\"hello\")");
 }
 
+namespace {
+
+consteval auto constexprDefaultConstruct() noexcept -> bool
+{
+    OneOf<Mono, Int32, double> o;
+    return o.Holds<Mono>();
+}
+
+static_assert(constexprDefaultConstruct());
+
+consteval auto ConstexprConvertingConstruct() -> bool
+{
+    OneOf<Int32, float, double> v = 42;
+    return v.Holds<int>() && v.Index() == 0 && *v.Get<int>() == 42;
+}
+
+static_assert(ConstexprConvertingConstruct());
+
+consteval auto ConstexprCopyAndMove() -> bool
+{
+    OneOf<Int32, double> a = 5;
+    auto b = a; // copy ctor
+    auto c = VIOLET_MOVE(b); // move ctor
+    a = 3.14; // converting assignment
+    b = a; // copy assignment
+    return c.Holds<Int32>() && *c.Get<Int32>() == 5 && b.Holds<double>();
+}
+
+static_assert(ConstexprCopyAndMove());
+
+consteval auto ConstexprVisitAndMatch() -> bool
+{
+    OneOf<Int32, double> v = 21;
+    int doubled = v.Visit([](auto& x) -> int { return static_cast<int>(x) * 2; });
+
+    OneOf<Int32, double, Mono> m = 7;
+    bool matched = m.Match(
+        // clang-format off
+        [](auto i) -> bool { return i == 7; },
+        [](double) -> bool { return false; },
+        [](Mono) -> bool { return false; }
+        // clang-format on
+    );
+
+    return doubled == 42 && matched;
+}
+
+static_assert(ConstexprVisitAndMatch());
+
+consteval auto ConstexprSwapAndEquality() -> bool
+{
+    OneOf<Int32, float> a = 1;
+    OneOf<Int32, float> b = 2;
+    swap(a, b);
+
+    OneOf<Int32, float> c = 1.5F;
+    swap(a, c);
+
+    OneOf<Int32, float> expect = 1;
+    return *a.Get<float>() == 1.5F && b == expect;
+}
+
+static_assert(ConstexprSwapAndEquality());
+
 // NOLINTEND(readability-identifier-length,google-build-using-namespace)
+
+} // namespace

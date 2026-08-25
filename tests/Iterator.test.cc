@@ -22,11 +22,11 @@
 #include <gtest/gtest.h>
 #include <violet/Iterator.h>
 
-using namespace violet; // NOLINT(google-build-using-namespace)
+namespace violet {
 
 TEST(Iterators, FoldSum) // sounds like folsom
 {
-    auto vec = Vec<UInt32>({ 0, 1, 2, 3, 4 });
+    auto vec = Vec<UInt32>({0, 1, 2, 3, 4});
     auto it = MkIterable(vec);
 
     UInt32 sum = it.Fold(0, [](UInt32 acc, UInt32 value) -> UInt32 { return acc + value; });
@@ -35,7 +35,7 @@ TEST(Iterators, FoldSum) // sounds like folsom
 
 TEST(Iterators, Position)
 {
-    auto vec = Vec<UInt32>({ 0, 2, 4 });
+    auto vec = Vec<UInt32>({0, 2, 4});
     auto it = MkIterable(vec);
 
     auto pos1 = it.Position([](UInt32 value) -> bool { return value == 2; });
@@ -48,7 +48,7 @@ TEST(Iterators, Position)
 
 TEST(Iterators, Find)
 {
-    auto vec = Vec<UInt32>({ 1, 2, 3 });
+    auto vec = Vec<UInt32>({1, 2, 3});
     auto it = MkIterable(vec);
 
     auto even = it.Find([](UInt32 value) -> bool { return value % 2 == 0; });
@@ -58,7 +58,7 @@ TEST(Iterators, Find)
 
 TEST(Iterators, FindMap)
 {
-    Vec<UInt32> vi({ 1, 2, 3, 4 });
+    Vec<UInt32> vi({1, 2, 3, 4});
     auto found = MkIterable(vi).FindMap([](UInt32 value) -> Optional<UInt32> {
         if (value % 2 == 0) {
             return Some<UInt32>(value * 10);
@@ -73,13 +73,13 @@ TEST(Iterators, FindMap)
 
 TEST(Iterators, Count)
 {
-    Vec<UInt32> vi = { 1, 2, 3, 4, 5 };
+    Vec<UInt32> vi = {1, 2, 3, 4, 5};
     ASSERT_EQ(MkIterable(vi).Count(), 5);
 }
 
 TEST(Iterators, AdvanceBy)
 {
-    Vec<UInt32> vi = { 1, 2, 3, 4, 5 };
+    Vec<UInt32> vi = {1, 2, 3, 4, 5};
     auto it = MkIterable(vi);
 
     ASSERT_TRUE(it.AdvanceBy(1));
@@ -88,7 +88,7 @@ TEST(Iterators, AdvanceBy)
 
 TEST(Iterators, Nth)
 {
-    Vec<UInt32> vi{ 1, 2, 3 };
+    Vec<UInt32> vi{1, 2, 3};
     auto it = MkIterable(vi);
 
     ASSERT_EQ(it.Nth(1), Some<UInt32>(2));
@@ -96,7 +96,7 @@ TEST(Iterators, Nth)
 
 TEST(Iterators, Any)
 {
-    Vec<UInt32> vi{ 0, 1, 2 };
+    Vec<UInt32> vi{0, 1, 2};
     auto it = MkIterable(vi);
 
     ASSERT_TRUE(it.Any([](int num) { return num == 2; }));
@@ -105,7 +105,7 @@ TEST(Iterators, Any)
 
 TEST(Iterators, CollectVec)
 {
-    Vec<UInt32> vi({ 0, 1, 2 });
+    Vec<UInt32> vi({0, 1, 2});
 
     auto vec = MkIterable(vi).Collect<Vec<UInt32>>();
     ASSERT_EQ(vi, vec);
@@ -113,10 +113,12 @@ TEST(Iterators, CollectVec)
 
 TEST(Iterators, CollectArray)
 {
-    Vec<UInt32> vi({ 0, 1, 2 });
+    Vec<UInt32> vi({0, 1, 2});
 
     auto vec = MkIterable(vi).Collect<Array<UInt32, 3>>();
     ASSERT_EQ(vi[0], vec[0]);
     ASSERT_EQ(vi[1], vec[1]);
     ASSERT_EQ(vi[2], vec[2]);
 }
+
+} // namespace violet

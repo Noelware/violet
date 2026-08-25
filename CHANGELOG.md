@@ -17,10 +17,19 @@ availableAt:
 - `VIOLET_MIN_CPP_VERSION` can now be overridden by the embedder; defining it below C++20 is a hard error ([`@auguwu`])
 - Fix missing leading space in the default panic hook's userland location message ([`@auguwu`])
 - Add `unsafe_polymorphic_relocation` Bazel build flag, gating `VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE` ([`@auguwu`])
+- Allow copy/move assignment for <code>Optional = Some\<T\></code> ([`@auguwu`])
+- Allow implicit conversion from <code>Some\<T\></code> to <code>Optional\<T\></code> and `std::optional<T>` (previously explicit-only), with separate rvalue-qualified overloads that move instead of copy ([`@auguwu`])
+- Add **operator==** / **operator!=** between <code>Optional\<T\></code> and <code>Some\<T\></code> ([`@auguwu`])
+- Fix **RefCnt**'s `Traits::BumpRef`/`DecRef`/`Valid` `noexcept` checks to use `std::is_nothrow_invocable_v` instead of a bare `noexcept(...)` expression ([`@auguwu`])
 
 #### Noelware.Violet.Experimental
-- [**Synchronized.h**] Added **With(<lambda>)** method ([`@auguwu`])
+- Added **Synchroized\<T\>::With(<lambda>)** method ([`@auguwu`])
 - Add **NonNull\<T\>**, a non-nullable non-owning pointer wrapper modeled after Rust's `std::ptr::NonNull<T>` ([`@auguwu`])
+- **OneOf** is no-longer `final`, which can be inherited ([`@auguwu`])
+- **OneOf** can be fully used in `constexpr` contexts ([`@auguwu`])
+
+#### Noelware.Violet.Experimental.Time
+- Fix `TimePoint::IntoISO8601` to write into a bounds-checked buffer and assert on truncation instead of a fixed `char[32]` with an unchecked `snprintf` ([`@auguwu`])
 
 [`std::ptr::NonNull`]: https://doc.rust-lang.org/std/ptr/struct.NonNull.html
 

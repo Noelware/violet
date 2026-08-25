@@ -362,10 +362,10 @@ constexpr inline bool detect_relocatable_v = std::is_trivially_copyable_v<T>;
 ///           [`is_trivially_relocatable_v`] before reaching the template, so specialization are
 ///           written for unqualified CV types.
 template<typename T>
-struct NOELDOC_SINCE("26.09") trivially_relocatable: std::bool_constant<traits_internal::detect_relocatable_v<T>> { };
+struct NOELDOC_SINCE("current") trivially_relocatable: std::bool_constant<traits_internal::detect_relocatable_v<T>> { };
 
 template<typename T, std::size_t N>
-struct NOELDOC_SINCE("26.09") NOELDOC_SEE("violet::trivially_relocatable") trivially_relocatable<T[N]> final
+struct NOELDOC_SINCE("current") NOELDOC_SEE("violet::trivially_relocatable") trivially_relocatable<T[N]> final
     : trivially_relocatable<std::remove_cv_t<T>> { };
 
 /// Whether `T` is trivially relocatable.
@@ -375,7 +375,7 @@ struct NOELDOC_SINCE("26.09") NOELDOC_SEE("violet::trivially_relocatable") trivi
 ///
 /// @tparam T The type being queried; must be complete.
 template<typename T>
-NOELDOC_SINCE("26.09")
+NOELDOC_SINCE("current")
 constexpr inline bool is_trivially_relocatable_v = trivially_relocatable<std::remove_cv_t<T>>::value;
 
 } // namespace violet

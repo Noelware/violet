@@ -25,11 +25,9 @@
 #include <violet/Testing/CaptureStream.h>
 #include <violet/anyhow.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
-using namespace violet;
 using namespace violet::testing;
-// NOLINTEND(google-build-using-namespace)
 
+namespace violet {
 namespace {
 
 struct dummy_t final {
@@ -159,7 +157,7 @@ TEST(Anyhow, ChainRangeFor)
 {
     auto error = anyhow::Error("a").Context("b");
     Vec<String> messages;
-    for (auto frame: anyhow::Chain(error)) {
+    for (auto& frame: anyhow::Chain(error)) {
         messages.push_back(frame.Message);
     }
 
@@ -169,9 +167,7 @@ TEST(Anyhow, ChainRangeFor)
 }
 
 #if VIOLET_FEATURE(RTTI)
-
 namespace {
-
 struct other_error_t final {
     int Code;
 
@@ -185,7 +181,6 @@ struct other_error_t final {
         return std::format("error code {}", Code);
     }
 };
-
 } // namespace
 
 TEST(Anyhow, DowncastSuccess)
@@ -242,3 +237,4 @@ TEST(Anyhow, DowncastStringError)
 }
 
 #endif
+} // namespace violet

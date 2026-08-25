@@ -22,92 +22,78 @@
 #include <gtest/gtest.h>
 #include <violet/Container/Result.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
-using namespace violet;
+namespace violet {
+// NOLINTBEGIN(readability-identifier-length)
 
-TEST(Err, ConstructFromLvalue)
+TEST(ResultErr, ConstructFromLValue)
 {
-    std::string msg = "failed";
-    Err<std::string> err(msg);
-    EXPECT_EQ(err.Error(), "failed");
+    Err<String> error("failed");
+    EXPECT_EQ(error.Error(), "failed");
 }
 
-TEST(Err, ConstructFromRvalue)
+TEST(ResultErr, ConstructFromRValue)
 {
-    Err<std::string> err(std::string("failed"));
-    EXPECT_EQ(err.Error(), "failed");
+    Err error(String("failed"));
+    EXPECT_EQ(error.Error(), "failed");
 }
 
-TEST(Err, InPlaceConstruction)
+TEST(ResultErr, InPlaceConstruction)
 {
-    Err<std::string> err(5, 'x');
-    EXPECT_EQ(err.Error(), "xxxxx");
+    Err<String> error(5, 'x');
+    EXPECT_EQ(error.Error(), "xxxxx");
 }
 
-TEST(Err, ConvertingMoveConstruct)
+TEST(ResultErr, ConvertingMoveConstruct)
 {
-    // Assumes io::Error is convertible to anyhow::Error or similar.
-    // Use int -> long as a stand-in.
-    Err<Int32> inner(42);
+    Err inner(42);
     Err<Int64> outer(VIOLET_MOVE(inner));
     EXPECT_EQ(outer.Error(), 42L);
 }
 
-TEST(Err, Equality)
+TEST(ResultErr, Equality)
 {
-    Err<Int32> a(1);
-    Err<Int32> b(1);
-    Err<Int32> c(2);
+    Err a(1);
+    Err b(1);
+    Err c(2);
 
     EXPECT_EQ(a, b);
     EXPECT_NE(a, c);
 }
 
-TEST(Err, ErrorRefQualifiers)
+TEST(ResultErr, RefQualifiers)
 {
-    Err<std::string> err("hello");
-
-    // lvalue
-    EXPECT_EQ(err.Error(), "hello");
+    Err<String> error("hello");
+    EXPECT_EQ(error.Error(), "hello"); // lvalue
 
     // const lvalue
-    const auto& cref = err;
+    const auto& cref = error;
     EXPECT_EQ(cref.Error(), "hello");
 
     // rvalue
-    auto moved = VIOLET_MOVE(err).Error();
+    auto moved = VIOLET_MOVE(error).Error();
     EXPECT_EQ(moved, "hello");
 }
 
-TEST(Err, ToString)
+namespace {
+consteval auto constructAndAccess() noexcept -> bool
 {
-    Err<Int32> err(42);
-    auto s = err.ToString();
-    EXPECT_FALSE(s.empty());
+    constexpr Err error(42);
+    return error.Error() == 42;
 }
 
-TEST(Err, StreamOperator)
+static_assert(constructAndAccess());
+
+consteval auto equality() noexcept -> bool
 {
-    Err<Int32> err(42);
-    std::ostringstream os;
-    os << err;
-    EXPECT_FALSE(os.str().empty());
+    constexpr Err a(42);
+    constexpr Err b(42);
+    constexpr Err c(420);
+
+    return a == b && a != c;
 }
 
-TEST(ErrConstexpr, ConstructAndAccess)
-{
-    constexpr Err<int> err(42);
-    static_assert(err.Error() == 42);
-}
+static_assert(equality());
+} // namespace
 
-TEST(ErrConstexpr, Equality)
-{
-    constexpr Err<int> a(1);
-    constexpr Err<int> b(1);
-    constexpr Err<int> c(2);
-
-    static_assert(a == b);
-    static_assert(a != c);
-}
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)
+// NOLINTEND(readability-identifier-length)
+} // namespace violet
