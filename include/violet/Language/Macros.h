@@ -1349,6 +1349,14 @@
 #define NOELDOC_CONSTEXPR_SINCE(ver) __noeldoc_annotate__("constexpr(since:" ver ")")
 
 /**
+ * @macro NOELDOC_NON_CONSTEXPR_SINCE
+ * @since current
+ *
+ * Marks a declaration non-`constexpr` since a given version if it was `constexpr`
+ */
+#define NOELDOC_NO_LONGER_CONSTEXPR_SINCE(ver) __noeldoc_annotate__("non_constexpr(since:" ver ")")
+
+/**
  * @macro VIOLET_ASSUME
  * @param expr A boolean expression the optimizer may assume to always be `true`.
  * @since 26.09

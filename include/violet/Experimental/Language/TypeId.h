@@ -78,7 +78,8 @@ struct VIOLET_API TypeId final {
 
     /// Returns a hash-suitable representation of this token.
     /// The returned value has no meaning beyond use as a hash key.
-    [[nodiscard]] constexpr auto HashCode() const noexcept -> size_t
+    [[nodiscard]]
+    NOELDOC_NO_LONGER_CONSTEXPR_SINCE("current") auto HashCode() const noexcept -> size_t
     {
         return reinterpret_cast<size_t>(this->n_id);
     }

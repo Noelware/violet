@@ -104,7 +104,8 @@ jobs:
                 compiler:
                     - gcc-15
                     - gcc-14
-                    - clang-22-libcxx
+                    - clang-23-libcxx
+                    - clang-23
                     - clang-22
                     - clang-21
                     - clang-20
@@ -124,11 +125,16 @@ jobs:
                       flags: ""
                       cxx: g++
                       cc: gcc
-                    - compiler: clang-22-libcxx
-                      image: clang-22
+                    - compiler: clang-23-libcxx
+                      image: clang-23
                       flags: "--config=libcxx --config=host-libcxx"
-                      cxx: clang++-22
-                      cc: clang-22
+                      cxx: clang++-23
+                      cc: clang-23
+                    - compiler: clang-23
+                      image: clang-23
+                      flags: ""
+                      cxx: clang++-23
+                      cc: clang-23
                     - compiler: clang-22
                       image: clang-22
                       flags: ""
@@ -174,6 +180,7 @@ jobs:
                     - gcc-16
                     - gcc-15
                     - gcc-14
+                    - clang-23
                     - clang-22
                     - clang-21
                     - clang-20
@@ -190,6 +197,10 @@ jobs:
                       flags: ""
                       cxx: g++
                       cc: gcc
+                    - compiler: clang-23
+                      flags: ""
+                      cxx: clang++-23
+                      cc: clang-23
                     - compiler: clang-22
                       flags: ""
                       cxx: clang++-22
@@ -287,7 +298,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                compiler: [gcc-16, gcc-15, gcc-14, clang-22, clang-21, clang-20]
+                compiler: [gcc-16, gcc-15, gcc-14, clang-23, clang-22, clang-21, clang-20]
                 include:
                     - compiler: gcc-16
                       cxx: g++
@@ -298,6 +309,9 @@ jobs:
                     - compiler: gcc-14
                       cxx: g++
                       cc: gcc
+                    - compiler: clang-23
+                      cxx: clang++-23
+                      cc: clang-23
                     - compiler: clang-22
                       cxx: clang++-22
                       cc: clang-22

@@ -28,6 +28,7 @@ availableAt:
 - **OneOf** is no-longer `final`, which can be inherited ([`@auguwu`])
 - **OneOf** can be fully used in `constexpr` contexts ([`@auguwu`])
 - Add **GetUnchecked** to `OneOf` to get a value without checking for anything ([`@auguwu`])
+- Remove **constexpr** in `TypeId::HashCode()` ([`@auguwu`])
 
 #### Noelware.Violet.Experimental.Time
 - Fix `TimePoint::IntoISO8601` to write into a bounds-checked buffer and assert on truncation instead of a fixed `char[32]` with an unchecked `snprintf` ([`@auguwu`])
