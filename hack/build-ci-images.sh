@@ -47,7 +47,7 @@ DOCKERFLAGS=${DOCKERFLAGS:-"--load"}
 IMAGE_REGISTRY="ghcr.io/noelware/violet/ci" # TODO(@auguwu): once cr.noelware.cloud is ready, switch to `cr.noelware.cloud/private/violet/ci`
 
 ## START: LLVM Clang
-for clangVersion in "22" "21" "20"; do
+for clangVersion in "23" "22" "21" "20"; do
     echo "~> START: $IMAGE_REGISTRY:clang-$clangVersion"
 
     time docker buildx build . \
@@ -60,6 +60,20 @@ for clangVersion in "22" "21" "20"; do
 done
 ## END: LLVM Clang
 
+## START: LLVM Clang (MSan)
+for clangVersion in "23" "22" "21" "20"; do
+    echo "~> START: $IMAGE_REGISTRY:clang-$clangVersion-msan"
+
+    time docker buildx build . \
+        -t "$IMAGE_REGISTRY:clang-$clangVersion-msan" \
+        $DOCKERFLAGS \
+        --build-arg LLVM_VERSION="$clangVersion" \
+        --file "$VIOLET_DIR/.ci/clang/msan.Dockerfile"
+
+    echo "~> END: $IMAGE_REGISTRY:clang-$clangVersion-msan"
+done
+## END: LLVM Clang (MSan)
+
 ## START: GCC
 for version in "${!gccimages[@]}"; do
     echo "~> START: $IMAGE_REGISTRY:$version"
@@ -68,7 +82,7 @@ for version in "${!gccimages[@]}"; do
         -t "$IMAGE_REGISTRY:$version" \
         $DOCKERFLAGS \
         --file "$VIOLET_DIR/.ci/gcc/Dockerfile" \
-        --build-arg BASE_IMAGE="${gccimages[$version]}"
+        --build-arg BASE_IMAGE="gcc@${gccimages[$version]}"
 
     echo "~> END: $IMAGE_REGISTRY:$version"
 done

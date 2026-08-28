@@ -29,6 +29,9 @@ build:opt --copt=-DNDEBUG
 # For `.bazelrc`, we can specify platform-specific Bazel flags with this.
 common --enable_platform_specific_config
 
+# Disable strict `action_env`s as it breaks `liburing`'s configure script.
+common --noincompatible_strict_action_env
+
 # Requires for Windows usage
 startup --windows_enable_symlinks
 build:windows --enable_runfiles
@@ -105,6 +108,15 @@ common:asan --//buildsystem/bazel/flags:asan=True
 common:msan --config=san
 common:msan --config=libcxx
 common:msan --//buildsystem/bazel/flags:msan=True
+build:msan --features=-layering_check
+build:msan --features=-parse_headers
+build:msan --copt=-fsanitize=memory
+build:msan --copt=-fsanitize-memory-track-origins
+build:msan --copt=-fsanitize-memory-use-after-dtor
+build:msan --linkopt=-fsanitize=memory
+build:msan --linkopt=-fsanitize-memory-track-origins
+build:msan --linkopt=-fsanitize-memory-use-after-dtor
+test:msan --spawn_strategy=standalone
 
 ## ~ `--config=ubsan` enables Undefined Behaviour Sanitizer (UBSan)
 common:ubsan --config=san

@@ -31,8 +31,9 @@
 # Older compilers are not avaliable under Noelware's container registry. Once a new
 # version of GCC is released, we provide tests and soft-deprecate the second latest
 # compiler.
+
 ARG BASE_IMAGE
-FROM gcc@${BASE_IMAGE}
+FROM ${BASE_IMAGE}
 
 LABEL org.opencontainers.image.source="https://git.noelware.org/libraries/violet"
 LABEL org.opencontainers.image.licenses="MIT"

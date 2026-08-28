@@ -92,7 +92,11 @@ sanitizer = {
         "//buildsystem/bazel/flags:asan_enabled": ["-fsanitize=address"],
         "//conditions:default": [],
     }) + select({
-        "//buildsystem/bazel/flags:msan_enabled": ["-fno-sanitize=memory"],
+        "//buildsystem/bazel/flags:msan_enabled": [
+            "-fsanitize=memory",
+            "-fsanitize-memory-track-origins",
+            "-fsanitize-memory-use-after-dtor",
+        ],
         "//conditions:default": [],
     }) + select({
         "//buildsystem/bazel/flags:tsan_enabled": ["-fsanitize=thread"],

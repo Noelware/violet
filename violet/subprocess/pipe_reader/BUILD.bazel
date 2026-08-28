@@ -72,6 +72,15 @@ violet_cc_library(
 violet_cc_library(
     name = "iouring",
     srcs = ["//src/subprocess/pipe_reader:iouring.cc"],
+    copts = select({
+        "@rules_cc//cc/compiler:clang": [
+            "-Wno-gnu-anonymous-struct",
+            "-Wno-nested-anon-types",
+            "-Wno-zero-lengt-array",
+            "-Wno-c99-extensions",
+        ],
+        "//conditions:default": [],
+    }),
     target_compatible_with = [
         "@platforms//os:linux",
     ],

@@ -22,8 +22,9 @@
 # ---------------------------------------------------------------------------------
 # The `.ci/clang/Dockerfile` image is the official image for Violet's CI pipeline that
 # tests Clang coverage. Each tag corresponds to what Clang version we test, which as of
-# 2025-10-14, we test on the following Clang versions:
-#
+# 2026-08-27, we test on the following Clang versions:
+#    * `clang-23`
+#    * `clang-22`
 #    * `clang-21`
 #    * `clang-20`
 #
