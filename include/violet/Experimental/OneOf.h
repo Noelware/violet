@@ -91,9 +91,9 @@ template<UInt Index, typename... Ts, typename... Args>
 constexpr void ConstructElement(storage<Ts...>& storage, Args&&... args)
 {
     if constexpr (Index == 0) {
-        ::new (std::addressof(storage.Head)) pack_element_t<0, Ts...>(VIOLET_FWD(Args, args)...);
+        std::construct_at(std::addressof(storage.Head), VIOLET_FWD(Args, args)...);
     } else {
-        ::new (std::addressof(storage.Tail)) std::decay_t<decltype(storage.Tail)>();
+        std::construct_at(std::addressof(storage.Tail));
         ConstructElement<Index - 1>(storage.Tail, VIOLET_FWD(Args, args)...);
     }
 }
