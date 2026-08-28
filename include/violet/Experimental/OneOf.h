@@ -292,7 +292,7 @@ struct OneOf {
 
     template<typename T>
         requires pack_contains_v<T, Ts...>
-    constexpr auto GetUnchecked(Unsafe) noexcept -> std::reference_wrapper<T>
+    constexpr auto GetUnchecked(Unsafe) noexcept -> T&
     {
         VIOLET_ASSUME(this->n_index == IndexOf<T>);
         return std::ref(oneof_internal::GetElement<IndexOf<T>>(this->n_storage));
@@ -311,7 +311,7 @@ struct OneOf {
 
     template<typename T>
         requires pack_contains_v<T, Ts...>
-    constexpr auto GetUnchecked(Unsafe) const noexcept -> std::reference_wrapper<T>
+    constexpr auto GetUnchecked(Unsafe) const noexcept -> T&
     {
         VIOLET_ASSUME(this->n_index == IndexOf<T>);
         return std::ref(oneof_internal::GetElement<IndexOf<T>>(this->n_storage));
@@ -404,7 +404,7 @@ struct OneOf {
                 type tmp(VIOLET_MOVE(av));
                 std::destroy_at(std::addressof(av));
                 std::construct_at(std::addressof(av),
-                    VIOLET_MOVE(o2.GetUnchecked<type>(Unsafe("already checked if we are at the same index")).get()));
+                    VIOLET_MOVE(o2.GetUnchecked<type>(Unsafe("already checked if we are at the same index"))));
 
                 std::construct_at(
                     std::addressof(oneof_internal::GetElement<IndexOf<type>>(o2.n_storage)), VIOLET_MOVE(tmp));

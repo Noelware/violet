@@ -34,7 +34,7 @@
   ## tools
   pkg-config,
   python3,
-  bazel_8,
+  bazel_9,
   bazel-buildtools,
   meson,
   cmake,
@@ -56,7 +56,7 @@
     ;
 
   appleSDK =
-    if stdenv.isDarwin
+    if stdenv.hostPlatform.isDarwin
     then apple-sdk_15
     else null;
 
@@ -82,7 +82,7 @@
       python3
 
       # build systems (we support Bazel, CMake, and Meson)
-      bazel_8
+      bazel_9
       cmake
       meson
       ninja
@@ -95,8 +95,8 @@
       starpls
       nil
     ]
-    ++ (lib.optionals stdenv.isLinux linuxPackages)
-    ++ (lib.optionals stdenv.isDarwin darwinPackages);
+    ++ (lib.optionals stdenv.hostPlatform.isLinux linuxPackages)
+    ++ (lib.optionals stdenv.hostPlatform.isDarwin darwinPackages);
 
   mkShell' = mkShell.override {
     inherit (llvm) stdenv;
@@ -118,7 +118,7 @@
       ]
       ++ [
         (
-          if stdenv.isDarwin
+          if stdenv.hostPlatform.isDarwin
           then "${appleSDK}"
           else ""
         )

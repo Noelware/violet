@@ -26,8 +26,8 @@
 
 namespace violet::experimental {
 namespace slice {
-    template<typename T, UInt N>
-    struct Iter;
+template<typename T, UInt N>
+struct Iter;
 }
 
 /// A fixed-capacity, stack-allocated container akin to [`std::array<T, N>`] or Rust's [`&[T; N]`][rust-slice].
@@ -99,7 +99,6 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
     ///
     /// This method will panic if the initializer list exceeds the capacity `N`.
     constexpr VIOLET_IMPLICIT Slice(std::initializer_list<T> init)
-        : n_storage({ })
     {
         for (auto& element: init) {
             this->Push(element);
@@ -108,7 +107,6 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
 
     /// Move-constructs a `Slice`, transferring ownership of all elements.
     constexpr VIOLET_IMPLICIT Slice(Slice&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
-        : n_storage({ })
     {
         for (size_type i = 0; i < other.n_size; i++) {
             this->Emplace(VIOLET_MOVE(other.at(i)));
@@ -345,12 +343,12 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
 
     constexpr VIOLET_IMPLICIT operator Span<T>() noexcept
     {
-        return { this->Data(), this->Elements() };
+        return {this->Data(), this->Elements()};
     }
 
     constexpr VIOLET_IMPLICIT operator Span<const T>() const noexcept
     {
-        return { this->Data(), this->Elements() };
+        return {this->Data(), this->Elements()};
     }
 
     template<UInt M>
@@ -438,7 +436,7 @@ private:
         }
     };
 
-    cell n_storage[N];
+    cell n_storage[N]{};
     size_type n_size = 0;
 
     constexpr auto at(size_type index) -> reference
@@ -461,92 +459,92 @@ private:
 
 namespace slice {
 
-    /// An iterator over the elements of `Slice`.
-    ///
-    /// Yields each element as `Optional<T&>`, returning `Nothing` when
-    /// exhausted. Supports both forward and reverse iteration via
-    /// `Next()` and `NextBack()`.
-    ///
-    /// ## Example
-    /// ```cpp
-    /// #include <violet/Experimental/Slice.h>
-    /// #include <violet/Iterator/Map.h>
-    /// #include <violet/Print.h>
-    ///
-    /// using namespace violet::experimental;
-    /// using namespace violet;
-    ///
-    /// Slice<Int32, 4> slice;
-    /// slice.Push(1);
-    /// slice.Push(2);
-    /// slice.Push(3);
-    ///
-    /// for (auto item: slice.Iter().Map([](Int32 value) -> Int32 { return value * 2; })) {
-    ///     violet::Println("{}", item);
-    /// }
-    /// ```
-    template<typename T, UInt N>
-    struct Iter final: public Iterator<Iter<T, N>> {
-        static_assert(std::is_reference_v<T&>, "`T` must be a referenceable type");
-        static_assert(!std::is_void_v<T>, "`T` = `void` is ill-formed");
+/// An iterator over the elements of `Slice`.
+///
+/// Yields each element as `Optional<T&>`, returning `Nothing` when
+/// exhausted. Supports both forward and reverse iteration via
+/// `Next()` and `NextBack()`.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Experimental/Slice.h>
+/// #include <violet/Iterator/Map.h>
+/// #include <violet/Print.h>
+///
+/// using namespace violet::experimental;
+/// using namespace violet;
+///
+/// Slice<Int32, 4> slice;
+/// slice.Push(1);
+/// slice.Push(2);
+/// slice.Push(3);
+///
+/// for (auto item: slice.Iter().Map([](Int32 value) -> Int32 { return value * 2; })) {
+///     violet::Println("{}", item);
+/// }
+/// ```
+template<typename T, UInt N>
+struct Iter final: public Iterator<Iter<T, N>> {
+    static_assert(std::is_reference_v<T&>, "`T` must be a referenceable type");
+    static_assert(!std::is_void_v<T>, "`T` = `void` is ill-formed");
 
-        using Item = std::reference_wrapper<T>;
+    using Item = std::reference_wrapper<T>;
 
-        VIOLET_DISALLOW_CONSTRUCTOR(Iter);
-        constexpr VIOLET_IMPLICIT Iter(T* data, UInt size)
-            : n_data(data)
-            , n_front(0)
-            , n_back(size)
-        {
+    VIOLET_DISALLOW_CONSTRUCTOR(Iter);
+    constexpr VIOLET_IMPLICIT Iter(T* data, UInt size)
+        : n_data(data)
+        , n_front(0)
+        , n_back(size)
+    {
+    }
+
+    /// Advances the iterator and returns the next element, or `Nothing`
+    /// if all elements have been yielded.
+    auto Next() -> Optional<Item>
+    {
+        if (this->n_front >= this->n_back) {
+            return Nothing;
         }
 
-        /// Advances the iterator and returns the next element, or `Nothing`
-        /// if all elements have been yielded.
-        auto Next() -> Optional<Item>
-        {
-            if (this->n_front >= this->n_back) {
-                return Nothing;
-            }
+        if constexpr (std::is_const_v<T>) {
+            return std::cref(this->n_data[this->n_front++]);
+        } else {
+            return std::ref(this->n_data[this->n_front++]);
+        }
+    }
 
-            if constexpr (std::is_const_v<T>) {
-                return std::cref(this->n_data[this->n_front++]);
-            } else {
-                return std::ref(this->n_data[this->n_front++]);
-            }
+    /// Advances the iterator from the back and returns the last
+    /// unconsumed element, or `Nothing` if all elements have been yielded.
+    auto NextBack() -> Optional<Item>
+    {
+        if (this->n_front >= this->n_back) {
+            return Nothing;
         }
 
-        /// Advances the iterator from the back and returns the last
-        /// unconsumed element, or `Nothing` if all elements have been yielded.
-        auto NextBack() -> Optional<Item>
-        {
-            if (this->n_front >= this->n_back) {
-                return Nothing;
-            }
-
-            if constexpr (std::is_const_v<T>) {
-                return std::cref(this->n_data[--this->n_back]);
-            } else {
-                return std::ref(this->n_data[--this->n_back]);
-            }
+        if constexpr (std::is_const_v<T>) {
+            return std::cref(this->n_data[--this->n_back]);
+        } else {
+            return std::ref(this->n_data[--this->n_back]);
         }
+    }
 
-        /// Returns the number of remaining elements.
-        [[nodiscard]] constexpr auto SizeHint() const noexcept -> violet::SizeHint
-        {
-            auto remaining = this->n_back - this->n_front;
-            return { remaining, Some(remaining) };
-        }
+    /// Returns the number of remaining elements.
+    [[nodiscard]] constexpr auto SizeHint() const noexcept -> violet::SizeHint
+    {
+        auto remaining = this->n_back - this->n_front;
+        return {remaining, Some(remaining)};
+    }
 
-    private:
-        T* n_data;
-        UInt n_front;
-        UInt n_back;
-    };
+private:
+    T* n_data;
+    UInt n_front;
+    UInt n_back;
+};
 
-    static_assert(Iterable<Iter<Int32, 3>>);
-    static_assert(Iterable<Iter<const Int32, 3>>);
-    static_assert(DoubleEndedIterable<Iter<Int32, 3>>);
-    static_assert(DoubleEndedIterable<Iter<const Int32, 3>>);
+static_assert(Iterable<Iter<Int32, 3>>);
+static_assert(Iterable<Iter<const Int32, 3>>);
+static_assert(DoubleEndedIterable<Iter<Int32, 3>>);
+static_assert(DoubleEndedIterable<Iter<const Int32, 3>>);
 
 } // namespace slice
 

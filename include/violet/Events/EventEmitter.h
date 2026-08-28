@@ -67,8 +67,8 @@ public:
 
         Guard(Guard&& other) noexcept
             : n_emitter(VIOLET_MOVE(other.n_emitter))
-            , n_id(other.n_id)
             , n_persist(other.n_persist)
+            , n_id(other.n_id)
         {
             other.n_id = -1;
             other.n_persist = false;
@@ -207,7 +207,7 @@ private:
         bool Once;
     };
 
-    auto getNextId() noexcept -> UInt64
+    auto getNextId() noexcept -> Int64
     {
         return this->n_nextId.fetch_add(1, std::memory_order_relaxed);
     }
@@ -217,7 +217,7 @@ private:
         std::lock_guard lock(this->n_mu);
 
         auto id = this->getNextId();
-        this->n_listeners.push_back(entry{ .ID = id, .Callback = fun, .Once = once });
+        this->n_listeners.push_back(entry{.ID = id, .Callback = fun, .Once = once});
 
         return id;
     }

@@ -235,7 +235,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
             // clang-format on
         );
 
-        constexpr typename ReadGuard<T>::key key{ };
+        constexpr typename ReadGuard<T>::key key{};
         return ReadGuard<T>(key, this, &this->n_data);
     }
 
@@ -250,7 +250,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
             // clang-format on
         );
 
-        constexpr typename WriteGuard<T>::key key{ };
+        constexpr typename WriteGuard<T>::key key{};
         return WriteGuard<T>(key, this, &this->n_data);
     }
 
@@ -271,7 +271,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
         this->n_readers++;
         this->n_mux.Unlock();
 
-        constexpr typename ReadGuard<T>::key key{ };
+        constexpr typename ReadGuard<T>::key key{};
         return Optional<ReadGuard<T>>(std::in_place, key, this, &this->n_data);
     }
 
@@ -292,7 +292,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
         this->n_writing = true;
         this->n_mux.Unlock();
 
-        constexpr typename WriteGuard<T>::key key{ };
+        constexpr typename WriteGuard<T>::key key{};
         return Optional<WriteGuard<T>>(std::in_place, key, this, &this->n_data);
     }
 
@@ -325,7 +325,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
             // clang-format on
         );
 
-        constexpr typename ReadGuard<T>::key key{ };
+        constexpr typename ReadGuard<T>::key key{};
         return ReadGuard<T>(key, this, &this->n_data);
     }
 
@@ -356,7 +356,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
             // clang-format on
         );
 
-        constexpr typename WriteGuard<T>::key key{ };
+        constexpr typename WriteGuard<T>::key key{};
         return WriteGuard<T>(key, this, &this->n_data);
     }
 
@@ -417,7 +417,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
         this->n_readers++;
         this->n_mux.Unlock();
 
-        constexpr typename ReadGuard<T>::key key{ };
+        constexpr typename ReadGuard<T>::key key{};
         return Optional<ReadGuard<T>>(std::in_place, key, this, &this->n_data);
     }
 
@@ -481,7 +481,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
         this->n_writing = true;
         this->n_mux.Unlock();
 
-        constexpr typename WriteGuard<T>::key key{ };
+        constexpr typename WriteGuard<T>::key key{};
         return Optional<WriteGuard<T>>(std::in_place, key, this, &this->n_data);
     }
 
@@ -493,7 +493,7 @@ private:
 
     Mutex n_mux;
     Condvar n_cv;
-    T n_data{ };
+    T n_data{};
     UInt32 n_readers VIOLET_GUARDED_BY(this->n_mux) = 0;
     bool n_writing VIOLET_GUARDED_BY(this->n_mux) = false;
 

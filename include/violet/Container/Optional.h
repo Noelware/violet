@@ -141,7 +141,7 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
     }
 
     NOELDOC_SINCE("current")
-    constexpr VIOLET_IMPLICIT operator Optional<T>() const noexcept
+    constexpr VIOLET_IMPLICIT operator Optional<T>() const& noexcept
     {
         return Optional<T>(std::in_place, this->n_value);
     }
@@ -153,7 +153,7 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
     }
 
     NOELDOC_SINCE("current")
-    constexpr VIOLET_IMPLICIT operator std::optional<T>() const noexcept
+    constexpr VIOLET_IMPLICIT operator std::optional<T>() const& noexcept
     {
         return std::optional<T>(std::in_place, this->n_value);
     }

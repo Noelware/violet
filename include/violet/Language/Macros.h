@@ -1251,7 +1251,7 @@
  * The negated form of `VIOLET_IF_CONSTEVAL`. Expands to `not consteval`
  * (C++23) or `(!std::is_constant_evaluated())` (C++20).
  */
-#if __cpp_if_consteval >= 202106L
+#if defined(__cpp_if_consteval) && __cpp_if_consteval >= 202106L
 #define VIOLET_IF_CONSTEVAL consteval
 #define VIOLET_IF_NOT_CONSTEVAL not consteval
 #else
