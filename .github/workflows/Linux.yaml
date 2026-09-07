@@ -70,7 +70,7 @@ jobs:
         name: "Bazel / Feature Configuration [exceptions=${{matrix.exceptions}} rtti=${{matrix.rtti}} abseil=${{matrix.abseil}}]"
         runs-on: ubuntu-26.04
         container:
-            image: ghcr.io/noelware/violet/ci:clang-23
+            image: ghcr.io/noelware/violet/ci:clang-23@sha256:1fceb63b2f0c03438834cdb7e187d849eb6265901a96b64c13336073fe4f9ef6
         strategy:
             fail-fast: false
             matrix:
@@ -233,7 +233,7 @@ jobs:
         name: "AddressSanitizer / UndefinedBehaviourSanitizer"
         runs-on: ubuntu-26.04
         container:
-            image: ghcr.io/noelware/violet/ci:clang-23
+            image: ghcr.io/noelware/violet/ci:clang-23@sha256:1fceb63b2f0c03438834cdb7e187d849eb6265901a96b64c13336073fe4f9ef6
         env:
             USE_BAZEL_VERSION: "9.1.1"
             BAZELFLAGS: "--config=ci --config=cxx26 --config=asan --config=ubsan --action_env=CC --action_env=CXX --test_env=ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-23 --test_env=UBSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-23"
@@ -273,7 +273,7 @@ jobs:
         name: "ThreadSanitizer"
         runs-on: ubuntu-26.04
         container:
-            image: ghcr.io/noelware/violet/ci:clang-23
+            image: ghcr.io/noelware/violet/ci:clang-23@sha256:1fceb63b2f0c03438834cdb7e187d849eb6265901a96b64c13336073fe4f9ef6
             options: --security-opt seccomp=unconfined
         env:
             USE_BAZEL_VERSION: "9.1.1"
