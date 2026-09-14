@@ -31,8 +31,8 @@ declare -A gccimages
 # renovate: ref=gcc:16.1-trixie
 gccimages["gcc-16"]="sha256:1cfa8769230debf43594ee1b48bc642f9bead8d479f9926bc61d3014bdf3ecc8"
 
-# renovate: ref=gcc:15.2-trixie
-gccimages["gcc-15"]="sha256:3ae15afe768b06d0c0fe088d822ba5f8045c26630bdacc8d8e7713cf5d8e7289"
+# renovate: ref=gcc:15.3-trixie
+gccimages["gcc-15"]="sha256:fb2568a8cc0609134396aeb1eae1f3a91c8ceec54aaee67c798d9602593abd66"
 
 # renovate: ref=gcc:14.4-trixie
 gccimages["gcc-14"]="sha256:3ae7320d7dd41f446a48930e1edf4e7a41c7be5ae43a5ddbf017c53fe6495738"
