@@ -30,6 +30,7 @@ violet_cc_library(
     hdrs = ["//include/violet/Experimental/Collections:HashMap.h"],
     defines = select({
         "//buildsystem/bazel/flags:abseil_enabled": ["VIOLET_FEATURE_ABSEIL"],
+        "//conditions:default": [],
     }),
     deps = [
         "//violet/container:optional",
@@ -56,6 +57,7 @@ violet_cc_library(
     hdrs = ["//include/violet/Experimental/Collections:HashSet.h"],
     defines = select({
         "//buildsystem/bazel/flags:abseil_enabled": ["VIOLET_FEATURE_ABSEIL"],
+        "//conditions:default": [],
     }),
     deps = [
         "//violet:iterator",
