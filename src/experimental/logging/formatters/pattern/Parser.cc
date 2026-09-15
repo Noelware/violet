@@ -22,6 +22,7 @@
 #include <violet/Experimental/Logging/Formatters/Pattern/Parser.h>
 #include <violet/Strings.h>
 
+#include <algorithm>
 #include <thread>
 
 namespace violet::experimental::log::formatter::pattern {

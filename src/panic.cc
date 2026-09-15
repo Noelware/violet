@@ -78,4 +78,6 @@ void violet::detail::DoPanic(std::string_view message, SourceLocation* userland,
     case Strategy::Abort:
         std::abort();
     }
+
+    VIOLET_UNREACHABLE();
 }

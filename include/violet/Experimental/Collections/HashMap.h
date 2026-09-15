@@ -214,7 +214,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
         requires(std::is_constructible_v<K, Q> && std::is_constructible_v<V, Tp>)
     auto Insert(Q key, Tp value) -> Optional<V>
     {
-        auto [it, inserted] = this->n_impl.try_emplace(VIOLET_MOVE(key), VIOLET_MOVE(value));
+        auto [it, inserted] = this->n_impl.try_emplace(K(VIOLET_MOVE(key)), VIOLET_MOVE(value));
         if (inserted) {
             return Nothing;
         }
