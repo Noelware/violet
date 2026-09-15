@@ -71,6 +71,7 @@ TEST(HashSet, ClearEmptiesSet)
     EXPECT_FALSE(s.Contains(1));
 }
 
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
 TEST(HashSet, ReserveGrowsCapacity)
 {
     HashSet<Int32> s;
@@ -78,6 +79,7 @@ TEST(HashSet, ReserveGrowsCapacity)
     s.Reserve(128);
     EXPECT_GE(s.Capacity(), initial + 128);
 }
+#endif
 
 TEST(HashSet, InsertReturnsTrueForNewValue)
 {
