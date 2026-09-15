@@ -23,7 +23,6 @@
 #include <violet/Container/Result.h>
 
 namespace violet {
-// NOLINTBEGIN(readability-identifier-length)
 
 TEST(ResultErr, ConstructFromLValue)
 {
@@ -95,5 +94,4 @@ consteval auto equality() noexcept -> bool
 static_assert(equality());
 } // namespace
 
-// NOLINTEND(readability-identifier-length)
 } // namespace violet

@@ -24,13 +24,11 @@
 
 #include <thread>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::experimental::threading;
 using namespace violet::events;
 using namespace violet;
 
 using namespace std::chrono_literals;
-// NOLINTEND(google-build-using-namespace)
 
 TEST(CancellationTokenSource, DefaultNotCancelled)
 {

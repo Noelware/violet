@@ -26,7 +26,6 @@
 #include <atomic>
 #include <thread>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace std::chrono_literals;
 using namespace violet::experimental::sync;
 using namespace violet;
@@ -54,7 +53,7 @@ TEST(WaitGroup, MultipleAddsBeforeWait)
     WaitGroup wg;
     wg.Add(kThreads);
 
-    std::atomic<int> completed{ 0 };
+    std::atomic<int> completed{0};
     Vec<std::thread> threads;
     threads.reserve(kThreads);
 
@@ -76,7 +75,7 @@ TEST(WaitGroup, MultipleAddsBeforeWait)
 TEST(WaitGroup, IncrementalAdds)
 {
     WaitGroup wg;
-    std::atomic<int> completed{ 0 };
+    std::atomic<int> completed{0};
     Vec<std::thread> threads;
 
     for (int i = 0; i < 5; ++i) {
@@ -100,7 +99,7 @@ TEST(WaitGroup, AddWithDeltaGreaterThanOne)
     WaitGroup wg;
     wg.Add(3);
 
-    std::atomic<int> completed{ 0 };
+    std::atomic<int> completed{0};
 
     std::thread t1([&] -> void {
         completed.fetch_add(1, std::memory_order_relaxed);
@@ -130,7 +129,7 @@ TEST(WaitGroup, WaitBlocksUntilAllDone)
     WaitGroup wg;
     wg.Add(1);
 
-    std::atomic<bool> work_done{ false };
+    std::atomic<bool> work_done{false};
     std::thread t([&] -> void {
         std::this_thread::sleep_for(50ms);
         work_done.store(true, std::memory_order_release);
@@ -148,7 +147,7 @@ TEST(WaitGroup, MultipleWaiters)
     WaitGroup wg;
     wg.Add(1);
 
-    std::atomic<int> waiters_released{ 0 };
+    std::atomic<int> waiters_released{0};
 
     std::thread w1([&] -> void {
         wg.Wait();
@@ -201,7 +200,7 @@ TEST(WaitGroup, DoneCalledFromManyThreadsSimultaneously)
     WaitGroup wg;
     wg.Add(kThreads);
 
-    std::atomic<bool> start{ false };
+    std::atomic<bool> start{false};
     Vec<std::thread> threads;
     threads.reserve(kThreads);
 
@@ -222,5 +221,3 @@ TEST(WaitGroup, DoneCalledFromManyThreadsSimultaneously)
         t.join();
     }
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

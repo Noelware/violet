@@ -25,7 +25,6 @@
 #include <atomic>
 #include <thread>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length,cppcoreguidelines-owning-memory,performance-unnecessary-copy-initialization)
 using namespace violet::experimental;
 using violet::Int32;
 using violet::Str;
@@ -68,8 +67,8 @@ struct Counter {
     }
 };
 
-std::atomic<Int32> Counter::Constructed{ 0 };
-std::atomic<Int32> Counter::Destructed{ 0 };
+std::atomic<Int32> Counter::Constructed{0};
+std::atomic<Int32> Counter::Destructed{0};
 
 struct Animal {
     Int32 Legs;
@@ -103,7 +102,7 @@ struct Cat final: public Animal { // NOLINT(cppcoreguidelines-special-member-fun
     }
 };
 
-std::atomic<Int32> Cat::Destructed{ 0 };
+std::atomic<Int32> Cat::Destructed{0};
 
 struct Dog final: public Animal { // NOLINT(cppcoreguidelines-special-member-functions)
     VIOLET_EXPLICIT Dog(Int32 legs)
@@ -438,7 +437,7 @@ TEST(Own, ConcurrentWeakUpgradeRace)
     auto strong = Own<Counter>::New(42);
     auto weak = strong.Downgrade();
 
-    std::atomic<Int32> upgrade_successes{ 0 };
+    std::atomic<Int32> upgrade_successes{0};
     std::vector<std::thread> threads;
     threads.reserve(kThreads);
 
@@ -633,5 +632,3 @@ TEST(Own, RvalueConstCastConsumesSource)
     EXPECT_EQ(immut.StrongRefs(), 1U); // moved, not shared
     EXPECT_FALSE(mut); // source consumed
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length,cppcoreguidelines-owning-memory,performance-unnecessary-copy-initialization)

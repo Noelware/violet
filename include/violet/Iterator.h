@@ -90,6 +90,7 @@
 #include <violet/Violet.h>
 
 #include <concepts>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -138,166 +139,168 @@ concept DoubleEndedIterable = Iterable<T> && requires(T ty) {
 };
 
 namespace iter {
-    /// Extracts the type that is returned of a iterator's `Next()` method.
-    template<typename T>
-    using TypeOf = optional_type_t<decltype(std::declval<T>().Next())>;
 
-    namespace detail {
-        template<typename C>
-        concept __has_member_begin_end = requires(C& cnt) {
-            { cnt.begin() };
-            { cnt.end() };
-        };
+/// Extracts the type that is returned of a iterator's `Next()` method.
+template<typename T>
+using TypeOf = optional_type_t<decltype(std::declval<T>().Next())>;
 
-        template<typename C>
-        concept __has_adl_begin_end = requires(C& cnt) {
-            { std::begin(cnt) };
-            { std::end(cnt) };
-        };
+namespace detail {
 
-        template<typename C>
-        auto begin(C& cnt)
-        {
-            if constexpr (__has_member_begin_end<C>) {
-                return cnt.begin();
-            } else if constexpr (__has_adl_begin_end<C>) {
-                return std::begin(cnt);
-            } else {
-                VIOLET_UNREACHABLE();
-            }
+template<typename C>
+concept __has_member_begin_end = requires(C& cnt) {
+    { cnt.begin() };
+    { cnt.end() };
+};
+
+template<typename C>
+concept __has_adl_begin_end = requires(C& cnt) {
+    { std::begin(cnt) };
+    { std::end(cnt) };
+};
+
+template<typename C>
+auto begin(C& cnt)
+{
+    if constexpr (__has_member_begin_end<C>) {
+        return cnt.begin();
+    } else if constexpr (__has_adl_begin_end<C>) {
+        return std::begin(cnt);
+    } else {
+        VIOLET_UNREACHABLE();
+    }
+}
+
+template<typename C>
+auto end(C& cnt)
+{
+    if constexpr (__has_member_begin_end<C>) {
+        return cnt.end();
+    } else if constexpr (__has_adl_begin_end<C>) {
+        return std::end(cnt);
+    } else {
+        VIOLET_UNREACHABLE();
+    }
+}
+
+/// Sentinel object used to mark the end of iteration when integrating a
+/// Violet iterator with C++ range-based for loops.
+///
+/// Works in conjunction with [`STLRangeIterator`] to provide:
+///
+/// ```cpp
+/// for (auto x : my_iter) { ... }
+/// ```
+struct sentinel final { };
+
+/// Adapter that exposes a Violet iterator as a C++ range iterator.
+///
+/// Wraps an iterator implementation `Impl` and provides:
+/// - `operator!=` comparison with `sentinel`,
+/// - `operator++` advancing the iterator,
+/// - `operator*` dereferencing the current item.
+///
+/// This enables idiomatic C++ `for` loops over Violet iterators.
+template<class Impl>
+struct STLRangeIterator final {
+    VIOLET_DISALLOW_CONSTRUCTOR(STLRangeIterator);
+
+    auto operator!=(detail::sentinel) -> bool
+    {
+        return this->n_current.HasValue();
+    }
+
+    void operator++()
+    {
+        this->n_current = this->n_iter->Next();
+    }
+
+    auto operator*() -> decltype(auto)
+    {
+        return this->n_current.Value();
+    }
+
+private:
+    friend struct violet::Iterator<Impl>;
+
+    VIOLET_IMPLICIT STLRangeIterator(Impl& impl)
+        : n_iter(&impl)
+        , n_current(impl.Next())
+    {
+    }
+
+    Impl* n_iter;
+    Optional<violet::iter::TypeOf<Impl>> n_current;
+};
+
+/// Iterator adapter that wraps standard-library iterators (`std::begin`/`std::end`)
+/// and exposes them as Violet iterators.
+///
+/// @tparam It any valid STL input iterator.
+template<typename It>
+struct STLCompatibleIterator final: public Iterator<STLCompatibleIterator<It>> {
+    using Item = std::remove_cv_t<std::remove_reference_t<typename std::iter_value_t<It>>>;
+    using underlying_iterator = STLCompatibleIterator<It>;
+
+    STLCompatibleIterator(It begin, It end)
+        : n_current(begin)
+        , n_end(end)
+    {
+    }
+
+    auto Next() noexcept -> Optional<Item>
+    {
+        if (this->n_current != this->n_end) {
+            return Some<Item>(*n_current++);
         }
 
-        template<typename C>
-        auto end(C& cnt)
-        {
-            if constexpr (__has_member_begin_end<C>) {
-                return cnt.end();
-            } else if constexpr (__has_adl_begin_end<C>) {
-                return std::end(cnt);
-            } else {
-                VIOLET_UNREACHABLE();
-            }
+        return Nothing;
+    }
+
+private:
+    It n_current;
+    It n_end;
+};
+
+template<typename Container>
+struct OwnedSTLIterator final: public Iterator<OwnedSTLIterator<Container>> {
+    VIOLET_DISALLOW_CONSTRUCTOR(OwnedSTLIterator);
+    VIOLET_DISALLOW_COPY(OwnedSTLIterator);
+    ~OwnedSTLIterator() = default;
+
+    using underlying_iterator = OwnedSTLIterator<Container>;
+    using container_type = std::remove_cvref_t<Container>;
+    using iterator = decltype(std::declval<Container>().begin());
+    using Item = typename STLCompatibleIterator<iterator>::Item;
+
+    VIOLET_EXPLICIT OwnedSTLIterator(Container&& cnt) noexcept
+        : n_container(VIOLET_MOVE(cnt))
+    {
+        if constexpr (__has_member_begin_end<container_type>) {
+            this->n_inner = STLCompatibleIterator(this->n_container.begin(), this->n_container.end());
+        } else if constexpr (__has_adl_begin_end<container_type>) {
+            this->n_inner = STLCompatibleIterator(std::begin(this->n_container), std::end(this->n_container));
         }
+    }
 
-        /// Sentinel object used to mark the end of iteration when integrating a
-        /// Violet iterator with C++ range-based for loops.
-        ///
-        /// Works in conjunction with [`STLRangeIterator`] to provide:
-        ///
-        /// ```cpp
-        /// for (auto x : my_iter) { ... }
-        /// ```
-        struct sentinel final { };
+    VIOLET_IMPLICIT OwnedSTLIterator(OwnedSTLIterator&& other) noexcept
+        : n_container(VIOLET_MOVE(other.n_container))
+        , n_inner(this->n_container.begin(), this->n_container.end())
+    {
+    }
 
-        /// Adapter that exposes a Violet iterator as a C++ range iterator.
-        ///
-        /// Wraps an iterator implementation `Impl` and provides:
-        /// - `operator!=` comparison with `sentinel`,
-        /// - `operator++` advancing the iterator,
-        /// - `operator*` dereferencing the current item.
-        ///
-        /// This enables idiomatic C++ `for` loops over Violet iterators.
-        template<class Impl>
-        struct STLRangeIterator final {
-            VIOLET_DISALLOW_CONSTRUCTOR(STLRangeIterator);
+    auto operator=(OwnedSTLIterator&&) noexcept -> OwnedSTLIterator& = delete;
 
-            auto operator!=(detail::sentinel) -> bool
-            {
-                return this->n_current.HasValue();
-            }
+    auto Next() noexcept -> Optional<Item>
+    {
+        return this->n_inner.Next();
+    }
 
-            void operator++()
-            {
-                this->n_current = this->n_iter->Next();
-            }
+private:
+    container_type n_container;
+    STLCompatibleIterator<iterator> n_inner;
+};
 
-            auto operator*() -> decltype(auto)
-            {
-                return this->n_current.Value();
-            }
-
-        private:
-            friend struct violet::Iterator<Impl>;
-
-            VIOLET_IMPLICIT STLRangeIterator(Impl& impl)
-                : n_iter(&impl)
-                , n_current(impl.Next())
-            {
-            }
-
-            Impl* n_iter;
-            Optional<violet::iter::TypeOf<Impl>> n_current;
-        };
-
-        /// Iterator adapter that wraps standard-library iterators (`std::begin`/`std::end`)
-        /// and exposes them as Violet iterators.
-        ///
-        /// @tparam It any valid STL input iterator.
-        template<typename It>
-        struct STLCompatibleIterator final: public Iterator<STLCompatibleIterator<It>> {
-            using Item = std::remove_cv_t<std::remove_reference_t<typename std::iter_value_t<It>>>;
-            using underlying_iterator = STLCompatibleIterator<It>;
-
-            STLCompatibleIterator(It begin, It end)
-                : n_current(begin)
-                , n_end(end)
-            {
-            }
-
-            auto Next() noexcept -> Optional<Item>
-            {
-                if (this->n_current != this->n_end) {
-                    return Some<Item>(*n_current++);
-                }
-
-                return Nothing;
-            }
-
-        private:
-            It n_current;
-            It n_end;
-        };
-
-        template<typename Container>
-        struct OwnedSTLIterator final: public Iterator<OwnedSTLIterator<Container>> {
-            VIOLET_DISALLOW_CONSTRUCTOR(OwnedSTLIterator);
-            VIOLET_DISALLOW_COPY(OwnedSTLIterator);
-            ~OwnedSTLIterator() = default;
-
-            using underlying_iterator = OwnedSTLIterator<Container>;
-            using container_type = std::remove_cvref_t<Container>;
-            using iterator = decltype(std::declval<Container>().begin());
-            using Item = typename STLCompatibleIterator<iterator>::Item;
-
-            VIOLET_EXPLICIT OwnedSTLIterator(Container&& cnt) noexcept
-                : n_container(VIOLET_MOVE(cnt))
-            {
-                if constexpr (__has_member_begin_end<container_type>) {
-                    this->n_inner = STLCompatibleIterator(this->n_container.begin(), this->n_container.end());
-                } else if constexpr (__has_adl_begin_end<container_type>) {
-                    this->n_inner = STLCompatibleIterator(std::begin(this->n_container), std::end(this->n_container));
-                }
-            }
-
-            VIOLET_IMPLICIT OwnedSTLIterator(OwnedSTLIterator&& other) noexcept
-                : n_container(VIOLET_MOVE(other.n_container))
-                , n_inner(this->n_container.begin(), this->n_container.end())
-            {
-            }
-
-            auto operator=(OwnedSTLIterator&&) noexcept -> OwnedSTLIterator& = delete;
-
-            auto Next() noexcept -> Optional<Item>
-            {
-                return this->n_inner.Next();
-            }
-
-        private:
-            container_type n_container;
-            STLCompatibleIterator<iterator> n_inner;
-        };
-
-    } // namespace detail
+} // namespace detail
 
 } // namespace iter
 
@@ -364,8 +367,8 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::peekable()`].
     ///
     /// [`Iterator::peekable()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.peekable
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Peekable() & noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Peekable() & noexcept -> decltype(auto);
 
     /// Adapter that allows inspecting the next element without consuming it.
     ///
@@ -376,15 +379,15 @@ struct Iterator {
     /// Equivalent to Rust's [`Iterator::peekable()`].
     ///
     /// [`Iterator::peekable()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.peekable
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Peekable() && noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Peekable() && noexcept -> decltype(auto);
 
     /// Adapter that yields `(index, item)` pairs.
     ///
     /// The index starts at zero and increments for each value produced.
     /// Equivalent to Rust's `Iterator::enumerate()`.
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Enumerate() & noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Enumerate() & noexcept -> decltype(auto);
 
     /// Adapter that yields `(index, item)` pairs.
     ///
@@ -392,8 +395,8 @@ struct Iterator {
     /// Equivalent to Rust's `Iterator::enumerate()`.
     ///
     /// [`Iterator::enumerate()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.enumerate
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Enumerate() && noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Enumerate() && noexcept -> decltype(auto);
 
     /// Adapter that transforms items using a mapping function.
     ///
@@ -410,8 +413,8 @@ struct Iterator {
     /// [`Iterator::map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.map
     template<typename Fun>
         requires callable<Fun, iter::TypeOf<Impl>>
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Map(Fun&&) & noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Map(Fun&&) & noexcept -> decltype(auto);
 
     /// Adapter that transforms items using a mapping function.
     ///
@@ -428,8 +431,8 @@ struct Iterator {
     /// [`Iterator::map()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.map
     template<typename Fun>
         requires callable<Fun, iter::TypeOf<Impl>>
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Map(Fun&& fun) && noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Map(Fun&& fun) && noexcept -> decltype(auto);
 
     /// Adapter that yields only items for which the predicate returns `true`.
     ///
@@ -438,8 +441,8 @@ struct Iterator {
     /// [`Iterator::filter()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter
     template<typename Pred>
         requires callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Filter(Pred&& pred) & noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Filter(Pred&& pred) & noexcept -> decltype(auto);
 
     /// Adapter that yields only items for which the predicate returns `true`.
     ///
@@ -448,36 +451,36 @@ struct Iterator {
     /// [`Iterator::filter()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.filter
     template<typename Pred>
         requires callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Filter(Pred&& pred) && noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Filter(Pred&& pred) && noexcept -> decltype(auto);
 
     /// Skips the first `skip` items.
     ///
     /// Equivalent to Rust's [`Iterator::skip()`].
     /// [`Iterator::skip()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.skip
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Skip(UInt skip) & noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Skip(UInt skip) & noexcept -> decltype(auto);
 
     /// Skips the first `skip` items.
     ///
     /// Equivalent to Rust's [`Iterator::skip()`].
     /// [`Iterator::skip()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.skip
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Skip(UInt skip) && noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Skip(UInt skip) && noexcept -> decltype(auto);
 
     /// Yields at most `take` items from the iterator.
     ///
     /// Equivalent to Rust's [`Iterator::take()`].
     /// [`Iterator::take()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.take
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Take(UInt take) & noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Take(UInt take) & noexcept -> decltype(auto);
 
     /// Yields at most `take` items from the iterator.
     ///
     /// Equivalent to Rust's [`Iterator::take()`].
     /// [`Iterator::take()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.take
-    [[nodiscard("result will be lost since iterators are lazily evaluated")]] auto Take(UInt take) && noexcept
-        -> decltype(auto);
+    [[nodiscard("result will be lost since iterators are lazily evaluated")]]
+    auto Take(UInt take) && noexcept -> decltype(auto);
 
     /// Reduces the iterator to a single accumulated value.
     ///
@@ -489,9 +492,10 @@ struct Iterator {
     /// @returns the final accumulated value.
     template<typename Acc, typename Fun>
         requires(callable<Fun, const Acc&, iter::TypeOf<Impl>>
-            && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
-    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Fold(Acc init,
-        Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+                    && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]]
+    auto Fold(Acc init, Fun&& fun)
+        & VIOLET_NOEXCEPT_FUN(fun, decltype(init), iter::TypeOf<Impl>)
     {
         auto acc = VIOLET_MOVE(init);
         while (auto elem = getThisObject().Next()) {
@@ -511,9 +515,10 @@ struct Iterator {
     /// @returns the final accumulated value.
     template<typename Acc, typename Fun>
         requires(callable<Fun, const Acc&, iter::TypeOf<Impl>>
-            && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
-    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Fold(Acc init,
-        Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+                    && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]]
+    auto Fold(Acc init, Fun&& fun)
+        && VIOLET_NOEXCEPT_FUN(fun, decltype(init), iter::TypeOf<Impl>)
     {
         auto acc = VIOLET_MOVE(init);
         while (auto elem = getThisObject().Next()) {
@@ -529,9 +534,10 @@ struct Iterator {
     /// [`Iterator::rfold()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.rfold
     template<typename Acc, typename Fun>
         requires(DoubleEndedIterable<Impl> && callable<Fun, const Acc&, iter::TypeOf<Impl>>
-            && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
-    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto RFold(Acc init,
-        Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+                    && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]]
+    auto RFold(Acc init, Fun&& fun)
+        & VIOLET_NOEXCEPT_FUN(fun, decltype(init), iter::TypeOf<Impl>)
     {
         auto acc = VIOLET_MOVE(init);
         while (auto elem = getThisObject().NextBack()) {
@@ -547,9 +553,10 @@ struct Iterator {
     /// [`Iterator::rfold()`]: https://doc.rust-lang.org/1.90.0/std/iter/trait.Iterator.html#method.rfold
     template<typename Acc, typename Fun>
         requires(DoubleEndedIterable<Impl> && callable<Fun, const Acc&, iter::TypeOf<Impl>>
-            && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
-    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto RFold(Acc init,
-        Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), init, std::declval<iter::TypeOf<Impl>>())))
+                    && std::convertible_to<std::invoke_result_t<Fun, const Acc&, iter::TypeOf<Impl>>, Acc>)
+    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]]
+    auto RFold(Acc init, Fun&& fun)
+        && VIOLET_NOEXCEPT_FUN(fun, decltype(init), iter::TypeOf<Impl>)
     {
         auto acc = VIOLET_MOVE(init);
         while (auto elem = getThisObject().NextBack()) {
@@ -566,13 +573,14 @@ struct Iterator {
     ///
     /// @returns Optional index of the item, or `Nothing` if no item matches.
     template<typename Pred>
-    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Position(
-        Pred&& pred) & noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
-        -> Optional<UInt>
+        [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]]
+        auto Position(Pred&& pred)
+        & VIOLET_NOEXCEPT_FUN(pred, iter::TypeOf<Impl>) -> Optional<UInt>
     {
         UInt pos = 0;
+        auto predicate = VIOLET_FWD(Pred, pred);
         while (auto value = getThisObject().Next()) {
-            if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
+            if (std::invoke(predicate, *value)) {
                 return Some<UInt>(pos);
             }
 
@@ -589,13 +597,14 @@ struct Iterator {
     ///
     /// @returns Optional index of the item, or `Nothing` if no item matches.
     template<typename Pred>
-    [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Position(
-        Pred&& pred) && noexcept(noexcept(std::invoke(VIOLET_FWD(Pred, pred), std::declval<iter::TypeOf<Impl>>())))
-        -> Optional<UInt>
+        [[nodiscard("pure computation; result is lost since iterators are lazily evaluated")]] auto Position(
+            Pred&& pred)
+        && VIOLET_NOEXCEPT_FUN(pred, iter::TypeOf<Impl>) -> Optional<UInt>
     {
         UInt pos = 0;
+        auto predicate = VIOLET_FWD(Pred, pred);
         while (auto value = getThisObject().Next()) {
-            if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
+            if (std::invoke(predicate, *value)) {
                 return Some<UInt>(pos);
             }
 
@@ -616,11 +625,11 @@ struct Iterator {
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
-                return decltype(Optional<iter::TypeOf<Impl>>{ })(Some<iter::TypeOf<Impl>>(*value));
+                return decltype(Optional<iter::TypeOf<Impl>>{})(Some<iter::TypeOf<Impl>>(*value));
             }
         }
 
-        return decltype(Optional<iter::TypeOf<Impl>>{ })(Nothing);
+        return decltype(Optional<iter::TypeOf<Impl>>{})(Nothing);
     }
 
     /// Finds the first item that satisfies the given predicate.
@@ -634,11 +643,11 @@ struct Iterator {
     {
         while (auto value = getThisObject().Next()) {
             if (std::invoke(VIOLET_FWD(Pred, pred), *value)) {
-                return decltype(Optional<iter::TypeOf<Impl>>{ })(Some<iter::TypeOf<Impl>>(*value));
+                return decltype(Optional<iter::TypeOf<Impl>>{})(Some<iter::TypeOf<Impl>>(*value));
             }
         }
 
-        return decltype(Optional<iter::TypeOf<Impl>>{ })(Nothing);
+        return decltype(Optional<iter::TypeOf<Impl>>{})(Nothing);
     }
 
     /// Applies a function that returns an `Optional` and returns the first `Some` value.
@@ -655,7 +664,7 @@ struct Iterator {
 
         while (auto value = getThisObject().Next()) {
             if (Optional<U> mapped = std::invoke(VIOLET_FWD(Fun, fun), *value)) {
-                return decltype(Optional<U>{ })(Some<U>(*mapped));
+                return decltype(Optional<U>{})(Some<U>(*mapped));
             }
         }
 
@@ -676,7 +685,7 @@ struct Iterator {
 
         while (auto value = getThisObject().Next()) {
             if (Optional<U> mapped = std::invoke(VIOLET_FWD(Fun, fun), *value)) {
-                return decltype(Optional<U>{ })(Some<U>(*mapped));
+                return decltype(Optional<U>{})(Some<U>(*mapped));
             }
         }
 
@@ -758,7 +767,7 @@ struct Iterator {
         -> UInt
     {
         UInt counter = 0;
-        while (auto _ = getThisObject().Next()) { // NOLINT(readability-identifier-length)
+        while (auto _ = getThisObject().Next()) {
             counter++;
         }
 
@@ -774,7 +783,7 @@ struct Iterator {
         -> UInt
     {
         UInt counter = 0;
-        while (auto _ = getThisObject().Next()) { // NOLINT(readability-identifier-length)
+        while (auto _ = getThisObject().Next()) {
             counter++;
         }
 
@@ -795,7 +804,7 @@ struct Iterator {
             }
         }
 
-        return { };
+        return {};
     }
 
     /// Advances the iterator by `nth` elements.
@@ -812,7 +821,7 @@ struct Iterator {
             }
         }
 
-        return { };
+        return {};
     }
 
     /// Returns the `nth` element of the iterator.
@@ -859,10 +868,10 @@ struct Iterator {
             }
 
             return out;
-        } else if constexpr (requires { typename Container::value_type{ }; } && (std::tuple_size_v<Container>) > 0) {
+        } else if constexpr (requires { typename Container::value_type{}; } && (std::tuple_size_v<Container>) > 0) {
             constexpr UInt N = std::tuple_size_v<Container>; // NOLINT(readability-identifier-length)
 
-            Container out{ };
+            Container out{};
             UInt idx = 0;
             while (auto value = getThisObject().Next()) {
                 if (idx >= N) {
@@ -885,7 +894,7 @@ struct Iterator {
             return getThisObject().SizeHint();
         }
 
-        return { };
+        return {};
     }
 
     auto begin() &
@@ -900,13 +909,18 @@ struct Iterator {
 
     auto end() const
     {
-        return iter::detail::sentinel{ };
+        return iter::detail::sentinel{};
     }
 
 private:
     constexpr auto getThisObject() & noexcept -> Impl&
     {
         return static_cast<Impl&>(*this);
+    }
+
+    constexpr auto getThisObject() const& noexcept -> const Impl&
+    {
+        return static_cast<const Impl&>(*this);
     }
 
     constexpr auto getThisObject() && noexcept -> Impl&&

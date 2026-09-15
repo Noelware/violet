@@ -25,14 +25,13 @@
 
 #include <thread>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace violet::experimental;
 using namespace violet::experimental::chrono;
 
 TEST(Instant, DefaultIsEpoch)
 {
     Instant inst;
-    EXPECT_EQ(inst.ToStd(), Instant::std_type{ });
+    EXPECT_EQ(inst.ToStd(), Instant::std_type{});
 }
 
 TEST(Instant, RoundtripFromStd)
@@ -149,5 +148,3 @@ TEST(Instant, ElapsedFutureInstantClampsToZero)
 
     EXPECT_EQ(future.Elapsed(clock), Duration::Zero());
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

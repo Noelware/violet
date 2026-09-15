@@ -22,7 +22,6 @@
 #include <gtest/gtest.h>
 #include <violet/Experimental/Time/TimePoint.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace std::chrono_literals;
 using namespace violet::experimental::chrono;
 using namespace violet;
@@ -100,7 +99,7 @@ TEST(TimePoint, ToStdRoundTrip)
 
 TEST(TimePoint, FromStdPreservesWallTime)
 {
-    auto std_tp = std::chrono::system_clock::time_point{ std::chrono::seconds{ 1'776'024'331 } };
+    auto std_tp = std::chrono::system_clock::time_point{std::chrono::seconds{1'776'024'331}};
 
     TimePoint t(std_tp);
     EXPECT_EQ(t.ToUnixSeconds(), 1'776'024'331);
@@ -276,7 +275,7 @@ TEST(TimePoint, ThreeWayComparison)
 
 TEST(TimePoint, IntoISO8601FromDefault)
 {
-    auto s = TimePoint{ }.IntoISO8601();
+    auto s = TimePoint{}.IntoISO8601();
     EXPECT_EQ(s, "1970-01-01T00:00:00.000Z");
 }
 
@@ -419,7 +418,7 @@ TEST(TimePoint, RejectsTruncatedInput)
     EXPECT_FALSE(r);
 }
 
-static_assert(TimePoint{ }.ToUnixNanos() == 0);
+static_assert(TimePoint{}.ToUnixNanos() == 0);
 static_assert(TimePoint::FromUnixSeconds(60).ToUnixSeconds() == 60);
 static_assert(TimePoint::FromUnixSeconds(1) + Duration::Seconds(1) == TimePoint::FromUnixSeconds(2));
 static_assert(TimePoint::FromUnixSeconds(10) - TimePoint::FromUnixSeconds(3) == Duration::Seconds(7));
@@ -435,5 +434,3 @@ TEST(TimePoint, DeadlineComputation)
     auto remaining = deadline - now;
     EXPECT_EQ(remaining.AsSeconds(), 30);
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

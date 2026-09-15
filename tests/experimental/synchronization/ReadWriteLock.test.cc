@@ -29,7 +29,6 @@
 #include <thread>
 #include <vector>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace violet::experimental::sync;
 using namespace violet;
 using namespace std::chrono_literals;
@@ -534,5 +533,3 @@ TEST(ReadWriteLock, StressTryReadAndTryWrite)
     auto final_val = *lock.Read();
     EXPECT_EQ(final_val, successful_writes.load());
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

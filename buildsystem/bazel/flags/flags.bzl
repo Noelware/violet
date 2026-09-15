@@ -45,6 +45,14 @@ BOOL_FLAGS = {
         When invoked on `cc_test`s, the C++ standard library implementation will require to be compiled with MemorySanitizer. This will always fail in libstdc++, but libc++
         has MSan support, but you will need to compile it yourself; default toolchains of libc++ don't compile with MSan by default.""",
     },
+    "oslog_sink": {
+        "default": False,
+        "doc": "Enables the OSLog sink with the logging framework [macOS only]",
+    },
+    "otel_sink": {
+        "default": False,
+        "doc": "Enables the OpenTelemetry log sink when using the logging framework",
+    },
     "portable_arithemtic": {
         "default": False,
         "doc": "Uses the portable versions of arithemtic-based functions (useful if compiler doesn't support `__builtin_{add|sub|mul}`)",
@@ -52,6 +60,10 @@ BOOL_FLAGS = {
     "runfiles_logs": {
         "default": True,
         "doc": "Enables verbose logs in the console on each test that uses the Runfiles framework.",
+    },
+    "syslog_sink": {
+        "default": False,
+        "doc": "Enables the Syslog sink with the logging framework [POSIX only]",
     },
     "tsan": {
         "default": False,

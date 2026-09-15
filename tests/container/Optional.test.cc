@@ -23,7 +23,6 @@
 #include <violet/Container/Optional.h>
 
 namespace violet {
-// NOLINTBEGIN(readability-identifier-length,performance-unnecessary-copy-initialization,cppcoreguidelines-special-member-functions)
 
 VIOLET_DIAGNOSTIC_PUSH
 
@@ -1335,5 +1334,4 @@ TEST(OptionalAssignable, IntCopyAssign)
 
 VIOLET_DIAGNOSTIC_POP
 
-// NOLINTEND(readability-identifier-length,performance-unnecessary-copy-initialization,cppcoreguidelines-special-member-functions)
 } // namespace violet

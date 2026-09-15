@@ -24,23 +24,22 @@
 #include <gtest/gtest.h>
 #include <violet/Iterator/Map.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace violet;
 using namespace violet::testing::fixtures;
 
 TEST(Iterators, Map)
 {
-    Vec<UInt32> vi({ 1, 2, 3, 4 });
+    Vec<UInt32> vi({1, 2, 3, 4});
 
     auto pow2 = MkIterable(vi).Map([](UInt32 value) -> UInt32 { return value * 2; });
 
-    Vec<UInt32> expected({ 2, 4, 6, 8 });
+    Vec<UInt32> expected({2, 4, 6, 8});
     ASSERT_EQ(pow2.Collect<Vec<UInt32>>(), expected);
 }
 
 TEST(Iterators, MapTransformsElements)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Map([](Int32 num) -> Int32 { return num * 10; });
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Map([](Int32 num) -> Int32 { return num * 10; });
     EXPECT_EQ(*iter.Next(), 10);
     EXPECT_EQ(*iter.Next(), 20);
     EXPECT_EQ(*iter.Next(), 30);
@@ -49,7 +48,7 @@ TEST(Iterators, MapTransformsElements)
 
 TEST(Iterators, MapChangesElementType)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Map([](Int32 num) -> String { return violet::ToString(num); });
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Map([](Int32 num) -> String { return violet::ToString(num); });
 
     EXPECT_EQ(*iter.Next(), "1");
     EXPECT_EQ(*iter.Next(), "2");
@@ -74,7 +73,7 @@ TEST(Iterators, MapEmptyIteratorReturnsNothing)
 
 TEST(Iterators, MapSingleElement)
 {
-    auto iter = FixedSizeIterator<Int32, 1>({ 42 }).Map([](Int32 num) -> Int32 { return num + 1; });
+    auto iter = FixedSizeIterator<Int32, 1>({42}).Map([](Int32 num) -> Int32 { return num + 1; });
     auto elem = iter.Next();
     ASSERT_TRUE(elem);
     EXPECT_EQ(*elem, 43);
@@ -84,7 +83,7 @@ TEST(Iterators, MapSingleElement)
 TEST(Iterators, MapFunctionCalledExactlyOncePerElement)
 {
     Int32 calls = 0;
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Map([&calls](Int32 num) -> Int32 {
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Map([&calls](Int32 num) -> Int32 {
         ++calls;
         return num;
     });
@@ -106,7 +105,7 @@ TEST(Iterators, MapFunctionCalledExactlyOncePerElement)
 TEST(Iterators, MapFunctionReceivesCorrectValues)
 {
     Vec<Int32> seen;
-    auto iter = FixedSizeIterator<Int32, 3>({ 10, 20, 30 }).Map([&seen](Int32 n) -> bool {
+    auto iter = FixedSizeIterator<Int32, 3>({10, 20, 30}).Map([&seen](Int32 n) -> bool {
         seen.push_back(n);
         return n;
     });
@@ -121,7 +120,7 @@ TEST(Iterators, MapFunctionReceivesCorrectValues)
 
 TEST(Iterators, MapExhaustedIteratorRemainsExhausted)
 {
-    auto iter = FixedSizeIterator<Int32, 1>({ 1 }).Map([](Int32 num) -> Int32 { return num; });
+    auto iter = FixedSizeIterator<Int32, 1>({1}).Map([](Int32 num) -> Int32 { return num; });
 
     ASSERT_TRUE(iter.Next());
     EXPECT_FALSE(iter.Next());
@@ -131,7 +130,7 @@ TEST(Iterators, MapExhaustedIteratorRemainsExhausted)
 
 TEST(Iterators, MapToBoolean)
 {
-    auto iter = FixedSizeIterator<Int32, 4>({ 1, 2, 3, 4 }).Map([](Int32 num) -> bool { return num % 2 == 0; });
+    auto iter = FixedSizeIterator<Int32, 4>({1, 2, 3, 4}).Map([](Int32 num) -> bool { return num % 2 == 0; });
 
     EXPECT_EQ(*iter.Next(), false);
     EXPECT_EQ(*iter.Next(), true);
@@ -142,9 +141,8 @@ TEST(Iterators, MapToBoolean)
 
 TEST(Iterators, MapWithComplexTransform)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 3, 1, 4 }).Map([](Int32 num) -> Pair<Int32, Int32> {
-        return std::make_pair(num, num * num);
-    });
+    auto iter = FixedSizeIterator<Int32, 3>({3, 1, 4}).Map(
+        [](Int32 num) -> Pair<Int32, Int32> { return std::make_pair(num, num * num); });
 
     auto a = iter.Next();
     ASSERT_TRUE(a);
@@ -163,5 +161,3 @@ TEST(Iterators, MapWithComplexTransform)
 
     EXPECT_FALSE(iter.Next());
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

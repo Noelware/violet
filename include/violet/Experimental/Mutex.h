@@ -114,7 +114,7 @@
 
 namespace violet::experimental {
 namespace chrono {
-    struct Duration;
+struct Duration;
 }
 
 struct Condvar;
@@ -176,13 +176,9 @@ struct VIOLET_API VIOLET_LOCKABLE Mutex final {
     /// The caller must hold the lock when calling this method.
     void Unlock() VIOLET_UNLOCK_FUNCTION();
 
-    // NOLINTBEGIN(modernize-use-trailing-return-type)
-
     /// Attempts to acquire the mutex without blocking. If the acquision was successful,
     /// **true** is returned, otherwise `false`.
     bool TryLock() VIOLET_EXCLUSIVE_TRYLOCK_FUNCTION(true);
-
-    // NOLINTEND(modernize-use-trailing-return-type)
 
     /// Implemented for parity of C++'s [`BasicLockable`] named requirement.
     ///
@@ -200,7 +196,6 @@ struct VIOLET_API VIOLET_LOCKABLE Mutex final {
         this->Unlock();
     }
 
-    // NOLINTBEGIN(modernize-use-trailing-return-type)
     /// Implemented for C++'s [`Lockable`] named requirement.
     ///
     /// [`Lockable`]: https://en.cppreference.com/cpp/named_req/Lockable
@@ -208,7 +203,6 @@ struct VIOLET_API VIOLET_LOCKABLE Mutex final {
     {
         return this->TryLock();
     }
-    // NOLINTEND(modernize-use-trailing-return-type)
 
     /// Blocks until `predicate` returns `true`, keeping the lock held throughout.
     ///
@@ -307,8 +301,6 @@ struct VIOLET_API Condvar final {
     /// @param mux mutex that guards the shared state.
     void Wait(Mutex* mux) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(mux);
 
-    // NOLINTBEGIN(modernize-use-trailing-return-type)
-
     /// Blocks until the condition variable is signalled or the timeout expires.
     /// Returns **true** if the condition variable was signalled before the timeout expired,
     /// otherwise **false** if the wait timed out.
@@ -352,7 +344,6 @@ struct VIOLET_API Condvar final {
     /// @param timeout maximum duration to wait as [`std::chrono::nanoseconds`]
     bool WaitWithTimeout(Mutex* mux, absl::Duration dur) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(mux);
 #endif
-    // NOLINTEND(modernize-use-trailing-return-type)
 
     /// Wakes one thread waiting on this condition variable.
     void Signal();

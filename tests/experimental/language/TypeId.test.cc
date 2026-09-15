@@ -101,7 +101,6 @@ TEST(TypeId, SamePrimitiveProducesSameId)
     EXPECT_EQ(TypeId::Of<void>(), TypeId::Of<void>());
 }
 
-// NOLINTBEGIN(readability-identifier-length)
 TEST(TypeId, IdIsStableAcrossMultipleCalls)
 {
     auto a = TypeId::Of<Foo>();
@@ -158,5 +157,3 @@ TEST(TypeId, OfIsConstexpr)
 
     (void)id;
 }
-
-// NOLINTEND(readability-identifier-length)

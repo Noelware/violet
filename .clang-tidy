@@ -50,3 +50,4 @@ CheckOptions:
   readability-identifier-length.MinimumParameterNameLength: 2
   cppcoreguidelines-pro-type-member-init.IgnoreArrays: true
   readability-identifier-length.IgnoredVariableNames: "^_$"
+  readability-simplify-boolean-expr.IgnoreMacros: true

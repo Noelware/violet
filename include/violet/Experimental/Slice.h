@@ -90,8 +90,6 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using underlying_iterator = slice::Iter<T, N>;
 
-    VIOLET_DISALLOW_COPY(Slice);
-
     /// Constructs an empty `Slice` with no initialized elements.
     constexpr VIOLET_IMPLICIT Slice() noexcept = default;
 
@@ -103,6 +101,29 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
         for (auto& element: init) {
             this->Push(element);
         }
+    }
+
+    NOELDOC_SINCE("current")
+    constexpr VIOLET_IMPLICIT Slice(const Slice& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires std::copyable<T>
+    {
+        for (size_type i = 0; i < other.n_size; i++) {
+            this->Emplace(other.at(i));
+        }
+    }
+
+    NOELDOC_SINCE("current")
+    constexpr auto operator=(const Slice& other) noexcept(std::is_nothrow_copy_assignable_v<T>) -> Slice&
+        requires std::copyable<T>
+    {
+        if (this != &other) {
+            this->Clear();
+            for (size_type i = 0; i < other.n_size; i++) {
+                this->Emplace(other.at(i));
+            }
+        }
+
+        return *this;
     }
 
     /// Move-constructs a `Slice`, transferring ownership of all elements.

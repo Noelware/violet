@@ -24,13 +24,12 @@
 #include <gtest/gtest.h>
 #include <violet/Iterator/Skip.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace violet;
 using namespace violet::testing::fixtures;
 
 TEST(Iterators, SkipSkipsFirstNElements)
 {
-    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Skip(2);
+    auto iter = FixedSizeIterator<Int32, 5>({1, 2, 3, 4, 5}).Skip(2);
     EXPECT_EQ(*iter.Next(), 3);
     EXPECT_EQ(*iter.Next(), 4);
     EXPECT_EQ(*iter.Next(), 5);
@@ -39,7 +38,7 @@ TEST(Iterators, SkipSkipsFirstNElements)
 
 TEST(Iterators, SkipSkipZeroYieldsAll)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Skip(0);
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Skip(0);
     EXPECT_EQ(*iter.Next(), 1);
     EXPECT_EQ(*iter.Next(), 2);
     EXPECT_EQ(*iter.Next(), 3);
@@ -48,13 +47,13 @@ TEST(Iterators, SkipSkipZeroYieldsAll)
 
 TEST(Iterators, SkipSkipExactLength)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Skip(3);
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Skip(3);
     EXPECT_FALSE(iter.Next());
 }
 
 TEST(Iterators, SkipSkipMoreThanLength)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Skip(100);
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Skip(100);
     EXPECT_FALSE(iter.Next());
 }
 
@@ -75,7 +74,7 @@ TEST(Iterators, SkipSkipOnEmptyIterator)
 
 TEST(Iterators, SkipSkipSingleElement)
 {
-    auto iter = FixedSizeIterator<Int32, 2>({ 10, 20 }).Skip(1);
+    auto iter = FixedSizeIterator<Int32, 2>({10, 20}).Skip(1);
     auto elem = iter.Next();
     ASSERT_TRUE(elem);
     EXPECT_EQ(*elem, 20);
@@ -84,7 +83,7 @@ TEST(Iterators, SkipSkipSingleElement)
 
 TEST(Iterators, SkipExhaustedIteratorRemainsExhausted)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Skip(2);
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Skip(2);
     ASSERT_TRUE(iter.Next());
     EXPECT_FALSE(iter.Next());
     EXPECT_FALSE(iter.Next());
@@ -92,7 +91,7 @@ TEST(Iterators, SkipExhaustedIteratorRemainsExhausted)
 
 TEST(Iterators, SkipSizeHintReducedBySkipCount)
 {
-    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Skip(2);
+    auto iter = FixedSizeIterator<Int32, 5>({1, 2, 3, 4, 5}).Skip(2);
     auto hint = iter.SizeHint();
     EXPECT_EQ(hint.Low, 3U);
     ASSERT_TRUE(hint.High);
@@ -101,7 +100,7 @@ TEST(Iterators, SkipSizeHintReducedBySkipCount)
 
 TEST(Iterators, SkipSizeHintClampedToZero)
 {
-    auto iter = FixedSizeIterator<Int32, 2>({ 1, 2 }).Skip(10);
+    auto iter = FixedSizeIterator<Int32, 2>({1, 2}).Skip(10);
     auto hint = iter.SizeHint();
     EXPECT_EQ(hint.Low, 0U);
     ASSERT_TRUE(hint.High);
@@ -110,11 +109,9 @@ TEST(Iterators, SkipSizeHintClampedToZero)
 
 TEST(Iterators, SkipSizeHintWithSkipZero)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Skip(0);
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Skip(0);
     auto hint = iter.SizeHint();
     EXPECT_EQ(hint.Low, 3U);
     ASSERT_TRUE(hint.High);
     EXPECT_EQ(*hint.High, 3U);
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

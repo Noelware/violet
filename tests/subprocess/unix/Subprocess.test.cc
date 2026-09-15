@@ -27,7 +27,6 @@
 #include <cerrno>
 #include <unistd.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet;
 using namespace violet::subprocess;
 using namespace violet::testing;
@@ -137,5 +136,3 @@ TEST(ChildKill, InvalidPIDReturnsError)
     auto result = orphan.Kill();
     EXPECT_FALSE(result) << "Kill() on an invalid PID should return an error";
 }
-
-// NOLINTEND(google-build-using-namespace)

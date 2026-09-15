@@ -42,8 +42,12 @@ namespace violet::experimental::chrono {
 ///
 /// [`system_clock::time_point`]: std::chrono::system_clock::time_point
 struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
+    /// The underlying standard-library clock representation.
+    /// @since current
+    using clock_type = std::chrono::system_clock;
+
     /// The underlying standard-library representation, [`std::chrono::system_clock::time_point`].
-    using std_type = std::chrono::system_clock::time_point;
+    using std_type = clock_type::time_point;
 
     /// Constructs a [`TimePoint`] at the Unix epoch (`1970-01-01T00:00:00Z`).
     constexpr VIOLET_IMPLICIT TimePoint() noexcept = default;
@@ -257,7 +261,7 @@ private:
     {
     }
 
-    Int64 n_ns_since_epoch{ };
+    Int64 n_ns_since_epoch{};
 };
 
 } // namespace violet::experimental::chrono

@@ -24,7 +24,6 @@
 
 #include <thread>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace violet::experimental;
 using violet::Int32;
 using violet::Vec;
@@ -149,8 +148,8 @@ TEST(Synchronized, ConcurrentIncrements)
 TEST(Synchronized, ConcurrentTryLockContention)
 {
     Synchronized<Int32> sync(0);
-    std::atomic<bool> locked{ false };
-    std::atomic<bool> done{ false };
+    std::atomic<bool> locked{false};
+    std::atomic<bool> done{false};
 
     // Hold the lock for the duration of the test
     std::thread holder([&] -> void {
@@ -175,5 +174,3 @@ TEST(Synchronized, ConcurrentTryLockContention)
     auto guard = sync.Lock();
     EXPECT_EQ(*guard, 0);
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

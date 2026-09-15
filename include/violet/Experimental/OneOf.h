@@ -193,7 +193,7 @@ struct OneOf {
     template<typename U>
         requires(pack_contains_v<U, Ts...> && (!std::same_as<U, OneOf>))
     constexpr VIOLET_IMPLICIT OneOf(U&& value) noexcept(std::is_nothrow_move_constructible_v<U>)
-        : OneOf(IndexOf<U>)
+        : OneOf(key{}, IndexOf<U>)
     {
         oneof_internal::ConstructElement<IndexOf<U>>(this->n_storage, VIOLET_FWD(U, value));
     }
@@ -210,7 +210,7 @@ struct OneOf {
 
     constexpr VIOLET_IMPLICIT OneOf(const OneOf& other)
         requires(std::is_copy_constructible_v<Ts> && ...)
-        : OneOf(other.n_index)
+        : OneOf(key{}, other.n_index)
     {
         other.Visit([&](const auto& value) -> void {
             using type = std::decay_t<decltype(value)>;
@@ -238,7 +238,7 @@ struct OneOf {
     = delete; // cannot assign a copy because one of `T` in `Ts` is not copy-constructible
 
     constexpr VIOLET_IMPLICIT OneOf(OneOf&& other) noexcept
-        : OneOf(other.n_index)
+        : OneOf(key{}, other.n_index)
     {
         VIOLET_MOVE(other).Visit([&](auto&& value) -> void {
             using type = std::decay_t<decltype(value)>;
@@ -442,7 +442,9 @@ private:
     UInt n_index = 0;
     oneof_internal::storage<Ts...> n_storage;
 
-    constexpr VIOLET_EXPLICIT OneOf(UInt index) noexcept
+    struct key final { };
+
+    constexpr VIOLET_EXPLICIT OneOf(key, UInt index) noexcept
         : n_index(index)
     {
     }
@@ -450,7 +452,7 @@ private:
     template<UInt Index, typename U>
     constexpr static auto make(U&& value) noexcept(std::is_nothrow_move_constructible_v<U>) -> OneOf
     {
-        OneOf result(Index);
+        OneOf result(key{}, Index);
         oneof_internal::ConstructElement<Index>(result.n_storage, VIOLET_FWD(U, value));
 
         return result;

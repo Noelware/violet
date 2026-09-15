@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-//! # 🌺💜 `violet/Violet.h`
+//! # 🌺💜 `violet/Defer.h`
 
 #pragma once
 

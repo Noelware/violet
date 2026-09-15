@@ -23,7 +23,6 @@
 
 #include <violet/Filesystem/Metadata.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::filesystem::testing;
 using namespace violet::filesystem;
 using namespace violet;
@@ -117,5 +116,3 @@ TEST_F(MetadataTest, FromFileDescriptorMatchesPathQuery)
     EXPECT_EQ(viaFd->Device, viaPath->Device);
 #endif
 }
-
-// NOLINTEND(google-build-using-namespace)

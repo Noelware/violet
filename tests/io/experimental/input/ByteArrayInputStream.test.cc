@@ -22,20 +22,18 @@
 #include <gtest/gtest.h>
 #include <violet/IO/Experimental/Input/ByteArrayInputStream.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::io::experimental;
 using namespace violet;
-// NOLINTEND(google-build-using-namespace)
 
 TEST(ByteArrayInputStream, ItWorks)
 {
-    Vec<UInt8> buf({ 'h', 'e', 'l', 'l', 'o', ',', 'w', 'o', 'r', 'l', 'd' });
+    Vec<UInt8> buf({'h', 'e', 'l', 'l', 'o', ',', 'w', 'o', 'r', 'l', 'd'});
     ByteArrayInputStream stream(buf);
 
     Vec<UInt8> buf2(2);
     auto res1 = stream.Read(buf2);
     ASSERT_TRUE(res1) << "failed to call `stream.Read()`: " << VIOLET_MOVE(res1.Error()).ToString();
-    ASSERT_EQ(buf2, Vec<UInt8>({ 'h', 'e' }));
+    ASSERT_EQ(buf2, Vec<UInt8>({'h', 'e'}));
     ASSERT_EQ(res1.Value(), 2);
 
     auto available = stream.Available().Unwrap();
@@ -44,7 +42,7 @@ TEST(ByteArrayInputStream, ItWorks)
 
 TEST(ByteArrayInputStream, ShouldWorkIfEmptyBufferReceived)
 {
-    Vec<UInt8> buf({ 'h', 'e', 'l', 'l', 'o', ',', 'w', 'o', 'r', 'l', 'd' });
+    Vec<UInt8> buf({'h', 'e', 'l', 'l', 'o', ',', 'w', 'o', 'r', 'l', 'd'});
     ByteArrayInputStream stream(buf);
 
     Vec<UInt8> buf3;

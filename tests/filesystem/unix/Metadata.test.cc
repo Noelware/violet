@@ -29,7 +29,6 @@
 
 #include <fcntl.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::filesystem::testing;
 using namespace violet::filesystem;
 using namespace violet::io;
@@ -99,7 +98,7 @@ TEST_F(MetadataUnixTest, OwnershipMatchesProcess)
     // on macOS (and when we port to the BSD family of systems), files inherit
     // the parent directory's GID rather than the process' effective group ID,
     // we will compare against `stat(2)`.
-    struct stat st{ };
+    struct stat st{};
     ASSERT_EQ(Layout->A.WithCStr([&](CStr path) -> Int32 { return ::stat(path, &st); }), 0)
         << "failed to `stat(2)` file [" << Layout->A << "]: " << io::Error::OSError();
 
@@ -192,5 +191,3 @@ TEST(MetadataUnix, CharDeviceCarriesRdev)
     EXPECT_TRUE(md->RdevMajor);
     EXPECT_TRUE(md->RdevMinor);
 }
-
-// NOLINTEND(google-build-using-namespace)

@@ -26,7 +26,6 @@
 
 #include <unordered_set>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet;
 using namespace violet::filesystem;
 using namespace violet::filesystem::testing;
@@ -203,5 +202,3 @@ TEST_F(FilesystemTest, WalkDirOnEmptyDirYieldsNothing)
     ASSERT_TRUE(walk);
     EXPECT_FALSE(walk->Next());
 }
-
-// NOLINTEND(google-build-using-namespace)

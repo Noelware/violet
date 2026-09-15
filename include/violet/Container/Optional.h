@@ -179,8 +179,6 @@ template<typename T>
 NOELDOC_SINCE("26.05.02")
 Some(T&&) -> Some<std::remove_cvref_t<T>>;
 
-// NOLINTBEGIN(cppcoreguidelines-pro-type-union-access)
-
 /// A container type that may or may not contain a value, analogous to Rust's [`Option`] enumeration
 /// and C++'s [`std::optional`] with functional-style utilities.
 ///
@@ -809,25 +807,25 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(value_type&& defaultValue) & noexcept -> value_type
+    [[nodiscard]] constexpr auto UnwrapOr(value_type defaultValue) & noexcept -> value_type
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(value_type&& defaultValue) && noexcept -> value_type
+    [[nodiscard]] constexpr auto UnwrapOr(value_type defaultValue) && noexcept -> value_type
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(value_type&& defaultValue) const& noexcept -> value_type
+    [[nodiscard]] constexpr auto UnwrapOr(value_type defaultValue) const& noexcept -> value_type
     {
         return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
     }
 
     /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(value_type&& defaultValue) const&& noexcept -> value_type
+    [[nodiscard]] constexpr auto UnwrapOr(value_type defaultValue) const&& noexcept -> value_type
     {
         return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
     }
@@ -1424,8 +1422,6 @@ private:
         }
     }
 };
-
-// NOLINTEND(cppcoreguidelines-pro-type-union-access)
 
 } // namespace violet
 

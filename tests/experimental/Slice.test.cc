@@ -22,7 +22,6 @@
 #include <gtest/gtest.h>
 #include <violet/Experimental/Slice.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length,cppcoreguidelines-special-member-functions)
 using namespace violet::experimental;
 using namespace violet;
 
@@ -114,7 +113,7 @@ TEST(Construction, DefaultConstructsEmpty)
 
 TEST(Construction, InitializerList)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     EXPECT_EQ(s.Elements(), 3U);
     EXPECT_EQ(s[0], 1);
     EXPECT_EQ(s[1], 2);
@@ -123,7 +122,7 @@ TEST(Construction, InitializerList)
 
 TEST(Construction, MoveConstruct)
 {
-    Slice<Int32, 4> a({ 10, 20, 30 });
+    Slice<Int32, 4> a({10, 20, 30});
     Slice<Int32, 4> b(VIOLET_MOVE(a));
 
     EXPECT_EQ(b.Elements(), 3U);
@@ -135,8 +134,8 @@ TEST(Construction, MoveConstruct)
 
 TEST(Construction, MoveAssign)
 {
-    Slice<Int32, 4> a = { 1, 2 };
-    Slice<Int32, 4> b = { 10, 20, 30 };
+    Slice<Int32, 4> a = {1, 2};
+    Slice<Int32, 4> b = {10, 20, 30};
 
     b = VIOLET_MOVE(a);
 
@@ -148,7 +147,7 @@ TEST(Construction, MoveAssign)
 
 TEST(Construction, MoveAssignSelf)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     auto* addr = std::addressof(s);
     s = VIOLET_MOVE(*addr);
 
@@ -245,7 +244,7 @@ TEST(Lifetime, MoveAssignDoesNotLeak)
 
 TEST(Access, OperatorBracket)
 {
-    Slice<Int32, 4> s({ 10, 20, 30 });
+    Slice<Int32, 4> s({10, 20, 30});
     EXPECT_EQ(s[0], 10);
     EXPECT_EQ(s[1], 20);
     EXPECT_EQ(s[2], 30);
@@ -256,7 +255,7 @@ TEST(Access, OperatorBracket)
 
 TEST(Access, ConstOperatorBracket)
 {
-    const Slice<Int32, 4> s({ 10, 20, 30 });
+    const Slice<Int32, 4> s({10, 20, 30});
     EXPECT_EQ(s[0], 10);
     EXPECT_EQ(s[1], 20);
     EXPECT_EQ(s[2], 30);
@@ -264,7 +263,7 @@ TEST(Access, ConstOperatorBracket)
 
 TEST(Access, FrontReturnsFirstElement)
 {
-    Slice<Int32, 4> s({ 42, 99 });
+    Slice<Int32, 4> s({42, 99});
     auto front = s.Front();
     ASSERT_TRUE(front);
     EXPECT_EQ(*front, 42);
@@ -278,7 +277,7 @@ TEST(Access, FrontEmptyReturnsNothing)
 
 TEST(Access, BackReturnsLastElement)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     auto back = s.Back();
     ASSERT_TRUE(back);
     EXPECT_EQ(*back, 3);
@@ -292,7 +291,7 @@ TEST(Access, BackEmptyReturnsNothing)
 
 TEST(Access, DataPointsToFirstElement)
 {
-    Slice<Int32, 4> s({ 5, 10, 15 });
+    Slice<Int32, 4> s({5, 10, 15});
     EXPECT_EQ(*s.Data(), 5);
     EXPECT_EQ(s.Data()[1], 10);
     EXPECT_EQ(s.Data()[2], 15);
@@ -368,7 +367,7 @@ TEST(Modifiers, PushMove)
 
 TEST(Modifiers, PopRemovesLast)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     s.Pop();
 
     EXPECT_EQ(s.Elements(), 2U);
@@ -378,7 +377,7 @@ TEST(Modifiers, PopRemovesLast)
 
 TEST(Modifiers, PopBackReturnsAndRemoves)
 {
-    Slice<Int32, 4> s({ 10, 20, 30 });
+    Slice<Int32, 4> s({10, 20, 30});
     auto val = s.PopBack();
 
     EXPECT_EQ(val, 30);
@@ -398,7 +397,7 @@ TEST(Modifiers, PopBackMoveOnly)
 
 TEST(Modifiers, ClearEmptiesSlice)
 {
-    Slice<Int32, 4> s = { 1, 2, 3, 4 };
+    Slice<Int32, 4> s = {1, 2, 3, 4};
     EXPECT_TRUE(s.Full());
 
     s.Clear();
@@ -408,7 +407,7 @@ TEST(Modifiers, ClearEmptiesSlice)
 
 TEST(Modifiers, PushAfterClear)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     s.Clear();
     s.Push(42);
 
@@ -429,7 +428,7 @@ TEST(Modifiers, FillToCapacity)
 
 TEST(Iterators, RangeFor)
 {
-    Slice<Int32, 4> s({ 10, 20, 30 });
+    Slice<Int32, 4> s({10, 20, 30});
     Int32 sum = 0;
     for (auto& val: s) {
         sum += val;
@@ -440,7 +439,7 @@ TEST(Iterators, RangeFor)
 
 TEST(Iterators, ConstRangeFor)
 {
-    const Slice<Int32, 4> s({ 1, 2, 3, 4 });
+    const Slice<Int32, 4> s({1, 2, 3, 4});
     Int32 sum = 0;
     for (const auto& val: s) {
         sum += val;
@@ -451,7 +450,7 @@ TEST(Iterators, ConstRangeFor)
 
 TEST(Iterators, MutateViaRangeFor)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     for (auto& val: s) {
         val *= 10;
     }
@@ -474,18 +473,18 @@ TEST(Iterators, EmptyRangeFor)
 
 TEST(Iterators, ReverseIteration)
 {
-    Slice<Int32, 4> s = { 1, 2, 3 };
+    Slice<Int32, 4> s = {1, 2, 3};
     Vec<Int32> reversed;
     for (auto it = s.rbegin(); it != s.rend(); ++it) { // NOLINT(modernize-loop-convert)
         reversed.push_back(*it);
     }
 
-    EXPECT_EQ(reversed, (Vec<Int32>{ 3, 2, 1 }));
+    EXPECT_EQ(reversed, (Vec<Int32>{3, 2, 1}));
 }
 
 TEST(VioletIter, NextYieldsAllElements)
 {
-    Slice<Int32, 4> s({ 10, 20, 30 });
+    Slice<Int32, 4> s({10, 20, 30});
     auto it = s.Iter();
 
     auto a = it.Next();
@@ -506,7 +505,7 @@ TEST(VioletIter, NextYieldsAllElements)
 
 TEST(VioletIter, NextBackYieldsReverse)
 {
-    Slice<Int32, 4> s({ 10, 20, 30 });
+    Slice<Int32, 4> s({10, 20, 30});
     auto it = s.Iter();
 
     auto a = it.NextBack();
@@ -527,7 +526,7 @@ TEST(VioletIter, NextBackYieldsReverse)
 
 TEST(VioletIter, InterleavedNextAndNextBack)
 {
-    Slice<Int32, 4> s({ 1, 2, 3, 4 });
+    Slice<Int32, 4> s({1, 2, 3, 4});
     auto it = s.Iter();
 
     auto a = it.Next();
@@ -560,7 +559,7 @@ TEST(VioletIter, EmptySliceYieldsNothing)
 
 TEST(VioletIter, ConstIter)
 {
-    const Slice<Int32, 4> s({ 5, 10, 15 });
+    const Slice<Int32, 4> s({5, 10, 15});
     auto it = s.Iter();
 
     auto a = it.Next();
@@ -570,7 +569,7 @@ TEST(VioletIter, ConstIter)
 
 TEST(VioletIter, MutateViaIter)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     auto it = s.Iter();
     while (auto item = it.Next()) {
         *item *= 100;
@@ -583,7 +582,7 @@ TEST(VioletIter, MutateViaIter)
 
 TEST(VioletIter, SizeHint)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     auto it = s.Iter();
 
     auto [lower, upper] = it.SizeHint();
@@ -622,50 +621,50 @@ TEST(Operators, EqualityEmpty)
 
 TEST(Operators, EqualitySameElements)
 {
-    Slice<Int32, 4> a({ 1, 2, 3 });
-    Slice<Int32, 4> b({ 1, 2, 3 });
+    Slice<Int32, 4> a({1, 2, 3});
+    Slice<Int32, 4> b({1, 2, 3});
     EXPECT_EQ(a, b);
 }
 
 TEST(Operators, EqualityDifferentElements)
 {
-    Slice<Int32, 4> a({ 1, 2, 3 });
-    Slice<Int32, 4> b({ 1, 2, 4 });
+    Slice<Int32, 4> a({1, 2, 3});
+    Slice<Int32, 4> b({1, 2, 4});
     EXPECT_NE(a, b);
 }
 
 TEST(Operators, EqualityDifferentSizes)
 {
-    Slice<Int32, 4> a({ 1, 2 });
-    Slice<Int32, 4> b = { 1, 2, 3 };
+    Slice<Int32, 4> a({1, 2});
+    Slice<Int32, 4> b = {1, 2, 3};
     EXPECT_NE(a, b);
 }
 
 TEST(Operators, ThreeWayLessThan)
 {
-    Slice<Int32, 4> a({ 1, 2, 3 });
-    Slice<Int32, 4> b({ 1, 2, 4 });
+    Slice<Int32, 4> a({1, 2, 3});
+    Slice<Int32, 4> b({1, 2, 4});
     EXPECT_TRUE(a < b);
     EXPECT_FALSE(b < a);
 }
 
 TEST(Operators, ThreeWayShorterIsLess)
 {
-    Slice<Int32, 4> a({ 1, 2 });
-    Slice<Int32, 4> b({ 1, 2, 3 });
+    Slice<Int32, 4> a({1, 2});
+    Slice<Int32, 4> b({1, 2, 3});
     EXPECT_TRUE(a < b);
 }
 
 TEST(Operators, ThreeWayEqual)
 {
-    Slice<Int32, 4> a({ 1, 2, 3 });
-    Slice<Int32, 4> b({ 1, 2, 3 });
+    Slice<Int32, 4> a({1, 2, 3});
+    Slice<Int32, 4> b({1, 2, 3});
     EXPECT_TRUE((a <=> b) == 0);
 }
 
 TEST(Span, DynamicExtentSpan)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     Span<Int32> span = s;
 
     EXPECT_EQ(span.size(), 3U);
@@ -676,7 +675,7 @@ TEST(Span, DynamicExtentSpan)
 
 TEST(Span, ConstDynamicExtentSpan)
 {
-    const Slice<Int32, 4> s({ 10, 20 });
+    const Slice<Int32, 4> s({10, 20});
     Span<const Int32> span = s;
     EXPECT_EQ(span.size(), 2U);
     EXPECT_EQ(span[0], 10);
@@ -684,7 +683,7 @@ TEST(Span, ConstDynamicExtentSpan)
 
 TEST(Span, FixedExtentSpan)
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     Span<Int32, 3> span = s;
 
     EXPECT_EQ(span.size(), 3U);
@@ -706,7 +705,7 @@ constexpr auto MakeAndCount() -> UInt
 
 constexpr auto MakeAndSum() -> Int32
 {
-    Slice<int, 4> s({ 10, 20, 30 });
+    Slice<int, 4> s({10, 20, 30});
     Int32 sum = 0;
     for (UInt i = 0; i < s.Elements(); i++) {
         sum += s[i];
@@ -717,27 +716,27 @@ constexpr auto MakeAndSum() -> Int32
 
 constexpr auto MakeAndPopBack() -> Int32
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     return s.PopBack();
 }
 
 constexpr auto MakeAndCompare() -> bool
 {
-    Slice<Int32, 4> a({ 1, 2, 3 });
-    Slice<Int32, 4> b({ 1, 2, 3 });
+    Slice<Int32, 4> a({1, 2, 3});
+    Slice<Int32, 4> b({1, 2, 3});
     return a == b;
 }
 
 constexpr auto MakeMovedSlice() -> UInt
 {
-    Slice<Int32, 4> a({ 1, 2, 3 });
+    Slice<Int32, 4> a({1, 2, 3});
     Slice<Int32, 4> b(VIOLET_MOVE(a));
     return b.Elements();
 }
 
 constexpr auto MakeClearAndReuse() -> Int32
 {
-    Slice<Int32, 4> s({ 1, 2, 3 });
+    Slice<Int32, 4> s({1, 2, 3});
     s.Clear();
     s.Push(42);
 
@@ -752,5 +751,3 @@ static_assert(MakeAndPopBack() == 3);
 static_assert(MakeAndCompare());
 static_assert(MakeMovedSlice() == 3);
 static_assert(MakeClearAndReuse() == 42);
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length,cppcoreguidelines-special-member-functions)

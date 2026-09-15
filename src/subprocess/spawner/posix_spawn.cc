@@ -137,9 +137,9 @@ private:
 
 auto violet::subprocess::detail::SpawnWithPosix(Command& command) -> io::Result<Child>
 {
-    Int32 stdinPipes[2] = { -1, -1 };
-    Int32 stdoutPipes[2] = { -1, -1 };
-    Int32 stderrPipes[2] = { -1, -1 };
+    Int32 stdinPipes[2] = {-1, -1};
+    Int32 stdoutPipes[2] = {-1, -1};
+    Int32 stderrPipes[2] = {-1, -1};
 
     if (command.n_impl->n_stdin.Piped() && !command.n_impl->n_stdin.PipedIntoFile()) {
         if (!detail::MakePipes(stdinPipes)) {
@@ -221,11 +221,11 @@ auto violet::subprocess::detail::SpawnWithPosix(Command& command) -> io::Result<
     ::posix_spawnattr_setflags(spawnAttrs.Get(), POSIX_SPAWN_CLOEXEC_DEFAULT);
 
     pid_t pid = 0;
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-const-cast)
+
     if (Int32 ret = ::posix_spawnp(&pid, command.n_impl->n_program.c_str(), actions.Get(), spawnAttrs.Get(),
             const_cast<char* const*>(argv.data()), const_cast<char* const*>(envp.data()));
         ret != 0) {
-        // NOLINTEND(cppcoreguidelines-pro-type-const-cast)
+
         closePipes(stdinPipes);
         closePipes(stdoutPipes);
         closePipes(stderrPipes);

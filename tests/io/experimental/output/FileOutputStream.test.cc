@@ -24,11 +24,9 @@
 #include <violet/Filesystem/Temporary.h>
 #include <violet/IO/Experimental/Output/FileOutputStream.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::io::experimental;
 using namespace violet::filesystem;
 using namespace violet;
-// NOLINTEND(google-build-using-namespace)
 
 TEST(FileOutputStream, WriteAndFlush)
 {

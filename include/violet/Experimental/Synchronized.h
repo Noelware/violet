@@ -151,8 +151,6 @@ struct VIOLET_API VIOLET_LOCKABLE Synchronized final {
 
     auto operator=(Synchronized&& other) noexcept -> Synchronized& = delete;
 
-    // NOLINTBEGIN(modernize-use-trailing-return-type)
-
     /// Acquires the mutex and returns a RAII guard granting access to the protected data.
     Guard Lock() VIOLET_EXCLUSIVE_LOCK_FUNCTION(n_mux)
     {
@@ -170,8 +168,6 @@ struct VIOLET_API VIOLET_LOCKABLE Synchronized final {
 
         return Guard(this, std::adopt_lock);
     }
-
-    // NOLINTEND(modernize-use-trailing-return-type)
 
     template<typename Fun>
         requires(callable<Fun, T&>)

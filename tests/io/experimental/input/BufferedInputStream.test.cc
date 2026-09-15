@@ -25,10 +25,8 @@
 
 #include <numeric>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::io::experimental;
 using namespace violet;
-// NOLINTEND(google-build-using-namespace)
 
 TEST(BufferedInputStream, ItWorks)
 {

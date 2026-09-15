@@ -23,10 +23,8 @@
 #include <violet/IO/Experimental/Input/ByteArrayInputStream.h>
 #include <violet/IO/Experimental/InputStream.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::io::experimental;
 using namespace violet;
-// NOLINTEND(google-build-using-namespace)
 
 TEST(ReadToString, ReadsEntireContent)
 {
@@ -94,7 +92,7 @@ TEST(ReadToString, StreamIsAtEOSAfterRead)
 TEST(ReadToString, PreservesArbitraryBytes)
 {
     // Ensure non-text bytes are copied verbatim (no encoding assumptions)
-    Vec<UInt8> data = { 0x00, 0x01, 0xFF, 0xFE, 0x7F, 0x80 };
+    Vec<UInt8> data = {0x00, 0x01, 0xFF, 0xFE, 0x7F, 0x80};
     ByteArrayInputStream stream(data);
 
     auto result = ReadToString(stream);

@@ -26,7 +26,6 @@
 
 #include <cerrno>
 
-// NOLINTBEGIN(google-build-using-namespace,cppcoreguidelines-pro-type-const-cast)
 using namespace violet;
 using namespace violet::subprocess;
 using namespace violet::testing;
@@ -43,7 +42,7 @@ auto SpawnWithPipe(const String& program, std::initializer_list<CStr> args) -> S
     int fds[2];
     if (::pipe(fds) != 0) {
         ADD_FAILURE() << "`pipe()' failed: " << strerror(errno);
-        return { .Child = -1, .ReadFD = -1 };
+        return {.Child = -1, .ReadFD = -1};
     }
 
     PID child = ::fork();
@@ -52,7 +51,7 @@ auto SpawnWithPipe(const String& program, std::initializer_list<CStr> args) -> S
         ::close(fds[0]);
         ::close(fds[1]);
 
-        return { .Child = -1, .ReadFD = -1 };
+        return {.Child = -1, .ReadFD = -1};
     }
 
     if (child == 0) {
@@ -72,7 +71,7 @@ auto SpawnWithPipe(const String& program, std::initializer_list<CStr> args) -> S
     }
 
     ::close(fds[1]);
-    return { .Child = child, .ReadFD = fds[0] };
+    return {.Child = child, .ReadFD = fds[0]};
 }
 
 } // namespace
@@ -82,7 +81,7 @@ TEST(PipeReader, CapturesOutputFromPrintArgs)
     auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
     ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed?!";
 
-    auto [child, fd] = SpawnWithPipe(*program, { "hello", "world" });
+    auto [child, fd] = SpawnWithPipe(*program, {"hello", "world"});
     ASSERT_GE(fd, 0);
 
     auto reader = GetPipeReader();
@@ -109,7 +108,7 @@ TEST(PipeReader, CapturesNoOutputFromPrintEnv)
     auto program = runfiles::Get("tests/subprocess/runfiles/print_env");
     ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_env` failed?!";
 
-    auto [child, fd] = SpawnWithPipe(*program, { "PATH" });
+    auto [child, fd] = SpawnWithPipe(*program, {"PATH"});
     ASSERT_GE(fd, 0);
 
     auto reader = GetPipeReader();
@@ -128,5 +127,3 @@ TEST(PipeReader, CapturesNoOutputFromPrintEnv)
     ASSERT_TRUE(result) << "`CaptureAll()' failed: " << result.Error();
     EXPECT_TRUE(result->empty()) << "expected no stdout output from `print_env' runfile";
 }
-
-// NOLINTEND(google-build-using-namespace,cppcoreguidelines-pro-type-const-cast)

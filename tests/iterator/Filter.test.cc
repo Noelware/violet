@@ -24,7 +24,6 @@
 #include <gtest/gtest.h>
 #include <violet/Iterator/Filter.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace violet;
 using namespace violet::testing::fixtures;
 
@@ -39,17 +38,17 @@ constexpr auto isEven(Int32 num) -> bool
 
 TEST(Iterators, FilterCanBeUsedWithMkIterable)
 {
-    Vec<UInt32> vi({ 1, 2, 3, 4, 5, 6 });
+    Vec<UInt32> vi({1, 2, 3, 4, 5, 6});
 
     auto filtered = MkIterable(vi).Filter([](UInt32 value) -> bool { return value % 2 == 0; });
-    Vec<UInt32> expected({ 2, 4, 6 });
+    Vec<UInt32> expected({2, 4, 6});
 
     ASSERT_EQ(filtered.Collect<Vec<UInt32>>(), expected);
 }
 
 TEST(Iterators, FilterFiltersEvenNumbers)
 {
-    auto iter = FixedSizeIterator<Int32, 6>({ 1, 2, 3, 4, 5, 6 }).Filter(isEven);
+    auto iter = FixedSizeIterator<Int32, 6>({1, 2, 3, 4, 5, 6}).Filter(isEven);
 
     auto a = iter.Next();
     ASSERT_TRUE(a);
@@ -68,13 +67,13 @@ TEST(Iterators, FilterFiltersEvenNumbers)
 
 TEST(Iterators, FilterNoMatchesYieldsNothing)
 {
-    auto iter = FixedSizeIterator<Int32, 4>({ 1, 3, 5, 7 }).Filter(isEven);
+    auto iter = FixedSizeIterator<Int32, 4>({1, 3, 5, 7}).Filter(isEven);
     EXPECT_FALSE(iter.Next());
 }
 
 TEST(Iterators, FilterAllMatchesYieldsEverything)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 2, 4, 6 }).Filter(isEven);
+    auto iter = FixedSizeIterator<Int32, 3>({2, 4, 6}).Filter(isEven);
     EXPECT_EQ(*iter.Next(), 2);
     EXPECT_EQ(*iter.Next(), 4);
     EXPECT_EQ(*iter.Next(), 6);
@@ -92,13 +91,13 @@ TEST(Iterators, FilterEmptyIterator)
         }
     };
 
-    auto iter = Empty().Filter(std::identity{ });
+    auto iter = Empty().Filter(std::identity{});
     EXPECT_FALSE(iter.Next());
 }
 
 TEST(Iterators, FilterSingleMatchingElement)
 {
-    auto iter = FixedSizeIterator<Int32, 1>({ 42 }).Filter([](Int32) -> bool { return true; });
+    auto iter = FixedSizeIterator<Int32, 1>({42}).Filter([](Int32) -> bool { return true; });
     auto elem = iter.Next();
     ASSERT_TRUE(elem);
     EXPECT_EQ(*elem, 42);
@@ -107,14 +106,14 @@ TEST(Iterators, FilterSingleMatchingElement)
 
 TEST(Iterators, FilterSingleNonMatchingElement)
 {
-    auto iter = FixedSizeIterator<Int32, 1>({ 42 }).Filter([](Int32) -> bool { return false; });
+    auto iter = FixedSizeIterator<Int32, 1>({42}).Filter([](Int32) -> bool { return false; });
     EXPECT_FALSE(iter.Next());
 }
 
 TEST(Iterators, FilterPredicateReceivesCorrectValues)
 {
     Vec<Int32> seen;
-    auto iter = FixedSizeIterator<Int32, 3>({ 10, 20, 30 }).Filter([&seen](Int32 n) -> bool {
+    auto iter = FixedSizeIterator<Int32, 3>({10, 20, 30}).Filter([&seen](Int32 n) -> bool {
         seen.push_back(n);
         return n == 20;
     });
@@ -131,7 +130,7 @@ TEST(Iterators, FilterPredicateReceivesCorrectValues)
 
 TEST(Iterators, FilterExhaustedIteratorRemainsExhausted)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2 }).Filter([](Int32 num) -> bool { return num == 1; });
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2}).Filter([](Int32 num) -> bool { return num == 1; });
 
     ASSERT_TRUE(iter.Next());
     EXPECT_FALSE(iter.Next());
@@ -141,7 +140,7 @@ TEST(Iterators, FilterExhaustedIteratorRemainsExhausted)
 
 TEST(Iterators, FilterNextBackFiltersFromEnd)
 {
-    auto iter = DoubleEndedFixedSizeIterator<Int32, 6>({ 1, 2, 3, 4, 5, 6 }).Filter(isEven);
+    auto iter = DoubleEndedFixedSizeIterator<Int32, 6>({1, 2, 3, 4, 5, 6}).Filter(isEven);
 
     auto a = iter.NextBack();
     ASSERT_TRUE(a);
@@ -160,13 +159,13 @@ TEST(Iterators, FilterNextBackFiltersFromEnd)
 
 TEST(Iterators, FilterNextBackNoMatchesYieldsNothing)
 {
-    auto iter = DoubleEndedFixedSizeIterator<Int32, 3>({ 1, 3, 5 }).Filter(isEven);
+    auto iter = DoubleEndedFixedSizeIterator<Int32, 3>({1, 3, 5}).Filter(isEven);
     EXPECT_FALSE(iter.NextBack());
 }
 
 TEST(Iterators, FilterSizeHintLowerBoundIsZero)
 {
-    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Filter([](Int32 num) -> bool { return num > 3; });
+    auto iter = FixedSizeIterator<Int32, 5>({1, 2, 3, 4, 5}).Filter([](Int32 num) -> bool { return num > 3; });
     auto hint = iter.SizeHint();
 
     EXPECT_EQ(hint.Low, 0U);
@@ -175,7 +174,7 @@ TEST(Iterators, FilterSizeHintLowerBoundIsZero)
 
 TEST(Iterators, FilterSizeHintAfterPartialConsumption)
 {
-    auto iter = DoubleEndedFixedSizeIterator<Int32, 4>({ 1, 2, 3, 4 }).Filter(isEven);
+    auto iter = DoubleEndedFixedSizeIterator<Int32, 4>({1, 2, 3, 4}).Filter(isEven);
 
     // Consume one element from the front (skips 1, yields 2).
     (void)iter.Next();
@@ -186,5 +185,3 @@ TEST(Iterators, FilterSizeHintAfterPartialConsumption)
     // Upper bound reflects the underlying iterator's remaining count.
     EXPECT_LE(hint.High, 4U);
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

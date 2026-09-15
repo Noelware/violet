@@ -1150,7 +1150,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
     constexpr auto MapOrDefault(Fun&& fun) & noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>()))) -> U
     {
-        return this->MapOr(U{ }, VIOLET_FWD(Fun, fun));
+        return this->MapOr(U{}, VIOLET_FWD(Fun, fun));
     }
 
     /// Applies `fun` to the contained value if present, otherwise returns a default
@@ -1164,7 +1164,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
     constexpr auto MapOrDefault(Fun&& fun) const& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&>()))) -> U
     {
-        return this->MapOr(U{ }, VIOLET_FWD(Fun, fun));
+        return this->MapOr(U{}, VIOLET_FWD(Fun, fun));
     }
 
     /// Applies `fun` to the contained value if present, otherwise returns a default
@@ -1178,7 +1178,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
     constexpr auto MapOrDefault(Fun&& fun) && noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&&>()))) -> U
     {
-        return this->MapOr(U{ }, VIOLET_FWD(Fun, fun));
+        return this->MapOr(U{}, VIOLET_FWD(Fun, fun));
     }
 
     /// Applies `fun` to the contained value if present, otherwise returns a default
@@ -1192,7 +1192,7 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
     constexpr auto MapOrDefault(Fun&& fun) const&& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&&>()))) -> U
     {
-        return this->MapOr(U{ }, VIOLET_FWD(Fun, fun));
+        return this->MapOr(U{}, VIOLET_FWD(Fun, fun));
     }
 
     /// Forefully retrieve the `Ok` variant's value or panics if no value was present.
@@ -1501,28 +1501,28 @@ struct [[nodiscard("always check the error state")]] VIOLET_API NOELDOC_SINCE("2
     constexpr auto UnwrapOrDefault() & noexcept -> value_type
         requires(std::is_default_constructible_v<T>)
     {
-        return this->Ok() ? this->getValueRef() : T{ };
+        return this->Ok() ? this->getValueRef() : T{};
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() const& noexcept -> value_type
         requires(std::is_default_constructible_v<T>)
     {
-        return this->Ok() ? this->getValueRef() : T{ };
+        return this->Ok() ? this->getValueRef() : T{};
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() && noexcept -> value_type
         requires(std::is_default_constructible_v<T>)
     {
-        return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : T{ };
+        return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : T{};
     }
 
     /// Returns the contained value if it present, otherwise a default constructed `T` is used.
     constexpr auto UnwrapOrDefault() const&& noexcept -> value_type
         requires(std::is_default_constructible_v<T>)
     {
-        return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : T{ };
+        return this->Ok() ? VIOLET_MOVE(this->getValueRef()) : T{};
     }
 
     /// Returns the contained value without checking its state.
@@ -2096,6 +2096,6 @@ struct std::formatter<violet::Result<T, E>> final: public std::formatter<std::st
         if ((variable).Err()) {                                                                                        \
             return ::violet::Err(VIOLET_MOVE((variable).Error()));                                                     \
         }                                                                                                              \
-    } while (false);
+    } while (false)
 
 #define VIOLET_TRY_VOID(expr) __violet_try_void_impl__(expr, VIOLET_UNIQUE_NAME(__violet_try_void_expr_))

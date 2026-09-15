@@ -30,7 +30,6 @@
 
 using namespace std::chrono_literals;
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet;
 using namespace violet::subprocess;
 using namespace violet::testing;
@@ -146,7 +145,7 @@ TEST(Arguments, WithArgsInitializerList)
     auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
     ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
-    auto result = Command(*program).WithArgs({ "foo", "bar", "baz" }).WithStdout(Stdio::Pipe()).Output();
+    auto result = Command(*program).WithArgs({"foo", "bar", "baz"}).WithStdout(Stdio::Pipe()).Output();
     ASSERT_TRUE(result) << "output failed: " << result.Error();
     EXPECT_EQ(result->Status.Code().UnwrapOr(-1), 0);
 
@@ -159,7 +158,7 @@ TEST(Arguments, WithArgsSpan)
     auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
     ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
-    Vec<String> args = { "one", "two" };
+    Vec<String> args = {"one", "two"};
     auto result = Command(*program).WithArgs(args).WithStdout(Stdio::Pipe()).Output();
     ASSERT_TRUE(result) << "output failed: " << result.Error();
     EXPECT_EQ(result->Status.Code().UnwrapOr(-1), 0);
@@ -173,7 +172,7 @@ TEST(Arguments, ConstructorWithInitializerList)
     auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
     ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
-    auto result = Command(*program, { "alpha", "beta" }).WithStdout(Stdio::Pipe()).Output();
+    auto result = Command(*program, {"alpha", "beta"}).WithStdout(Stdio::Pipe()).Output();
     ASSERT_TRUE(result) << "output failed: " << result.Error();
 
     String out(result->Stdout.begin(), result->Stdout.end());
@@ -185,7 +184,7 @@ TEST(Arguments, ConstructorWithVector)
     auto program = runfiles::Get("tests/subprocess/runfiles/print_args");
     ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_args` failed";
 
-    Vec<String> args = { "x", "y", "z" };
+    Vec<String> args = {"x", "y", "z"};
     auto result = Command(*program, args).WithStdout(Stdio::Pipe()).Output();
     ASSERT_TRUE(result) << "output failed: " << result.Error();
 
@@ -235,7 +234,7 @@ TEST(Environ, WithEnvsInitializerList)
 
     auto result = Command(*program)
                       .WithArg("VIOLET_MULTI_ENV_A")
-                      .WithEnvs({ { "VIOLET_MULTI_ENV_A", "1" }, { "VIOLET_MULTI_ENV_B", "2" } })
+                      .WithEnvs({{"VIOLET_MULTI_ENV_A", "1"}, {"VIOLET_MULTI_ENV_B", "2"}})
                       .Status();
 
     ASSERT_TRUE(result) << "status failed: " << result.Error();
@@ -247,7 +246,7 @@ TEST(Environ, WithEnvsSpan)
     auto program = runfiles::Get("tests/subprocess/runfiles/print_env");
     ASSERT_TRUE(program) << "runfile fetch for `tests/subprocess/runfiles/print_env` failed";
 
-    Vec<Pair<String, String>> envs = { { "VIOLET_SPAN_ENV_C", "42" } };
+    Vec<Pair<String, String>> envs = {{"VIOLET_SPAN_ENV_C", "42"}};
     auto result = Command(*program).WithArg("VIOLET_SPAN_ENV_C").WithEnvs(envs).Status();
 
     ASSERT_TRUE(result) << "status failed: " << result.Error();
@@ -324,7 +323,7 @@ TEST(Stdio, NullStdoutDiscardsOutput)
 
 TEST(Stdio, NullStderrDiscardsErrorOutput)
 {
-    auto result = Command("sh").WithArgs({ "-c", "echo error >&2" }).WithStderr(Stdio::Null()).Spawn();
+    auto result = Command("sh").WithArgs({"-c", "echo error >&2"}).WithStderr(Stdio::Null()).Spawn();
     ASSERT_TRUE(result) << "spawn failed: " << result.Error();
 
     auto& child = result.Value();
@@ -344,7 +343,7 @@ TEST(Stdio, PipedStdinAndStdoutAllowDataRoundtrip)
     ASSERT_TRUE(child.Stdin);
     ASSERT_TRUE(child.Stdout);
 
-    Array<unsigned char, 5> message = { 'p', 'i', 'n', 'g', '\n' };
+    Array<unsigned char, 5> message = {'p', 'i', 'n', 'g', '\n'};
     auto writeResult = child.Stdin->Write(message);
     ASSERT_TRUE(writeResult) << "expected to write 'ping\n' to stdin but couldn't: " << writeResult.Error();
     child.Stdin->Descriptor.Close();
@@ -365,7 +364,7 @@ TEST(Stdio, PipedStdinAndStdoutAllowDataRoundtrip)
 TEST(Stdio, PipeIntoFileWritesOutput)
 {
     Path path;
-    auto file = TempBuilder{ }.MkFile();
+    auto file = TempBuilder{}.MkFile();
     ASSERT_TRUE(file) << "failed to build temporary file: " << file.Error();
     ASSERT_TRUE(file->Path()) << "a path should be present";
 
@@ -376,7 +375,7 @@ TEST(Stdio, PipeIntoFileWritesOutput)
     EXPECT_EQ(result->Code(), 0);
 
     // Read from the file
-    auto openedFile = OpenOptions{ }.Read().Open(path);
+    auto openedFile = OpenOptions{}.Read().Open(path);
     ASSERT_TRUE(openedFile) << "expected to open file but couldn't: " << openedFile.Error();
 
     Vec<UInt8> buf(21, '\0');
@@ -439,5 +438,3 @@ TEST(SubprocessTimeout, ProcessRespectsSigterm)
     ASSERT_TRUE(result) << "failed to wait: " << result.Error();
     EXPECT_EQ(result->Signal(), SIGTERM);
 }
-
-// NOLINTEND(google-build-using-namespace)

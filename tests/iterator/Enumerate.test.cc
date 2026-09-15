@@ -24,13 +24,12 @@
 #include <gtest/gtest.h>
 #include <violet/Iterator/Enumerate.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace violet;
 using namespace violet::testing::fixtures;
 
 TEST(Iterators, EnumerateFromDifferentIterable)
 {
-    Vec<UInt32> vi({ 1, 2, 3 });
+    Vec<UInt32> vi({1, 2, 3});
 
     auto pair = MkIterable(vi).Enumerate();
     auto first = Pair<UInt, UInt32>(0, 1);
@@ -45,7 +44,7 @@ TEST(Iterators, EnumerateFromDifferentIterable)
 
 TEST(Iterators, EnumerateYieldsCorrectIndicesAndValues)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 10, 20, 30 }).Enumerate();
+    auto iter = FixedSizeIterator<Int32, 3>({10, 20, 30}).Enumerate();
     auto first = iter.Next();
     ASSERT_TRUE(first);
     EXPECT_EQ(first->first, 0U);
@@ -84,7 +83,7 @@ TEST(Iterators, EnumerateEmptyIterableReturnsNothing)
 
 TEST(Iterators, EnumerateExhaustedIteratorRemainsExhausted)
 {
-    auto iter = FixedSizeIterator<Int32, 1>({ 42 });
+    auto iter = FixedSizeIterator<Int32, 1>({42});
 
     ASSERT_TRUE(iter.Next());
 
@@ -95,19 +94,17 @@ TEST(Iterators, EnumerateExhaustedIteratorRemainsExhausted)
 
 TEST(Iterators, EnumerateIndicesIncrementMonotonically)
 {
-    auto iter = FixedSizeIterator<Int32, 5>({ 5, 6, 7, 8, 9 });
+    auto iter = FixedSizeIterator<Int32, 5>({5, 6, 7, 8, 9});
     EXPECT_EQ(iter.Enumerate().Count(), 5U);
 }
 
 TEST(Iterators, EnumeratePreservesUnderlyingValues)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 100, 200, 300 }).Enumerate();
-    Array<Int32, 3> expected({ 100, 200, 300 });
+    auto iter = FixedSizeIterator<Int32, 3>({100, 200, 300}).Enumerate();
+    Array<Int32, 3> expected({100, 200, 300});
 
     for (auto [i, item]: iter) {
         ASSERT_LT(i, 3U);
         EXPECT_EQ(item, expected[i]);
     }
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

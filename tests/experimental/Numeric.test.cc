@@ -24,7 +24,6 @@
 
 #include <limits>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length,readability-magic-numbers)
 using namespace violet::numeric;
 using violet::Int16;
 using violet::Int32;
@@ -371,5 +370,3 @@ TEST(Numeric, ParseDoubleFailsOnNonNumeric)
 }
 
 #endif
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length,readability-magic-numbers)

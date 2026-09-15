@@ -87,9 +87,9 @@ violet_cc_library(
     hdrs = ["//include/violet/Experimental:OneOf.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":slice",
         "//violet",
         "//violet/container:optional",
-        ":slice",
     ],
 )
 
@@ -102,7 +102,10 @@ violet_cc_test(
 violet_cc_library(
     name = "own",
     hdrs = ["//include/violet/Experimental:Own.h"],
-    deps = ["//violet/container:optional"],
+    deps = [
+        ":no_op_deleter",
+        "//violet/container:optional",
+    ],
 )
 
 violet_cc_test(
@@ -139,4 +142,22 @@ violet_cc_test(
     name = "synchronized_test",
     srcs = ["//tests/experimental:Synchronized.test.cc"],
     deps = [":synchronized"],
+)
+
+violet_cc_library(
+    name = "no_op_deleter",
+    hdrs = ["//include/violet/Experimental:NoOpDeleter.h"],
+    deps = [
+        "//violet:macros",
+        "//violet:policy_checks",
+    ],
+)
+
+violet_cc_library(
+    name = "unique",
+    hdrs = ["//include/violet/Experimental:Unique.h"],
+    deps = [
+        ":no_op_deleter",
+        "//violet/experimental/memory:non_null",
+    ],
 )

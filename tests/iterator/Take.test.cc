@@ -24,13 +24,12 @@
 #include <gtest/gtest.h>
 #include <violet/Iterator/Take.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace violet;
 using namespace violet::testing::fixtures;
 
 TEST(Iterators, TakeTakesFirstNElements)
 {
-    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+    auto iter = FixedSizeIterator<Int32, 5>({1, 2, 3, 4, 5}).Take(3);
     EXPECT_EQ(*iter.Next(), 1);
     EXPECT_EQ(*iter.Next(), 2);
     EXPECT_EQ(*iter.Next(), 3);
@@ -39,13 +38,13 @@ TEST(Iterators, TakeTakesFirstNElements)
 
 TEST(Iterators, TakeTakesZeroYieldsNothing)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Take(0);
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Take(0);
     EXPECT_FALSE(iter.Next());
 }
 
 TEST(Iterators, TakeTakesExactLength)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Take(3);
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Take(3);
     EXPECT_EQ(*iter.Next(), 1);
     EXPECT_EQ(*iter.Next(), 2);
     EXPECT_EQ(*iter.Next(), 3);
@@ -54,7 +53,7 @@ TEST(Iterators, TakeTakesExactLength)
 
 TEST(Iterators, TakeTakesMoreThanLength)
 {
-    auto iter = FixedSizeIterator<Int32, 2>({ 1, 2 }).Take(100);
+    auto iter = FixedSizeIterator<Int32, 2>({1, 2}).Take(100);
     EXPECT_EQ(*iter.Next(), 1);
     EXPECT_EQ(*iter.Next(), 2);
     EXPECT_FALSE(iter.Next());
@@ -77,7 +76,7 @@ TEST(Iterators, TakeTakesOnEmptyIterator)
 
 TEST(Iterators, TakeTakesSingleElement)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 10, 20, 30 }).Take(1);
+    auto iter = FixedSizeIterator<Int32, 3>({10, 20, 30}).Take(1);
     auto elem = iter.Next();
     ASSERT_TRUE(elem);
     EXPECT_EQ(*elem, 10);
@@ -86,7 +85,7 @@ TEST(Iterators, TakeTakesSingleElement)
 
 TEST(Iterators, TakeExhaustedIteratorRemainsExhausted)
 {
-    auto iter = FixedSizeIterator<Int32, 2>({ 1, 2 }).Take(1);
+    auto iter = FixedSizeIterator<Int32, 2>({1, 2}).Take(1);
     ASSERT_TRUE(iter.Next());
     EXPECT_FALSE(iter.Next());
     EXPECT_FALSE(iter.Next());
@@ -95,7 +94,7 @@ TEST(Iterators, TakeExhaustedIteratorRemainsExhausted)
 
 TEST(Iterators, TakeNextBackTakesFromEnd)
 {
-    auto iter = DoubleEndedFixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+    auto iter = DoubleEndedFixedSizeIterator<Int32, 5>({1, 2, 3, 4, 5}).Take(3);
     auto a = iter.NextBack();
     ASSERT_TRUE(a);
     EXPECT_EQ(*a, 5);
@@ -113,7 +112,7 @@ TEST(Iterators, TakeNextBackTakesFromEnd)
 
 TEST(Iterators, TakeNextAndNextBackShareRemainingCount)
 {
-    auto iter = DoubleEndedFixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+    auto iter = DoubleEndedFixedSizeIterator<Int32, 5>({1, 2, 3, 4, 5}).Take(3);
 
     // Consume from front.
     EXPECT_EQ(*iter.Next(), 1);
@@ -131,13 +130,13 @@ TEST(Iterators, TakeNextAndNextBackShareRemainingCount)
 
 TEST(Iterators, TakeNextBackWithTakeZero)
 {
-    auto iter = DoubleEndedFixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Take(0);
+    auto iter = DoubleEndedFixedSizeIterator<Int32, 3>({1, 2, 3}).Take(0);
     EXPECT_FALSE(iter.NextBack());
 }
 
 TEST(Iterators, TakeSizeHintCappedByRemaining)
 {
-    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+    auto iter = FixedSizeIterator<Int32, 5>({1, 2, 3, 4, 5}).Take(3);
     auto hint = iter.SizeHint();
     EXPECT_EQ(hint.Low, 3U);
     ASSERT_TRUE(hint.High);
@@ -146,7 +145,7 @@ TEST(Iterators, TakeSizeHintCappedByRemaining)
 
 TEST(Iterators, TakeSizeHintWhenTakeExceedsLength)
 {
-    auto iter = FixedSizeIterator<Int32, 2>({ 1, 2 }).Take(100);
+    auto iter = FixedSizeIterator<Int32, 2>({1, 2}).Take(100);
     auto hint = iter.SizeHint();
 
     // Low is capped at the underlying iterator's size.
@@ -159,7 +158,7 @@ TEST(Iterators, TakeSizeHintWhenTakeExceedsLength)
 
 TEST(Iterators, TakeSizeHintAfterPartialConsumption)
 {
-    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Take(3);
+    auto iter = FixedSizeIterator<Int32, 5>({1, 2, 3, 4, 5}).Take(3);
     (void)iter.Next();
 
     auto hint = iter.SizeHint();
@@ -170,11 +169,9 @@ TEST(Iterators, TakeSizeHintAfterPartialConsumption)
 
 TEST(Iterators, TakeSizeHintWithTakeZero)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Take(0);
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Take(0);
     auto hint = iter.SizeHint();
     EXPECT_EQ(hint.Low, 0U);
     ASSERT_TRUE(hint.High);
     EXPECT_EQ(*hint.High, 0U);
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

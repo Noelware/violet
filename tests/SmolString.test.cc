@@ -19,8 +19,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// NOLINTBEGIN(readability-identifier-length)
-
 #include <gtest/gtest.h>
 #include <violet/SmolString.h>
 
@@ -28,7 +26,6 @@ using namespace std::string_view_literals;
 
 namespace violet {
 
-// NOLINTBEGIN(readability-identifier-length)
 TEST(SmolStrings, DefaultConstructionResultsInEmpty)
 {
     constexpr SmolString<16> str;
@@ -395,6 +392,5 @@ TEST(SmolStrings, TriviallyCopyable)
 {
     static_assert(std::is_trivially_copyable_v<SmolString<16>>);
 }
-// NOLINTEND(readability-identifier-length)
 
 } // namespace violet

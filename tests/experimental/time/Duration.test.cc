@@ -22,7 +22,6 @@
 #include <gtest/gtest.h>
 #include <violet/Experimental/Time/Duration.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace std::chrono_literals;
 using namespace violet::experimental::chrono;
 
@@ -679,5 +678,3 @@ TEST(DurationFromStr, TypicalSessionLifetime)
 {
     EXPECT_EQ(Duration::FromStr("7d").Unwrap(), Duration::Hours(168));
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

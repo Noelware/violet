@@ -1330,7 +1330,7 @@
  *
  * Adds a cross-reference ("see also") annotation for the noeldoc tool.
  */
-#define NOELDOC_SEE(ref) __noeldoc_annotate__("see:" #ref)
+#define NOELDOC_SEE(ref) __noeldoc_annotate__("see:" ref)
 
 /**
  * @macro NOELDOC_HIDE
@@ -1434,7 +1434,7 @@
  * its `co_await` points. Expands to nothing otherwise.
  */
 #if VIOLET_HAS_CPP_ATTRIBUTE(clang::coro_await_elidable)
-#define VIOLET_CORO_AWAIT_ELIDABLE [[clang::coro_await_elidable]]
+#define VIOLET_CORO_AWAIT_ELIDABLE clang::coro_await_elidable
 #else
 #define VIOLET_CORO_AWAIT_ELIDABLE
 #endif
@@ -1453,3 +1453,16 @@
 #else
 #define VIOLET_RETURN_ADDRESS() nullptr
 #endif
+
+#define VIOLET_NOEXCEPT_FUN(fun, ...) noexcept(::std::is_nothrow_invocable_v<decltype(fun) __VA_OPT__(, ) __VA_ARGS__>)
+
+/*
+/// True when invoking `fun` with arguments of the given types cannot throw.
+/// Yields `false` (rather than a hard error) when the call is ill-formed.
+#define VIOLET_IS_NOTHROW_FUN(fun, ...) \
+    (::std::is_nothrow_invocable_v<decltype(fun) __VA_OPT__(, ) __VA_ARGS__>)
+
+/// Same, as a `noexcept` specifier.
+#define VIOLET_NOEXCEPT_FUN(fun, ...) \
+    noexcept(VIOLET_IS_NOTHROW_FUN(fun __VA_OPT__(, ) __VA_ARGS__))
+*/

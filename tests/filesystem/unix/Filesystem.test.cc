@@ -23,7 +23,6 @@
 
 #include <violet/Filesystem.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet;
 using namespace violet::filesystem;
 using namespace violet::filesystem::testing;
@@ -84,5 +83,3 @@ TEST_F(FilesystemUnixTest, WalkDirSurfacesPermissionErrorAsItem)
     Layout->Nested.Deeper.Path.WithCStr([](CStr path) -> void { ::chmod(path, 0700); });
     EXPECT_TRUE(sawError) << "WalkDir must report unreadable subdirs as Err items";
 }
-
-// NOLINTEND(google-build-using-namespace)

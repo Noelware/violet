@@ -29,6 +29,39 @@ availableAt:
 - **OneOf** can be fully used in `constexpr` contexts ([`@auguwu`])
 - Add **GetUnchecked** to `OneOf` to get a value without checking for anything ([`@auguwu`])
 - Remove **constexpr** in `TypeId::HashCode()` ([`@auguwu`])
+- Added new collection types: **HashMap** and **HashSet** ([`@auguwu`])
+    - These types are not reimplementations, they're bridged from Abseil's SwissTables if the Abseil feature is enabled, otherwise the C++ STL implementations are used instead.
+
+#### Noelware.Violet.Experimental.IO
+- Added an experimental implementation of `violet::io::Error` called `violet::io::experimental::Error` ([`@auguwu`])
+    - In the next generation implementation:
+        - Any payload that are not strings are no longer available. To us, it didn't really make sense.
+        - The error type will use Violet's `OneOf` structure instead of `std::variant`.
+    - Once the interface and implementation is stablised, this will replace `violet::io::Error`. This will be a breaking change. Violet doesn't guarantee ABI compatibility as of September 3rd, 2026.
+
+- Added an experimental implementation of `violet::io::FileDescriptor` called `violet::io::experimental::Descriptor` ([`@auguwu`])
+    - In the next generation implementation:
+        - file descriptors can be borrowed via the `Borrow()` method with the `Descriptor::Borrow` class.
+        - When writing generic I/O code, you can use the `AsFd` concept in your I/O-related code that can call `Borrow()` on any type (even your own!):
+        ```cpp
+        template<violet::io::experimental::AsFd Fd>
+        auto read(Fd desc, Span<UInt8> buf) -> Result<UInt> {
+            auto fd = desc.Borrow();
+            /* do things to `fd`... */
+
+            return totalBytes;
+        }
+        ```
+    - Once the interface and implementation is stablised, this will replace `violet::io::FileDescriptor`. This will be a breaking change. Violet doesn't guarantee ABI compatibility as of September 3rd, 2026.
+
+#### Noelware.Violet.Experimental.Logging
+This is a whole new framework that is a port of Noel's [`logrin`] library that is now a Violet framework since we heavily use it.
+
+New Bazel build flags are now provided:
+- `@violet//buildsystem/bazel/flags:otel_sink`: This will enable the **OpenTelemetry** sink, which requires pulling the [`@opentelemetry`] Bazel module. By default, this is set to **False** as it's a secondary dependency to add. You can check if it's enabled in C++ by: `#if VIOLET_FEATURE(EXPERIMENTAL_LOGGING_OPENTELEMETRY)`.
+
+[`@opentelemetry`]: https://registry.bazel.build/modules/opentelemetry-cpp
+[`logrin`]: https://github.com/auguwu/logrin
 
 #### Noelware.Violet.Experimental.Time
 - Fix `TimePoint::IntoISO8601` to write into a bounds-checked buffer and assert on truncation instead of a fixed `char[32]` with an unchecked `snprintf` ([`@auguwu`])

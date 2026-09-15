@@ -30,68 +30,68 @@
 namespace violet::experimental::chrono {
 namespace detail {
 
-    template<std::integral T>
-        requires std::is_signed_v<T>
-    constexpr auto doCheckedAdd(T one, T two, CStr context) -> T
-    {
-        Optional<T> result = numeric::CheckedAdd(one, two);
-        if VIOLET_IF_CONSTEVAL {
+template<std::integral T>
+    requires std::is_signed_v<T>
+constexpr auto doCheckedAdd(T one, T two, CStr context) -> T
+{
+    Optional<T> result = numeric::CheckedAdd(one, two);
+    if VIOLET_IF_CONSTEVAL {
 #if VIOLET_FEATURE(EXCEPTIONS)
-            if (!result.HasValue()) {
-                throw "duration arithemtic overflow at compilation time";
-            }
-#else
-            VIOLET_ASSERT_FMT(result.HasValue(), "duration arithemtic overflow at compilation time: {}", context);
-#endif
-        } else {
-            VIOLET_DEBUG_ASSERT_FMT(
-                result.HasValue(), "duration arithemtic overflow at runtime ({} + {}): {}", one, two, context);
+        if (!result.HasValue()) {
+            throw "duration arithemtic overflow at compilation time";
         }
-
-        return result.UnwrapUnchecked(Unsafe("checked beforehand"));
+#else
+        VIOLET_ASSERT_FMT(result.HasValue(), "duration arithemtic overflow at compilation time: {}", context);
+#endif
+    } else {
+        VIOLET_DEBUG_ASSERT_FMT(
+            result.HasValue(), "duration arithemtic overflow at runtime ({} + {}): {}", one, two, context);
     }
 
-    template<std::integral T>
-        requires std::is_signed_v<T>
-    constexpr auto doCheckedSub(T one, T two, CStr context) -> T
-    {
-        Optional<T> result = numeric::CheckedSub(one, two);
-        if VIOLET_IF_CONSTEVAL {
-#if VIOLET_FEATURE(EXCEPTIONS)
-            if (!result.HasValue()) {
-                throw "duration arithemtic overflow at compilation time";
-            }
-#else
-            VIOLET_ASSERT_FMT(result.HasValue(), "duration arithemtic overflow at compilation time: {}", context);
-#endif
-        } else {
-            VIOLET_DEBUG_ASSERT_FMT(
-                result.HasValue(), "duration arithemtic overflow at runtime ({} - {}): {}", one, two, context);
-        }
+    return result.UnwrapUnchecked(Unsafe("checked beforehand"));
+}
 
-        return result.UnwrapUnchecked(Unsafe("checked beforehand"));
+template<std::integral T>
+    requires std::is_signed_v<T>
+constexpr auto doCheckedSub(T one, T two, CStr context) -> T
+{
+    Optional<T> result = numeric::CheckedSub(one, two);
+    if VIOLET_IF_CONSTEVAL {
+#if VIOLET_FEATURE(EXCEPTIONS)
+        if (!result.HasValue()) {
+            throw "duration arithemtic overflow at compilation time";
+        }
+#else
+        VIOLET_ASSERT_FMT(result.HasValue(), "duration arithemtic overflow at compilation time: {}", context);
+#endif
+    } else {
+        VIOLET_DEBUG_ASSERT_FMT(
+            result.HasValue(), "duration arithemtic overflow at runtime ({} - {}): {}", one, two, context);
     }
 
-    template<std::integral T>
-        requires std::is_signed_v<T>
-    constexpr auto doCheckedMul(T one, T two, CStr context) -> T
-    {
-        Optional<T> result = numeric::CheckedMul(one, two);
-        if VIOLET_IF_CONSTEVAL {
-#if VIOLET_FEATURE(EXCEPTIONS)
-            if (!result.HasValue()) {
-                throw "duration arithemtic overflow at compilation time";
-            }
-#else
-            VIOLET_ASSERT_FMT(result.HasValue(), "duration arithemtic overflow at compilation time: {}", context);
-#endif
-        } else {
-            VIOLET_DEBUG_ASSERT_FMT(
-                result.HasValue(), "duration arithemtic overflow at runtime ({} * {}): {}", one, two, context);
-        }
+    return result.UnwrapUnchecked(Unsafe("checked beforehand"));
+}
 
-        return result.UnwrapUnchecked(Unsafe("checked beforehand"));
+template<std::integral T>
+    requires std::is_signed_v<T>
+constexpr auto doCheckedMul(T one, T two, CStr context) -> T
+{
+    Optional<T> result = numeric::CheckedMul(one, two);
+    if VIOLET_IF_CONSTEVAL {
+#if VIOLET_FEATURE(EXCEPTIONS)
+        if (!result.HasValue()) {
+            throw "duration arithemtic overflow at compilation time";
+        }
+#else
+        VIOLET_ASSERT_FMT(result.HasValue(), "duration arithemtic overflow at compilation time: {}", context);
+#endif
+    } else {
+        VIOLET_DEBUG_ASSERT_FMT(
+            result.HasValue(), "duration arithemtic overflow at runtime ({} * {}): {}", one, two, context);
     }
+
+    return result.UnwrapUnchecked(Unsafe("checked beforehand"));
+}
 } // namespace detail
 
 /// A span of time with nanosecond resolution.
@@ -144,55 +144,55 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
     /// Returns a zero-length [`Duration`], equivalent to a default-constructed one.
     constexpr static auto Zero() -> Duration
     {
-        return { std_type::zero() };
+        return {std_type::zero()};
     }
 
     /// Constructs a [`Duration`] spanning `ns` nanoseconds.
     constexpr static auto Nanoseconds(rep ns) -> Duration
     {
-        return { std_type(ns) };
+        return {std_type(ns)};
     }
 
     /// Constructs a [`Duration`] spanning `ns` microseconds.
     constexpr static auto Microseconds(rep ns) -> Duration
     {
-        return { std::chrono::microseconds(ns) };
+        return {std::chrono::microseconds(ns)};
     }
 
     /// Constructs a [`Duration`] spanning `ns` milliseconds.
     constexpr static auto Milliseconds(rep ns) -> Duration
     {
-        return { std::chrono::milliseconds(ns) };
+        return {std::chrono::milliseconds(ns)};
     }
 
     /// Constructs a [`Duration`] spanning `ns` seconds.
     constexpr static auto Seconds(rep ns) -> Duration
     {
-        return { std::chrono::seconds(ns) };
+        return {std::chrono::seconds(ns)};
     }
 
     /// Constructs a [`Duration`] spanning `ns` minutes.
     constexpr static auto Minutes(rep ns) -> Duration
     {
-        return { std::chrono::minutes(ns) };
+        return {std::chrono::minutes(ns)};
     }
 
     /// Constructs a [`Duration`] spanning `ns` hours.
     constexpr static auto Hours(rep ns) -> Duration
     {
-        return { std::chrono::hours(ns) };
+        return {std::chrono::hours(ns)};
     }
 
     /// Returns the largest representable [`Duration`].
     constexpr static auto Max() -> Duration
     {
-        return { std_type::max() };
+        return {std_type::max()};
     }
 
     /// Returns the smallest (most negative) representable [`Duration`].
     constexpr static auto Min() -> Duration
     {
-        return { std_type::min() };
+        return {std_type::min()};
     }
 
     /// Parses a [`Duration`] from a human-readable string such as `"5s"` or `"250ms"`.
@@ -259,7 +259,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
     }
 
     /// Formats this [`Duration`] as a human-readable string (e.g. `"5s"`, `"250ms"`).
-    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto ToString() const -> violet::String;
+    [[nodiscard]] NOELDOC_SINCE("26.07.03") auto ToString() const -> String;
+
     /// Writes the result of [`ToString`] to the output stream `os`.
     friend auto operator<<(std::ostream& os, const Duration& self) -> std::ostream&
     {
@@ -273,14 +274,14 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
     ///
     /// @param other the duration to add.
     /// @return the sum, or [`Nothing`] if it would overflow the nanosecond range.
-    constexpr auto CheckedAdd(Duration other) const -> violet::Optional<Duration>
+    constexpr auto CheckedAdd(Duration other) const -> Optional<Duration>
     {
         auto result = numeric::CheckedAdd<rep>(this->AsNanos(), other.AsNanos());
         if (result.HasValue()) {
-            return violet::Some(Duration::Nanoseconds(result.Value()));
+            return Some(Duration::Nanoseconds(result.Value()));
         }
 
-        return violet::Nothing;
+        return Nothing;
     }
 
     /// Adds `other` to this [`Duration`], clamping to [`Max`]/[`Min`] instead of overflowing.
@@ -307,14 +308,14 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
     ///
     /// @param other the duration to subtract.
     /// @return the difference, or [`Nothing`] if it would overflow the nanosecond range.
-    constexpr auto CheckedSub(Duration other) const -> violet::Optional<Duration>
+    constexpr auto CheckedSub(Duration other) const -> Optional<Duration>
     {
         auto result = numeric::CheckedSub<rep>(this->AsNanos(), other.AsNanos());
         if (result.HasValue()) {
-            return violet::Some(Duration::Nanoseconds(result.Value()));
+            return Some(Duration::Nanoseconds(result.Value()));
         }
 
-        return violet::Nothing;
+        return Nothing;
     }
 
     /// Subtracts `other` from this [`Duration`], clamping to [`Max`]/[`Min`] instead of overflowing.
@@ -358,8 +359,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
     /// runtime. Use [`CheckedAdd`] or [`SaturatingAdd`] for non-aborting alternatives.
     constexpr auto operator+(Duration other) const -> Duration
     {
-        return { std_type(detail::doCheckedAdd(
-            this->AsNanos(), other.AsNanos(), "violet::experimental::chrono::Duration::operator+")) };
+        return {std_type(detail::doCheckedAdd(
+            this->AsNanos(), other.AsNanos(), "violet::experimental::chrono::Duration::operator+"))};
     }
 
     /// Returns the difference of this [`Duration`] and `other`.
@@ -368,8 +369,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
     /// runtime. Use [`CheckedSub`] or [`SaturatingSub`] for non-aborting alternatives.
     constexpr auto operator-(Duration other) const -> Duration
     {
-        return { std_type(detail::doCheckedSub(
-            this->AsNanos(), other.AsNanos(), "violet::experimental::chrono::Duration::operator-")) };
+        return {std_type(detail::doCheckedSub(
+            this->AsNanos(), other.AsNanos(), "violet::experimental::chrono::Duration::operator-"))};
     }
 
     /// Adds `other` into this [`Duration`] in place, with the same overflow checking as [`operator+`].
@@ -395,8 +396,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
     /// Overflow is a hard error during constant evaluation and a debug-build assertion at runtime.
     constexpr auto operator*(rep ns) const -> Duration
     {
-        return { std_type(
-            detail::doCheckedMul(this->AsNanos(), ns, "violet::experimental::chrono::Duration::operator*")) };
+        return {
+            std_type(detail::doCheckedMul(this->AsNanos(), ns, "violet::experimental::chrono::Duration::operator*"))};
     }
 
     /// Returns this [`Duration`] divided by the integer divisor `ns`, truncating toward zero.
@@ -432,7 +433,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
     constexpr auto operator<=>(const Duration&) const -> std::strong_ordering = default;
 
 private:
-    std_type n_ns{ };
+    std_type n_ns{};
 };
 
 } // namespace violet::experimental::chrono

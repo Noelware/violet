@@ -22,7 +22,6 @@
 #include <gtest/gtest.h>
 #include <violet/Experimental/Any.h>
 
-// NOLINTBEGIN(readability-identifier-length,google-build-using-namespace,performance-unnecessary-copy-initialization)
 using namespace violet::experimental;
 using violet::Int32;
 using violet::String;
@@ -77,11 +76,11 @@ TEST(Any, CopyConstructProducesIndependentCopy)
 
 TEST(Any, CopyConstructMutatingOriginalDoesNotAffectCopy)
 {
-    auto original = Any::New<std::vector<int>>(std::vector<int>{ 1, 2, 3 });
+    auto original = Any::New<std::vector<int>>(std::vector<int>{1, 2, 3});
     auto copy = original;
 
     // Overwrite original.
-    original = Any::New<std::vector<int>>(std::vector<int>{ 99 });
+    original = Any::New<std::vector<int>>(std::vector<int>{99});
 
     auto copy_val = copy.Downcast<std::vector<int>>();
     ASSERT_TRUE(copy_val);
@@ -259,5 +258,3 @@ TEST(Any, MoveDoesNotIncrementLifecycleCount)
 
     EXPECT_EQ(LifecycleTracker::alive, 0);
 }
-
-// NOLINTEND(readability-identifier-length,google-build-using-namespace,performance-unnecessary-copy-initialization)

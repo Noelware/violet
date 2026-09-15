@@ -28,7 +28,6 @@
 
 #include <unordered_set>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet;
 using namespace violet::filesystem;
 using namespace violet::filesystem::experimental;
@@ -186,5 +185,3 @@ TEST_F(DirTest, MoveTransfersOwnership)
     EXPECT_TRUE(moved.Alive());
     EXPECT_EQ(moved.Descriptor(), raw);
 }
-
-// NOLINTEND(google-build-using-namespace)

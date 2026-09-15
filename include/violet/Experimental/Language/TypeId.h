@@ -112,7 +112,7 @@ private:
 
     template<typename T>
     struct sentinel_t final {
-        constexpr static char kValue = 0;
+        inline static char kValue = 0;
     };
 
     const void* n_id;

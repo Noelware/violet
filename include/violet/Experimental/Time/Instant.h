@@ -60,8 +60,12 @@ namespace violet::experimental::chrono {
 /// }
 /// ```
 struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Instant final {
-    /// The C++-backed type for this object.
-    using std_type = std::chrono::steady_clock::time_point;
+    /// The underlying standard-library clock representation.
+    /// @since current
+    using clock_type = std::chrono::steady_clock;
+
+    /// The underlying standard-library representation, [`std::chrono::system_clock::time_point`].
+    using std_type = clock_type::time_point;
 
     constexpr VIOLET_IMPLICIT Instant() noexcept = default;
     constexpr VIOLET_IMPLICIT Instant(std_type tp)
@@ -87,17 +91,17 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Instant final {
 
     constexpr auto operator+(Duration dur) const -> Instant
     {
-        return { this->n_tp + dur.ToStd() };
+        return {this->n_tp + dur.ToStd()};
     }
 
     constexpr auto operator-(Duration dur) const -> Instant
     {
-        return { this->n_tp - dur.ToStd() };
+        return {this->n_tp - dur.ToStd()};
     }
 
     constexpr auto operator-(Instant other) const -> Duration
     {
-        return { this->n_tp - other.n_tp };
+        return {this->n_tp - other.n_tp};
     }
 
     constexpr auto operator+=(Duration dur) -> Instant&

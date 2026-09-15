@@ -24,7 +24,6 @@
 #include <violet/Container/Result.h>
 
 namespace violet {
-// NOLINTBEGIN(readability-identifier-length,performance-unnecessary-copy-initialization)
 
 VIOLET_DIAGNOSTIC_PUSH
 
@@ -1021,5 +1020,4 @@ static_assert(MapChain());
 
 } // namespace
 
-// NOLINTEND(readability-identifier-length,performance-unnecessary-copy-initialization)
 } // namespace violet

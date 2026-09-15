@@ -24,13 +24,12 @@
 #include <gtest/gtest.h>
 #include <violet/Iterator/Peekable.h>
 
-// NOLINTBEGIN(google-build-using-namespace,readability-identifier-length)
 using namespace violet;
 using namespace violet::testing::fixtures;
 
 TEST(Iterators, PeekablePeekReturnsNextWithoutConsuming)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 10, 20, 30 }).Peekable();
+    auto iter = FixedSizeIterator<Int32, 3>({10, 20, 30}).Peekable();
     auto peeked = iter.Peek();
     ASSERT_TRUE(peeked);
     EXPECT_EQ(*peeked, 10);
@@ -43,7 +42,7 @@ TEST(Iterators, PeekablePeekReturnsNextWithoutConsuming)
 
 TEST(Iterators, PeekableNextReturnsPeekedValue)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 10, 20, 30 }).Peekable();
+    auto iter = FixedSizeIterator<Int32, 3>({10, 20, 30}).Peekable();
 
     (void)iter.Peek();
 
@@ -59,7 +58,7 @@ TEST(Iterators, PeekableNextReturnsPeekedValue)
 
 TEST(Iterators, PeekableNextWithoutPeek)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Peekable();
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Peekable();
     EXPECT_EQ(*iter.Next(), 1);
     EXPECT_EQ(*iter.Next(), 2);
     EXPECT_EQ(*iter.Next(), 3);
@@ -68,7 +67,7 @@ TEST(Iterators, PeekableNextWithoutPeek)
 
 TEST(Iterators, PeekablePeekThenNextAlternating)
 {
-    auto iter = FixedSizeIterator<Int32, 4>({ 1, 2, 3, 4 }).Peekable();
+    auto iter = FixedSizeIterator<Int32, 4>({1, 2, 3, 4}).Peekable();
 
     // Peek at 1, consume 1.
     EXPECT_EQ(*iter.Peek(), 1);
@@ -108,7 +107,7 @@ TEST(Iterators, PeekableEmptyIteratorPeekReturnsNothing)
 
 TEST(Iterators, PeekablePeekOnExhaustedIteratorReturnsNothing)
 {
-    auto iter = FixedSizeIterator<Int32, 1>({ 42 }).Peekable();
+    auto iter = FixedSizeIterator<Int32, 1>({42}).Peekable();
     EXPECT_EQ(*iter.Next(), 42);
     EXPECT_FALSE(iter.Peek());
     EXPECT_FALSE(iter.Peek());
@@ -117,7 +116,7 @@ TEST(Iterators, PeekablePeekOnExhaustedIteratorReturnsNothing)
 
 TEST(Iterators, PeekableMultiplePeeksDoNotAdvanceUnderlying)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 5, 6, 7 }).Peekable();
+    auto iter = FixedSizeIterator<Int32, 3>({5, 6, 7}).Peekable();
     for (int i = 0; i < 10; ++i) {
         auto peeked = iter.Peek();
         ASSERT_TRUE(peeked);
@@ -133,7 +132,7 @@ TEST(Iterators, PeekableMultiplePeeksDoNotAdvanceUnderlying)
 
 TEST(Iterators, PeekablePeekAfterPartialConsumption)
 {
-    auto iter = FixedSizeIterator<Int32, 3>({ 1, 2, 3 }).Peekable();
+    auto iter = FixedSizeIterator<Int32, 3>({1, 2, 3}).Peekable();
     EXPECT_EQ(*iter.Next(), 1);
 
     auto peeked = iter.Peek();
@@ -147,7 +146,7 @@ TEST(Iterators, PeekablePeekAfterPartialConsumption)
 
 TEST(Iterators, PeekableSingleElement)
 {
-    auto iter = FixedSizeIterator<Int32, 1>({ 99 }).Peekable();
+    auto iter = FixedSizeIterator<Int32, 1>({99}).Peekable();
     EXPECT_EQ(*iter.Peek(), 99);
     EXPECT_EQ(*iter.Peek(), 99);
     EXPECT_EQ(*iter.Next(), 99);
@@ -157,7 +156,7 @@ TEST(Iterators, PeekableSingleElement)
 
 TEST(Iterators, PeekablePeekDoesNotSkipElements)
 {
-    auto iter = FixedSizeIterator<Int32, 5>({ 1, 2, 3, 4, 5 }).Peekable();
+    auto iter = FixedSizeIterator<Int32, 5>({1, 2, 3, 4, 5}).Peekable();
     Vec<Int32> collected;
 
     // Peek before every Next to ensure nothing is lost.
@@ -172,5 +171,3 @@ TEST(Iterators, PeekablePeekDoesNotSkipElements)
     EXPECT_EQ(collected[3], 4);
     EXPECT_EQ(collected[4], 5);
 }
-
-// NOLINTEND(google-build-using-namespace,readability-identifier-length)

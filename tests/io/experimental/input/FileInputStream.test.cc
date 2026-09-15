@@ -23,11 +23,9 @@
 #include <violet/IO/Experimental/Input/FileInputStream.h>
 #include <violet/Testing/Runfiles.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::testing;
 using namespace violet::io::experimental;
 using namespace violet;
-// NOLINTEND(google-build-using-namespace)
 
 constexpr static auto kLoveLetterFile = "tests/io/experimental/input/runfiles/loveletter.txt";
 

@@ -24,7 +24,6 @@
 #include <violet/Experimental/Memory/NonNull.h>
 #include <violet/Experimental/Slice.h>
 
-// NOLINTBEGIN(readability-identifier-length)
 using namespace violet::experimental::ptr;
 using namespace violet::experimental;
 using namespace violet;
@@ -33,7 +32,6 @@ namespace {
 
 struct Incomplete;
 
-// NOLINTBEGIN(cppcoreguidelines-special-member-functions)
 struct MoveOnly final {
     MoveOnly(MoveOnly&&) noexcept;
     ~MoveOnly();
@@ -64,7 +62,6 @@ struct ThrowingConstructor final {
     }
 };
 #endif
-// NOLINTEND(cppcoreguidelines-special-member-functions)
 
 static_assert(sizeof(NonNull<Int32>) == sizeof(Int32*));
 static_assert(alignof(NonNull<Int32>) == alignof(Int32*));
@@ -208,5 +205,3 @@ TEST(NonNull, CastRoundTrip)
                   .Cast<Int32>(Unsafe("casting between integers is ok")),
         base);
 }
-
-// NOLINTEND(readability-identifier-length)

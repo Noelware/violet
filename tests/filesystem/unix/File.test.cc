@@ -28,7 +28,6 @@
 #include <violet/Filesystem/Metadata.h>
 #include <violet/IO/Read.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet;
 using namespace violet::filesystem;
 using namespace violet::filesystem::testing;
@@ -39,7 +38,7 @@ struct FileUnixTest: public LayoutFixture { };
 
 TEST_F(FileUnixTest, OpenMissingPathReturnsENOENT)
 {
-    auto file = OpenOptions{ }.Read().Open(Layout->Root.Path().Join("does-not-exist"));
+    auto file = OpenOptions{}.Read().Open(Layout->Root.Path().Join("does-not-exist"));
     ASSERT_FALSE(file);
 
     auto raw = file.Error().RawOSError();
@@ -50,7 +49,7 @@ TEST_F(FileUnixTest, OpenMissingPathReturnsENOENT)
 TEST_F(FileUnixTest, ModeIsAppliedOnCreate)
 {
     const Path fresh = Layout->Root.Path().Join("moded.bin");
-    auto opened = OpenOptions{ }.CreateNew().Write().Mode(0640).Open(fresh);
+    auto opened = OpenOptions{}.CreateNew().Write().Mode(0640).Open(fresh);
     ASSERT_TRUE(opened) << "unable to open file [" << fresh << "]: " << opened.Error();
     ASSERT_TRUE(opened->Close());
 
@@ -67,7 +66,7 @@ TEST_F(FileUnixTest, ModeIsAppliedOnCreate)
 
 TEST_F(FileUnixTest, ExclusiveLockBlocksAnotherHolder)
 {
-    auto holder = OpenOptions{ }.Read().Write().Open(Layout->A);
+    auto holder = OpenOptions{}.Read().Write().Open(Layout->A);
     ASSERT_TRUE(holder) << "unable to open file [" << Layout->A << "]: " << holder.Error();
     ASSERT_TRUE(holder->Lock()) << "initial Lock() must succeed";
 
@@ -75,7 +74,7 @@ TEST_F(FileUnixTest, ExclusiveLockBlocksAnotherHolder)
     ASSERT_TRUE(observed) << observed.Error();
     EXPECT_TRUE(*observed);
 
-    auto challenger = OpenOptions{ }.Read().Write().Open(Layout->A);
+    auto challenger = OpenOptions{}.Read().Write().Open(Layout->A);
     ASSERT_TRUE(challenger);
 
     auto challengerLocked = challenger->Locked();
@@ -86,7 +85,7 @@ TEST_F(FileUnixTest, ExclusiveLockBlocksAnotherHolder)
 
 TEST_F(FileUnixTest, ScopedLockReleasesOnDestruction)
 {
-    auto file = OpenOptions{ }.Read().Write().Open(Layout->A);
+    auto file = OpenOptions{}.Read().Write().Open(Layout->A);
     ASSERT_TRUE(file) << "unable to open file [" << Layout->A << "]: " << file.Error();
     {
         auto guard = file->MkScopedLock();
@@ -104,8 +103,8 @@ TEST_F(FileUnixTest, ScopedLockReleasesOnDestruction)
 
 TEST_F(FileUnixTest, SharedLockAllowsMultipleHolders)
 {
-    auto first = OpenOptions{ }.Read().Open(Layout->A);
-    auto second = OpenOptions{ }.Read().Open(Layout->A);
+    auto first = OpenOptions{}.Read().Open(Layout->A);
+    auto second = OpenOptions{}.Read().Open(Layout->A);
     ASSERT_TRUE(first);
     ASSERT_TRUE(second);
 
@@ -115,5 +114,3 @@ TEST_F(FileUnixTest, SharedLockAllowsMultipleHolders)
     auto secondLock = second->MkSharedScopedLock();
     EXPECT_TRUE(secondLock) << "shared locks must be reentrant across handles: " << secondLock.Error();
 }
-
-// NOLINTEND(google-build-using-namespace)

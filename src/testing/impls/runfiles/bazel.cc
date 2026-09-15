@@ -66,11 +66,9 @@ constexpr static CStr kWorkspaceOverrideEnv = "VIOLET_TESTING_RUNFILES_WORKSPACE
 
 namespace {
 
-// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 UniquePtr<rules_cc::cc::runfiles::Runfiles> n_runfiles;
 Optional<String> n_workspace;
 Optional<String> n_testWorkspace;
-// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 constexpr auto stringToPath(const String& str) -> Path
 {
@@ -82,7 +80,7 @@ auto collectRepositoryMapping() -> Vec<Pair<String, String>>
     auto runfilesDir = GetEnv(kRunfilesDirEnv).Map(stringToPath);
     if (!runfilesDir.HasValue()) {
         printerr("missing `${}` environment variable, therefore runfiles framework is useless", kRunfilesDirEnv);
-        return { };
+        return {};
     }
 
     auto repoMappingFile = runfilesDir->Join("_repo_mapping");
@@ -91,12 +89,12 @@ auto collectRepositoryMapping() -> Vec<Pair<String, String>>
         printerr(
             "failed to find repository mapping [{}]: {}", repoMappingFile, VIOLET_MOVE(repoMappingFileExists).Error());
 
-        return { };
+        return {};
     }
 
     if (!*repoMappingFileExists) {
         printerr("repository mapping [{}] doesn't exist", repoMappingFile);
-        return { };
+        return {};
     }
 
     auto canonRepoMapping = Canonicalize(repoMappingFile);
@@ -104,11 +102,11 @@ auto collectRepositoryMapping() -> Vec<Pair<String, String>>
         printerr("failed to canonicalize repository mapping [{}]: {}", repoMappingFile,
             VIOLET_MOVE(canonRepoMapping).Error());
 
-        return { };
+        return {};
     }
 
     Vec<Pair<String, String>> workspaces;
-    auto mapping = File::Open(*canonRepoMapping, OpenOptions{ }.Read());
+    auto mapping = File::Open(*canonRepoMapping, OpenOptions{}.Read());
     if (mapping.Ok()) {
         auto contents = violet::io::ReadToString(*mapping);
         VIOLET_ASSERT0(contents.Ok());

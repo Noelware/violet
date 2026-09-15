@@ -23,7 +23,6 @@
 #include <violet/Container/Optional.h>
 
 namespace violet {
-// NOLINTBEGIN(readability-identifier-length)
 
 TEST(OptionalSome, ConstructFromLValue)
 {
@@ -51,5 +50,4 @@ TEST(OptionalSome, ConvertingMoveConstruct)
     EXPECT_EQ(outer.Value(), 42);
 }
 
-// NOLINTEND(readability-identifier-length)
 } // namespace violet

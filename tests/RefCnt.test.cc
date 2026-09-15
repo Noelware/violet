@@ -62,8 +62,6 @@ struct RefCntTraits<Counter*> final {
     }
 };
 
-// NOLINTBEGIN(readability-identifier-length)
-
 TEST(RefCnt, DefaultOwnsNothing)
 {
     Ref r;
@@ -217,6 +215,5 @@ TEST(RefCnt, GetDoesNotRetain)
     EXPECT_EQ(r.Get(), &c);
     EXPECT_EQ(c.Bumps, 1);
 }
-// NOLINTEND(readability-identifier-length)
 
 } // namespace violet

@@ -80,6 +80,9 @@ build:cxx26 --host_cxxopt=-std=c++26
 # Only show errors in test output
 test --test_output=errors
 
+# Allows GoogleTest to use Abseil + RE2
+build --define='absl=1'
+
 # CI-based configuration
 common:ci --color=no
 common:ci --curses=no

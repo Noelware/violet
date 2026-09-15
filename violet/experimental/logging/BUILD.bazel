@@ -1,0 +1,100 @@
+# 🌺💜 Violet: Extended C++ standard library
+# Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
+    name = "async_sink",
+    hdrs = ["//include/violet/Experimental/Logging:AsyncSink.h"],
+)
+
+violet_cc_library(
+    name = "batch_queue",
+    hdrs = ["//include/violet/Experimental/Logging/Internals:BatchQueue.h"],
+    visibility = ["//violet/experimental/logging:__subpackages__"],
+    deps = [
+        "//violet/experimental:mutex",
+        "//violet/experimental:own",
+    ],
+)
+
+violet_cc_test(
+    name = "batch_queue_test",
+    srcs = ["//tests/experimental/logging:BatchQueue.test.cc"],
+    deps = [
+        ":batch_queue",
+        "//violet/experimental:synchronized",
+    ],
+)
+
+violet_cc_library(
+    name = "formatter",
+    hdrs = ["//include/violet/Experimental/Logging:Formatter.h"],
+)
+
+violet_cc_library(
+    name = "logger",
+    srcs = ["//src/experimental/logging:Logger.cc"],
+    hdrs = ["//include/violet/Experimental/Logging:Logger.h"],
+    deps = [
+        ":async_sink",
+        ":log_record",
+        ":sink",
+        "//violet/experimental:own",
+        "//violet/experimental:unique",
+    ],
+)
+
+violet_cc_library(
+    name = "log_factory",
+    srcs = ["//src/experimental/logging:LogFactory.cc"],
+    hdrs = ["//include/violet/Experimental/Logging:LogFactory.h"],
+    deps = [
+        ":async_sink",
+        ":logger",
+        ":sink",
+        "//violet/experimental:own",
+        "//violet/experimental:unique",
+        "//violet/experimental/collections:hash_map",
+        "//violet/support:demangle",
+    ],
+)
+
+violet_cc_library(
+    name = "log_record",
+    hdrs = ["//include/violet/Experimental/Logging:LogRecord.h"],
+    deps = [
+        "//violet:source_location",
+        "//violet/experimental:oneof",
+        "//violet/experimental/collections:hash_map",
+        "//violet/experimental/time:clock",
+        "//violet/experimental/time:time_point",
+    ],
+)
+
+violet_cc_library(
+    name = "sink",
+    hdrs = ["//include/violet/Experimental/Logging:Sink.h"],
+)

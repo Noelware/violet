@@ -31,10 +31,8 @@ using violet::panic::Strategy;
 
 namespace {
 
-// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 Hook n_panicHook = nullptr;
 std::atomic<Strategy> n_strategy = Strategy::Unwind;
-// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 VIOLET_COLD void defaultPanicHook(const Info& info)
 {

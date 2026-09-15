@@ -88,61 +88,62 @@
 #pragma once
 
 #include <violet/Container/Optional.h>
+#include <violet/Experimental/NoOpDeleter.h> // IWYU pragma: export
 
 #include <atomic>
 #include <memory>
 
 namespace violet::experimental {
-namespace detail {
-    /// Base control block shared by all allocation strategies.
-    ///
-    /// Contains the atomic reference counts and type-erased function pointers
-    /// for destruction and deallocation. Lifted out of `Own<T>` so the control
-    /// block has a single type independent of `T`, allowing upcasts like
-    /// `Own<Derived> -> Own<Base>` to share the same block pointer.
-    struct ablock {
-        std::atomic<UInt> Strong = 0;
-        std::atomic<UInt> Weak = 0;
+namespace own_internal {
+/// Base control block shared by all allocation strategies.
+///
+/// Contains the atomic reference counts and type-erased function pointers
+/// for destruction and deallocation. Lifted out of `Own<T>` so the control
+/// block has a single type independent of `T`, allowing upcasts like
+/// `Own<Derived> -> Own<Base>` to share the same block pointer.
+struct ablock {
+    std::atomic<UInt> Strong = 0;
+    std::atomic<UInt> Weak = 0;
 
-        void (*Destruct)(void* me, void* data) = nullptr;
-        void (*Deallocate)(void* blk) = nullptr;
-    };
+    void (*Destruct)(void* me, void* data) = nullptr;
+    void (*Deallocate)(void* blk) = nullptr;
+};
 
-    /// Control block for the raw-pointer-with-deleter construction path.
-    ///
-    /// Stores a type-erased deleter. Stateless deleters (e.g. [`std::default_delete`])
-    /// consume zero additional space via `[[no_unique_address]]` if supported.
-    template<typename Delete>
-    struct dblock final: public ablock {
-        VIOLET_NO_UNIQUE_ADDRESS Delete Deleter;
+/// Control block for the raw-pointer-with-deleter construction path.
+///
+/// Stores a type-erased deleter. Stateless deleters (e.g. [`std::default_delete`])
+/// consume zero additional space via `[[no_unique_address]]` if supported.
+template<typename Delete>
+struct dblock final: public ablock {
+    VIOLET_NO_UNIQUE_ADDRESS Delete Deleter;
 
-        template<typename D>
-        VIOLET_EXPLICIT dblock(D&& deleter)
-            : Deleter(VIOLET_FWD(D, deleter))
-        {
-        }
-    };
+    template<typename D>
+    VIOLET_EXPLICIT dblock(D&& deleter)
+        : Deleter(VIOLET_FWD(D, deleter))
+    {
+    }
+};
 
-    /// Control block for the fused single-allocation construction path.
-    ///
-    /// Stores the allocator and provides inline storage for an object of type
-    /// `U`. Stateless allocators consume zero additional space.
-    template<typename U, typename Alloc = std::allocator<U>>
-    struct block final: public ablock {
-        VIOLET_NO_UNIQUE_ADDRESS Alloc Allocator;
-        alignas(U) Array<UInt8, sizeof(U)> Storage;
+/// Control block for the fused single-allocation construction path.
+///
+/// Stores the allocator and provides inline storage for an object of type
+/// `U`. Stateless allocators consume zero additional space.
+template<typename U, typename Alloc = std::allocator<U>>
+struct block final: public ablock {
+    VIOLET_NO_UNIQUE_ADDRESS Alloc Allocator;
+    alignas(U) Array<UInt8, sizeof(U)> Storage;
 
-        auto Data() -> U*
-        {
-            return std::launder(reinterpret_cast<U*>(this->Storage.data()));
-        }
+    auto Data() -> U*
+    {
+        return std::launder(reinterpret_cast<U*>(this->Storage.data()));
+    }
 
-        auto Data() const -> const U*
-        {
-            return std::launder(reinterpret_cast<const U*>(this->Storage.data()));
-        }
-    };
-} // namespace detail
+    auto Data() const -> const U*
+    {
+        return std::launder(reinterpret_cast<const U*>(this->Storage.data()));
+    }
+};
+} // namespace own_internal
 
 template<typename T>
 struct Weak;
@@ -221,30 +222,6 @@ struct weak_type<Weak<T>> final {
 template<typename T>
 using weak_type_t = typename weak_type<T>::type;
 
-/// A stateless deleter that does nothing when invoked.
-///
-/// Pass this as the deleter to [`Own`]'s raw-pointer constructor when the handle
-/// should participate in shared ownership without ever freeing the pointee. For
-/// example when the managed object has automatic or static storage duration, or
-/// is owned elsewhere:
-///
-/// ```cpp
-/// int y = 32;
-/// Own<int> ref(&y, NoOpDeleter());   // shares `&y`, never deletes it
-/// ```
-struct NOELDOC_EXPERIMENTAL_SINCE("26.07.03") NoOpDeleter final {
-    /// Constructs a [`NoOpDeleter`]. Stateless, so this is trivial.
-    constexpr VIOLET_IMPLICIT NoOpDeleter() = default;
-
-    /// Does nothing. The pointee is intentionally left untouched.
-    template<typename T>
-    constexpr void operator()(T*) const noexcept
-    {
-        static_assert(!std::is_function_v<T>, "`NoOpDeleter` cannot be instantiated for function types");
-        static_assert(sizeof(T) >= 0 && !std::is_void_v<T>, "cannot delete an incomplete type");
-    }
-};
-
 /// A thread-safe, reference-counted smart pointer with shared ownership.
 ///
 /// View the [module documentation](#) for more information.
@@ -286,21 +263,21 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Own final {
     template<typename U = T, typename Deleter = std::default_delete<U>>
         requires(std::convertible_to<U*, T*>)
     // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
-    VIOLET_IMPLICIT Own(U* data, Deleter&& deleter = { })
+    VIOLET_IMPLICIT Own(U* data, Deleter&& deleter = {})
         : n_data(data)
     {
-        auto* blk = new detail::dblock<Deleter>(VIOLET_FWD(Deleter, deleter));
+        auto* blk = new own_internal::dblock<Deleter>(VIOLET_FWD(Deleter, deleter));
         blk->Strong.store(1, std::memory_order_relaxed);
         blk->Weak.store(0, std::memory_order_relaxed);
         blk->Destruct = [](void* me, void* data) -> void {
-            auto* self = static_cast<detail::dblock<Deleter>*>(me);
+            auto* self = static_cast<own_internal::dblock<Deleter>*>(me);
             if (data != nullptr) {
                 self->Deleter(static_cast<U*>(data));
             }
         };
 
         blk->Deallocate = [](void* me) -> void {
-            auto* self = static_cast<detail::dblock<Deleter>*>(me);
+            auto* self = static_cast<own_internal::dblock<Deleter>*>(me);
             delete self;
         };
 
@@ -497,7 +474,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Own final {
         requires(std::constructible_from<U, Args...> && std::convertible_to<U*, T*>)
     static auto New(Args&&... args) -> Own
     {
-        return Own::NewIn<U, Alloc>(Alloc{ }, VIOLET_FWD(Args, args)...);
+        return Own::NewIn<U, Alloc>(Alloc{}, VIOLET_FWD(Args, args)...);
     }
 
     /// Creates a new [`Own<T>`] with a fused single allocation, using a custom
@@ -510,7 +487,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Own final {
         requires(std::constructible_from<U, Args...> && std::convertible_to<U*, T*>)
     static auto NewIn(Alloc alloc, Args&&... args) -> Own
     {
-        using blk = detail::block<U, Alloc>;
+        using blk = own_internal::block<U, Alloc>;
         using block_allocator = typename std::allocator_traits<Alloc>::template rebind_alloc<blk>;
 
         block_allocator block_alloc(alloc);
@@ -723,7 +700,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Own final {
     ///
     /// Equivalent to `*this = Own(data, deleter)`.
     template<typename U = T, typename Deleter = std::default_delete<U>>
-    void Reset(U* data, Deleter deleter = { })
+    void Reset(U* data, Deleter deleter = {})
     {
         *this = Own(data, VIOLET_MOVE(deleter));
     }
@@ -819,7 +796,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Own final {
 
     NOELDOC_SINCE("26.07.03") constexpr auto operator<=>(std::nullptr_t) const -> std::strong_ordering
     {
-        constexpr auto cmp = std::compare_three_way{ };
+        constexpr auto cmp = std::compare_three_way{};
         return cmp(this->Get(), static_cast<const T*>(nullptr));
     }
 
@@ -831,7 +808,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Own final {
         // If either `*this` or `other` is null, then order by nulls first, let
         // pointer identity break the tie.
         if (this->Get() == nullptr || other.Get() == nullptr) {
-            constexpr auto cmp = std::compare_three_way{ };
+            constexpr auto cmp = std::compare_three_way{};
             return cmp(this->Get(), other.Get());
         }
 
@@ -845,14 +822,14 @@ private:
 
     struct private_tag final { };
 
-    VIOLET_EXPLICIT Own(private_tag, T* data, detail::ablock* blk)
+    VIOLET_EXPLICIT Own(private_tag, T* data, own_internal::ablock* blk)
         : n_data(data)
         , n_blk(blk)
     {
     }
 
     T* n_data = nullptr;
-    detail::ablock* n_blk = nullptr;
+    own_internal::ablock* n_blk = nullptr;
 };
 
 /// A non-owning weak reference to a value managed by [`Own<T>`].
@@ -977,7 +954,7 @@ struct Weak final {
 private:
     friend struct Own<T>;
 
-    VIOLET_EXPLICIT Weak(T* data, detail::ablock* blk) noexcept
+    VIOLET_EXPLICIT Weak(T* data, own_internal::ablock* blk) noexcept
         : n_data(data)
         , n_blk(blk)
     {
@@ -987,7 +964,7 @@ private:
     }
 
     T* n_data = nullptr;
-    detail::ablock* n_blk = nullptr;
+    own_internal::ablock* n_blk = nullptr;
 
     void release()
     {

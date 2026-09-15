@@ -220,13 +220,13 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
 
     ~ReadWriteLock() = default;
 
-    // NOLINTBEGIN(modernize-use-trailing-return-type) -- needed so that these functions
-    // can have thread safety (hopefully)
+    --needed so that these functions
+        // can have thread safety (hopefully)
 
-    /// Acquires a read lock, blocking until no writer is active.
-    ///
-    /// Multiple readers may hold guards simultaneously.
-    [[nodiscard]] ReadGuard<T> Read() VIOLET_SHARED_LOCK_FUNCTION(this->n_mux)
+        /// Acquires a read lock, blocking until no writer is active.
+        ///
+        /// Multiple readers may hold guards simultaneously.
+        [[nodiscard]] ReadGuard<T> Read() VIOLET_SHARED_LOCK_FUNCTION(this->n_mux)
     {
         this->await(
             // clang-format off
@@ -484,8 +484,6 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
         constexpr typename WriteGuard<T>::key key{};
         return Optional<WriteGuard<T>>(std::in_place, key, this, &this->n_data);
     }
-
-    // NOLINTEND(modernize-use-trailing-return-type)
 
 private:
     friend struct ReadGuard<T>;

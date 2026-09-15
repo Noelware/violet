@@ -263,7 +263,7 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Error final {
 
     constexpr VIOLET_IMPLICIT Error(ErrorKind kind, Str message, SourceLocation loc = std::source_location::current())
         : n_loc(loc)
-        , n_repr(simple_message{ kind, message })
+        , n_repr(simple_message{kind, message})
     {
     }
 
@@ -348,26 +348,24 @@ private:
 template<typename T>
 using Result = violet::Result<T, Error>;
 
-// NOLINTBEGIN(google-readability-namespace-comments)
 namespace NOELDOC_HIDE detail {
 
 #if VIOLET_FEATURE(RTTI)
-    template<typename T, typename... Args>
-    NOELDOC_HIDE auto mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
-    {
-        return io::Error(kind, VIOLET_FWD(Args, args)...);
-    }
+template<typename T, typename... Args>
+NOELDOC_HIDE auto mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
+{
+    return io::Error(kind, VIOLET_FWD(Args, args)...);
+}
 #else
-    template<typename /*T*/, typename... Args>
-    NOELDOC_HIDE auto mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
-    {
-        (void)sizeof...(args);
-        return { kind };
-    }
+template<typename /*T*/, typename... Args>
+NOELDOC_HIDE auto mk_io_error(ErrorKind kind, Args&&... args) -> io::Error
+{
+    (void)sizeof...(args);
+    return {kind};
+}
 #endif
 
 } // namespace NOELDOC_HIDE detail
-// NOLINTEND(google-readability-namespace-comments)
 
 } // namespace violet::io
 

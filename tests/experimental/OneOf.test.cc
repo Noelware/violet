@@ -19,8 +19,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// NOLINTBEGIN(readability-identifier-length,google-build-using-namespace)
-
 #include <gtest/gtest.h>
 #include <violet/Experimental/OneOf.h>
 
@@ -731,7 +729,5 @@ consteval auto ConstexprSwapAndEquality() -> bool
 }
 
 static_assert(ConstexprSwapAndEquality());
-
-// NOLINTEND(readability-identifier-length,google-build-using-namespace)
 
 } // namespace

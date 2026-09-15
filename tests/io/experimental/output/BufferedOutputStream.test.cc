@@ -23,10 +23,8 @@
 #include <violet/IO/Experimental/BufferedOutputStream.h>
 #include <violet/IO/Experimental/Output/ByteArrayOutputStream.h>
 
-// NOLINTBEGIN(google-build-using-namespace)
 using namespace violet::io::experimental;
 using namespace violet;
-// NOLINTEND(google-build-using-namespace)
 
 TEST(BufferedOutputStream, WriteInChunks)
 {
