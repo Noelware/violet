@@ -79,7 +79,17 @@ jobs:
                 rtti: ["yes", "no"]
         env:
             USE_BAZEL_VERSION: "9.1.1"
-            BAZELFLAGS: "--config=ci --config=cxx26 --action_env=CC --action_env=CXX --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}} --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}} ${{matrix.abseil == 'yes' && '--//buildsystem/bazel/flags:abseil=True' || ''}}"
+            BAZELFLAGS: >
+                --config=ci
+                --config=cxx26
+                --action_env=CC
+                --action_env=CXX
+                --cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}}
+                --host_cxxopt=${{matrix.exceptions == 'yes' && '-fexceptions' || '-fno-exceptions'}}
+                --cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}}
+                --host_cxxopt=${{matrix.rtti == 'yes' && '-frtti' || '-fno-rtti'}}
+                ${{matrix.abseil == 'yes' && '--//buildsystem/bazel/flags:abseil=True' || ''}}
+
             CXX: "clang++-23"
             CC: "clang-23"
         steps:
@@ -89,6 +99,38 @@ jobs:
                 bazelisk-cache: true # avoid installing Bazel each time
                 repository-cache: true # cache repositories in `MODULE.bazel`
                 disk-cache: linux-${{matrix.exceptions == 'yes' && 'exceptions' || 'no-exceptions'}}-${{matrix.rtti == 'yes' && 'rtti' || 'nortti'}}-${{matrix.abseil == 'yes' && 'abseil' || 'no-abseil'}}
+
+            - run: bazel test //violet/... ${{env.BAZELFLAGS}}
+
+    bazel-logging-toggles:
+        name: "Bazel / Feature Configuration [Noelware.Violet.Experimental.Logging | otel-sink=${{matrix.otel-sink}}]"
+        runs-on: ubuntu-26.04
+        container:
+            image: ghcr.io/noelware/violet/ci:clang-23
+        strategy:
+            fail-fast: false
+            matrix:
+                otel-sink: ["yes", "no"]
+                # syslog-sink: ["yes", "no"]
+                # oslog-sink: ["yes", "no"] # macOS only
+        env:
+            USE_BAZEL_VERSION: "9.1.1"
+            BAZELFLAGS: >
+                --config=ci
+                --config=cxx26
+                --action_env=CC
+                --action_env=CXX
+                ${{matrix.otel-sink == 'yes' && '--//buildsystem/bazel/flags:otel_sink=True' || ''}}
+
+            CXX: "clang++-23"
+            CC: "clang-23"
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+            - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+              with:
+                bazelisk-cache: true # avoid installing Bazel each time
+                repository-cache: true # cache repositories in `MODULE.bazel`
+                disk-cache: linux-logging-framework-${{matrix.otel-sink == 'yes' && 'otel-sink' || 'no-otel-sink'}}
 
             - run: bazel test //violet/... ${{env.BAZELFLAGS}}
 
