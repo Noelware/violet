@@ -185,7 +185,7 @@ struct OneOf {
 
     constexpr VIOLET_IMPLICIT OneOf() noexcept
         requires(std::default_initializable<TypeAt<0L>>)
-        : OneOf(static_cast<UInt>(0))
+        : OneOf(key{}, static_cast<UInt>(0))
     {
         oneof_internal::ConstructElement<0>(this->n_storage);
     }

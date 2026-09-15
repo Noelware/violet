@@ -81,7 +81,7 @@ TEST(BatchQueue, RespectsMaxBatchSize)
     std::atomic<UInt> maxObservedBatch{0};
     Synchronized<UInt> totalReceived(0);
 
-    BatchQueue<Int32>::Options options{.MaxBatchSize = 2};
+    struct BatchQueue<Int32>::Options options{.MaxBatchSize = 2};
     BatchQueue<Int32> queue(
         [&](const Vec<Int32>& batch) -> void {
             auto size = batch.size();
