@@ -90,7 +90,7 @@ enum struct NOELDOC_EXPERIMENTAL_SINCE("current") SegmentKind : UInt8 {
     /// ### Specification
     /// - `upper`   **~** uppercase, e.g., `"INFO"`
     /// - `lower`   **~** lowercase, e.g., `"info"`
-    /// - `default` **~** the default specification, which will use [`ToString(const logrin::LogLevel&)`].
+    /// - `default` **~** the default specification
     ///
     /// ## Examples
     /// - `%L`           **~** `"Info"`
@@ -125,7 +125,7 @@ enum struct NOELDOC_EXPERIMENTAL_SINCE("current") SegmentKind : UInt8 {
     /// `%F` **<~>** the function name that was resolved.
     ///
     /// > [!CAUTION]
-    /// > **Logrin** uses [`SourceLocation`] to resolve source location by default, which is
+    /// > **Violet** uses [`violet::SourceLocation`] to resolve source location by default, which is
     /// > compiler-specific. Custom [`SourceLocation`]s can also use their own function names,
     /// > so this is left verbatim and not touched.
     ///
@@ -183,9 +183,6 @@ enum struct NOELDOC_EXPERIMENTAL_SINCE("current") SegmentKind : UInt8 {
     Attribute,
 
     /// `%fg{...}` **<~>** begin foreground colour output.
-    ///
-    /// Logrin uses Violet's Terminal framework to determine if colours can be displayed. This can be forced-toggled
-    /// with [`Pattern::Config::UseColours`].
     ///
     /// If you use the framework's choice, you can set the colour choice with [`terminal::SetColourChoice()`] at
     /// application startup or use [`terminal::ColourChoice`] in your CLI applications to allow flexibility.
@@ -415,7 +412,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Segment final {
     ///
     /// [`Nothing`] for `Literal` segments and for directives that were written
     /// without a `{...}` block.
-    Optional<Directive> Directive;
+    Optional<struct Directive> Directive;
 
     /// The style nesting depth at this segment.
     ///

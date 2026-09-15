@@ -25,6 +25,8 @@
 
 #include <violet/IO/Experimental/Error.h>
 
+#include <cstring>
+
 namespace violet::io::experimental {
 
 PlatformError::PlatformError() noexcept

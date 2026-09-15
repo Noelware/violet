@@ -178,7 +178,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
     template<std::equality_comparable_with<K> Q>
     auto Get(const Q& key) -> Optional<std::reference_wrapper<V>>
     {
-        auto it = this->n_impl.find(key);
+        auto it = this->n_impl.find(K(key));
         if (it == this->n_impl.end()) {
             return Nothing;
         }
@@ -191,7 +191,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
     template<std::equality_comparable_with<K> Q>
     auto Get(const Q& key) const -> Optional<std::reference_wrapper<const V>>
     {
-        auto it = this->n_impl.find(key);
+        auto it = this->n_impl.find(K(key));
         if (it == this->n_impl.end()) {
             return Nothing;
         }
@@ -200,10 +200,10 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
     }
 
     /// Returns **true** if the map contains an entry for `key`.
-    template<typename Q>
+    template<std::equality_comparable_with<K> Q>
     auto Contains(const Q& key) const -> bool
     {
-        return this->n_impl.contains(key);
+        return this->n_impl.contains(K(key));
     }
 
     /// Inserts `key`/`value` into the map, returning the previous value if `key` was already
@@ -230,10 +230,10 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
     }
 
     /// Removes `key` from the map, returning its value, or [`Nothing`] if `key` was not present.
-    template<typename Q>
+    template<std::equality_comparable_with<K> Q>
     auto Remove(const Q& key) -> Optional<V>
     {
-        auto it = this->n_impl.find(key);
+        auto it = this->n_impl.find(K(key));
         if (it == this->n_impl.end()) {
             return Nothing;
         }
@@ -246,10 +246,10 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
 
     /// Removes `key` from the map, returning the full `(key, value)` pair, or [`Nothing`] if
     /// `key` was not present.
-    template<typename Q>
+    template<std::equality_comparable_with<K> Q>
     auto RemoveEntry(const Q& key) -> Optional<Pair<K, V>>
     {
-        auto it = this->n_impl.find(key);
+        auto it = this->n_impl.find(K(key));
         if (it == this->n_impl.end()) {
             return Nothing;
         }
@@ -327,7 +327,10 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
     /// the occupied slot found or the vacant slot where `key` would be inserted.
     [[nodiscard]] auto Entry(K key) -> hashmap::Entry<K, V, Hasher, Equality, Alloc>;
 
-    auto Iter() -> hashmap::Iter<K, V, Hasher, Equality, Alloc>;
+    auto Iter() -> decltype(auto)
+    {
+        return MkIterable(*this);
+    }
 
     [[nodiscard]] auto begin() noexcept -> iterator
     {
@@ -465,33 +468,6 @@ private:
 
     HashMap<K, V, Hasher, Equality, Alloc>* n_map;
     K n_key;
-};
-
-template<typename K, typename V, typename Hasher, typename Equality, typename Alloc>
-struct Iter final: public Iterator<Iter<K, V, Hasher, Equality, Alloc>> {
-    VIOLET_DISALLOW_COPY_AND_MOVE(Iter);
-    VIOLET_DISALLOW_CONSTRUCTOR(Iter);
-    ~Iter() = default;
-
-    using Item = Pair<const K, V>;
-
-    auto Next() -> Optional<Item>
-    {
-        return this->n_it.Next();
-    }
-
-private:
-    friend struct HashMap<K, V, Hasher, Equality, Alloc>;
-
-    using map = HashMap<K, V, Hasher, Equality, Alloc>;
-    using iterable = decltype(MkIterable(std::declval<map>()));
-
-    VIOLET_EXPLICIT Iter(iterable it) noexcept
-        : n_it(it)
-    {
-    }
-
-    iterable n_it;
 };
 
 /// A view into a single map entry, which may be vacant or occupied.
@@ -664,12 +640,6 @@ template<typename K, typename V, typename Hasher, typename Equality, typename Al
 auto HashMap<K, V, Hasher, Equality, Alloc>::Entry(K key) -> hashmap::Entry<K, V, Hasher, Equality, Alloc>
 {
     return hashmap::Entry(this, VIOLET_MOVE(key));
-}
-
-template<typename K, typename V, typename Hasher, typename Equality, typename Alloc>
-auto HashMap<K, V, Hasher, Equality, Alloc>::Iter() -> hashmap::Iter<K, V, Hasher, Equality, Alloc>
-{
-    return hashmap::Iter(MkIterable(*this));
 }
 
 } // namespace violet::experimental

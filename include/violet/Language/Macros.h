@@ -1455,14 +1455,3 @@
 #endif
 
 #define VIOLET_NOEXCEPT_FUN(fun, ...) noexcept(::std::is_nothrow_invocable_v<decltype(fun) __VA_OPT__(, ) __VA_ARGS__>)
-
-/*
-/// True when invoking `fun` with arguments of the given types cannot throw.
-/// Yields `false` (rather than a hard error) when the call is ill-formed.
-#define VIOLET_IS_NOTHROW_FUN(fun, ...) \
-    (::std::is_nothrow_invocable_v<decltype(fun) __VA_OPT__(, ) __VA_ARGS__>)
-
-/// Same, as a `noexcept` specifier.
-#define VIOLET_NOEXCEPT_FUN(fun, ...) \
-    noexcept(VIOLET_IS_NOTHROW_FUN(fun __VA_OPT__(, ) __VA_ARGS__))
-*/

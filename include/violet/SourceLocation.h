@@ -44,6 +44,12 @@ namespace violet {
 #define __violet_column__ 0
 #endif
 
+#if defined(__cpp_lib_constexpr_format) && __cpp_lib_constexpr_format >= 202511L
+#define __violet_constexpr_std_format__ constexpr
+#else
+#define __violet_constexpr_std_format__
+#endif
+
 /// Represents a location within a source file, capturing the file path, line number,
 /// column number, and enclosing function name at the point of construction.
 ///
@@ -126,10 +132,11 @@ struct VIOLET_API NOELDOC_SINCE("26.04.05") SourceLocation final {
     /// @param loc the source location that was captured
     constexpr static auto FromStd(std::source_location loc) noexcept -> SourceLocation
     {
-        return { loc.file_name(), loc.line(), loc.column(), loc.function_name() };
+        return {loc.file_name(), loc.line(), loc.column(), loc.function_name()};
     }
 
-    [[nodiscard]] constexpr auto ToString() const noexcept -> std::string
+    [[nodiscard]]
+    __violet_constexpr_std_format__ auto ToString() const noexcept -> std::string
     {
         return std::format("SourceLocation(.file={}, .line={}, .column={}, .function=\"{}\")", this->File, this->Line,
             this->Column, this->Function);
@@ -155,3 +162,7 @@ struct VIOLET_API NOELDOC_SINCE("26.04.05") SourceLocation final {
 };
 
 } // namespace violet
+
+#undef __violet_column__
+#undef __violet_pretty_function__
+#undef __violet_constexpr_std_format__
