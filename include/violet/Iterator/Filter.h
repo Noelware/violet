@@ -109,17 +109,23 @@ struct VIOLET_API Filter final: public Iterator<Filter<Impl, Pred>> {
     {
         if constexpr (requires { this->n_iter.SizeHint(); }) {
             violet::SizeHint hint = this->n_iter.SizeHint();
-            return { 0, hint.High };
+            return {0, hint.High};
         }
 
-        return { };
+        return {};
     }
 
 private:
     friend struct Iterator<Impl>;
 
-    VIOLET_IMPLICIT Filter(Impl iter, Pred predicate)
+    VIOLET_IMPLICIT Filter(Impl& iter, Pred predicate)
         : n_iter(iter)
+        , n_pred(predicate)
+    {
+    }
+
+    VIOLET_IMPLICIT Filter(Impl&& iter, Pred predicate)
+        : n_iter(VIOLET_MOVE(iter))
         , n_pred(predicate)
     {
     }
@@ -145,7 +151,7 @@ template<typename Pred>
     requires callable<Pred, iter::TypeOf<Impl>> && callable_returns<Pred, bool, iter::TypeOf<Impl>>
 inline auto Iterator<Impl>::Filter(Pred&& predicate) && noexcept -> decltype(auto)
 {
-    return iter::Filter(getThisObject(), VIOLET_FWD(Pred, predicate));
+    return iter::Filter(VIOLET_MOVE(getThisObject()), VIOLET_FWD(Pred, predicate));
 }
 
 } // namespace violet

@@ -308,7 +308,12 @@ TEST_F(ConsoleSink, FlushIsANoOpThatDoesNotDisturbTheStream)
 TEST_F(ConsoleSink, FlushOnAConsoleWithoutAFormatterIsHarmless)
 {
     Console console;
+
+#if VIOLET_FEATURE(EXCEPTIONS)
     EXPECT_NO_THROW(console.Flush());
+#else
+    console.Flush();
+#endif
 }
 
 TEST_F(ConsoleSink, InterleavesNothingWhenEmittingFromManyThreads)

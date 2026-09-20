@@ -121,23 +121,29 @@ struct VIOLET_API Take final: public Iterator<Take<Impl>> {
                 hi = Some<UInt>(this->n_remaining);
             }
 
-            return { lo, hi };
+            return {lo, hi};
         }
 
-        return { };
+        return {};
     }
 
 private:
     friend struct Iterator<Impl>;
 
-    VIOLET_IMPLICIT Take(Impl iter, UInt take)
+    VIOLET_IMPLICIT Take(Impl& iter, UInt take)
         : n_iter(iter)
         , n_remaining(take)
     {
     }
 
+    VIOLET_IMPLICIT Take(Impl&& iter, UInt take)
+        : n_iter(VIOLET_MOVE(iter))
+        , n_remaining(take)
+    {
+    }
+
     Impl n_iter;
-    UInt n_remaining;
+    UInt n_remaining = 0;
 };
 
 } // namespace violet::iter

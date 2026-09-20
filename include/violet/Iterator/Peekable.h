@@ -100,8 +100,13 @@ struct VIOLET_API Peekable final: public Iterator<Peekable<Impl>> {
 private:
     friend struct Iterator<Impl>;
 
-    VIOLET_IMPLICIT Peekable(Impl iter)
+    VIOLET_IMPLICIT Peekable(Impl& iter)
         : n_iter(iter)
+    {
+    }
+
+    VIOLET_IMPLICIT Peekable(Impl&& iter)
+        : n_iter(VIOLET_MOVE(iter))
     {
     }
 

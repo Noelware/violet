@@ -1434,7 +1434,7 @@
  * its `co_await` points. Expands to nothing otherwise.
  */
 #if VIOLET_HAS_CPP_ATTRIBUTE(clang::coro_await_elidable)
-#define VIOLET_CORO_AWAIT_ELIDABLE clang::coro_await_elidable
+#define VIOLET_CORO_AWAIT_ELIDABLE [[clang::coro_await_elidable]]
 #else
 #define VIOLET_CORO_AWAIT_ELIDABLE
 #endif

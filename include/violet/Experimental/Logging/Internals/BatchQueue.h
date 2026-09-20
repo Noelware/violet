@@ -22,7 +22,6 @@
 #pragma once
 
 #include <violet/Experimental/Mutex.h>
-#include <violet/Experimental/Own.h>
 
 #include <functional>
 #include <queue>
@@ -47,99 +46,89 @@ struct BatchQueue final {
     VIOLET_DISALLOW_CONSTRUCTOR(BatchQueue);
 
     VIOLET_IMPLICIT BatchQueue(Consumer consumer, Options options = {}) noexcept
-        : n_state(Own<state>::New(VIOLET_MOVE(consumer), VIOLET_MOVE(options)))
+        : n_running(true)
+        , n_options(VIOLET_MOVE(options))
+        , n_consumer(VIOLET_MOVE(consumer))
     {
+        this->n_thread = std::thread([this] -> void { this->workerLoop(); });
     }
 
     ~BatchQueue()
     {
         {
-            MutexLock lock(this->n_state->Mutex);
-            this->n_state->Running = false;
+            MutexLock lock(this->n_mux);
+            this->n_running = false;
         }
 
-        this->n_state->CV.SignalAll();
-        if (this->n_state->Thread.joinable()) {
-            this->n_state->Thread.join();
+        this->n_cv.SignalAll();
+        if (this->n_thread.joinable()) {
+            this->n_thread.join();
         }
     }
 
     auto Options() const noexcept -> Options
     {
-        return this->n_state.Options;
+        return this->n_options;
     }
 
     void Push(T item)
     {
         {
-            MutexLock lock(this->n_state->Mutex);
-            this->n_state->Queue.push(VIOLET_MOVE(item));
+            MutexLock lock(this->n_mux);
+            this->n_queue.push(VIOLET_MOVE(item));
         }
 
-        this->n_state->CV.Signal();
+        this->n_cv.Signal();
     }
 
     void Flush()
     {
-        MutexLock lock(this->n_state->Mutex);
-        while (!this->n_state->Queue.empty() || this->n_state->ProcessingData) {
-            this->n_state->CV.Wait(&this->n_state->Mutex);
+        MutexLock lock(this->n_mux);
+        while (!this->n_queue.empty() || this->n_processingData) {
+            this->n_cv.Wait(&this->n_mux);
         }
     }
 
 private:
-    struct state final {
-        std::thread Thread;
-        Condvar CV;
-        struct Mutex Mutex;
-        std::queue<T> Queue;
-        bool ProcessingData = false;
-        std::atomic<bool> Running{false};
-        struct Options Options;
-        Consumer ConsumerFn;
+    Condvar n_cv;
+    struct Mutex n_mux;
+    std::queue<T> n_queue;
+    bool n_processingData = false;
+    std::atomic<bool> n_running{false};
+    struct Options n_options;
+    Consumer n_consumer;
+    std::thread n_thread;
 
-        VIOLET_IMPLICIT state(Consumer consumer, struct Options options) noexcept
-            : Thread([this] -> void { this->workerLoop(); })
-            , Running(true)
-            , Options(VIOLET_MOVE(options))
-            , ConsumerFn(VIOLET_MOVE(consumer))
-        {
-        }
-
-    private:
-        void workerLoop()
-        {
-            this->Mutex.Lock();
-            while (true) {
-                while (this->Queue.empty() && this->Running) {
-                    this->CV.Wait(&this->Mutex);
-                }
-
-                if (this->Queue.empty() && !this->Running) {
-                    break;
-                }
-
-                Vec<T> batch;
-                const UInt batchLimit = this->Options.MaxBatchSize;
-                while (!this->Queue.empty() && (batchLimit == 0 || batch.size() < batchLimit)) {
-                    batch.push_back(VIOLET_MOVE(this->Queue.front()));
-                    this->Queue.pop();
-                }
-
-                this->ProcessingData = true;
-                this->Mutex.Unlock();
-                std::invoke(this->ConsumerFn, VIOLET_MOVE(batch));
-
-                this->Mutex.Lock();
-                this->ProcessingData = false;
-                this->CV.SignalAll();
+    void workerLoop()
+    {
+        this->n_mux.Lock();
+        while (true) {
+            while (this->n_queue.empty() && this->n_running) {
+                this->n_cv.Wait(&this->n_mux);
             }
 
-            this->Mutex.Unlock();
-        }
-    };
+            if (this->n_queue.empty() && !this->n_running) {
+                break;
+            }
 
-    Own<state> n_state;
+            Vec<T> batch;
+            const UInt batchLimit = this->n_options.MaxBatchSize;
+            while (!this->n_queue.empty() && (batchLimit == 0 || batch.size() < batchLimit)) {
+                batch.push_back(VIOLET_MOVE(this->n_queue.front()));
+                this->n_queue.pop();
+            }
+
+            this->n_processingData = true;
+            this->n_mux.Unlock();
+            std::invoke(this->n_consumer, VIOLET_MOVE(batch));
+
+            this->n_mux.Lock();
+            this->n_processingData = false;
+            this->n_cv.SignalAll();
+        }
+
+        this->n_mux.Unlock();
+    }
 };
 
 } // namespace violet::experimental::log::internals

@@ -21,6 +21,7 @@ availableAt:
 - Allow implicit conversion from <code>Some\<T\></code> to <code>Optional\<T\></code> and `std::optional<T>` (previously explicit-only), with separate rvalue-qualified overloads that move instead of copy ([`@auguwu`])
 - Add **operator==** / **operator!=** between <code>Optional\<T\></code> and <code>Some\<T\></code> ([`@auguwu`])
 - Fix **RefCnt**'s `Traits::BumpRef`/`DecRef`/`Valid` `noexcept` checks to use `std::is_nothrow_invocable_v` instead of a bare `noexcept(...)` expression ([`@auguwu`])
+- Add move-construction into iterator adapters ([`@auguwu`])
 
 #### Noelware.Violet.Experimental
 - Added **Synchroized\<T\>::With(<lambda>)** method ([`@auguwu`])
@@ -31,6 +32,9 @@ availableAt:
 - Remove **constexpr** in `TypeId::HashCode()` ([`@auguwu`])
 - Added new collection types: **HashMap** and **HashSet** ([`@auguwu`])
     - These types are not reimplementations, they're bridged from Abseil's SwissTables if the Abseil feature is enabled, otherwise the C++ STL implementations are used instead.
+
+#### Noelware.Violet.Experimental.Coroutines
+This is a new experimental framework that works with C++20 coroutines.
 
 #### Noelware.Violet.Experimental.IO
 - Added an experimental implementation of `violet::io::Error` called `violet::io::experimental::Error` ([`@auguwu`])

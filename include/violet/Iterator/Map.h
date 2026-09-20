@@ -80,8 +80,14 @@ struct VIOLET_API Map final: public Iterator<Map<Impl, Fun>> {
 private:
     friend struct Iterator<Impl>;
 
-    VIOLET_IMPLICIT Map(Impl iter, Fun fun)
+    VIOLET_IMPLICIT Map(Impl& iter, Fun fun)
         : n_iter(iter)
+        , n_fun(fun)
+    {
+    }
+
+    VIOLET_IMPLICIT Map(Impl&& iter, Fun fun)
+        : n_iter(VIOLET_MOVE(iter))
         , n_fun(fun)
     {
     }

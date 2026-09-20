@@ -102,17 +102,23 @@ struct VIOLET_API Skip final: public Iterator<Skip<Impl>> {
                 hi = *hint.High > this->n_skip ? (*hint.High - this->n_skip) : 0;
             }
 
-            return { lo, hi };
+            return {lo, hi};
         }
 
-        return { };
+        return {};
     }
 
 private:
     friend struct Iterator<Impl>;
 
-    VIOLET_IMPLICIT Skip(Impl iter, UInt take)
+    VIOLET_IMPLICIT Skip(Impl& iter, UInt take)
         : n_iter(iter)
+        , n_skip(take)
+    {
+    }
+
+    VIOLET_IMPLICIT Skip(Impl&& iter, UInt take)
+        : n_iter(VIOLET_MOVE(iter))
         , n_skip(take)
     {
     }

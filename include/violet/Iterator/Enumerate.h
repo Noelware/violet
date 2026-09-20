@@ -75,8 +75,13 @@ struct VIOLET_API Enumerate final: public Iterator<Enumerate<Impl>> {
 private:
     friend struct Iterator<Impl>;
 
-    VIOLET_IMPLICIT Enumerate(Impl iter)
+    VIOLET_IMPLICIT Enumerate(Impl& iter)
         : n_iter(iter)
+    {
+    }
+
+    VIOLET_IMPLICIT Enumerate(Impl&& iter)
+        : n_iter(VIOLET_MOVE(iter))
     {
     }
 

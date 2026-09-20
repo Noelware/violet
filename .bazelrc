@@ -48,10 +48,21 @@ build:macos --cxxopt=-fno-modules
 build:macos --features=-layering_check
 build:macos --features=-parse_headers
 
+# warnings that are too noisy and annoying :/
 build:linux --cxxopt=-Wno-unused-command-line-argument
 build:macos --cxxopt=-Wno-unused-command-line-argument
 build:linux --host_cxxopt=-Wno-unused-command-line-argument
 build:macos --host_cxxopt=-Wno-unused-command-line-argument
+
+build:linux --cxxopt=-Wno-nullability-extension
+build:macos --cxxopt=-Wno-nullability-extension
+build:linux --host_cxxopt=-Wno-nullability-extension
+build:macos --host_cxxopt=-Wno-nullability-extension
+
+build:linux --cxxopt=-Wno-unused-template
+build:macos --cxxopt=-Wno-unused-template
+build:linux --host_cxxopt=-Wno-unused-template
+build:macos --host_cxxopt=-Wno-unused-template
 
 # `--config=libcxx` (C++): Enables compilation and linking with libc++
 build:libcxx --cxxopt=-stdlib=libc++
@@ -106,6 +117,8 @@ common:san --copt=-fno-omit-frame-pointer
 ## ~ `--config=asan` enables Address Sanitizer (ASan)
 common:asan --config=san
 common:asan --//buildsystem/bazel/flags:asan=True
+build:asan --copt=-fsanitize=address
+build:asan --linkopt=-fsanitize=address
 
 ## ~ `--config=msan` enables Memory Sanitizer (MSan)
 common:msan --config=san
@@ -123,12 +136,16 @@ test:msan --spawn_strategy=standalone
 
 ## ~ `--config=ubsan` enables Undefined Behaviour Sanitizer (UBSan)
 common:ubsan --config=san
-common:ubsan --linkopt=-lubsan
 common:ubsan --//buildsystem/bazel/flags:ubsan=True
+build:ubsan --copt=-fsanitize=undefined
+build:ubsan --linkopt=-fsanitize=undefined
+build:ubsan --linkopt=-lubsan
 
 ## ~ `--config=tsan` enables Thread Sanitizer (TSan)
 common:tsan --config=san
 common:tsan --//buildsystem/bazel/flags:tsan=True
+build:tsan --copt=-fsanitize=thread
+build:tsan --linkopt=-fsanitize=thread
 
 # Import .usr.bazelrc if it exists
 try-import %workspace%/.usr.bazelrc

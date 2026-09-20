@@ -30,4 +30,6 @@ Checks: >
   -readability-uppercase-literal-suffix,
   -performance-unnecessary-value-param,
   -google-default-arguments,
-  -cppcoreguidelines-pro-type-static-cast-downcast
+  -cppcoreguidelines-pro-type-static-cast-downcast,
+  -modernize-type-traits,
+  -cppcoreguidelines-narrowing-conversions

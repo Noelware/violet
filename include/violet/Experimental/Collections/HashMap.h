@@ -175,7 +175,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
 
     /// Returns a reference to the value for `key`, or [`Nothing`] if the key is not present.
     /// @tparam Q any type comparable with `K`, which enables heterogeneous (transparent) lookup
-    template<std::equality_comparable_with<K> Q>
+    template<typename Q>
+        requires std::equality_comparable_with<std::decay_t<Q>, K>
     auto Get(const Q& key) -> Optional<std::reference_wrapper<V>>
     {
         auto it = this->n_impl.find(K(key));
@@ -188,7 +189,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
 
     /// Returns a const reference to the value for `key`, or [`Nothing`] if the key is not present.
     /// @tparam Q any type comparable with `K`, which enables heterogeneous (transparent) lookup
-    template<std::equality_comparable_with<K> Q>
+    template<typename Q>
+        requires std::equality_comparable_with<std::decay_t<Q>, K>
     auto Get(const Q& key) const -> Optional<std::reference_wrapper<const V>>
     {
         auto it = this->n_impl.find(K(key));
@@ -200,7 +202,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
     }
 
     /// Returns **true** if the map contains an entry for `key`.
-    template<std::equality_comparable_with<K> Q>
+    template<typename Q>
+        requires std::equality_comparable_with<std::decay_t<Q>, K>
     auto Contains(const Q& key) const -> bool
     {
         return this->n_impl.contains(K(key));
@@ -230,7 +233,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
     }
 
     /// Removes `key` from the map, returning its value, or [`Nothing`] if `key` was not present.
-    template<std::equality_comparable_with<K> Q>
+    template<typename Q>
+        requires std::equality_comparable_with<std::decay_t<Q>, K>
     auto Remove(const Q& key) -> Optional<V>
     {
         auto it = this->n_impl.find(K(key));
@@ -246,7 +250,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
 
     /// Removes `key` from the map, returning the full `(key, value)` pair, or [`Nothing`] if
     /// `key` was not present.
-    template<std::equality_comparable_with<K> Q>
+    template<typename Q>
+        requires std::equality_comparable_with<std::decay_t<Q>, K>
     auto RemoveEntry(const Q& key) -> Optional<Pair<K, V>>
     {
         auto it = this->n_impl.find(K(key));

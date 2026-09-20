@@ -191,15 +191,15 @@ struct OneOf {
     }
 
     template<typename U>
-        requires(pack_contains_v<U, Ts...> && (!std::same_as<U, OneOf>))
-    constexpr VIOLET_IMPLICIT OneOf(U&& value) noexcept(std::is_nothrow_move_constructible_v<U>)
-        : OneOf(key{}, IndexOf<U>)
+        requires(pack_contains_v<std::decay_t<U>, Ts...> && (!std::same_as<std::decay_t<U>, OneOf>))
+    constexpr VIOLET_IMPLICIT OneOf(U&& value) noexcept(std::is_nothrow_move_constructible_v<std::decay_t<U>>)
+        : OneOf(key{}, IndexOf<std::decay_t<U>>)
     {
-        oneof_internal::ConstructElement<IndexOf<U>>(this->n_storage, VIOLET_FWD(U, value));
+        oneof_internal::ConstructElement<IndexOf<std::decay_t<U>>>(this->n_storage, VIOLET_FWD(U, value));
     }
 
     template<typename U>
-        requires(pack_contains_v<U, Ts...> && (!std::same_as<U, OneOf>))
+        requires(pack_contains_v<std::decay_t<U>, Ts...> && (!std::same_as<std::decay_t<U>, OneOf>))
     constexpr auto operator=(U&& value) -> OneOf&
     {
         OneOf tmp(VIOLET_FWD(U, value));
