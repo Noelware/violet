@@ -24,18 +24,33 @@
     ],
 
     "evenBetterToml.taplo.configFile.path": "taplo.toml",
-    "bazel.lsp.command": "starpls",
-    "bazel.lsp.args": ["server", "--experimental_infer_ctx_attributes", "--experimental_enable_label_completions"],
-    "bazel.buildifierFixOnFormat": true,
-    "bazel.buildifierConfigJsonPath": ".buildifier.json",
 
-    "cmake.configureArgs": ["-DVIOLET_ENABLE_TESTS:BOOL=ON", "-DVIOLET_ALL_FRAMEWORKS:BOOL=ON"],
+    "bazel.buildifier.configJsonPath": ".buildifier.json",
+    "bazel.buildifier.fixOnFormat": true,
+    "bazel.lsp.command": "starpls",
+    "bazel.lsp.args": [
+        "server",
+        "--experimental_infer_ctx_attributes",
+        "--experimental_enable_label_completions"
+    ],
+
+    "cmake.configureArgs": [
+        "-DVIOLET_ENABLE_TESTS:BOOL=ON",
+        "-DVIOLET_ALL_FRAMEWORKS:BOOL=ON"
+    ],
 
     // Nix-specific settings \\
     "nix.enableLanguageServer": true,
     "nix.serverSettings": {
         "nil": {
-            "formatting": { "command": ["nix", "fmt", "--", "--"] },
+            "formatting": {
+                "command": [
+                    "nix",
+                    "fmt",
+                    "--",
+                    "--"
+                ]
+            },
             "nix": {
                 "flake": {
                     "autoArchive": true,
@@ -44,7 +59,6 @@
             }
         }
     },
-
     "[cmake]": {
         "editor.defaultFormatter": "ms-vscode.cmake-tools"
     },

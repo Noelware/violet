@@ -22,6 +22,9 @@ availableAt:
 - Add **operator==** / **operator!=** between <code>Optional\<T\></code> and <code>Some\<T\></code> ([`@auguwu`])
 - Fix **RefCnt**'s `Traits::BumpRef`/`DecRef`/`Valid` `noexcept` checks to use `std::is_nothrow_invocable_v` instead of a bare `noexcept(...)` expression ([`@auguwu`])
 - Add move-construction into iterator adapters ([`@auguwu`])
+- Added **VIOLET_TRAIT_FOR_ALL_TYPES** macro ([`@auguwu`])
+- Added **VIOLET_TRAIT_FOR_ANY_TYPES** macro ([`@auguwu`])
+- Added **VIOLET_FEATURE_CPP_REFLECTION** macro ([`@auguwu`])
 
 #### Noelware.Violet.Experimental
 - Added **Synchroized\<T\>::With(<lambda>)** method ([`@auguwu`])
@@ -32,6 +35,8 @@ availableAt:
 - Remove **constexpr** in `TypeId::HashCode()` ([`@auguwu`])
 - Added new collection types: **HashMap** and **HashSet** ([`@auguwu`])
     - These types are not reimplementations, they're bridged from Abseil's SwissTables if the Abseil feature is enabled, otherwise the C++ STL implementations are used instead.
+- Added new types: Pair and Tuple ([`@auguwu`])
+    - They mimic the STL types but adds combinators and makes code less "funky" in my opinion
 
 #### Noelware.Violet.Experimental.Coroutines
 This is a new experimental framework that works with C++20 coroutines.

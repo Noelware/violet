@@ -1349,6 +1349,36 @@
 #define NOELDOC_CONSTEXPR_SINCE(ver) __noeldoc_annotate__("constexpr(since:" ver ")")
 
 /**
+ * @macro VIOLET_TRAIT_FOR_ALL_TYPES
+ * @since current
+ */
+#define VIOLET_TRAIT_FOR_ALL_TYPES(trait, ...)                                                                         \
+    ([]<typename... Ts>() consteval { return ((trait<Ts>) && ...); }.template operator()<__VA_ARGS__>())
+
+/**
+ * @macro VIOLET_TRAIT_FOR_ANY_TYPES
+ * @since current
+ */
+#define VIOLET_TRAIT_FOR_ANY_TYPES(trait, ...)                                                                         \
+    ([]<typename... Ts>() consteval { return ((trait<Ts>) || ...); }.template operator()<__VA_ARGS__>())
+
+/**
+ * @macro VIOLET_FEATURE_CPP_REFLECTION
+ * @since current
+ */
+
+#ifdef VIOLET_FEATURE_CPP_REFLECTION
+#error "do not define `VIOLET_FEATURE_CPP_REFLECTION` yourself please ;w;"
+#else
+#if (defined(__cpp_impl_reflection) && __cpp_impl_reflection >= 202506L)                                               \
+    && (defined(__cpp_lib_reflection) && __cpp_lib_reflection >= 202506L)
+#define VIOLET_FEATURE_CPP_REFLECTION 1
+#else
+#define VIOLET_FEATURE_CPP_REFLECTION 0
+#endif
+#endif
+
+/**
  * @macro NOELDOC_NON_CONSTEXPR_SINCE
  * @since current
  *

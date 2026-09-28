@@ -88,7 +88,7 @@ inline constexpr bool instanceof_v = instanceof<Template, T>::value;
 /// @note Index `I` must be less than `sizeof...(Ts)`; out-of-range access is a compile error.
 template<std::size_t I, typename T, typename... Ts>
 struct NOELDOC_SINCE("26.04.01") pack_element final {
-    using type = typename pack_element<I - 1, Ts...>::type;
+    using type = pack_element<I - 1, Ts...>::type;
 };
 
 template<typename T, typename... Ts>
@@ -261,7 +261,7 @@ struct NOELDOC_SINCE("26.06.05") shared_ptr_type<std::shared_ptr<T>> {
 ///
 /// @since 26.06.05
 template<typename T>
-using shared_ptr_type_t = typename shared_ptr_type<T>::type;
+using shared_ptr_type_t = shared_ptr_type<T>::type;
 
 /// Introspects the parameter types and arity of a function signature.
 ///

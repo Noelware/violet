@@ -145,6 +145,7 @@ violet_cc_test(
 )
 
 violet_cc_library(
+<<<<<<< Updated upstream
     name = "no_op_deleter",
     hdrs = ["//include/violet/Experimental:NoOpDeleter.h"],
     deps = [
@@ -160,4 +161,15 @@ violet_cc_library(
         ":no_op_deleter",
         "//violet/experimental/memory:non_null",
     ],
+=======
+    name = "pair",
+    hdrs = ["//include/violet/Experimental:Pair.h"],
+    deps = ["//violet"],
+)
+
+violet_cc_library(
+    name = "tuple",
+    hdrs = ["//include/violet/Experimental:Tuple.h"],
+    deps = ["//violet"],
+>>>>>>> Stashed changes
 )
