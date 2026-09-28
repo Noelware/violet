@@ -32,7 +32,7 @@ declare -A gccimages
 gccimages["gcc-16"]="sha256:b98be39c2378222af9dcab6a5b1707d74b47d7c413c8569d5429a4cbfefbe981"
 
 # renovate: ref=gcc:15.3-trixie
-gccimages["gcc-15"]="sha256:fb2568a8cc0609134396aeb1eae1f3a91c8ceec54aaee67c798d9602593abd66"
+gccimages["gcc-15"]="sha256:ead103e6d03b69232962d467f3520c3f70b6718c69ff71efcc08efe9011fadb6"
 
 # renovate: ref=gcc:14.4-trixie
 gccimages["gcc-14"]="sha256:3ae7320d7dd41f446a48930e1edf4e7a41c7be5ae43a5ddbf017c53fe6495738"
