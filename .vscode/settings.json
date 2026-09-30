@@ -59,6 +59,7 @@
             }
         }
     },
+
     "[cmake]": {
         "editor.defaultFormatter": "ms-vscode.cmake-tools"
     },
@@ -67,6 +68,9 @@
     },
     "[toml]": {
         "editor.defaultFormatter": "tamasfe.even-better-toml"
+    },
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer"
     },
     "[nix]": {
         "editor.defaultFormatter": "jnoortheen.nix-ide"

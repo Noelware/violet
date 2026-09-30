@@ -28,12 +28,9 @@
     };
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    ...
-  }: let
+  outputs = {nixpkgs, ...}: let
     overlays = [];
+
     eachSystem = f:
       nixpkgs.lib.genAttrs [
         "x86_64-linux"
@@ -50,15 +47,15 @@
     });
 
     overlays.default = import ./nix;
-    packages = eachSystem (pkgs: let
-      overlay = self.overlays.default {} pkgs;
-    in
-      builtins.listToAttrs (map (key: {
-        name = key;
-        value = overlay.${key};
-      }) (builtins.attrNames overlay))
-      // {
-        default = overlay.violet.base;
-      });
+    # packages = eachSystem (pkgs: let
+    #   overlay = self.overlays.default {} pkgs;
+    # in
+    #   builtins.listToAttrs (map (key: {
+    #     name = key;
+    #     value = overlay.${key};
+    #   }) (builtins.attrNames overlay))
+    #   // {
+    #     default = overlay.violet.base;
+    #   });
   };
 }

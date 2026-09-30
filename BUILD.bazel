@@ -23,11 +23,6 @@ load("@minato//:rcc.bzl", "minato")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//buildsystem/bazel/flags:flags.bzl", "BOOL_FLAGS", "STRING_FLAGS")
 
-exports_files(
-    ["dummy.cc"],
-    visibility = [":__subpackages__"],
-)
-
 minato(
     name = "rcc",
 )

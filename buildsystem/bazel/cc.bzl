@@ -23,7 +23,14 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("//buildsystem/bazel:cc/defs.bzl", "sanitizer", other_copts = "copts", other_defines = "defines")
 load(":version.bzl", "DEVBUILD", "encode_as_int")
 
-def violet_cc_library(name, deps = [], copts = [], linkopts = [], defines = [], local_defines = [], **kwargs):
+def violet_cc_library(
+        name,
+        deps = [],
+        copts = [],
+        linkopts = [],
+        defines = [],
+        local_defines = [],
+        **kwargs):
     if "includes" in kwargs:
         fail("`violet_cc_library`(%s) defined `includes` but it is not allowed" % name)
 

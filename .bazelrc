@@ -102,10 +102,10 @@ test:ci --test_output=all
 common:ci --noshow_progress
 common:ci --verbose_failures
 
-# Rust (for Minato)
+# Rust
 build --@rules_rust//rust/settings:experimental_use_cc_common_link=True
 
-# related: https://github.com/bazelbuild/rules_rust/issues/3459
+## related: https://github.com/bazelbuild/rules_rust/issues/3459
 build --@rules_rust//rust/settings:experimental_use_allocator_libraries_with_mangled_symbols=true
 
 ## ~ common configuration for sanitizers
