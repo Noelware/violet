@@ -25,6 +25,15 @@
 
 #include <violet/Violet.h>
 
+// TODO(@auguwu/Noel): add conversion operators from std::pair <-> violet::Pair
+#ifndef VIOLET_IMPLEMENT_BACKWARDS_STL_PAIR
+#define VIOLET_IMPLEMENT_BACKWARDS_STL_PAIR 0
+#endif
+
+#if VIOLET_IMPLEMENT_BACKWARDS_STL_PAIR
+#include <tuple>
+#endif
+
 namespace violet::experimental {
 
 template<typename T, typename U>
@@ -50,9 +59,15 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") Pair final {
 
     constexpr VIOLET_IMPLICIT Pair() noexcept(VIOLET_TRAIT_FOR_ALL_TYPES(std::is_nothrow_default_constructible_v, T, U))
         requires(VIOLET_TRAIT_FOR_ALL_TYPES(std::default_initializable, T, U))
-    = default;
+        : First()
+        , Second()
+    {
+    }
 
-    constexpr VIOLET_IMPLICIT Pair(const T& first, const U& second)
+    constexpr VIOLET_EXPLICIT(!std::convertible_to<const T&, T> || !std::convertible_to<const U&, U>)
+        Pair(const T& first, const U& second) noexcept(
+            VIOLET_TRAIT_FOR_ALL_TYPES(std::is_nothrow_copy_constructible_v, T, U))
+        requires(VIOLET_TRAIT_FOR_ALL_TYPES(std::copy_constructible, T, U))
         : First(first)
         , Second(second)
     {
@@ -60,7 +75,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") Pair final {
 
     template<typename X = T, typename Y = U>
         requires(std::constructible_from<T, X> && std::constructible_from<U, Y>)
-    constexpr VIOLET_IMPLICIT Pair(X&& first, Y&& second)
+    constexpr VIOLET_EXPLICIT(!std::convertible_to<X, T> || !std::convertible_to<Y, U>) Pair(
+        X&& first, Y&& second) noexcept(std::is_nothrow_constructible_v<T, X> && std::is_nothrow_constructible_v<U, Y>)
         : First(VIOLET_FWD(X, first))
         , Second(VIOLET_FWD(Y, second))
     {
@@ -69,7 +85,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") Pair final {
     template<typename X, typename Y>
         requires(std::constructible_from<T, const X&> && std::constructible_from<U, const Y&>)
     constexpr VIOLET_EXPLICIT(!std::convertible_to<const X&, T> || !std::convertible_to<const Y&, U>)
-        Pair(const Pair<X, Y>& other) noexcept(VIOLET_TRAIT_FOR_ALL_TYPES(std::is_nothrow_copy_constructible_v, X, Y))
+        Pair(const Pair<X, Y>& other) noexcept(
+            std::is_nothrow_constructible_v<T, const X&> && std::is_nothrow_constructible_v<U, const Y&>)
         : First(other.First)
         , Second(other.Second)
     {
@@ -77,16 +94,29 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") Pair final {
 
     template<typename X, typename Y>
         requires(std::constructible_from<T, X> && std::constructible_from<U, Y>)
-    constexpr VIOLET_EXPLICIT(!std::convertible_to<X, T> && !std::convertible_to<Y, U>) Pair(
+    constexpr VIOLET_EXPLICIT(!std::convertible_to<X, T> || !std::convertible_to<Y, U>) Pair(
         Pair<X, Y>&& other) noexcept(std::is_nothrow_constructible_v<T, X> && std::is_nothrow_constructible_v<U, Y>)
-        : First(VIOLET_MOVE(other).First)
-        , Second(VIOLET_MOVE(other).Second)
+        : First(VIOLET_FWD(X, other.First))
+        , Second(VIOLET_FWD(Y, other.Second))
     {
     }
 
     constexpr static auto New(T first, U second) -> Pair<std::unwrap_ref_decay_t<T>, std::unwrap_ref_decay_t<U>>
     {
         return Pair(VIOLET_MOVE(first), VIOLET_MOVE(second));
+    }
+
+    constexpr void swap(Pair& other) noexcept(VIOLET_TRAIT_FOR_ALL_TYPES(std::is_nothrow_swappable_v, T, U))
+        requires(VIOLET_TRAIT_FOR_ALL_TYPES(std::swappable, T, U))
+    {
+        std::ranges::swap(this->First, other.First);
+        std::ranges::swap(this->Second, other.Second);
+    }
+
+    constexpr friend void swap(Pair& lhs, Pair& rhs) noexcept(noexcept(lhs.swap(rhs)))
+        requires(VIOLET_TRAIT_FOR_ALL_TYPES(std::swappable, T, U))
+    {
+        lhs.swap(rhs);
     }
 
     template<typename Fun>
@@ -115,67 +145,155 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") Pair final {
         && VIOLET_NOEXCEPT_FUN(fun, T) -> decltype(auto)
     {
         using return_type = std::invoke_result_t<Fun, T>;
-
-        auto self = VIOLET_MOVE(*this);
-        return Pair<return_type, second_type>(std::invoke(VIOLET_FWD(Fun, fun), self.First), self.Second);
+        return Pair<return_type, second_type>(
+            std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->First)), VIOLET_MOVE(this->Second));
     }
 
     template<typename Fun>
-        requires callable<Fun, T>
+        requires callable<Fun, const T>
     [[nodiscard]]
-    constexpr auto MapFirst(Fun&& fun) const&& VIOLET_NOEXCEPT_FUN(fun, T) -> decltype(auto)
+    constexpr auto MapFirst(Fun&& fun) const&& VIOLET_NOEXCEPT_FUN(fun, const T) -> decltype(auto)
     {
-        using return_type = std::invoke_result_t<Fun, T>;
-
-        auto self = VIOLET_MOVE(*this);
-        return Pair<return_type, second_type>(std::invoke(VIOLET_FWD(Fun, fun), self.First), self.Second);
+        using return_type = std::invoke_result_t<Fun, const T>;
+        return Pair<return_type, second_type>(
+            std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->First)), VIOLET_MOVE(this->Second));
     }
 
     template<typename Fun>
-        requires callable<Fun, T&>
+        requires callable<Fun, U&>
     [[nodiscard]]
     constexpr auto MapSecond(Fun&& fun)
-        & VIOLET_NOEXCEPT_FUN(fun, T&) -> decltype(auto)
+        & VIOLET_NOEXCEPT_FUN(fun, U&) -> decltype(auto)
     {
-        using return_type = std::invoke_result_t<Fun, T&>;
+        using return_type = std::invoke_result_t<Fun, U&>;
         return Pair<first_type, return_type>(this->First, std::invoke(VIOLET_FWD(Fun, fun), this->Second));
     }
 
     template<typename Fun>
-        requires callable<Fun, const T&>
+        requires callable<Fun, const U&>
     [[nodiscard]]
-    constexpr auto MapSecond(Fun&& fun) const& VIOLET_NOEXCEPT_FUN(fun, const T&) -> decltype(auto)
+    constexpr auto MapSecond(Fun&& fun) const& VIOLET_NOEXCEPT_FUN(fun, const U&) -> decltype(auto)
     {
-        using return_type = std::invoke_result_t<Fun, const T&>;
+        using return_type = std::invoke_result_t<Fun, const U&>;
         return Pair<first_type, return_type>(this->First, std::invoke(VIOLET_FWD(Fun, fun), this->Second));
     }
 
     template<typename Fun>
-        requires callable<Fun, T>
+        requires callable<Fun, U>
     [[nodiscard]]
     constexpr auto MapSecond(Fun&& fun)
-        && VIOLET_NOEXCEPT_FUN(fun, T) -> decltype(auto)
+        && VIOLET_NOEXCEPT_FUN(fun, U) -> decltype(auto)
     {
-        using return_type = std::invoke_result_t<Fun, T>;
-
-        auto self = VIOLET_MOVE(*this);
-        return Pair<first_type, return_type>(self.First, std::invoke(VIOLET_FWD(Fun, fun), self.Second));
+        using return_type = std::invoke_result_t<Fun, U>;
+        return Pair<first_type, return_type>(
+            VIOLET_MOVE(this->First), std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->Second)));
     }
 
     template<typename Fun>
-        requires callable<Fun, T>
+        requires callable<Fun, const U>
     [[nodiscard]]
-    constexpr auto MapSecond(Fun&& fun) const&& VIOLET_NOEXCEPT_FUN(fun, T) -> decltype(auto)
+    constexpr auto MapSecond(Fun&& fun) const&& VIOLET_NOEXCEPT_FUN(fun, const U) -> decltype(auto)
     {
-        using return_type = std::invoke_result_t<Fun, T>;
-
-        auto self = VIOLET_MOVE(*this);
-        return Pair<first_type, return_type>(self.First, std::invoke(VIOLET_FWD(Fun, fun), self.Second));
+        using return_type = std::invoke_result_t<Fun, const U>;
+        return Pair<first_type, return_type>(
+            VIOLET_MOVE(this->First), std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->Second)));
     }
 };
 
 template<typename First, typename Second>
 Pair(First, Second) -> Pair<First, Second>;
+
+template<typename T1, typename T2, typename U1, typename U2>
+    requires(std::equality_comparable_with<T1, U1> && std::equality_comparable_with<T2, U2>)
+constexpr auto operator==(const Pair<T1, T2>& lhs, const Pair<U1, U2>& rhs) -> bool
+{
+    return lhs.First == rhs.First && lhs.Second == rhs.Second;
+}
+
+template<typename T1, typename T2, typename U1, typename U2>
+    requires(std::three_way_comparable_with<T1, U1> && std::three_way_comparable_with<T2, U2>)
+constexpr auto operator<=>(const Pair<T1, T2>& lhs, const Pair<U1, U2>& rhs)
+    -> std::common_comparison_category_t<std::compare_three_way_result_t<T1, U1>,
+        std::compare_three_way_result_t<T2, U2>>
+{
+    if (auto cmp = lhs.First <=> rhs.First; cmp != 0) {
+        return cmp;
+    }
+
+    return lhs.Second <=> rhs.Second;
+}
+
+template<UInt I, typename T, typename U>
+    requires(I < 2)
+constexpr auto get(Pair<T, U>& pair) noexcept -> std::conditional_t<I == 0, T, U>&
+{
+    if constexpr (I == 0) {
+        return pair.First;
+    } else {
+        return pair.Second;
+    }
+}
+
+template<UInt I, typename T, typename U>
+    requires(I < 2)
+constexpr auto get(const Pair<T, U>& pair) noexcept -> const std::conditional_t<I == 0, T, U>&
+{
+    if constexpr (I == 0) {
+        return pair.First;
+    } else {
+        return pair.Second;
+    }
+}
+
+template<UInt I, typename T, typename U>
+    requires(I < 2)
+constexpr auto get(Pair<T, U>&& pair) noexcept -> std::conditional_t<I == 0, T, U>&&
+{
+    if constexpr (I == 0) {
+        return VIOLET_MOVE(pair.First);
+    } else {
+        return VIOLET_MOVE(pair.Second);
+    }
+}
+
+template<UInt I, typename T, typename U>
+    requires(I < 2)
+constexpr auto get(const Pair<T, U>&& pair) noexcept -> const std::conditional_t<I == 0, T, U>&&
+{
+    if constexpr (I == 0) {
+        return VIOLET_MOVE(pair.First);
+    } else {
+        return VIOLET_MOVE(pair.Second);
+    }
+}
+
+template<typename X, typename T, typename U>
+    requires(std::same_as<X, T> != std::same_as<X, U>)
+constexpr auto get(Pair<T, U>& pair) noexcept -> X&
+{
+    return get<std::same_as<X, T> ? 0 : 1>(pair);
+}
+
+template<typename X, typename T, typename U>
+    requires(std::same_as<X, T> != std::same_as<X, U>)
+constexpr auto get(const Pair<T, U>& pair) noexcept -> const X&
+{
+    return get<std::same_as<X, T> ? 0 : 1>(pair);
+}
+
+template<typename X, typename T, typename U>
+    requires(std::same_as<X, T> != std::same_as<X, U>)
+constexpr auto get(Pair<T, U>&& pair) noexcept -> X&&
+{
+    return get<std::same_as<X, T> ? 0 : 1>(VIOLET_MOVE(pair));
+}
+
+template<typename X, typename T, typename U>
+    requires(std::same_as<X, T> != std::same_as<X, U>)
+constexpr auto get(const Pair<T, U>&& pair) noexcept -> const X&&
+{
+    return get<std::same_as<X, T> ? 0 : 1>(VIOLET_MOVE(pair));
+}
 
 } // namespace violet::experimental
 

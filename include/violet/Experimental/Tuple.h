@@ -25,6 +25,15 @@
 
 #include <violet/Violet.h>
 
+// TODO(@auguwu/Noel): add conversion operators from std::tuple <-> violet::Tuple
+#ifndef VIOLET_IMPLEMENT_BACKWARDS_STL_TUPLE
+#define VIOLET_IMPLEMENT_BACKWARDS_STL_TUPLE 0
+#endif
+
+#if VIOLET_IMPLEMENT_BACKWARDS_STL_TUPLE
+#include <tuple>
+#endif
+
 namespace violet::experimental {
 
 template<typename... Ts>
@@ -35,7 +44,11 @@ template<UInt Index, typename T>
 struct Leaf {
     VIOLET_NO_UNIQUE_ADDRESS T Value;
 
-    constexpr Leaf() noexcept = default;
+    constexpr Leaf() noexcept(std::is_nothrow_default_constructible_v<T>)
+        requires(std::default_initializable<T>)
+        : Value()
+    {
+    }
 
     template<typename U>
         requires(std::constructible_from<T, U &&>)
@@ -50,7 +63,7 @@ struct Storage;
 
 template<UInt... Is, typename... Ts>
 struct Storage<std::index_sequence<Is...>, Ts...>: Leaf<Is, Ts>... {
-    constexpr Storage() noexcept = default;
+    constexpr Storage() = default;
 
     template<typename... Us>
         requires(sizeof...(Us) == sizeof...(Ts))
@@ -60,8 +73,18 @@ struct Storage<std::index_sequence<Is...>, Ts...>: Leaf<Is, Ts>... {
     }
 };
 
+template<typename X, typename... Ts>
+consteval auto IndexOf() noexcept -> UInt
+{
+    UInt index = 0;
+    (void)((!std::same_as<X, Ts> && (++index, true)) && ...);
+
+    return index;
+}
+
 struct from_tag_t final { };
 constexpr inline from_tag_t from_tag{};
+
 } // namespace tuple_internal
 
 template<typename T>
@@ -69,6 +92,9 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") is_tuple final: public std::false_t
 
 template<typename... Ts>
 struct is_tuple<Tuple<Ts...>> final: public std::true_type { };
+
+template<typename... Ts>
+struct is_tuple<std::tuple<Ts...>> final: public std::true_type { };
 
 template<typename T>
 NOELDOC_EXPERIMENTAL_SINCE("current")
@@ -82,6 +108,12 @@ template<typename... Ts>
 class NOELDOC_EXPERIMENTAL_SINCE("current") Tuple final
     : tuple_internal::Storage<std::index_sequence_for<Ts...>, Ts...> {
     using Storage = tuple_internal::Storage<std::index_sequence_for<Ts...>, Ts...>;
+
+    template<UInt I>
+    using element_type = pack_element_t<I, Ts...>;
+
+    template<UInt I>
+    using leaf_type = tuple_internal::Leaf<I, element_type<I>>;
 
 public:
     constexpr VIOLET_IMPLICIT Tuple()
@@ -107,7 +139,7 @@ public:
     }
 
     template<typename... Us>
-        requires((sizeof...(Us) == sizeof...(Ts)) && (std::constructible_from<Ts, const Us&> && ...)
+        requires((sizeof...(Us) == sizeof...(Ts)) && (std::constructible_from<Ts, Us &&> && ...)
             && (!std::same_as<Tuple<Us...>, Tuple>))
     constexpr VIOLET_EXPLICIT((!std::convertible_to<Us&&, Ts> || ...)) Tuple(Tuple<Us...>&& other)
         : Tuple(tuple_internal::from_tag, VIOLET_MOVE(other), std::index_sequence_for<Ts...>())
@@ -137,7 +169,7 @@ public:
     }
 
     template<typename... Us>
-        requires((sizeof...(Us) == sizeof...(Ts)) && (std::assignable_from<Ts&, const Us&> && ...)
+        requires((sizeof...(Us) == sizeof...(Ts)) && (std::assignable_from<Ts&, Us &&> && ...)
             && (!std::same_as<Tuple<Us...>, Tuple>))
     constexpr auto operator=(Tuple<Us...>&& other) -> Tuple&
     {
@@ -153,9 +185,9 @@ public:
 
     template<typename... Us>
     [[nodiscard]]
-    constexpr static auto New(Us&&... us) -> Tuple<std::unwrap_reference_t<Us>...>
+    constexpr static auto New(Us&&... us) -> Tuple<std::unwrap_ref_decay_t<Us>...>
     {
-        return Tuple<std::unwrap_reference_t<Us>...>(VIOLET_FWD(Us, us)...);
+        return Tuple<std::unwrap_ref_decay_t<Us>...>(VIOLET_FWD(Us, us)...);
     }
 
     template<typename... Us>
@@ -167,46 +199,60 @@ public:
 
     template<UInt I>
         requires(I < Tuple::Size())
-    constexpr auto At() & noexcept -> pack_element_t<I, Ts...>&
+    constexpr auto At() & noexcept -> element_type<I>&
     {
-        return static_cast<tuple_internal::Leaf<I, pack_element_t<I, Ts...>&>>(*this).Value;
+        return static_cast<leaf_type<I>&>(*this).Value;
     }
 
     template<UInt I>
         requires(I < Tuple::Size())
-    constexpr auto At() const& noexcept -> const pack_element_t<I, Ts...>&
+    constexpr auto At() const& noexcept -> const element_type<I>&
     {
-        return static_cast<const tuple_internal::Leaf<I, pack_element_t<I, Ts...>&>>(*this).Value;
+        return static_cast<const leaf_type<I>&>(*this).Value;
     }
 
     template<UInt I>
         requires(I < Tuple::Size())
-    constexpr auto At() && noexcept -> pack_element_t<I, Ts...>&&
+    constexpr auto At() && noexcept -> element_type<I>&&
     {
-        using element_type = pack_element_t<I, Ts...>;
-        return static_cast<element_type&&>(static_cast<tuple_internal::Leaf<I, element_type>>(*this).Value);
+        return static_cast<element_type<I>&&>(static_cast<leaf_type<I>&>(*this).Value);
     }
 
     template<UInt I>
         requires(I < Tuple::Size())
-    constexpr auto At() const&& noexcept -> const pack_element_t<I, Ts...>&&
+    constexpr auto At() const&& noexcept -> const element_type<I>&&
     {
-        using element_type = pack_element_t<I, Ts...>;
-        return static_cast<const element_type&&>(static_cast<const tuple_internal::Leaf<I, element_type>>(*this).Value);
+        return static_cast<const element_type<I>&&>(static_cast<const leaf_type<I>&>(*this).Value);
     }
 
     template<typename Fun>
-    constexpr auto Apply(Fun&& fun) -> decltype(auto)
+    constexpr auto Apply(Fun&& fun) & -> decltype(auto)
     {
-        return [&]<UInt... Is>(std::index_sequence<Is...>) -> decltype(auto) {
-            return std::invoke(VIOLET_FWD(Fun, fun), this->At<Is>()...);
-        }(std::make_index_sequence<Tuple::Size()>());
+        return Tuple::applyTo(*this, VIOLET_FWD(Fun, fun));
+    }
+
+    template<typename Fun>
+    constexpr auto Apply(Fun&& fun) const& -> decltype(auto)
+    {
+        return Tuple::applyTo(*this, VIOLET_FWD(Fun, fun));
+    }
+
+    template<typename Fun>
+    constexpr auto Apply(Fun&& fun) && -> decltype(auto)
+    {
+        return Tuple::applyTo(VIOLET_MOVE(*this), VIOLET_FWD(Fun, fun));
+    }
+
+    template<typename Fun>
+    constexpr auto Apply(Fun&& fun) const&& -> decltype(auto)
+    {
+        return Tuple::applyTo(VIOLET_MOVE(*this), VIOLET_FWD(Fun, fun));
     }
 
     template<typename... Us>
     constexpr auto Concat(Tuple<Us...>&& other) && -> Tuple<Ts..., Us...>
     {
-        return [&]<UInt... Is, UInt... Js>() -> Tuple<Ts..., Us...> {
+        return [&]<UInt... Is, UInt... Js>(std::index_sequence<Is...>, std::index_sequence<Js...>) -> auto {
             return Tuple<Ts..., Us...>(
                 VIOLET_MOVE(*this).template At<Is>()..., VIOLET_MOVE(other).template At<Js>()...);
         }(std::index_sequence_for<Ts...>(), std::index_sequence_for<Us...>());
@@ -215,28 +261,15 @@ public:
     constexpr void swap(Tuple& other) noexcept((std::is_nothrow_swappable_v<Ts> && ...))
         requires(std::swappable<Ts> && ...)
     {
-        [&]<UInt... Is>(std::index_sequence<Is...>) -> auto {
-            (std::ranges::swap(at<Is>(), other.template at<Is>()), ...);
+        [&]<UInt... Is>(std::index_sequence<Is...>) -> void {
+            (std::ranges::swap(this->template At<Is>(), other.template At<Is>()), ...);
         }(std::index_sequence_for<Ts...>());
     }
 
-    template<typename... Xs, typename... Ys>
-    constexpr friend auto operator==(const Tuple<Xs...>& t1, const Tuple<Ys...>& t2) -> bool
+    constexpr friend void swap(Tuple& lhs, Tuple& rhs) noexcept(noexcept(lhs.swap(rhs)))
+        requires(std::swappable<Ts> && ...)
     {
-        return [&]<UInt... Is>(std::index_sequence<Is...>) -> auto {
-            return ((t1.template At<Is>() == t2.template At<Is>()) && ...);
-        }(std::index_sequence_for<Xs...>());
-    }
-
-    template<typename... Xs, typename... Ys>
-    constexpr friend auto operator<=>(const Tuple<Xs...>& t1, const Tuple<Ys...>& t2)
-    {
-        using category = std::common_comparison_category_t<std::compare_three_way_result_t<Xs, Ys>...>;
-        category result = category::equivalent;
-
-        return [&]<UInt... Is>(std::index_sequence<Is...>) -> auto {
-            (void)((result = t1.template At<Is>() <=> t2.template At<Is>(), result != 0) || ...);
-        }(std::index_sequence_for<Xs...>());
+        lhs.swap(rhs);
     }
 
 private:
@@ -249,14 +282,129 @@ private:
     template<typename Other, UInt... Is>
     constexpr void assignFrom(Other&& other, std::index_sequence<Is...>)
     {
-        ((this->At<Is>() = VIOLET_FWD(Other, other).template At<Is>()), ...);
+        ((this->template At<Is>() = VIOLET_FWD(Other, other).template At<Is>()), ...);
+    }
+
+    template<typename Self, typename Fun>
+    constexpr static auto applyTo(Self&& self, Fun&& fun) -> decltype(auto)
+    {
+        return [&]<UInt... Is>(std::index_sequence<Is...>) -> decltype(auto) {
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_FWD(Self, self).template At<Is>()...);
+        }(std::index_sequence_for<Ts...>());
     }
 };
 
 template<typename... Us>
 Tuple(Us...) -> Tuple<Us...>;
 
+template<typename... Ts, typename... Us>
+    requires(sizeof...(Ts) == sizeof...(Us)) && (std::equality_comparable_with<Ts, Us> && ...)
+constexpr auto operator==(const Tuple<Ts...>& lhs, const Tuple<Us...>& rhs) -> bool
+{
+    return [&]<UInt... Is>(std::index_sequence<Is...>) -> bool {
+        return ((lhs.template At<Is>() == rhs.template At<Is>()) && ...);
+    }(std::index_sequence_for<Ts...>());
+}
+
+template<typename... Ts, typename... Us>
+    requires(sizeof...(Ts) == sizeof...(Us)) && (std::three_way_comparable_with<Ts, Us> && ...)
+constexpr auto operator<=>(const Tuple<Ts...>& lhs, const Tuple<Us...>& rhs)
+    -> std::common_comparison_category_t<std::compare_three_way_result_t<Ts, Us>...>
+{
+    using category = std::common_comparison_category_t<std::compare_three_way_result_t<Ts, Us>...>;
+
+    category result = std::strong_ordering::equal;
+    [&]<UInt... Is>(std::index_sequence<Is...>) -> void {
+        (void)(((result = lhs.template At<Is>() <=> rhs.template At<Is>()) != 0) || ...);
+    }(std::index_sequence_for<Ts...>());
+
+    return result;
+}
+
+template<UInt I, typename... Ts>
+    requires(I < sizeof...(Ts))
+constexpr auto get(Tuple<Ts...>& tuple) noexcept -> pack_element_t<I, Ts...>&
+{
+    return tuple.template At<I>();
+}
+
+template<UInt I, typename... Ts>
+    requires(I < sizeof...(Ts))
+constexpr auto get(const Tuple<Ts...>& tuple) noexcept -> const pack_element_t<I, Ts...>&
+{
+    return tuple.template At<I>();
+}
+
+template<UInt I, typename... Ts>
+    requires(I < sizeof...(Ts))
+constexpr auto get(Tuple<Ts...>&& tuple) noexcept -> pack_element_t<I, Ts...>&&
+{
+    return VIOLET_MOVE(tuple).template At<I>();
+}
+
+template<UInt I, typename... Ts>
+    requires(I < sizeof...(Ts))
+constexpr auto get(const Tuple<Ts...>&& tuple) noexcept -> const pack_element_t<I, Ts...>&&
+{
+    return VIOLET_MOVE(tuple).template At<I>();
+}
+
+template<typename X, typename... Ts>
+    requires((std::same_as<X, Ts> + ...) == 1)
+constexpr auto get(Tuple<Ts...>& tuple) noexcept -> X&
+{
+    return tuple.template At<tuple_internal::IndexOf<X, Ts...>()>();
+}
+
+template<typename X, typename... Ts>
+    requires((std::same_as<X, Ts> + ...) == 1)
+constexpr auto get(const Tuple<Ts...>& tuple) noexcept -> const X&
+{
+    return tuple.template At<tuple_internal::IndexOf<X, Ts...>()>();
+}
+
+template<typename X, typename... Ts>
+    requires((std::same_as<X, Ts> + ...) == 1)
+constexpr auto get(Tuple<Ts...>&& tuple) noexcept -> X&&
+{
+    return VIOLET_MOVE(tuple).template At<tuple_internal::IndexOf<X, Ts...>()>();
+}
+
+template<typename X, typename... Ts>
+    requires((std::same_as<X, Ts> + ...) == 1)
+constexpr auto get(const Tuple<Ts...>&& tuple) noexcept -> const X&&
+{
+    return VIOLET_MOVE(tuple).template At<tuple_internal::IndexOf<X, Ts...>()>();
+}
+
 } // namespace violet::experimental
+
+template<typename... Ts>
+    requires((std::formattable<Ts, char> && ...))
+struct std::formatter<violet::experimental::Tuple<Ts...>, char> final: public std::formatter<violet::String> {
+    constexpr formatter() noexcept = default;
+
+    constexpr auto parse(std::format_parse_context& pcx)
+    {
+        return pcx.begin();
+    }
+
+    template<typename FormatCx>
+    auto format(const violet::experimental::Tuple<Ts...>& tuple, FormatCx& cx) const
+    {
+        // formats as '(T1, T2, Tn...)'
+        auto out = cx.out();
+        *out++ = '(';
+
+        tuple.Apply([](const auto&... elems) -> void {
+            bool first = true;
+            ((out = std::format_to(out, "{}{}", first ? "" : ", ", elems), first = false), ...);
+        });
+
+        *out++ = ')';
+        return out;
+    }
+};
 
 template<typename... Ts>
 struct std::tuple_size<violet::experimental::Tuple<Ts...>> final

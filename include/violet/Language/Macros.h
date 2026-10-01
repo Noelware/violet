@@ -1353,14 +1353,18 @@
  * @since current
  */
 #define VIOLET_TRAIT_FOR_ALL_TYPES(trait, ...)                                                                         \
-    ([]<typename... Ts>() consteval { return ((trait<Ts>) && ...); }.template operator()<__VA_ARGS__>())
+    ([]<typename... Ts>() consteval -> decltype(auto) {                                                                \
+        return ((trait<Ts>) && ...);                                                                                   \
+    }.template operator()<__VA_ARGS__>())
 
 /**
  * @macro VIOLET_TRAIT_FOR_ANY_TYPES
  * @since current
  */
 #define VIOLET_TRAIT_FOR_ANY_TYPES(trait, ...)                                                                         \
-    ([]<typename... Ts>() consteval { return ((trait<Ts>) || ...); }.template operator()<__VA_ARGS__>())
+    ([]<typename... Ts>() consteval -> decltype(auto) {                                                                \
+        return ((trait<Ts>) || ...);                                                                                   \
+    }.template operator()<__VA_ARGS__>())
 
 /**
  * @macro VIOLET_FEATURE_CPP_REFLECTION
