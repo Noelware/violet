@@ -35,7 +35,7 @@ gccimages["gcc-16"]="sha256:b98be39c2378222af9dcab6a5b1707d74b47d7c413c8569d5429
 gccimages["gcc-15"]="sha256:fb2568a8cc0609134396aeb1eae1f3a91c8ceec54aaee67c798d9602593abd66"
 
 # renovate: ref=gcc:14.4-trixie
-gccimages["gcc-14"]="sha256:3ae7320d7dd41f446a48930e1edf4e7a41c7be5ae43a5ddbf017c53fe6495738"
+gccimages["gcc-14"]="sha256:9188ac751ca24431dc43dbd142a223c98ea74f01d2858e84d30ba342a0d67844"
 
 if ! command -v docker >/dev/null; then
     echo "~> missing \`docker\` command :: exiting"
