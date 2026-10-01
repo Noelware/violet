@@ -310,20 +310,19 @@ struct std::formatter<violet::experimental::Pair<First, Second>, char> final: pu
 };
 
 template<typename First, typename Second>
-struct std::tuple_size<violet::experimental::Pair<First, Second>> final
-    : public std::integral_constant<violet::UInt, 2> { };
+struct std::tuple_size<violet::experimental::Pair<First, Second>>: public std::integral_constant<violet::UInt, 2> { };
 
 template<violet::UInt I, typename First, typename Second>
-struct std::tuple_element<I, violet::experimental::Pair<First, Second>> final {
+struct std::tuple_element<I, violet::experimental::Pair<First, Second>> {
     static_assert(I < 2, "`Pair` only consists of two types");
 };
 
 template<typename First, typename Second>
-struct std::tuple_element<0L, violet::experimental::Pair<First, Second>> final {
+struct std::tuple_element<0L, violet::experimental::Pair<First, Second>> {
     using type = First;
 };
 
 template<typename First, typename Second>
-struct std::tuple_element<1L, violet::experimental::Pair<First, Second>> final {
+struct std::tuple_element<1L, violet::experimental::Pair<First, Second>> {
     using type = Second;
 };

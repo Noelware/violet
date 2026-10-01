@@ -407,10 +407,10 @@ struct std::formatter<violet::experimental::Tuple<Ts...>, char> final: public st
 };
 
 template<typename... Ts>
-struct std::tuple_size<violet::experimental::Tuple<Ts...>> final
-    : public std::integral_constant<violet::UInt, sizeof...(Ts)> { };
+struct std::tuple_size<violet::experimental::Tuple<Ts...>>: public std::integral_constant<violet::UInt, sizeof...(Ts)> {
+};
 
 template<violet::UInt I, typename... Ts>
-struct std::tuple_element<I, violet::experimental::Tuple<Ts...>> final {
+struct std::tuple_element<I, violet::experimental::Tuple<Ts...>> {
     using type = violet::pack_element_t<I, Ts...>;
 };
