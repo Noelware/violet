@@ -20,6 +20,7 @@
 // SOFTWARE.
 
 #include <violet/Experimental/Coroutines/Internals/Schedulers/SingleThreadedScheduler.h>
+#include <violet/Experimental/Coroutines/Internals/Timers/Driver.h>
 
 namespace violet::experimental::coro::internals {
 
@@ -85,18 +86,22 @@ void SingleThreadedScheduler::BlockOn(RawTask* root, [[maybe_unused]] DriveConte
             return;
         }
 
-        // if (cx.Timers.FireExpired(cx.TimeSource.Now()) > 0) {
-        //     continue;
-        // }
+        if (cx.Timers == nullptr) {
+            this->n_parker.Park();
+            continue;
+        }
 
-        // Optional<chrono::Instant> next = ctx.Timers.GetNextDeadline();
-        // if (auto next = cx.Timers.GetNextDeadline()) {
-        //     this->n_parker.ParkUntil(*next);
-        // } else {
-        //     this->n_parker.Park();
-        // }
+        if (cx.Timers->FireExpired(cx.TimeSource.Now()) > 0) {
+            continue;
+        }
 
-        // cx.Timers.FireExpired(cx.TimeSource.Now());
+        if (auto next = cx.Timers->NextDeadline()) {
+            this->n_parker.ParkUntil(*next);
+        } else {
+            this->n_parker.Park();
+        }
+
+        cx.Timers->FireExpired(cx.TimeSource.Now());
     }
 }
 

@@ -24,17 +24,22 @@
 #pragma once
 
 #include <violet/Experimental/Coroutines/Internals/Scheduler.h>
+#include <violet/Experimental/Coroutines/Internals/Timers/Driver.h>
 #include <violet/Experimental/Coroutines/JoinHandle.h>
 #include <violet/Experimental/Coroutines/Task.h>
 #include <violet/Experimental/Time/Clock.h>
 #include <violet/Experimental/Unique.h>
+#include <violet/SourceLocation.h>
 
 namespace violet::experimental::coro {
 
 struct Runtime;
 
 struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Handle final {
-    static auto Current() noexcept -> Handle&;
+    NOELDOC_HIDE const struct Clock* Clock;
+    NOELDOC_HIDE internals::timers::Driver* Timers;
+
+    static auto Current(SourceLocation loc = std::source_location::current()) noexcept -> Handle&;
     static auto TryCurrent() noexcept -> Optional<Handle>;
 
     template<typename T>
@@ -43,14 +48,15 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Handle final {
 private:
     friend struct Runtime;
 
-    VIOLET_EXPLICIT Handle(internals::Scheduler* scheduler, const Clock* clock) noexcept
-        : n_scheduler(scheduler)
-        , n_clock(clock)
+    VIOLET_EXPLICIT Handle(
+        internals::Scheduler* scheduler, internals::timers::Driver* timers, const struct Clock* clock) noexcept
+        : Clock(clock)
+        , Timers(timers)
+        , n_scheduler(scheduler)
     {
     }
 
     internals::Scheduler* n_scheduler = nullptr;
-    const Clock* n_clock = nullptr;
 };
 
 struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") HandleGuard final {
@@ -61,10 +67,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") HandleGuard final {
 private:
     friend struct Runtime;
 
-    VIOLET_EXPLICIT HandleGuard(Handle* handle) noexcept
-        : n_previous(handle)
-    {
-    }
+    VIOLET_EXPLICIT HandleGuard(Handle* handle) noexcept;
 
     Handle* n_previous = nullptr;
 };
@@ -81,13 +84,8 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Runtime final {
     VIOLET_DISALLOW_COPY_AND_MOVE(Runtime);
     ~Runtime();
 
-    NOELDOC_HIDE VIOLET_EXPLICIT Runtime(
-        ctor_key, const Clock& clock, ptr::Unique<internals::Scheduler> scheduler) noexcept
-        : n_clock(std::addressof(clock))
-        , n_scheduler(VIOLET_MOVE(scheduler))
-        , n_handle(this->n_scheduler.Get(), this->n_clock)
-    {
-    }
+    NOELDOC_HIDE VIOLET_EXPLICIT Runtime(ctor_key, const Clock& clock, ptr::Unique<internals::timers::Driver> timers,
+        ptr::Unique<internals::Scheduler> scheduler) noexcept;
 
     template<typename T>
     auto BlockOn(Task<T> task) -> T;
@@ -104,6 +102,7 @@ private:
     friend struct Builder;
 
     const Clock* n_clock;
+    ptr::Unique<internals::timers::Driver> n_timers;
     ptr::Unique<internals::Scheduler> n_scheduler;
     struct Handle n_handle;
 };
@@ -130,6 +129,12 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Runtime::Builder final {
         return VIOLET_MOVE(*this);
     }
 
+    auto EnableTimers() & noexcept -> Builder&;
+    auto EnableTimers() && noexcept -> Builder&&;
+
+    auto EnableAll() & noexcept -> Builder&;
+    auto EnableAll() && noexcept -> Builder&&;
+
     [[nodiscard]]
     auto Build() && -> ptr::Unique<Runtime>;
 
@@ -140,6 +145,7 @@ private:
     }
 
     const Clock* n_clock = std::addressof(Clock::System());
+    ptr::Unique<internals::timers::Driver> n_timers;
     ptr::Unique<internals::Scheduler> n_scheduler;
 };
 
@@ -148,10 +154,10 @@ auto Runtime::BlockOn(Task<T> task) -> T
 {
     VIOLET_ASSERT(!Handle::TryCurrent(), "`Runtime::BlockOn` can't be called from inside a runtime");
 
-    HandleGuard guard(std::addressof(Handle::Current()));
+    HandleGuard guard(std::addressof(this->n_handle));
     JoinHandle<T> root = this->n_handle.Spawn(VIOLET_MOVE(task));
 
-    this->n_scheduler->BlockOn(root.n_task, {*this->n_clock});
+    this->n_scheduler->BlockOn(root.n_task, {*this->n_clock, this->n_timers.Get()});
     return root.Take();
 }
 

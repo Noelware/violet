@@ -26,6 +26,7 @@
 #include <violet/Language/Macros.h>
 #include <violet/Language/Policy.h>
 #include <violet/Print.h>
+#include <violet/SourceLocation.h>
 
 #include <iostream>
 #include <source_location>
@@ -33,13 +34,11 @@
 
 namespace violet::internals {
 
-NOELDOC_HIDE
-inline void FailAssertion(const char* conditionString, std::string message, std::ostream& os = std::cerr,
-    std::source_location loc = std::source_location::current())
+[[noreturn]]
+NOELDOC_HIDE VIOLET_COLD inline void FailAssertion(const char* conditionString, std::string message,
+    std::ostream& os = std::cerr, SourceLocation loc = std::source_location::current())
 {
-    Println(os, "[{}:{}:{}]: condition '{}' failed: {}", loc.file_name(), loc.line(), loc.column(), conditionString,
-        message);
-
+    Println(os, "[{}:{}:{}]: condition '{}' failed: {}", loc.File, loc.Line, loc.Column, conditionString, message);
     std::abort();
 }
 
@@ -178,7 +177,14 @@ inline void FailAssertion(const char* conditionString, std::string message, std:
         if (!(condition)) {                                                                                            \
             ::violet::internals::FailAssertion(#condition, message, ::std::cerr, ::std::source_location::current());   \
         }                                                                                                              \
-    } while (false);
+    } while (false)
+
+#define VIOLET_DEBUG_ASSERT_LOC(condition, message, loc)                                                               \
+    do {                                                                                                               \
+        if (!(condition)) {                                                                                            \
+            ::violet::internals::FailAssertion(#condition, message, ::std::cerr, loc);                                 \
+        }                                                                                                              \
+    } while (false)
 
 #define VIOLET_DEBUG_ASSERT0(condition)                                                                                \
     do {                                                                                                               \
@@ -186,7 +192,7 @@ inline void FailAssertion(const char* conditionString, std::string message, std:
             ::violet::internals::FailAssertion(                                                                        \
                 #condition, "assertion failed", ::std::cerr, ::std::source_location::current());                       \
         }                                                                                                              \
-    } while (false);
+    } while (false)
 
 #define VIOLET_DEBUG_ASSERT_FMT(condition, fmt, ...)                                                                   \
     do {                                                                                                               \
@@ -194,9 +200,10 @@ inline void FailAssertion(const char* conditionString, std::string message, std:
             ::violet::internals::FailAssertion(#condition, ::std::format(fmt __VA_OPT__(, ) __VA_ARGS__), ::std::cerr, \
                 ::std::source_location::current());                                                                    \
         }                                                                                                              \
-    } while (false);
+    } while (false)
 #else
 #define VIOLET_DEBUG_ASSERT(condition, message) ((void)0)
+#define VIOLET_DEBUG_ASSERT_LOC(condition, message, loc) ((void)0)
 #define VIOLET_DEBUG_ASSERT0(condition) ((void)0)
 #define VIOLET_DEBUG_ASSERT_FMT(condition, fmt, ...) ((void)0)
 #endif

@@ -79,6 +79,7 @@ violet_cc_library(
         ":task",
         "//violet/experimental:unique",
         "//violet/experimental/coroutines/internals/schedulers:single_threaded",
+        "//violet/experimental/coroutines/internals/timers:driver",
         "//violet/experimental/time:clock",
     ],
 )
@@ -87,6 +88,22 @@ violet_cc_test(
     name = "runtime_test",
     srcs = ["//tests/experimental/coroutines:Runtime.test.cc"],
     deps = [":runtime"],
+)
+
+violet_cc_library(
+    name = "sleep",
+    srcs = ["//src/experimental/coroutines:Sleep.cc"],
+    hdrs = ["//include/violet/Experimental/Coroutines:Sleep.h"],
+    deps = [
+        ":runtime",
+        "//violet/experimental/coroutines/internals/timers:wheel",
+    ],
+)
+
+violet_cc_test(
+    name = "sleep_test",
+    srcs = ["//tests/experimental/coroutines:Sleep.test.cc"],
+    deps = [":sleep"],
 )
 
 violet_cc_library(

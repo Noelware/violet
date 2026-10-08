@@ -36,8 +36,9 @@ void WakeupTask(Unsafe, RawTask* task) noexcept
 {
     VIOLET_ASSUME(task != nullptr);
 
-    auto state = task->State.load(std::memory_order_relaxed);
-    auto next = kTaskStateIdle;
+    UInt32 state = task->State.load(std::memory_order_relaxed);
+    UInt32 next = 0;
+    bool push = false;
 
     do {
         // task was already queued, flagged for re-queue, or finished
@@ -45,13 +46,12 @@ void WakeupTask(Unsafe, RawTask* task) noexcept
             return;
         }
 
-        // If a worker is inside `Resumem`, it must not be pushed now (another worker could resume a
-        // frame that is still executing). It'll be flagged instead.
-        next = (state & kTaskStateRunning) != 0 ? (state | kTaskStateNotified) : kTaskStateScheduled;
+        push = (state & kTaskStateRunning) == 0;
+        next = push ? (state | kTaskStateScheduled) : (state | kTaskStateNotified);
     } while (!task->State.compare_exchange_weak(state, next, std::memory_order_acq_rel, std::memory_order_relaxed));
 
-    if (next == kTaskStateScheduled) {
-        RetainRawTask(Unsafe("task is safe to be used"), task);
+    if (push) {
+        RetainRawTask(Unsafe("the run queue takes one reference"), task);
         task->Owner->Push(task);
     }
 }
@@ -60,8 +60,9 @@ void RunTask(Unsafe, RawTask* task) noexcept
 {
     VIOLET_ASSUME(task != nullptr);
 
-    UInt32 previous = task->State.exchange(kTaskStateRunning, std::memory_order_acq_rel);
-    VIOLET_DEBUG_ASSERT(previous == kTaskStateScheduled, "`RunTask` was called on a task that was not scheduled");
+    UInt32 previous = task->State.fetch_xor(kTaskStateScheduled | kTaskStateRunning, std::memory_order_acq_rel);
+    VIOLET_DEBUG_ASSERT((previous & kTaskStateLifecycleMask) == kTaskStateScheduled,
+        "`RunTask` was called on a task that was not scheduled");
 
     std::coroutine_handle<> leaf = std::exchange(task->Leaf, nullptr);
 
@@ -75,20 +76,29 @@ void RunTask(Unsafe, RawTask* task) noexcept
     tCurrentTask = outer;
 
     if (task->VTable->Done(task->Frame)) {
-        task->State.store(kTaskStateComplete, std::memory_order_release);
-        ReleaseRawTask(Unsafe("this is safe"), task);
+        UInt32 finished = task->State.fetch_xor(kTaskStateRunning | kTaskStateComplete, std::memory_order_acq_rel);
 
+        if ((finished & kTaskStateJoinWaiter) != 0) {
+            RawTask* joiner = task->VTable->TakeJoinWaiter(task->Frame);
+            WakeupTask(Unsafe("the join awaiter handed us its reference via the promise"), joiner);
+            ReleaseRawTask(Unsafe("dropping the join awaiter's reference"), joiner);
+        }
+
+        ReleaseRawTask(Unsafe("dropping the run queue's reference"), task);
         return;
     }
 
-    UInt32 state = kTaskStateRunning;
+    UInt32 state = task->State.load(std::memory_order_relaxed);
     while (true) {
-        UInt32 next = (state & kTaskStateNotified) != 0 ? kTaskStateScheduled : kTaskStateIdle;
+        const bool requeue = (state & kTaskStateNotified) != 0;
+        const UInt32 flags = state & ~kTaskStateLifecycleMask;
+        const UInt32 next = requeue ? (flags | kTaskStateScheduled) : flags;
+
         if (task->State.compare_exchange_weak(state, next, std::memory_order_acq_rel, std::memory_order_relaxed)) {
-            if (next == kTaskStateScheduled) {
-                task->Owner->Push(task);
+            if (requeue) {
+                task->Owner->Push(task); // hand the run queue's reference straight back
             } else {
-                ReleaseRawTask(Unsafe("things"), task);
+                ReleaseRawTask(Unsafe("idle: the run queue's reference is dropped"), task);
             }
 
             return;

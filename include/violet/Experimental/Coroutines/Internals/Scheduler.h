@@ -54,10 +54,14 @@
 
 namespace NOELDOC_HIDE violet {
 namespace experimental::coro::internals {
+namespace timers {
+struct Driver;
+}
 
 /// Contextual understanding of a runtime handle without importing `Runtime.h`.
 struct VIOLET_API DriveContext final {
     const Clock& TimeSource; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    timers::Driver* Timers = nullptr;
 };
 
 /// Something that accepts runnable root tasks.
@@ -80,6 +84,8 @@ inline constexpr UInt32 kTaskStateRunning = 1U << 1;
 inline constexpr UInt32 kTaskStateNotified = 1U << 2;
 inline constexpr UInt32 kTaskStateComplete = 1U << 3;
 inline constexpr UInt32 kTaskStateJoinWaiter = 1U << 4;
+inline constexpr UInt32 kTaskStateLifecycleMask
+    = kTaskStateScheduled | kTaskStateRunning | kTaskStateNotified | kTaskStateComplete;
 
 /// The current root task the calling thread is currently resuming, or `nullptr` outside of a task.
 [[nodiscard]]

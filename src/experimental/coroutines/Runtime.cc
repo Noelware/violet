@@ -27,9 +27,9 @@ namespace {
 thread_local Handle* tCurrentHandle = nullptr;
 }
 
-auto Handle::Current() noexcept -> Handle&
+auto Handle::Current(SourceLocation loc) noexcept -> Handle&
 {
-    VIOLET_DEBUG_ASSERT(tCurrentHandle != nullptr, "no runtime has been established");
+    VIOLET_DEBUG_ASSERT_LOC(tCurrentHandle != nullptr, "no runtime has been established", loc);
     return *tCurrentHandle;
 }
 
@@ -42,17 +42,34 @@ auto Handle::TryCurrent() noexcept -> Optional<Handle>
     return *tCurrentHandle;
 }
 
+HandleGuard::HandleGuard(Handle* handle) noexcept
+    : n_previous(std::exchange(tCurrentHandle, handle))
+{
+}
+
 HandleGuard::~HandleGuard()
 {
     tCurrentHandle = this->n_previous;
 }
 
+Runtime::Runtime(ctor_key, const Clock& clock, ptr::Unique<internals::timers::Driver> timers,
+    ptr::Unique<internals::Scheduler> scheduler) noexcept
+    : n_clock(std::addressof(clock))
+    , n_timers(VIOLET_MOVE(timers))
+    , n_scheduler(VIOLET_MOVE(scheduler))
+    , n_handle(this->n_scheduler.Get(), this->n_timers.Get(), this->n_clock)
+{
+}
+
 Runtime::~Runtime()
 {
-    VIOLET_DEBUG_ASSERT(std::addressof(Handle::Current()) != std::addressof(this->n_handle),
+    VIOLET_DEBUG_ASSERT(tCurrentHandle != std::addressof(this->n_handle),
         "Runtime can't be destroyed from inside its own `BlockOn` call");
 
-    // if (this->n_timers != nullptr) this->n_timers->Clear();
+    if (this->n_timers != nullptr) {
+        this->n_timers->Clear();
+    }
+
     // if (this->n_io != nullptr) this->n_io->DoCompletionOfAllTasks();
 }
 
@@ -66,9 +83,22 @@ auto Runtime::Builder::CurrentThread() -> Builder
     return Builder(ptr::Unique<internals::Scheduler>::New<internals::SingleThreadedScheduler>());
 }
 
+auto Runtime::Builder::EnableTimers() & noexcept -> Builder&
+{
+    this->n_timers.Reset(new internals::timers::Driver(this->n_clock->Now()));
+    return *this;
+}
+
+auto Runtime::Builder::EnableTimers() && noexcept -> Builder&&
+{
+    this->n_timers.Reset(new internals::timers::Driver(this->n_clock->Now()));
+    return VIOLET_MOVE(*this);
+}
+
 auto Runtime::Builder::Build() && -> ptr::Unique<Runtime>
 {
-    return ptr::Unique<Runtime>::New(ctor_key{}, *this->n_clock, VIOLET_MOVE(this->n_scheduler));
+    return ptr::Unique<Runtime>::New(
+        ctor_key{}, *this->n_clock, VIOLET_MOVE(this->n_timers), VIOLET_MOVE(this->n_scheduler));
 }
 
 } // namespace violet::experimental::coro
