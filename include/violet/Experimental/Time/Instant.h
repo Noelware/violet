@@ -64,30 +64,49 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Instant final {
     /// @since current
     using clock_type = std::chrono::steady_clock;
 
-    /// The underlying standard-library representation, [`std::chrono::system_clock::time_point`].
+    /// The underlying standard-library representation, [`std::chrono::steady_clock::time_point`].
     using std_type = clock_type::time_point;
 
+    /// Constructs a new [`Instant`].
     constexpr VIOLET_IMPLICIT Instant() noexcept = default;
+
+    /// Constructs a new [`Instant`] from the C++-backed object.
     constexpr VIOLET_IMPLICIT Instant(std_type tp)
         : n_tp(tp)
     {
     }
 
+    /// Returns a [`Instant`] of the present time.
+    constexpr static auto Now() noexcept -> Instant
+    {
+        return {clock_type::now()};
+    }
+
+    /// Returns the maximum, representable `Instant`.
+    NOELDOC_SINCE("current")
+    constexpr static auto Max() noexcept -> Instant
+    {
+        return {std_type::max()};
+    }
+
     /// Returns the C++-backed implementation that [`Instant`] uses.
-    [[nodiscard]] constexpr auto ToStd() const -> std_type
+    [[nodiscard]]
+    constexpr auto ToStd() const -> std_type
     {
         return this->n_tp;
     }
 
     /// The duration since `earlier`. If `earlier` is later than `this`, it returns zero.
-    [[nodiscard]] constexpr auto DurationSince(Instant earlier) const -> Duration
+    [[nodiscard]]
+    constexpr auto DurationSince(Instant earlier) const -> Duration
     {
         return this->n_tp < earlier.n_tp ? Duration::Zero() : Duration(this->n_tp - earlier.n_tp);
     }
 
     /// The elapsed time since this instant, measured against a given `clock`. Returns
     /// a zeroed duration if this instant is in the future.
-    [[nodiscard]] auto Elapsed(const Clock& clock) const -> Duration;
+    [[nodiscard]]
+    auto Elapsed(const Clock& clock) const -> Duration;
 
     constexpr auto operator+(Duration dur) const -> Instant
     {
@@ -136,4 +155,5 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Instant final {
 private:
     std_type n_tp;
 };
+
 } // namespace violet::experimental::chrono

@@ -288,7 +288,7 @@ struct NOELDOC_SINCE("26.06.05") FunctionParams<R(Args...)> final {
 /// This excludes `void`, function types, incomplete class types, and arrays of
 /// unknown bound.
 ///
-/// @since 26.09
+/// @since current
 template<typename T>
 concept complete_object = requires { sizeof(T); };
 static_assert(complete_object<int32_t>);
@@ -305,7 +305,7 @@ static_assert(!complete_object<int32_t[]>);
 /// accepts it as a GNU extension (which returns `1`, which makes it "alignable"). So, function types
 /// are permitted on GCC only, Clang/MSVC are a hard error.
 ///
-/// @since 26.09
+/// @since current
 #if VIOLET_COMPILER(GCC)
 template<typename T>
 concept alignable = requires { alignof(T); } && !std::is_function_v<T>;
@@ -382,7 +382,7 @@ constexpr inline bool is_trivially_relocatable_v = trivially_relocatable<std::re
 
 /**
  * @macro VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE
- * @since 26.09
+ * @since current
  *
  * Permits polymorphic types to be opted into trivial relocation. Disabled by default.
  *
@@ -414,7 +414,7 @@ constexpr inline bool is_trivially_relocatable_v = trivially_relocatable<std::re
 
 /**
  * @macro VIOLET_DECLARE_TRIVIALLY_RELOCATABLE
- * @since 26.09
+ * @since current
  */
 #define VIOLET_DECLARE_TRIVIALLY_RELOCATABLE(...)                                                                      \
     template<>                                                                                                         \

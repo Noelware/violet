@@ -21,6 +21,8 @@
 //
 //! # 🌺💜 `violet/Experimental/Coroutines/Generator.h`
 
+#pragma once
+
 #include <violet/Experimental/OneOf.h>
 #include <violet/Iterator.h>
 

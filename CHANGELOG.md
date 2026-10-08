@@ -37,6 +37,7 @@ availableAt:
     - These types are not reimplementations, they're bridged from Abseil's SwissTables if the Abseil feature is enabled, otherwise the C++ STL implementations are used instead.
 - Added new types: Pair and Tuple ([`@auguwu`])
     - They mimic the STL types but adds combinators and makes code less "funky" in my opinion
+- Added **LockUntil** and **AwaitUntil** for `Mutex` ([`@auguwu`])
 
 #### Noelware.Violet.Experimental.Coroutines
 This is a new experimental framework that works with C++20 coroutines.
@@ -74,6 +75,8 @@ New Bazel build flags are now provided:
 
 #### Noelware.Violet.Experimental.Time
 - Fix `TimePoint::IntoISO8601` to write into a bounds-checked buffer and assert on truncation instead of a fixed `char[32]` with an unchecked `snprintf` ([`@auguwu`])
+- Added Abseil and `std::time_t` conversions and constructors for `Duration` ([`@auguwu`])
+- Added Abseil conversions for `TimePoint` ([`@auguwu`])
 
 [`std::ptr::NonNull`]: https://doc.rust-lang.org/std/ptr/struct.NonNull.html
 

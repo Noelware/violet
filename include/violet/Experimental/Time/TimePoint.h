@@ -25,6 +25,10 @@
 
 #include <violet/Experimental/Time/Duration.h>
 
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE_ABSEIL
+#include "absl/time/time.h"
+#endif
+
 namespace violet::experimental::chrono {
 
 /// A wall-clock timestamp.
@@ -82,6 +86,18 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
         return TimePoint(nanos);
     }
 
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE_ABSEIL
+    /// Construct a [`TimePoint`] from [`absl::Time`]. Returns a saturated value for infinite
+    /// times or values outside `TimePoint`'s representable range.
+    [[nodiscard]]
+    NOELDOC_SINCE("current") static auto FromAbsl(absl::Time time) noexcept -> TimePoint;
+
+    /// Construct a [`TimePoint`] from [`absl::Time`]. Returns `Nothing` for infinite times
+    /// or values outside `TimePoint`'s representable range instead of saturating.
+    [[nodiscard]]
+    NOELDOC_SINCE("current") static auto TryFrom(absl::Time time) noexcept -> Optional<TimePoint>;
+#endif
+
     /// Converts back to a [`std::chrono::system_clock::time_point`].
     ///
     /// On platforms whose clock is coarser than nanoseconds, the value is truncated to the
@@ -89,7 +105,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     [[nodiscard]] constexpr auto ToStd() const -> std_type
     {
         return std_type(
-            std::chrono::duration_cast<typename std_type::duration>(std::chrono::nanoseconds(this->n_ns_since_epoch)));
+            std::chrono::duration_cast<std_type::duration>(std::chrono::nanoseconds(this->n_ns_since_epoch)));
     }
 
     /// Returns the whole number of seconds since the Unix epoch, truncating toward zero.
@@ -117,6 +133,12 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     {
         return this->n_ns_since_epoch;
     }
+
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE_ABSEIL
+    /// Construct a [`absl::Time`] from this time point object.
+    [[nodiscard]]
+    NOELDOC_SINCE("current") auto ToAbsl() const noexcept -> absl::Time;
+#endif
 
     /// Adds `dur` to this [`TimePoint`], returning [`Nothing`] on overflow.
     ///
@@ -182,7 +204,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     /// runtime; see [`CheckedAdd`] for a non-aborting alternative.
     constexpr auto operator+(Duration dur) const -> TimePoint
     {
-        return TimePoint(detail::doCheckedAdd(this->n_ns_since_epoch, dur.AsNanos(), "TimePoint::operator+(Duration)"));
+        return TimePoint(
+            internals::doCheckedAdd(this->n_ns_since_epoch, dur.AsNanos(), "TimePoint::operator+(Duration)"));
     }
 
     /// Returns the [`Duration`] formed by summing the two epoch offsets of `this` and `tp`.
@@ -191,7 +214,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     constexpr auto operator+(TimePoint tp) const -> Duration
     {
         return Duration::Nanoseconds(
-            detail::doCheckedAdd(this->n_ns_since_epoch, tp.n_ns_since_epoch, "TimePoint::operator-(TimePoint)"));
+            internals::doCheckedAdd(this->n_ns_since_epoch, tp.n_ns_since_epoch, "TimePoint::operator-(TimePoint)"));
     }
 
     /// Returns the [`TimePoint`] reached by rewinding this one by `dur`.
@@ -200,7 +223,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     /// runtime; see [`CheckedSub`] for a non-aborting alternative.
     constexpr auto operator-(Duration dur) const -> TimePoint
     {
-        return TimePoint(detail::doCheckedSub(this->n_ns_since_epoch, dur.AsNanos(), "TimePoint::operator-(Duration)"));
+        return TimePoint(
+            internals::doCheckedSub(this->n_ns_since_epoch, dur.AsNanos(), "TimePoint::operator-(Duration)"));
     }
 
     /// Returns the [`Duration`] elapsed from `tp` up to this [`TimePoint`].
@@ -211,14 +235,14 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     constexpr auto operator-(TimePoint tp) const -> Duration
     {
         return Duration::Nanoseconds(
-            detail::doCheckedSub(this->n_ns_since_epoch, tp.n_ns_since_epoch, "TimePoint::operator-(TimePoint)"));
+            internals::doCheckedSub(this->n_ns_since_epoch, tp.n_ns_since_epoch, "TimePoint::operator-(TimePoint)"));
     }
 
     /// Advances this [`TimePoint`] by `dur` in place, with the same overflow checking as [`operator+`].
     constexpr auto operator+=(Duration dur) -> TimePoint&
     {
         this->n_ns_since_epoch
-            = detail::doCheckedAdd(this->n_ns_since_epoch, dur.AsNanos(), "TimePoint::operator+=(Duration)");
+            = internals::doCheckedAdd(this->n_ns_since_epoch, dur.AsNanos(), "TimePoint::operator+=(Duration)");
 
         return *this;
     }
@@ -227,7 +251,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     constexpr auto operator-=(Duration dur) -> TimePoint&
     {
         this->n_ns_since_epoch
-            = detail::doCheckedSub(this->n_ns_since_epoch, dur.AsNanos(), "TimePoint::operator+=(Duration)");
+            = internals::doCheckedSub(this->n_ns_since_epoch, dur.AsNanos(), "TimePoint::operator+=(Duration)");
 
         return *this;
     }

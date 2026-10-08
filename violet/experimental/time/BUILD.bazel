@@ -40,7 +40,14 @@ violet_cc_library(
     name = "duration",
     srcs = ["//src/experimental/time:Duration.cc"],
     hdrs = ["//include/violet/Experimental/Time:Duration.h"],
-    deps = ["//violet/experimental:numeric"],
+    defines = select({
+        "//buildsystem/bazel/flags:abseil_enabled": ["VIOLET_FEATURE_ABSEIL"],
+        "//conditions:default": [],
+    }),
+    deps = ["//violet/experimental:numeric"] + select({
+        "//buildsystem/bazel/flags:abseil_enabled": ["@absl//absl/time"],
+        "//conditions:default": [],
+    }),
 )
 
 violet_cc_test(

@@ -23,18 +23,57 @@
 #include <violet/Experimental/Time/TimePoint.h>
 
 #include <cstdio>
-#include <ctime>
 
-using violet::experimental::chrono::TimePoint;
+namespace violet::experimental::chrono {
 
-using violet::Err;
-using violet::Int32;
-using violet::Int64;
-using violet::Str;
-using violet::String;
-using violet::UInt;
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE_ABSEIL
+namespace {
+using limits = std::numeric_limits<std::int64_t>;
 
-auto TimePoint::FromISO8601(Str input) -> violet::anyhow::Result<TimePoint>
+constexpr auto kMaxNanos = std::numeric_limits<Int64>::max();
+constexpr auto kMinNanos = std::numeric_limits<Int64>::min();
+const auto kMaxAbsl = absl::FromUnixNanos(limits::max());
+const auto kMinAbsl = absl::FromUnixNanos(limits::min());
+} // namespace
+
+auto TimePoint::FromAbsl(absl::Time time) noexcept -> TimePoint
+{
+    if (time >= kMaxAbsl) {
+        return {std_type::max()}; // absl::InfiniteFuture
+    }
+
+    if (time <= kMinAbsl) {
+        return {std_type::min()}; // absl::InfinitePast
+    }
+
+    return TimePoint(absl::ToUnixNanos(time));
+}
+
+auto TimePoint::TryFrom(absl::Time time) noexcept -> Optional<TimePoint>
+{
+    if (time >= kMaxAbsl || time <= kMinAbsl) {
+        return Nothing;
+    }
+
+    return TimePoint(absl::ToUnixNanos(time));
+}
+
+auto TimePoint::ToAbsl() const noexcept -> absl::Time
+{
+    if (this->n_ns_since_epoch == kMaxNanos) {
+        return absl::InfiniteFuture();
+    }
+
+    if (this->n_ns_since_epoch == kMinNanos) {
+        return absl::InfinitePast();
+    }
+
+    return absl::FromUnixNanos(this->n_ns_since_epoch);
+}
+
+#endif
+
+auto TimePoint::FromISO8601(Str input) -> anyhow::Result<TimePoint>
 {
     ENSURE_FMT(input.size() >= 20, "ISO-8601 input was too sore: {}", input);
 
@@ -164,3 +203,5 @@ auto TimePoint::IntoISO8601() const -> String
 
     return {buf.Data()};
 }
+
+} // namespace violet::experimental::chrono

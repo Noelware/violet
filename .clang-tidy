@@ -42,9 +42,11 @@ Checks: >
   -cppcoreguidelines-avoid-do-while, -readability-use-anyofallof,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-type-union-access, -cppcoreguidelines-no-malloc, -google-build-using-namespace,
-  -google-readability-namespace-comments, -cppcoreguidelines-avoid-non-const-global-variables
+  -google-readability-namespace-comments, -cppcoreguidelines-avoid-non-const-global-variables,
+  -readability-trailing-comma, -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access
 
 CheckOptions:
+  cppcoreguidelines-pro-bounds-avoid-unchecked-container-access.ExcludeClasses: "::std::map;::std::unordered_map;::std::flat_map;::violet::experimental::HashMap"
   cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
   readability-identifier-length.MinimumVariableNameLength: 2
   readability-identifier-length.MinimumParameterNameLength: 2

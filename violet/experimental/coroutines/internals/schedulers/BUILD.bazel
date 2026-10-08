@@ -19,18 +19,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-InheritParentConfig: true
-Checks: >
-  -readability-identifier-length,
-  -modernize-use-trailing-return-type,
-  -misc-use-internal-linkage,
-  -performance-unnecessary-copy-initialization,
-  -cppcoreguidelines-special-member-functions,
-  -cppcoreguidelines-avoid-goto,
-  -readability-uppercase-literal-suffix,
-  -performance-unnecessary-value-param,
-  -google-default-arguments,
-  -cppcoreguidelines-pro-type-static-cast-downcast,
-  -modernize-type-traits,
-  -cppcoreguidelines-narrowing-conversions,
-  -readability-static-accessed-through-instance
+load("//buildsystem/bazel:cc.bzl", "violet_cc_library", "violet_cc_test")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+violet_cc_library(
+    name = "single_threaded",
+    srcs = ["//src/experimental/coroutines/internals/schedulers:SingleThreadedScheduler.cc"],
+    hdrs = ["//include/violet/Experimental/Coroutines/Internals/Schedulers:SingleThreadedScheduler.h"],
+    copts = select({
+        "@rules_cc//cc/compiler:gcc": ["-fcoroutines"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "//violet/experimental/coroutines/internals:parker",
+        "//violet/experimental/coroutines/internals:scheduler",
+    ],
+)
+
+violet_cc_test(
+    name = "single_threaded_test",
+    srcs = ["//tests/experimental/coroutines/internals:SingleThreadedScheduler.test.cc"],
+    deps = [
+        ":single_threaded",
+        "//violet/experimental/coroutines:basic_awaiter",
+        "//violet/experimental/coroutines:task",
+    ],
+)

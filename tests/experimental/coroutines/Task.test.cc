@@ -62,21 +62,7 @@ struct SyncWaitTask final {
         VIOLET_ASSERT(this->n_coro.done(), "task chain did not complete synchronusly");
 
         promise_type& promise = this->n_coro.promise();
-        if constexpr (std::is_void_v<T>) {
-            if (promise.Exception != nullptr) {
-                std::rethrow_exception(VIOLET_MOVE(promise.Exception));
-            }
-        } else {
-            return promise.Value.Match(
-                // clang-format off
-                [](T value) -> T { return VIOLET_MOVE(value); },
-                [](std::exception_ptr ex) -> T {
-                    std::rethrow_exception(VIOLET_MOVE(ex));
-                    VIOLET_UNREACHABLE();
-                }
-                // clang-format on
-            );
-        }
+        return promise.Take();
     }
 
 private:

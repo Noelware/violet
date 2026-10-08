@@ -21,6 +21,8 @@
 //
 //! # 🌺💜 `violet/Experimental/Coroutines/Task.h`
 
+#pragma once
+
 #include <violet/Defer.h>
 #include <violet/Experimental/OneOf.h>
 
@@ -56,6 +58,54 @@ struct FinaleAwaiter final {
     void await_resume() noexcept { }
 };
 
+/// Records `leaf` as the point the current root task should resume from. No-op outside of a task.
+VIOLET_API void RecordSuspendPoint(std::coroutine_handle<> leaf) noexcept;
+
+template<typename T>
+concept has_member_co_await = requires(T&& value) { VIOLET_FWD(T, value).operator co_await(); };
+
+template<typename T>
+auto GetAwaiter(T&& value) -> decltype(auto)
+{
+    if constexpr (has_member_co_await<T>) {
+        return VIOLET_FWD(T, value).operator co_await();
+    } else {
+        return VIOLET_FWD(T, value);
+    }
+}
+
+/// Wraps a leaf awaiter so suspending on it records the leaf handle on the current root task.
+template<typename Awaiter>
+struct LeafAwaiter final {
+    Awaiter Inner;
+
+    auto await_ready() -> bool
+    {
+        return this->Inner.await_ready();
+    }
+
+    template<typename Promise>
+    auto await_suspend(std::coroutine_handle<Promise> handle) -> decltype(auto)
+    {
+        RecordSuspendPoint(handle);
+        if constexpr (std::same_as<decltype(this->Inner.await_suspend(handle)), bool>) {
+            bool suspended = this->Inner.await_suspend(handle);
+            if (!suspended) {
+                RecordSuspendPoint(nullptr);
+            }
+
+            return suspended;
+        } else {
+            return this->Inner.await_suspend(handle);
+        }
+    }
+
+    auto await_resume() -> decltype(auto)
+    {
+        return this->Inner.await_resume();
+    }
+};
+
 struct BasePromise {
     std::coroutine_handle<> ContinuationPoint = nullptr;
 
@@ -67,6 +117,13 @@ struct BasePromise {
     constexpr auto final_suspend() noexcept
     {
         return task_internal::FinaleAwaiter{};
+    }
+
+    template<typename Awaitable>
+    auto await_transform(Awaitable&& awaitable)
+    {
+        using Inner = decltype(task_internal::GetAwaiter(VIOLET_FWD(Awaitable, awaitable)));
+        return task_internal::LeafAwaiter<Inner>{task_internal::GetAwaiter(VIOLET_FWD(Awaitable, awaitable))};
     }
 
     template<typename U>
@@ -92,6 +149,19 @@ struct PromiseStorage: BasePromise {
     {
         this->Value = std::current_exception();
     }
+
+    auto Take() -> T
+    {
+        return this->Value.Match(
+            // clang-format off
+            [](T value) -> T { return VIOLET_MOVE(value); },
+            [](std::exception_ptr ex) -> T {
+                std::rethrow_exception(VIOLET_MOVE(ex));
+                VIOLET_UNREACHABLE();
+            }
+            // clang-format on
+        );
+    }
 };
 
 template<>
@@ -104,6 +174,13 @@ struct PromiseStorage<void>: BasePromise {
     }
 
     void return_void() noexcept { }
+
+    void Take() // NOLINT(readability-make-member-function-const)
+    {
+        if (this->Exception != nullptr) {
+            std::rethrow_exception(this->Exception);
+        }
+    }
 };
 
 } // namespace task_internal
@@ -189,21 +266,7 @@ protected:
             });
 
             promise_type& promise = this->Coroutine.promise();
-            if constexpr (std::is_void_v<T>) {
-                if (promise.Exception != nullptr) {
-                    std::rethrow_exception(promise.Exception);
-                }
-            } else {
-                return promise.Value.Match(
-                    // clang-format off
-                    [](T value) -> T { return VIOLET_MOVE(value); },
-                    [](std::exception_ptr ex) -> T {
-                        std::rethrow_exception(VIOLET_MOVE(ex));
-                        VIOLET_UNREACHABLE();
-                    }
-                    // clang-format on
-                );
-            }
+            return promise.Take();
         }
     };
 

@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include <violet/Violet.h>
+#include <violet/Experimental/Time/Instant.h>
 
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE_ABSEIL
 #include "absl/base/thread_annotations.h"
@@ -118,6 +118,8 @@ struct Duration;
 }
 
 struct Condvar;
+
+// NOLINTBEGIN(modernize-use-trailing-return-type)
 
 /// A mutual exclusion primitive for protecting shared data bridged by [`absl::Mutex`] on Abseil-enabled
 /// builds or [`std::mutex`] otherwise. View the [module documentation](#) on why we decided to bridge
@@ -214,6 +216,10 @@ struct VIOLET_API VIOLET_LOCKABLE Mutex final {
     template<typename F>
     void Await(F&& predicate) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(this);
 
+    template<typename F>
+    NOELDOC_SINCE("current")
+    bool AwaitUntil(F&& predicate, chrono::Instant deadline) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(this);
+
     /// Acquires the mutex, then blocks until `predicate` returns `true`.
     ///
     /// This is equivalent to calling `Lock()` followed by `Await(predicate)`, but may
@@ -221,7 +227,11 @@ struct VIOLET_API VIOLET_LOCKABLE Mutex final {
     ///
     /// @param predicate callable returning `bool` that describes the condition to wait for.
     template<typename F>
-    void LockUntil(F&& predicate) VIOLET_EXCLUSIVE_LOCK_FUNCTION();
+    void LockUntil(F&& predicate) VIOLET_NO_THREAD_SAFETY_ANALYSIS;
+
+    template<typename F>
+    NOELDOC_SINCE("current")
+    bool LockUntil(F&& predicate, chrono::Instant deadline) VIOLET_NO_THREAD_SAFETY_ANALYSIS;
 
 private:
     friend struct Condvar;
@@ -345,6 +355,74 @@ struct VIOLET_API Condvar final {
     bool WaitWithTimeout(Mutex* mux, absl::Duration dur) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(mux);
 #endif
 
+    /// Blocks until the condition variable is signalled or `deadline` is reached.
+    /// Returns **true** if `deadline` passed without a signal, otherwise **false**.
+    ///
+    /// @param mux      mutex that guards the shared state.
+    /// @param deadline monotonic point in time to stop waiting at.
+    NOELDOC_SINCE("current")
+    bool WaitUntil(Mutex* mux, chrono::Instant deadline) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(mux);
+
+    /// Blocks until `predicate` returns **true** or `deadline` is reached.
+    ///
+    /// The caller must hold `mux`. `predicate` is always evaluated with `mux` held,
+    /// and is checked once more after the deadline expires, so a signal racing the
+    /// timeout is not lost.
+    ///
+    /// @param mux       mutex that guards the shared state.
+    /// @param predicate callable returning `bool` that describes the condition to wait for.
+    /// @param deadline  monotonic point in time to stop waiting at.
+    /// @return the final result of `predicate`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// mux.Lock();
+    /// const bool ready = cv.WaitUntil(&mux, [&] -> bool { return !queue.empty(); },
+    ///     chrono::Instant::Now() + chrono::Duration::Seconds(5));
+    /// mux.Unlock();
+    /// ```
+    template<typename F>
+    NOELDOC_SINCE("current")
+    // `predicate` is invoked repeatedly, so it is never forwarded.
+    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+    bool WaitUntil(Mutex* mux, F&& predicate, chrono::Instant deadline) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(mux)
+    {
+        while (!std::invoke(predicate)) {
+            if (this->WaitUntil(mux, deadline)) {
+                return std::invoke(predicate);
+            }
+        }
+
+        return true;
+    }
+
+    /// Blocks until `predicate` returns **true**.
+    ///
+    /// The caller must hold `mux`. `predicate` is always evaluated with `mux` held,
+    /// and spurious wakeups are handled by re-checking it.
+    ///
+    /// @param mux       mutex that guards the shared state.
+    /// @param predicate callable returning `bool` that describes the condition to wait for.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// mux.Lock();
+    /// cv.WaitUntil(&mux, [&] -> bool { return !queue.empty(); });
+    /// /* queue is non-empty and the lock is still held */
+    /// mux.Unlock();
+    /// ```
+    template<typename F>
+        requires std::predicate<F&>
+    NOELDOC_SINCE("current")
+    // `predicate` is invoked repeatedly, so it is never forwarded.
+    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+    void WaitUntil(Mutex* mux, F&& predicate) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(mux)
+    {
+        while (!std::invoke(predicate)) {
+            this->Wait(mux);
+        }
+    }
+
     /// Wakes one thread waiting on this condition variable.
     void Signal();
 
@@ -359,6 +437,8 @@ private:
 #endif
 };
 
+// NOLINTEND(modernize-use-trailing-return-type)
+
 template<typename F>
 inline void Mutex::LockUntil(F&& predicate)
 {
@@ -366,15 +446,47 @@ inline void Mutex::LockUntil(F&& predicate)
     this->Await(VIOLET_FWD(F, predicate));
 }
 
+template<typename F>
+inline auto Mutex::LockUntil(F&& predicate, chrono::Instant deadline) -> bool
+{
+    MutexLock lock(*this);
+    return this->AwaitUntil(VIOLET_FWD(F, predicate), deadline);
+}
+
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE_ABSEIL
+
+namespace mutex_internal {
+
+inline auto ToAbslT(chrono::Instant deadline) noexcept -> absl::Duration
+{
+    if (deadline == chrono::Instant::Max()) {
+        return absl::InfiniteDuration();
+    }
+
+    const chrono::Instant now = chrono::Instant::Now();
+    return absl::FromChrono(deadline.DurationSince(now).ToStd());
+}
+
+} // namespace mutex_internal
 
 template<typename F>
 inline void Mutex::Await(F&& predicate)
 {
     using predicate_fn = std::remove_reference_t<F>;
-    predicate_fn local = VIOLET_FWD(F, predicate);
 
+    predicate_fn local = VIOLET_FWD(F, predicate);
     this->n_mux.Await(absl::Condition(+[](predicate_fn* pred) -> bool { return std::invoke(*pred); }, &local));
+}
+
+template<typename F>
+inline auto Mutex::AwaitUntil(F&& predicate, chrono::Instant deadline) -> bool
+{
+    using predicate_fn = std::remove_reference_t<F>;
+
+    predicate_fn local = VIOLET_FWD(F, predicate);
+    return this->n_mux.AwaitWithTimeout(absl::Condition(
+                                     +[](predicate_fn* pred) -> bool { return std::invoke(*pred); }, &local),
+        mutex_internal::ToAbslT(deadline));
 }
 
 #else
@@ -391,6 +503,31 @@ inline void Mutex::Await(F&& predicate)
     // the lock and is responsible for calling `Unlock()`. Release the unique lock
     // so its destructor doesn't unlock.
     (void)lock.release();
+}
+
+template<typename F>
+inline auto Mutex::AwaitUntil(F&& predicate, chrono::Instant deadline) -> bool
+{
+    std::unique_lock<std::mutex> lock(this->n_mux, std::adopt_lock);
+    this->n_waiters.fetch_add(1, std::memory_order_relaxed);
+
+    struct Guard {
+        std::unique_lock<std::mutex>& Lock;
+        std::atomic<Int32>& Waiters;
+
+        ~Guard()
+        {
+            this->Waiters.fetch_sub(1, std::memory_order_relaxed);
+            (void)this->Lock.release();
+        }
+    } guard{lock, this->n_waiters};
+
+    if (deadline == chrono::Instant::Max()) {
+        this->n_cv.wait(lock, VIOLET_FWD(F, predicate));
+        return true;
+    }
+
+    return this->n_cv.wait_until(lock, deadline.ToStd(), VIOLET_FWD(F, predicate));
 }
 
 #endif

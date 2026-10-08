@@ -1393,7 +1393,7 @@
 /**
  * @macro VIOLET_ASSUME
  * @param expr A boolean expression the optimizer may assume to always be `true`.
- * @since 26.09
+ * @since current
  *
  * Tells the compiler that `expr` is always true at this point, without evaluating it, so it
  * can be optimized accordingly; behaviour is undefined if `expr` is actually `false` at runtime.
@@ -1408,7 +1408,7 @@
 
 /**
  * @macro VIOLET_FEATURE_TRIVIAL_RELOCATION
- * @since 26.09
+ * @since current
  *
  * Defined to `1` when the standard library provides `std::is_trivially_relocatable`, `0` otherwise.
  */
@@ -1422,7 +1422,7 @@
 
 /**
  * @macro VIOLET_STD_LIBCXX
- * @since 26.09
+ * @since current
  *
  * Defined to `1` when the active standard library is LLVM `libc++`, detected
  * via `_LIBCPP_VERSION`. Undefined otherwise.
@@ -1430,7 +1430,7 @@
 
 /**
  * @macro VIOLET_STD_GNU
- * @since 26.09
+ * @since current
  *
  * Defined to `1` when the active standard library is GNU `libstdc++`, detected
  * via `__GLIBCXX__`/`__GLIBCPP__`. Undefined otherwise.
@@ -1438,7 +1438,7 @@
 
 /**
  * @macro VIOLET_STD_MSVC
- * @since 26.09
+ * @since current
  *
  * Defined to `1` when the active standard library is Microsoft's STL (https://github.com/microsoft/stl),
  * detected via `_MSVC_STL_VERSION`. Undefined otherwise.
@@ -1455,13 +1455,13 @@
 
 /**
  * @macro VIOLET_STDLIB
- * @since 26.09
+ * @since current
  */
 #define VIOLET_STDLIB(x) VIOLET_STD_##x
 
 /**
  * @macro VIOLET_CORO_AWAIT_ELIABLE
- * @since 26.09
+ * @since current
  *
  * Expands to `[[clang::coro_await_elidable]]` when the compiler supports it, marking
  * a coroutine-returning function as eligible for HALO (heap allocation elision) at
@@ -1475,7 +1475,7 @@
 
 /**
  * @macro VIOLET_RETURN_ADDRESS
- * @since 26.09
+ * @since current
  *
  * Returns the return address of the current function, i.e, the address execution
  * resumes after this function returns.
@@ -1488,4 +1488,20 @@
 #define VIOLET_RETURN_ADDRESS() nullptr
 #endif
 
+/**
+ * @macro VIOLET_NOEXCEPT_FUN
+ * @param fun
+ * @param ...
+ * @since current
+ */
 #define VIOLET_NOEXCEPT_FUN(fun, ...) noexcept(::std::is_nothrow_invocable_v<decltype(fun) __VA_OPT__(, ) __VA_ARGS__>)
+
+/**
+ * @macro VIOLET_CONSTINIT
+ * @since current
+ */
+#if defined(__cpp_constinit) && __cpp_constinit >= 201907L
+#define VIOLET_CONSTINIT constinit
+#else
+#define VIOLET_CONSTINIT const
+#endif

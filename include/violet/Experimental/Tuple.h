@@ -93,8 +93,10 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") is_tuple final: public std::false_t
 template<typename... Ts>
 struct is_tuple<Tuple<Ts...>> final: public std::true_type { };
 
+#ifdef VIOLET_IMPLEMENT_BACKWARDS_STL_TUPLE
 template<typename... Ts>
 struct is_tuple<std::tuple<Ts...>> final: public std::true_type { };
+#endif
 
 template<typename T>
 NOELDOC_EXPERIMENTAL_SINCE("current")

@@ -73,6 +73,21 @@ auto Condvar::WaitWithTimeout(Mutex* mux, std::chrono::nanoseconds timeout) -> b
     return status == std::cv_status::timeout;
 }
 
+auto Condvar::WaitUntil(Mutex* mux, chrono::Instant deadline) -> bool
+{
+    std::unique_lock<std::mutex> lock(mux->n_mux, std::adopt_lock);
+
+    bool timedOut = false;
+    if (deadline == chrono::Instant::Max()) {
+        this->n_cv.wait(lock);
+    } else {
+        timedOut = this->n_cv.wait_until(lock, deadline.ToStd()) == std::cv_status::timeout;
+    }
+
+    (void)lock.release();
+    return timedOut;
+}
+
 void Condvar::Signal()
 {
     this->n_cv.notify_one();

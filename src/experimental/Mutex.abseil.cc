@@ -71,6 +71,16 @@ auto Condvar::WaitWithTimeout(Mutex* mux, absl::Duration dur) -> bool
     return this->n_cv.WaitWithTimeout(&mux->n_mux, dur);
 }
 
+auto Condvar::WaitWithTimeout(Mutex* mux, chrono::Duration dur) -> bool
+{
+    return this->WaitWithTimeout(mux, dur.ToAbsl());
+}
+
+auto Condvar::WaitUntil(Mutex* mux, chrono::Instant deadline) -> bool
+{
+    return this->n_cv.WaitWithTimeout(&mux->n_mux, violet::experimental::mutex_internal::ToAbslT(deadline));
+}
+
 void Condvar::Signal()
 {
     this->n_cv.Signal();
@@ -79,9 +89,4 @@ void Condvar::Signal()
 void Condvar::SignalAll()
 {
     this->n_cv.SignalAll();
-}
-
-auto Condvar::WaitWithTimeout(Mutex* mux, chrono::Duration dur) -> bool
-{
-    return this->WaitWithTimeout(mux, dur.Cast<std::chrono::nanoseconds>());
 }

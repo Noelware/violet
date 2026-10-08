@@ -57,6 +57,7 @@ violet_cc_library(
     deps = [
         "//violet",
         "//violet/experimental/time:duration",
+        "//violet/experimental/time:instant",
     ] + select({
         "//buildsystem/bazel/flags:abseil_enabled": [
             "@absl//absl/base:core_headers",
