@@ -384,7 +384,7 @@ constexpr auto get(const Tuple<Ts...>&& tuple) noexcept -> const X&&
 } // namespace violet::experimental
 
 template<typename... Ts>
-    requires((std::formattable<Ts, char> && ...))
+    requires((violet::formattable<Ts, char> && ...))
 struct std::formatter<violet::experimental::Tuple<Ts...>, char> final: public std::formatter<violet::String> {
     constexpr formatter() noexcept = default;
 
@@ -400,7 +400,7 @@ struct std::formatter<violet::experimental::Tuple<Ts...>, char> final: public st
         auto out = cx.out();
         *out++ = '(';
 
-        tuple.Apply([](const auto&... elems) -> void {
+        tuple.Apply([&out](const auto&... elems) -> void {
             bool first = true;
             ((out = std::format_to(out, "{}{}", first ? "" : ", ", elems), first = false), ...);
         });

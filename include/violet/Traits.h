@@ -27,6 +27,7 @@
 #include <violet/Language/Policy.h> // IWYU pragma: export
 
 #include <concepts>
+#include <format>
 #include <memory>
 #include <type_traits>
 
@@ -377,6 +378,24 @@ struct NOELDOC_SINCE("current") NOELDOC_SEE("violet::trivially_relocatable") tri
 template<typename T>
 NOELDOC_SINCE("current")
 constexpr inline bool is_trivially_relocatable_v = trivially_relocatable<std::remove_cv_t<T>>::value;
+
+/// Satisfied when `T` can be formatted with `std::format` using character type `CharT`.
+///
+/// Equivalent to C++23's [`std::formattable`]; falls back to a C++20 approximation when the
+/// standard library doesn't provide it.
+///
+/// @since current
+template<typename T, typename CharT = char>
+concept formattable =
+#if defined(__cpp_lib_format_ranges) && __cpp_lib_format_ranges >= 202207L
+    std::formattable<T, CharT>;
+#else
+    std::semiregular<std::formatter<std::remove_cvref_t<T>, CharT>>
+    && requires(std::formatter<std::remove_cvref_t<T>, CharT>& formatter, const std::remove_cvref_t<T>& value,
+        std::basic_format_context<std::back_insert_iterator<std::basic_string<CharT>>, CharT>& ctx) {
+           { formatter.format(value, ctx) } -> std::same_as<typename decltype(ctx)::iterator>;
+       };
+#endif
 
 } // namespace violet
 

@@ -482,7 +482,7 @@ private:
     {
     }
 
-    std_type n_ns;
+    std_type n_ns{};
 };
 
 } // namespace violet::experimental::chrono
