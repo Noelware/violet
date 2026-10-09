@@ -19,34 +19,47 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Experimental/Coroutines/Sleep.h>
+#include <gtest/gtest.h>
+#include <violet/Experimental/Coroutines/Runtime.h>
+#include <violet/Experimental/Coroutines/Timeout.h>
 
 namespace violet::experimental::coro {
-namespace internals {
+namespace {
 
-void SleepAwaiter::await_suspend(std::coroutine_handle<>) noexcept
+using chrono::Duration;
+
+auto SleepsThenReturns(Int32 millis, bool* finished) -> Task<Int32>
 {
-    auto& handle = Handle::Current();
-    auto* self = CurrentTask();
-    VIOLET_DEBUG_ASSERT(self != nullptr, "`Sleep` awaited outside of a runtime");
-
-    RetainRawTask(Unsafe("we are running as the current task"), self);
-
-    this->n_entry.Waiter = Waker::ForCurrentTask();
-    this->n_entry.Fire = &SleepAwaiter::fire;
-    this->n_driver = handle.Timers;
-    this->n_driver->Register(this->n_entry, handle.Clock->Now() + this->n_duration);
+    co_await Sleep(Duration::Milliseconds(millis));
+    *finished = true;
+    co_return 7;
 }
 
-} // namespace internals
-
-auto Sleep(chrono::Duration dur) noexcept -> internals::SleepAwaiter
+auto WithTimeout(Int32 work, Int32 limit, bool* finished) -> Task<Optional<Int32>>
 {
-    auto& handle = Handle::Current();
-    VIOLET_DEBUG_ASSERT(handle.Timers != nullptr,
-        "timers API was not enabled at runtime. Call `EnableTimers()` in `Runtime::Builder` to enable it!");
+    co_return co_await Timeout(Duration::Milliseconds(limit), SleepsThenReturns(work, finished));
+}
 
-    return internals::SleepAwaiter{dur};
+} // namespace
+
+TEST(Timeout, FinishesInTime)
+{
+    bool finished = false;
+    auto rt = Runtime::Builder::CurrentThread().EnableTimers().Build();
+
+    Optional<Int32> result = rt->BlockOn(WithTimeout(5, 100, &finished));
+    ASSERT_EQ(result.Value(), 7);
+    ASSERT_TRUE(finished);
+}
+
+TEST(Timeout, CancelsSlowTask)
+{
+    bool finished = false;
+    auto rt = Runtime::Builder::CurrentThread().EnableTimers().Build();
+
+    Optional<Int32> result = rt->BlockOn(WithTimeout(60'000, 10, &finished));
+    ASSERT_FALSE(result.HasValue());
+    ASSERT_FALSE(finished);
 }
 
 } // namespace violet::experimental::coro

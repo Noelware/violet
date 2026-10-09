@@ -19,68 +19,70 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-//! # 🌺💜 `violet/Experimental/Coroutines/Sleep.h`
+//! # 🌺💜 `violet/Experimental/Coroutines/Notification.h`
 
 #pragma once
 
-#include <violet/Experimental/Coroutines/Internals/Timers/Wheel.h>
-#include <violet/Experimental/Coroutines/Runtime.h>
 #include <violet/Experimental/Coroutines/Waker.h>
+#include <violet/Experimental/Synchronized.h>
+
+#include <coroutine>
 
 namespace violet::experimental::coro {
-namespace NOELDOC_HIDE internals {
 
-struct VIOLET_API SleepAwaiter final {
-    VIOLET_DISALLOW_COPY_AND_MOVE(SleepAwaiter);
+/// A one-shot signal for coroutines, modelled on `absl::Notification`.
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Notification final {
+    VIOLET_DISALLOW_COPY_AND_MOVE(Notification);
+    VIOLET_IMPLICIT Notification() noexcept = default;
+    ~Notification() = default;
 
-    VIOLET_EXPLICIT SleepAwaiter(chrono::Duration dur) noexcept
-        : n_duration(dur)
+    /// Marks the notification as notified and wakes every waiter.
+    void Notify() noexcept;
+
+    /// Returns **true** if [`Notify`] was ever called.
+    [[nodiscard]]
+    auto WasNotified() const noexcept -> bool
     {
+        return this->n_notified.load(std::memory_order_acquire);
     }
 
-    ~SleepAwaiter()
+protected:
+    struct Awaiter;
+
+public:
+    [[nodiscard]]
+    auto Wait() noexcept -> Awaiter;
+
+private:
+    std::atomic<bool> n_notified{false};
+    Synchronized<Vec<Waker>> n_waiters;
+};
+
+struct VIOLET_API NOELDOC_HIDE Notification::Awaiter final {
+    VIOLET_DISALLOW_COPY_AND_MOVE(Awaiter);
+    ~Awaiter() = default;
+
+    Notification& Self;
+
+    VIOLET_EXPLICIT Awaiter(Notification& self) noexcept
+        : Self(self)
     {
-        if (this->n_driver != nullptr) {
-            this->n_driver->Cancel(this->n_entry);
-        }
     }
 
     [[nodiscard]]
-    static auto await_ready() noexcept -> bool
+    auto await_ready() const noexcept -> bool
     {
-        return false;
+        return this->Self.WasNotified();
     }
 
     static void await_resume() noexcept { }
 
-    void await_suspend(std::coroutine_handle<>) noexcept;
-
-private:
-    struct ent final: TimerEntry {
-        Waker Waiter;
-    };
-
-    static void fire(TimerEntry* entry) noexcept
-    {
-        auto* self = static_cast<ent*>(entry); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
-
-        Waker waiter = VIOLET_MOVE(self->Waiter);
-        VIOLET_MOVE(waiter).Wake();
-    }
-
-    chrono::Duration n_duration;
-    timers::Driver* n_driver = nullptr;
-    ent n_entry;
+    auto await_suspend(std::coroutine_handle<>) noexcept -> bool;
 };
 
-} // namespace NOELDOC_HIDE internals
-
-/// Suspends the current task until `duration` has elapsed on the runtime's clock.
-///
-/// ## Example
-/// ```cpp
-/// co_await Sleep(Duration::Milliseconds(50));
-/// ```
-auto Sleep(chrono::Duration dur) noexcept -> internals::SleepAwaiter;
+inline auto Notification::Wait() noexcept -> Awaiter
+{
+    return Awaiter{*this};
+}
 
 } // namespace violet::experimental::coro

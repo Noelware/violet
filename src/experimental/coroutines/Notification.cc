@@ -1,4 +1,4 @@
-// 🌺💜 Violet: Extended C++ standard library
+// 🌺💜 Violet: Extended C standard library
 // Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,34 +19,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Experimental/Coroutines/Sleep.h>
+#include <violet/Experimental/Coroutines/Notification.h>
 
 namespace violet::experimental::coro {
-namespace internals {
 
-void SleepAwaiter::await_suspend(std::coroutine_handle<>) noexcept
+void Notification::Notify() noexcept
 {
-    auto& handle = Handle::Current();
-    auto* self = CurrentTask();
-    VIOLET_DEBUG_ASSERT(self != nullptr, "`Sleep` awaited outside of a runtime");
+    Vec<Waker> waiters;
+    this->n_waiters.With([this, &waiters](auto& others) -> void {
+        const bool ready = this->n_notified.exchange(true, std::memory_order_release);
+        VIOLET_DEBUG_ASSERT(!ready, "`Notification::Notify` was called more than once");
 
-    RetainRawTask(Unsafe("we are running as the current task"), self);
+        waiters.swap(others);
+    });
 
-    this->n_entry.Waiter = Waker::ForCurrentTask();
-    this->n_entry.Fire = &SleepAwaiter::fire;
-    this->n_driver = handle.Timers;
-    this->n_driver->Register(this->n_entry, handle.Clock->Now() + this->n_duration);
+    for (auto& waiter: waiters) {
+        VIOLET_MOVE(waiter).Wake();
+    }
 }
 
-} // namespace internals
-
-auto Sleep(chrono::Duration dur) noexcept -> internals::SleepAwaiter
+auto Notification::Awaiter::await_suspend(std::coroutine_handle<>) noexcept -> bool
 {
-    auto& handle = Handle::Current();
-    VIOLET_DEBUG_ASSERT(handle.Timers != nullptr,
-        "timers API was not enabled at runtime. Call `EnableTimers()` in `Runtime::Builder` to enable it!");
+    return this->Self.n_waiters.With([this](auto& waiters) -> bool {
+        if (this->Self.n_notified.load(std::memory_order_relaxed)) {
+            return false;
+        }
 
-    return internals::SleepAwaiter{dur};
+        waiters.push_back(Waker::ForCurrentTask());
+        return true;
+    });
 }
 
 } // namespace violet::experimental::coro

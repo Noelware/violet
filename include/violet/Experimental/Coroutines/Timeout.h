@@ -1,3 +1,4 @@
+
 // 🌺💜 Violet: Extended C++ standard library
 // Copyright (c) 2025-2026 Noelware, LLC. <team@noelware.org>, et al.
 //
@@ -18,35 +19,38 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+//
+//! # 🌺💜 `violet/Experimental/Coroutines/Timeout.h`
 
+#pragma once
+
+#include <violet/Experimental/Coroutines/JoinHandle.h>
+#include <violet/Experimental/Coroutines/Runtime.h>
 #include <violet/Experimental/Coroutines/Sleep.h>
 
 namespace violet::experimental::coro {
-namespace internals {
+namespace NOELDOC_HIDE timeout_internal {
 
-void SleepAwaiter::await_suspend(std::coroutine_handle<>) noexcept
+inline auto AbortAfter(chrono::Duration dur, AbortHandle handle) -> Task<void>
 {
-    auto& handle = Handle::Current();
-    auto* self = CurrentTask();
-    VIOLET_DEBUG_ASSERT(self != nullptr, "`Sleep` awaited outside of a runtime");
-
-    RetainRawTask(Unsafe("we are running as the current task"), self);
-
-    this->n_entry.Waiter = Waker::ForCurrentTask();
-    this->n_entry.Fire = &SleepAwaiter::fire;
-    this->n_driver = handle.Timers;
-    this->n_driver->Register(this->n_entry, handle.Clock->Now() + this->n_duration);
+    co_await Sleep(dur);
+    handle.Abort();
 }
 
-} // namespace internals
+} // namespace NOELDOC_HIDE timeout_internal
 
-auto Sleep(chrono::Duration dur) noexcept -> internals::SleepAwaiter
+template<typename T>
+auto Timeout(chrono::Duration dur, Task<T> task) -> Task<Optional<join_value_t<T>>>
 {
     auto& handle = Handle::Current();
-    VIOLET_DEBUG_ASSERT(handle.Timers != nullptr,
-        "timers API was not enabled at runtime. Call `EnableTimers()` in `Runtime::Builder` to enable it!");
 
-    return internals::SleepAwaiter{dur};
+    auto child = handle.Spawn(VIOLET_MOVE(task));
+    auto timer = handle.Spawn(timeout_internal::AbortAfter(dur, child.GetAbortHandle()));
+
+    Optional<join_value_t<T>> result = co_await VIOLET_MOVE(child).Cancellable();
+    timer.Abort();
+
+    co_return result;
 }
 
 } // namespace violet::experimental::coro

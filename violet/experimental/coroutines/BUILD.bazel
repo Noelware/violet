@@ -25,6 +25,15 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+violet_cc_test(
+    name = "abort_test",
+    srcs = ["//tests/experimental/coroutines:Abort.test.cc"],
+    deps = [
+        ":runtime",
+        ":sleep",
+    ],
+)
+
 violet_cc_library(
     name = "basic_awaiter",
     hdrs = ["//include/violet/Experimental/Coroutines:BasicAwaiter.h"],
@@ -71,6 +80,25 @@ violet_cc_library(
 )
 
 violet_cc_library(
+    name = "notification",
+    srcs = ["//src/experimental/coroutines:Notification.cc"],
+    hdrs = ["//include/violet/Experimental/Coroutines:Notification.h"],
+    deps = [
+        ":waker",
+        "//violet/experimental:synchronized",
+    ],
+)
+
+violet_cc_test(
+    name = "notification_test",
+    srcs = ["//tests/experimental/coroutines:Notification.test.cc"],
+    deps = [
+        ":notification",
+        ":runtime",
+    ],
+)
+
+violet_cc_library(
     name = "runtime",
     srcs = ["//src/experimental/coroutines:Runtime.cc"],
     hdrs = ["//include/violet/Experimental/Coroutines:Runtime.h"],
@@ -96,6 +124,7 @@ violet_cc_library(
     hdrs = ["//include/violet/Experimental/Coroutines:Sleep.h"],
     deps = [
         ":runtime",
+        ":waker",
         "//violet/experimental/coroutines/internals/timers:wheel",
     ],
 )
@@ -128,8 +157,27 @@ violet_cc_test(
 )
 
 violet_cc_library(
+    name = "timeout",
+    hdrs = ["//include/violet/Experimental/Coroutines:Timeout.h"],
+    deps = [
+        ":join_handle",
+        ":runtime",
+        ":sleep",
+    ],
+)
+
+violet_cc_test(
+    name = "timeout_test",
+    srcs = ["//tests/experimental/coroutines:Timeout.test.cc"],
+    deps = [":timeout"],
+)
+
+violet_cc_library(
     name = "waker",
     srcs = ["//src/experimental/coroutines:Waker.cc"],
     hdrs = ["//include/violet/Experimental/Coroutines:Waker.h"],
-    deps = ["//violet/experimental/coroutines/internals:raw_task"],
+    deps = [
+        "//violet/experimental/coroutines/internals:raw_task",
+        "//violet/experimental/coroutines/internals:scheduler",
+    ],
 )

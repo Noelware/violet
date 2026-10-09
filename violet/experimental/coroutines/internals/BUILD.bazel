@@ -60,7 +60,6 @@ violet_cc_library(
         ":raw_task",
         ":spawned_task",
         ":task_list",
-        "//violet/experimental/coroutines:waker",
         "//violet/experimental/time:clock",
     ],
 )

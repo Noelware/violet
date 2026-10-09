@@ -42,6 +42,7 @@ violet_cc_library(
         ":macros",
         ":policy_checks",
         ":print",
+        ":source_location",
     ],
 )
 

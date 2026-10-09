@@ -20,12 +20,28 @@
 // SOFTWARE.
 
 #include <violet/Experimental/Coroutines/Internals/Scheduler.h>
-#include <violet/Experimental/Coroutines/Waker.h>
 
 namespace violet::experimental::coro::internals {
 namespace {
+
 thread_local RawTask* tCurrentTask = nullptr;
+
+void destroyCancelled(RawTask* task, UInt32 previous, bool wakeupJoiner) noexcept
+{
+    RawTask* joiner = (previous & kTaskStateJoinWaiter) != 0 ? task->VTable->TakeJoinWaiter(task->Frame) : nullptr;
+    task->Leaf = nullptr;
+    std::invoke(task->VTable->Destroy, task->Frame);
+
+    if (joiner != nullptr) {
+        if (wakeupJoiner) {
+            WakeupTask(Unsafe("we hold the joiner's reference"), joiner);
+        }
+
+        ReleaseRawTask(Unsafe("dropping the joiner's reference"), joiner);
+    }
 }
+
+} // namespace
 
 auto CurrentTask() noexcept -> RawTask*
 {
@@ -63,6 +79,19 @@ void RunTask(Unsafe, RawTask* task) noexcept
     UInt32 previous = task->State.fetch_xor(kTaskStateScheduled | kTaskStateRunning, std::memory_order_acq_rel);
     VIOLET_DEBUG_ASSERT((previous & kTaskStateLifecycleMask) == kTaskStateScheduled,
         "`RunTask` was called on a task that was not scheduled");
+
+    if ((previous & kTaskStateAbortRequested) != 0) {
+        UInt32 running = task->State.fetch_xor(
+            kTaskStateRunning | kTaskStateComplete | kTaskStateCancelled, std::memory_order_acq_rel);
+
+        destroyCancelled(task, running, /*wakeupJoiner=*/true);
+        if (task->Owner->Tasks.Remove(task)) {
+            ReleaseRawTask(Unsafe("dropping the owned list's reference"), task);
+        }
+
+        ReleaseRawTask(Unsafe("dropping the run queue's reference"), task);
+        return;
+    }
 
     std::coroutine_handle<> leaf = std::exchange(task->Leaf, nullptr);
 
@@ -111,19 +140,19 @@ void CancelTask(Unsafe, RawTask* task) noexcept
     UInt32 previous = task->State.fetch_or(kTaskStateComplete | kTaskStateCancelled, std::memory_order_acq_rel);
     VIOLET_DEBUG_ASSERT((previous & kTaskStateRunning) == 0, "a running task can't be cancelled");
 
-    // The task has already finished its execution; keep the result for `JoinHandle`.
-    if ((previous & kTaskStateComplete) != 0) {
+    if ((previous & kTaskStateComplete) == 0) {
+        destroyCancelled(task, previous, /*wakeupJoiner=*/false);
+    }
+}
+
+void AbortTask(Unsafe, RawTask* task) noexcept
+{
+    UInt32 previous = task->State.fetch_or(kTaskStateAbortRequested, std::memory_order_acq_rel);
+    if ((previous & (kTaskStateComplete | kTaskStateAbortRequested)) != 0) {
         return;
     }
 
-    // The joiner's reference lives in the promise itself, which is about to be destroyed. Release it! (also: don't wake
-    // it up, it needs to sleep~... I mean, at shutdown, the joiner is being cancelled as well. Poor thing...)
-    if ((previous & kTaskStateJoinWaiter) != 0) {
-        ReleaseRawTask(Unsafe("the join awaiter's reference"), task->VTable->TakeJoinWaiter(task->Frame));
-    }
-
-    task->Leaf = nullptr;
-    std::invoke(task->VTable->Destroy, task->Frame);
+    WakeupTask(Unsafe("caller holds a reference"), task);
 }
 
 } // namespace violet::experimental::coro::internals

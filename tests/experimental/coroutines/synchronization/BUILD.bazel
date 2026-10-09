@@ -19,20 +19,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-InheritParentConfig: true
-Checks: >
-  -readability-identifier-length,
-  -modernize-use-trailing-return-type,
-  -misc-use-internal-linkage,
-  -performance-unnecessary-copy-initialization,
-  -cppcoreguidelines-special-member-functions,
-  -cppcoreguidelines-avoid-goto,
-  -readability-uppercase-literal-suffix,
-  -performance-unnecessary-value-param,
-  -google-default-arguments,
-  -cppcoreguidelines-pro-type-static-cast-downcast,
-  -modernize-type-traits,
-  -cppcoreguidelines-narrowing-conversions,
-  -readability-static-accessed-through-instance,
-  -modernize-use-std-print,
-  -readability-inconsistent-ifelse-braces
+exports_files(glob(["*.test.cc"]))

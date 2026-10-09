@@ -47,7 +47,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Waker final {
 
     constexpr VIOLET_IMPLICIT Waker() noexcept = default;
 
-    VIOLET_IMPLICIT Waker(void* data, const VTable* vt) noexcept
+    NOELDOC_HIDE VIOLET_IMPLICIT Waker(void* data, const VTable* vt) noexcept
         : n_object(data)
         , n_vtable(vt)
     {
@@ -106,6 +106,33 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Waker final {
         }
     }
 
+    /// Returns a waker that does nothing when woken. Useful in tests, or as a placeholder.
+    [[nodiscard]]
+    static auto Noop() noexcept -> Waker;
+
+    /// Returns a waker for the task the calling thread is currently running.
+    ///
+    /// This is only valid inside a task driven by a runtime, typically from an awaiter's `await_suspend` call. The
+    /// waker keeps the task's header alive, but not its frame: if the task is cancelled meanwhile, waking it is a
+    /// harmless no-op.
+    [[nodiscard]]
+    static auto ForCurrentTask() noexcept -> Waker;
+
+    /// Returns `true` if both wakers would wake the same task, so a waker that is
+    /// stored and then re-registered can skip a clone.
+    [[nodiscard]]
+    auto WillWake(const Waker& other) const noexcept -> bool
+    {
+        return this->n_object == other.n_object && this->n_vtable == other.n_vtable;
+    }
+
+    /// Returns `true` if this waker is valid (default-constructed or moved from).
+    [[nodiscard]]
+    auto Valid() const noexcept -> bool
+    {
+        return this->n_vtable == nullptr;
+    }
+
     /// Consumes this waker to reschedule its task.
     void Wake() && noexcept;
 
@@ -116,16 +143,5 @@ private:
     void* n_object = nullptr;
     const VTable* n_vtable = nullptr;
 };
-
-namespace NOELDOC_HIDE internals {
-
-struct ParkedNode final {
-    internals::RawTask Task;
-    internals::Scheduler* Owner = nullptr;
-};
-
-auto MkWakerFor(ParkedNode& node) noexcept -> Waker;
-
-} // namespace NOELDOC_HIDE internals
 
 } // namespace violet::experimental::coro

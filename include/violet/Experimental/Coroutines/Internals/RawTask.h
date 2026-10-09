@@ -82,6 +82,7 @@ inline constexpr UInt32 kTaskStateComplete = 1U << 3;
 inline constexpr UInt32 kTaskStateJoinWaiter = 1U << 4;
 inline constexpr UInt32 kTaskStateCancelled = 1U << 5;
 inline constexpr UInt32 kTaskStateFrameDropped = 1U << 6;
+inline constexpr UInt32 kTaskStateAbortRequested = 1U << 7;
 
 inline constexpr UInt32 kTaskStateLifecycleMask
     = kTaskStateScheduled | kTaskStateRunning | kTaskStateNotified | kTaskStateComplete;

@@ -84,6 +84,14 @@ void RunTask(Unsafe, RawTask* task) noexcept;
 VIOLET_API
 void CancelTask(Unsafe, RawTask* task) noexcept;
 
+/// Requests that `task` be cancelled. Thread-safe; takes effect the next time the scheduler
+/// would resume it. No-op if the task already completed.
+///
+/// ## Safety
+/// The caller must hold a reference to `task`.
+VIOLET_API
+void AbortTask(Unsafe, RawTask* task) noexcept;
+
 /// Contextual understanding of a runtime handle without importing `Runtime.h`.
 struct VIOLET_API DriveContext final {
     const Clock& TimeSource; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
