@@ -170,6 +170,9 @@ auto Handle::Spawn(Task<T> task) noexcept -> JoinHandle<T>
     raw->Owner = this->n_scheduler;
     raw->State.store(internals::kTaskStateScheduled, std::memory_order_relaxed);
 
+    internals::RetainRawTask(Unsafe("the owned list will own the first reference"), raw);
+    this->n_scheduler->Tasks.Insert(raw);
+
     internals::RetainRawTask(Unsafe("we are reference #2: the run queue"), raw);
     this->n_scheduler->Push(raw);
 

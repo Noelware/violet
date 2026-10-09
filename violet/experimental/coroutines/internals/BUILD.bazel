@@ -59,6 +59,7 @@ violet_cc_library(
     deps = [
         ":raw_task",
         ":spawned_task",
+        ":task_list",
         "//violet/experimental/coroutines:waker",
         "//violet/experimental/time:clock",
     ],
@@ -76,5 +77,15 @@ violet_cc_library(
         ":raw_task",
         "//violet/experimental/coroutines:basic_awaiter",
         "//violet/experimental/coroutines:task",
+    ],
+)
+
+violet_cc_library(
+    name = "task_list",
+    srcs = ["//src/experimental/coroutines/internals:TaskList.cc"],
+    hdrs = ["//include/violet/Experimental/Coroutines/Internals:TaskList.h"],
+    deps = [
+        ":raw_task",
+        "//violet/experimental:mutex",
     ],
 )

@@ -55,7 +55,8 @@ auto SpawnsDetached(bool* flag) -> Task<void>
 {
     // Dropping the handle detaches; the child must still run before `BlockOn` returns.
     {
-        [[maybe_unused]] JoinHandle detached = Handle::Current().Spawn(SetsFlag(flag));
+        [[maybe_unused]]
+        JoinHandle detached = Handle::Current().Spawn(SetsFlag(flag));
     }
 
     co_return;
@@ -85,6 +86,73 @@ auto JoinsThrowingChild() -> Task<Int32>
     co_return co_await Handle::Current().Spawn(Throws());
 }
 #endif
+
+struct DropFlag final {
+    bool* Dropped;
+
+    VIOLET_EXPLICIT DropFlag(bool* dropped) noexcept
+        : Dropped(dropped)
+    {
+    }
+    DropFlag(DropFlag&& other) noexcept
+        : Dropped(std::exchange(other.Dropped, nullptr))
+    {
+    }
+    ~DropFlag()
+    {
+        if (this->Dropped != nullptr) {
+            *this->Dropped = true;
+        }
+    }
+};
+
+// Parks and leaks a reference to itself, like a `Waker` stored somewhere that never fires.
+struct ParkForever final {
+    internals::RawTask** Slot;
+
+    [[nodiscard]] static auto await_ready() noexcept -> bool
+    {
+        return false;
+    }
+
+    void await_suspend(std::coroutine_handle<>) const noexcept
+    {
+        *this->Slot = internals::CurrentTask();
+        internals::RetainRawTask(Unsafe("simulated waker"), *this->Slot);
+    }
+
+    static void await_resume() noexcept { }
+};
+
+auto ParksWithLocal(internals::RawTask** slot, DropFlag flag) -> Task<void>
+{
+    co_await ParkForever{slot};
+}
+
+auto ParksInChild(internals::RawTask** slot, bool* childDropped) -> Task<void>
+{
+    co_await ParksWithLocal(slot, DropFlag(childDropped)); // the child is the one parked
+}
+
+auto SpawnsParked(internals::RawTask** slot, bool* dropped) -> Task<void>
+{
+    {
+        [[maybe_unused]]
+        JoinHandle detached = Handle::Current().Spawn(ParksWithLocal(slot, DropFlag(dropped)));
+    }
+
+    co_return;
+}
+
+auto SpawnsParkedNested(internals::RawTask** slot, bool* dropped) -> Task<void>
+{
+    {
+        [[maybe_unused]]
+        JoinHandle detached = Handle::Current().Spawn(ParksInChild(slot, dropped));
+    }
+
+    co_return;
+}
 
 } // namespace
 
@@ -135,5 +203,48 @@ TEST(Runtime, JoinRethrowsChildException)
     ASSERT_THROW(rt->BlockOn(JoinsThrowingChild()), std::runtime_error);
 }
 #endif
+
+TEST(Runtime, ShutdownDestroysParkedTaskFrames)
+{
+    internals::RawTask* parked = nullptr;
+    bool dropped = false;
+    {
+        auto rt = Runtime::Builder::CurrentThread().Build();
+        rt->BlockOn(SpawnsParked(&parked, &dropped));
+        ASSERT_FALSE(dropped);
+    }
+
+    ASSERT_TRUE(dropped);
+    internals::ReleaseRawTask(Unsafe("the simulated waker lets go"), parked);
+}
+
+TEST(Runtime, ShutdownDestroysNestedChildFrames)
+{
+    internals::RawTask* parked = nullptr;
+    bool dropped = false;
+    {
+        auto rt = Runtime::Builder::CurrentThread().Build();
+        rt->BlockOn(SpawnsParkedNested(&parked, &dropped));
+    }
+
+    ASSERT_TRUE(dropped);
+    internals::ReleaseRawTask(Unsafe("the simulated waker lets go"), parked);
+}
+
+TEST(Runtime, HandleOutlivingRuntimeIsCancelled)
+{
+    internals::RawTask* parked = nullptr;
+    bool dropped = false;
+    Optional<JoinHandle<void>> handle;
+    {
+        auto rt = Runtime::Builder::CurrentThread().Build();
+        handle = Some(rt->Spawn(ParksWithLocal(&parked, DropFlag(&dropped))));
+        rt->BlockOn([]() -> Task<void> { co_return; }());
+    }
+
+    ASSERT_TRUE(handle.Value().Finished());
+    ASSERT_TRUE(handle.Value().Cancelled());
+    internals::ReleaseRawTask(Unsafe("the simulated waker lets go"), parked);
+}
 
 } // namespace violet::experimental::coro

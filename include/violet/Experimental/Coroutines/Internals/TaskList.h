@@ -19,39 +19,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Experimental/Coroutines/Internals/SpawnedTask.h>
+#pragma once
 
-namespace violet::experimental::coro::internals {
+#include <violet/Experimental/Coroutines/Internals/RawTask.h>
+#include <violet/Experimental/Mutex.h>
 
-auto GetHeaderFromFrame(Unsafe, void* frame) noexcept -> RawTask*
-{
-    return std::launder(reinterpret_cast<RawTask*>(static_cast<std::byte*>(frame) - kSpawnedTaskHeaderSize));
-}
+namespace NOELDOC_HIDE violet {
+namespace experimental::coro::internals {
 
-void RetainRawTask(Unsafe, RawTask* task) noexcept
-{
-    VIOLET_ASSUME(task != nullptr);
-    task->RefCount.fetch_add(1, std::memory_order_relaxed);
-}
+struct VIOLET_API TaskList final {
+    VIOLET_DISALLOW_COPY_AND_MOVE(TaskList);
 
-void ReleaseRawTask(Unsafe, RawTask* task) noexcept
-{
-    if (task->RefCount.fetch_sub(1, std::memory_order_acq_rel) != 1) {
-        return;
+    VIOLET_IMPLICIT TaskList() noexcept = default;
+
+    ~TaskList()
+    {
+        VIOLET_DEBUG_ASSERT(this->n_head == nullptr, "task list was destroyed with live tasks; call `CancelAll` first");
     }
 
-    if ((task->State.load(std::memory_order_acquire) & kTaskStateFrameDropped) != 0) {
-        DeallocateRawTask(Unsafe("frame already destroyed by cancellation"), task, task->FrameSize);
-        return;
-    }
+    void Insert(RawTask* task) noexcept;
+    auto Remove(RawTask* task) noexcept -> bool;
+    auto PopFront() noexcept -> RawTask*;
 
-    std::invoke(task->VTable->Destroy, task->Frame);
-}
+private:
+    void unlink(RawTask* task) noexcept VIOLET_EXCLUSIVE_LOCKS_REQUIRED(this->n_mux);
 
-void DeallocateRawTask(Unsafe, RawTask* task, UInt frameSize)
-{
-    task->~RawTask();
-    ::operator delete(static_cast<void*>(task), kSpawnedTaskHeaderSize + frameSize);
-}
+    Mutex n_mux;
+    RawTask* n_head VIOLET_GUARDED_BY(this->n_mux) = nullptr;
+};
 
-} // namespace violet::experimental::coro::internals
+} // namespace experimental::coro::internals
+} // namespace NOELDOC_HIDE violet

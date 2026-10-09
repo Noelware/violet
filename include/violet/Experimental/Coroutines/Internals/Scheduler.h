@@ -23,6 +23,7 @@
 
 #include <violet/Experimental/Coroutines/Internals/RawTask.h>
 #include <violet/Experimental/Coroutines/Internals/SpawnedTask.h>
+#include <violet/Experimental/Coroutines/Internals/TaskList.h>
 #include <violet/Experimental/Time/Clock.h>
 
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -58,35 +59,6 @@ namespace timers {
 struct Driver;
 }
 
-/// Contextual understanding of a runtime handle without importing `Runtime.h`.
-struct VIOLET_API DriveContext final {
-    const Clock& TimeSource; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
-    timers::Driver* Timers = nullptr;
-};
-
-/// Something that accepts runnable root tasks.
-struct VIOLET_API Scheduler {
-    virtual ~Scheduler() = default;
-
-    /// Enqueues `task`, taking ownership of one reference.
-    virtual void Push(RawTask* task) noexcept = 0;
-
-    /// Blocks the calling thread until `root` completes, driving tasks and timers.
-    virtual void BlockOn(RawTask* root, DriveContext cx) = 0;
-
-    /// Wakes whichever thread is parked in `BlockOn` so it re-checks timers and queues.
-    virtual void Unpark() noexcept = 0;
-};
-
-inline constexpr UInt32 kTaskStateIdle = 0;
-inline constexpr UInt32 kTaskStateScheduled = 1U << 0;
-inline constexpr UInt32 kTaskStateRunning = 1U << 1;
-inline constexpr UInt32 kTaskStateNotified = 1U << 2;
-inline constexpr UInt32 kTaskStateComplete = 1U << 3;
-inline constexpr UInt32 kTaskStateJoinWaiter = 1U << 4;
-inline constexpr UInt32 kTaskStateLifecycleMask
-    = kTaskStateScheduled | kTaskStateRunning | kTaskStateNotified | kTaskStateComplete;
-
 /// The current root task the calling thread is currently resuming, or `nullptr` outside of a task.
 [[nodiscard]]
 VIOLET_API auto CurrentTask() noexcept -> RawTask*;
@@ -105,6 +77,43 @@ void WakeupTask(Unsafe, RawTask* task) noexcept;
 VIOLET_API
 void RunTask(Unsafe, RawTask* task) noexcept;
 
-} // namespace experimental::coro::internals
+/// Completes `task` as cancelled and destroys its frame. The header lives until its last reference goes.
+///
+/// ## Safety
+/// `task` must not be running. The caller must hold a reference.
+VIOLET_API
+void CancelTask(Unsafe, RawTask* task) noexcept;
 
+/// Contextual understanding of a runtime handle without importing `Runtime.h`.
+struct VIOLET_API DriveContext final {
+    const Clock& TimeSource; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    timers::Driver* Timers = nullptr;
+};
+
+/// Something that accepts runnable root tasks.
+struct VIOLET_API Scheduler {
+    TaskList Tasks;
+
+    virtual ~Scheduler() = default;
+
+    /// Enqueues `task`, taking ownership of one reference.
+    virtual void Push(RawTask* task) noexcept = 0;
+
+    /// Blocks the calling thread until `root` completes, driving tasks and timers.
+    virtual void BlockOn(RawTask* root, DriveContext cx) = 0;
+
+    /// Wakes whichever thread is parked in `BlockOn` so it re-checks timers and queues.
+    virtual void Unpark() noexcept = 0;
+
+    /// Cancels all tasks that this scheduler owns.
+    void CancelAll() noexcept
+    {
+        while (auto* task = this->Tasks.PopFront()) {
+            CancelTask(Unsafe("the owned list's reference keeps `task` alive"), task);
+            ReleaseRawTask(Unsafe("dropping the owned list's reference"), task);
+        }
+    }
+};
+
+} // namespace experimental::coro::internals
 } // namespace NOELDOC_HIDE violet

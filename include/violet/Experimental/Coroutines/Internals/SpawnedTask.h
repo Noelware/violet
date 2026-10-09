@@ -103,6 +103,8 @@ void RetainRawTask(Unsafe, RawTask* task) noexcept;
 /// reference goes away.
 void ReleaseRawTask(Unsafe, RawTask* task) noexcept;
 
+void DeallocateRawTask(Unsafe, RawTask*, UInt frameSize);
+
 #ifndef NDEBUG
 /// The frame most recently was returned by [`SpawnedTask<T>::promise_type::operator new`] on this thread.
 ///
@@ -141,9 +143,14 @@ struct SpawnedTask final {
         static void operator delete(void* frame, UInt size) noexcept
         {
             RawTask* header = GetHeaderFromFrame(Unsafe("the frame was handed to us by the compiler"), frame);
-            header->~RawTask();
+            if (header->RefCount.load(std::memory_order_acquire) > 0) {
+                header->FrameSize = static_cast<UInt32>(size);
+                header->State.fetch_or(kTaskStateFrameDropped, std::memory_order_release);
 
-            ::operator delete(static_cast<void*>(reinterpret_cast<std::byte*>(header)), kSpawnedTaskHeaderSize + size);
+                return;
+            }
+
+            DeallocateRawTask(Unsafe("no references are available"), header, size);
         }
 
         [[nodiscard]]

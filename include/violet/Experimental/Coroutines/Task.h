@@ -243,7 +243,28 @@ protected:
     handle_type n_coro;
 
     struct awaiter final {
+        VIOLET_DISALLOW_COPY(awaiter);
+
         handle_type Coroutine;
+
+        VIOLET_EXPLICIT awaiter(handle_type coro) noexcept
+            : Coroutine(coro)
+        {
+        }
+
+        VIOLET_IMPLICIT awaiter(awaiter&& other) noexcept
+            : Coroutine(std::exchange(other.Coroutine, {}))
+        {
+        }
+
+        auto operator=(awaiter&&) noexcept -> awaiter& = delete;
+
+        ~awaiter()
+        {
+            if (this->Coroutine) {
+                this->Coroutine.destroy();
+            }
+        }
 
         [[nodiscard]]
         auto await_ready() const noexcept -> bool
@@ -282,7 +303,7 @@ private:
 template<typename T>
 auto Task<T>::operator co_await() && noexcept
 {
-    return awaiter{std::exchange(this->n_coro, {})};
+    return awaiter(std::exchange(this->n_coro, {}));
 }
 
 } // namespace violet::experimental::coro

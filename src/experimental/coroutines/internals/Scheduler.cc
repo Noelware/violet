@@ -106,6 +106,26 @@ void RunTask(Unsafe, RawTask* task) noexcept
     }
 }
 
+void CancelTask(Unsafe, RawTask* task) noexcept
+{
+    UInt32 previous = task->State.fetch_or(kTaskStateComplete | kTaskStateCancelled, std::memory_order_acq_rel);
+    VIOLET_DEBUG_ASSERT((previous & kTaskStateRunning) == 0, "a running task can't be cancelled");
+
+    // The task has already finished its execution; keep the result for `JoinHandle`.
+    if ((previous & kTaskStateComplete) != 0) {
+        return;
+    }
+
+    // The joiner's reference lives in the promise itself, which is about to be destroyed. Release it! (also: don't wake
+    // it up, it needs to sleep~... I mean, at shutdown, the joiner is being cancelled as well. Poor thing...)
+    if ((previous & kTaskStateJoinWaiter) != 0) {
+        ReleaseRawTask(Unsafe("the join awaiter's reference"), task->VTable->TakeJoinWaiter(task->Frame));
+    }
+
+    task->Leaf = nullptr;
+    std::invoke(task->VTable->Destroy, task->Frame);
+}
+
 } // namespace violet::experimental::coro::internals
 
 void violet::experimental::coro::task_internal::RecordSuspendPoint(std::coroutine_handle<> leaf) noexcept

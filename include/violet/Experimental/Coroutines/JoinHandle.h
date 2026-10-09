@@ -98,6 +98,13 @@ struct [[nodiscard("dropping a `JoinHandle` will detach itself")]] NOELDOC_EXPER
         return (state & internals::kTaskStateComplete) != 0;
     }
 
+    /// Returns `true` if the task was cancelled (e.g. its runtime shut down) and has no result.
+    [[nodiscard]]
+    auto Cancelled() const noexcept -> bool
+    {
+        return (this->n_task->State.load(std::memory_order_acquire) & internals::kTaskStateCancelled) != 0;
+    }
+
     /// Takes the task's result synchronously, consuming the handle.
     ///
     /// Rethrows the task's exception, if it threw one.
@@ -107,6 +114,7 @@ struct [[nodiscard("dropping a `JoinHandle` will detach itself")]] NOELDOC_EXPER
     /// inside one, `co_await` the handle instead.
     auto Take() -> T
     {
+        VIOLET_ASSERT(!this->Cancelled(), "`JoinHandle::Take` on a cancelled task; check `Cancelled()` first");
         VIOLET_DEBUG_ASSERT(this->Finished(), "`JoinHandle::Take` called before the task finished");
 
         internals::RawTask* task = std::exchange(this->n_task, nullptr);

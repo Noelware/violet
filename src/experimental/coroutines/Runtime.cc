@@ -71,6 +71,9 @@ Runtime::~Runtime()
     }
 
     // if (this->n_io != nullptr) this->n_io->DoCompletionOfAllTasks();
+
+    // Cancell all pending tasks.
+    this->n_scheduler->CancelAll();
 }
 
 auto Runtime::Handle() noexcept -> struct Handle&

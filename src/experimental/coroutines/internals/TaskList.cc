@@ -19,39 +19,59 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <violet/Experimental/Coroutines/Internals/SpawnedTask.h>
+#include <violet/Experimental/Coroutines/Internals/TaskList.h>
 
 namespace violet::experimental::coro::internals {
 
-auto GetHeaderFromFrame(Unsafe, void* frame) noexcept -> RawTask*
+void TaskList::Insert(RawTask* task) noexcept
 {
-    return std::launder(reinterpret_cast<RawTask*>(static_cast<std::byte*>(frame) - kSpawnedTaskHeaderSize));
-}
+    MutexLock lock(this->n_mux);
 
-void RetainRawTask(Unsafe, RawTask* task) noexcept
-{
-    VIOLET_ASSUME(task != nullptr);
-    task->RefCount.fetch_add(1, std::memory_order_relaxed);
-}
-
-void ReleaseRawTask(Unsafe, RawTask* task) noexcept
-{
-    if (task->RefCount.fetch_sub(1, std::memory_order_acq_rel) != 1) {
-        return;
+    task->OwnedPrevious = nullptr;
+    task->OwnedNext = this->n_head;
+    if (this->n_head != nullptr) {
+        this->n_head->OwnedPrevious = task;
     }
 
-    if ((task->State.load(std::memory_order_acquire) & kTaskStateFrameDropped) != 0) {
-        DeallocateRawTask(Unsafe("frame already destroyed by cancellation"), task, task->FrameSize);
-        return;
-    }
-
-    std::invoke(task->VTable->Destroy, task->Frame);
+    this->n_head = task;
 }
 
-void DeallocateRawTask(Unsafe, RawTask* task, UInt frameSize)
+auto TaskList::Remove(RawTask* task) noexcept -> bool
 {
-    task->~RawTask();
-    ::operator delete(static_cast<void*>(task), kSpawnedTaskHeaderSize + frameSize);
+    MutexLock lock(this->n_mux);
+    if (task->OwnedPrevious == nullptr && this->n_head != task) {
+        return false;
+    }
+
+    this->unlink(task);
+    return true;
+}
+
+auto TaskList::PopFront() noexcept -> RawTask*
+{
+    MutexLock lock(this->n_mux);
+    RawTask* task = this->n_head;
+    if (task != nullptr) {
+        this->unlink(task);
+    }
+
+    return task;
+}
+
+void TaskList::unlink(RawTask* task) noexcept
+{
+    if (task->OwnedPrevious != nullptr) {
+        task->OwnedPrevious->OwnedNext = task->OwnedNext;
+    } else {
+        this->n_head = task->OwnedNext;
+    }
+
+    if (task->OwnedNext != nullptr) {
+        task->OwnedNext->OwnedPrevious = task->OwnedPrevious;
+    }
+
+    task->OwnedPrevious = nullptr;
+    task->OwnedNext = nullptr;
 }
 
 } // namespace violet::experimental::coro::internals

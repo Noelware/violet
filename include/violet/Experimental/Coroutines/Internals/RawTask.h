@@ -66,11 +66,25 @@ struct VIOLET_API NOELDOC_HIDE RawTask final {
     const struct VTable* VTable = nullptr;
     std::atomic<Int32> RefCount{1};
     std::atomic<UInt32> State{0};
-    std::atomic<bool> Cancelled{false};
     RawTask* Next = nullptr;
     std::coroutine_handle<> Leaf = nullptr; // innermost suspended coroutine; null = resume `Frame`
     SourceLocation Location;
+    RawTask* OwnedPrevious = nullptr;
+    RawTask* OwnedNext = nullptr;
+    UInt32 FrameSize = 0;
 };
+
+inline constexpr UInt32 kTaskStateIdle = 0;
+inline constexpr UInt32 kTaskStateScheduled = 1U << 0;
+inline constexpr UInt32 kTaskStateRunning = 1U << 1;
+inline constexpr UInt32 kTaskStateNotified = 1U << 2;
+inline constexpr UInt32 kTaskStateComplete = 1U << 3;
+inline constexpr UInt32 kTaskStateJoinWaiter = 1U << 4;
+inline constexpr UInt32 kTaskStateCancelled = 1U << 5;
+inline constexpr UInt32 kTaskStateFrameDropped = 1U << 6;
+
+inline constexpr UInt32 kTaskStateLifecycleMask
+    = kTaskStateScheduled | kTaskStateRunning | kTaskStateNotified | kTaskStateComplete;
 
 /// The static vtable for a spawned coroutine whose promise type is `Promise`.
 template<typename Promise>
