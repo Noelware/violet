@@ -77,7 +77,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Instant final {
     }
 
     /// Returns a [`Instant`] of the present time.
-    constexpr static auto Now() noexcept -> Instant
+    static auto Now() noexcept -> Instant
     {
         return {clock_type::now()};
     }
