@@ -76,7 +76,7 @@ violet_cc_library(
         "@rules_cc//cc/compiler:clang": [
             "-Wno-gnu-anonymous-struct",
             "-Wno-nested-anon-types",
-            "-Wno-zero-lengt-array",
+            "-Wno-zero-length-array",
             "-Wno-c99-extensions",
         ],
         "//conditions:default": [],

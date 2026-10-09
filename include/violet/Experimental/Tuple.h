@@ -25,6 +25,8 @@
 
 #include <violet/Violet.h>
 
+#include <functional>
+
 // TODO(@auguwu/Noel): add conversion operators from std::tuple <-> violet::Tuple
 #ifndef VIOLET_IMPLEMENT_BACKWARDS_STL_TUPLE
 #define VIOLET_IMPLEMENT_BACKWARDS_STL_TUPLE 0
