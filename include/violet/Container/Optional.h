@@ -60,7 +60,7 @@ struct NOELDOC_SINCE("26.02.03") is_optional<std::optional<T>>: std::true_type {
 
 template<typename T>
 NOELDOC_SINCE("26.02.03")
-static constexpr bool is_optional_v = is_optional<T>::value;
+[[maybe_unused]] static constexpr bool is_optional_v = is_optional<T>::value;
 
 /// Type trait to extract the inner type from an [`Optional`] or [`std::optional`].
 ///
@@ -92,7 +92,7 @@ struct VIOLET_API NOELDOC_SINCE("26.03.05") optional_type<std::optional<U>> {
 /// @tparam T which optional wrapper whose inner type should be extracted.
 /// @since 26.03.05
 template<class T>
-using optional_type_t = typename optional_type<T>::type;
+using optional_type_t = optional_type<T>::type;
 
 template<typename T>
 struct VIOLET_API NOELDOC_SINCE("26.02") Some final {

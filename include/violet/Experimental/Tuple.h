@@ -90,14 +90,14 @@ constexpr inline from_tag_t from_tag{};
 } // namespace tuple_internal
 
 template<typename T>
-struct NOELDOC_EXPERIMENTAL_SINCE("current") is_tuple final: public std::false_type { };
+struct NOELDOC_EXPERIMENTAL_SINCE("current") is_tuple: public std::false_type { };
 
 template<typename... Ts>
-struct is_tuple<Tuple<Ts...>> final: public std::true_type { };
+struct is_tuple<Tuple<Ts...>>: public std::true_type { };
 
 #ifdef VIOLET_IMPLEMENT_BACKWARDS_STL_TUPLE
 template<typename... Ts>
-struct is_tuple<std::tuple<Ts...>> final: public std::true_type { };
+struct is_tuple<std::tuple<Ts...>>: public std::true_type { };
 #endif
 
 template<typename T>

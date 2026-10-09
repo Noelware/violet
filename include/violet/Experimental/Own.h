@@ -158,7 +158,7 @@ struct Own;
 /// derives from [`std::true_type`]. Prefer the [`is_owned_v`] variable template in
 /// most call sites.
 template<typename T>
-struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") is_owned final: std::false_type { };
+struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") is_owned: std::false_type { };
 
 template<typename T>
 struct is_owned<Own<T>>: std::true_type { };
@@ -166,7 +166,7 @@ struct is_owned<Own<T>>: std::true_type { };
 /// `true` if `T` is a specialization of [`Own`], `false` otherwise.
 template<typename T>
 NOELDOC_EXPERIMENTAL_SINCE("26.06.05")
-constexpr static inline bool is_owned_v = is_owned<T>::value;
+[[maybe_unused]] constexpr static inline bool is_owned_v = is_owned<T>::value;
 
 /// Extracts the managed type from an [`Own`] specialization.
 ///
@@ -186,7 +186,7 @@ struct owned_type<Own<T>> final {
 ///
 /// @since 26.06.05
 template<typename T>
-using owned_type_t = typename owned_type<T>::type;
+using owned_type_t = owned_type<T>::type;
 
 /// Detects whether `T` is a specialization of [`Weak`].
 ///
@@ -201,7 +201,7 @@ struct is_weak<Weak<T>>: std::true_type { };
 /// `true` if `T` is a specialization of [`Weak`], `false` otherwise.
 template<typename T>
 NOELDOC_EXPERIMENTAL_SINCE("26.07.03")
-constexpr static inline bool is_weak_v = is_weak<T>::value;
+[[maybe_unused]] constexpr static inline bool is_weak_v = is_weak<T>::value;
 
 /// Extracts the referenced type from a [`Weak`] specialization.
 ///
@@ -220,7 +220,7 @@ struct weak_type<Weak<T>> final {
 ///
 /// @since 26.07.03
 template<typename T>
-using weak_type_t = typename weak_type<T>::type;
+using weak_type_t = weak_type<T>::type;
 
 /// A thread-safe, reference-counted smart pointer with shared ownership.
 ///
@@ -488,7 +488,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Own final {
     static auto NewIn(Alloc alloc, Args&&... args) -> Own
     {
         using blk = own_internal::block<U, Alloc>;
-        using block_allocator = typename std::allocator_traits<Alloc>::template rebind_alloc<blk>;
+        using block_allocator = std::allocator_traits<Alloc>::template rebind_alloc<blk>;
 
         block_allocator block_alloc(alloc);
         blk* block = std::allocator_traits<block_allocator>::allocate(block_alloc, 1);

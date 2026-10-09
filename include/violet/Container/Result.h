@@ -95,7 +95,7 @@ struct VIOLET_API NOELDOC_SINCE("26.02.03") is_result<std::expected<T, E>>: std:
 
 template<typename T>
 NOELDOC_SINCE("26.02.03")
-static constexpr bool is_result_v = is_result<T>::value;
+[[maybe_unused]] static constexpr bool is_result_v = is_result<T>::value;
 
 /// A type-trait to extract the inner value and error types from an [`Result`] type.
 ///
@@ -129,7 +129,7 @@ struct VIOLET_API NOELDOC_SINCE("26.05.07") result_type<std::expected<U, E>> fin
 /// @since 26.03.05
 /// @tparam T which optional wrapper whose inner type should be extracted.
 template<typename T>
-using result_value_type_t = typename result_type<T>::value_type;
+using result_value_type_t = result_type<T>::value_type;
 
 /// Convenience alias for accessing the extracted inner error type.
 ///
@@ -138,7 +138,7 @@ using result_value_type_t = typename result_type<T>::value_type;
 /// @since 26.03.05
 /// @tparam T which optional wrapper whose inner type should be extracted.
 template<typename T>
-using result_error_type_t = typename result_type<T>::error_type;
+using result_error_type_t = result_type<T>::error_type;
 
 /// A tagged error variant.
 ///

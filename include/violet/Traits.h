@@ -88,12 +88,12 @@ inline constexpr bool instanceof_v = instanceof<Template, T>::value;
 /// @note Prefer the [`violet::pack_element_t`] alias to avoid the trailing `::type`.
 /// @note Index `I` must be less than `sizeof...(Ts)`; out-of-range access is a compile error.
 template<std::size_t I, typename T, typename... Ts>
-struct NOELDOC_SINCE("26.04.01") pack_element final {
+struct NOELDOC_SINCE("26.04.01") pack_element {
     using type = pack_element<I - 1, Ts...>::type;
 };
 
 template<typename T, typename... Ts>
-struct NOELDOC_SINCE("26.04.01") pack_element<0, T, Ts...> final {
+struct NOELDOC_SINCE("26.04.01") pack_element<0, T, Ts...> {
     using type = T;
 };
 
@@ -153,7 +153,7 @@ template<typename T, typename... Ts>
 struct NOELDOC_SINCE("26.04.01") pack_index;
 
 template<typename T, typename... Ts>
-struct NOELDOC_SINCE("26.04.01") pack_index<T, T, Ts...> final {
+struct NOELDOC_SINCE("26.04.01") pack_index<T, T, Ts...> {
     constexpr static std::size_t value = 0;
 };
 
@@ -222,7 +222,7 @@ concept constructible
 /// static_assert(!violet::is_shared_ptr<violet::UniquePtr<int>>::value);
 /// ```
 template<typename T>
-struct NOELDOC_SINCE("26.06.05") is_shared_ptr final: std::false_type { };
+struct NOELDOC_SINCE("26.06.05") is_shared_ptr: std::false_type { };
 
 template<typename T>
 struct NOELDOC_SINCE("26.06.05") is_shared_ptr<std::shared_ptr<T>>: std::true_type { };
@@ -237,7 +237,7 @@ struct NOELDOC_SINCE("26.06.05") is_shared_ptr<std::shared_ptr<T>>: std::true_ty
 /// ```
 template<typename T>
 NOELDOC_SINCE("26.06.05")
-constexpr static inline bool is_shared_ptr_v = is_shared_ptr<T>::value;
+[[maybe_unused]] constexpr static inline bool is_shared_ptr_v = is_shared_ptr<T>::value;
 
 /// Extracts the element type `T` from a `violet::SharedPtr<T>`.
 ///
@@ -276,7 +276,7 @@ template<typename F>
 struct NOELDOC_SINCE("26.06.05") FunctionParams;
 
 template<typename R, typename... Args>
-struct NOELDOC_SINCE("26.06.05") FunctionParams<R(Args...)> final {
+struct NOELDOC_SINCE("26.06.05") FunctionParams<R(Args...)> {
     /// The parameter types packed into a `std::tuple`.
     using types = std::tuple<Args...>;
 
@@ -366,8 +366,8 @@ template<typename T>
 struct NOELDOC_SINCE("current") trivially_relocatable: std::bool_constant<traits_internal::detect_relocatable_v<T>> { };
 
 template<typename T, std::size_t N>
-struct NOELDOC_SINCE("current") NOELDOC_SEE("violet::trivially_relocatable") trivially_relocatable<T[N]> final
-    : trivially_relocatable<std::remove_cv_t<T>> { };
+struct NOELDOC_SINCE("current") NOELDOC_SEE("violet::trivially_relocatable")
+    trivially_relocatable<T[N]>: trivially_relocatable<std::remove_cv_t<T>> { };
 
 /// Whether `T` is trivially relocatable.
 ///
