@@ -47,9 +47,10 @@ Checks: >
 
 CheckOptions:
   cppcoreguidelines-pro-bounds-avoid-unchecked-container-access.ExcludeClasses: "::std::map;::std::unordered_map;::std::flat_map;::violet::experimental::HashMap"
+  cppcoreguidelines-rvalue-reference-param-not-moved.AllowPartialMove: true
   cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
-  readability-identifier-length.MinimumVariableNameLength: 2
   readability-identifier-length.MinimumParameterNameLength: 2
+  readability-identifier-length.MinimumVariableNameLength: 2
   cppcoreguidelines-pro-type-member-init.IgnoreArrays: true
   readability-identifier-length.IgnoredVariableNames: "^_$"
   readability-simplify-boolean-expr.IgnoreMacros: true

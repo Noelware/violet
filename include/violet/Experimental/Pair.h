@@ -38,36 +38,34 @@ namespace violet::experimental {
 
 template<typename T, typename U>
 struct NOELDOC_EXPERIMENTAL_SINCE("current") Pair final {
-    static_assert(VIOLET_TRAIT_FOR_ALL_TYPES(!std::is_void_v, T, U), "`Pair`: cannot hold `void`");
-    static_assert(VIOLET_TRAIT_FOR_ALL_TYPES(!std::is_reference_v, T, U), "`Pair`: cannot hold reference members");
-    static_assert(VIOLET_TRAIT_FOR_ALL_TYPES(!std::is_function_v, T, U),
+    static_assert(!std::is_void_v<T> && !std::is_void_v<U>, "`Pair`: cannot hold `void`");
+    static_assert(!std::is_reference_v<T> && !std::is_reference_v<U>, "`Pair`: cannot hold reference members");
+    static_assert(!std::is_function_v<T> && !std::is_function_v<U>,
         "`Pair`: cannot hold function types; store a function pointer instead");
 
-    static_assert(VIOLET_TRAIT_FOR_ALL_TYPES(!std::is_abstract_v, T, U),
+    static_assert(!std::is_abstract_v<T> && !std::is_abstract_v<U>,
         "`Pair`: cannot hold an abstract class; store a pointer or `violet::experimental::Own<T>`");
 
-    static_assert(VIOLET_TRAIT_FOR_ALL_TYPES(!std::is_array_v, T, U),
+    static_assert(!std::is_array_v<T> && !std::is_array_v<U>,
         "`Pair`: doesn't support raw array members; use `std::array<T, N>` or `violet::experimental::Slice<T, N>`");
 
-    static_assert(VIOLET_TRAIT_FOR_ALL_TYPES(std::is_destructible_v, T, U), "`Pair`: members must be destructible");
+    static_assert(std::is_destructible_v<T> && std::is_destructible_v<U>, "`Pair`: members must be destructible");
 
     using first_type = T;
     using second_type = U;
 
-    VIOLET_NO_UNIQUE_ADDRESS T First;
-    VIOLET_NO_UNIQUE_ADDRESS U Second;
+    VIOLET_NO_UNIQUE_ADDRESS T First{};
+    VIOLET_NO_UNIQUE_ADDRESS U Second{};
 
-    constexpr VIOLET_IMPLICIT Pair() noexcept(VIOLET_TRAIT_FOR_ALL_TYPES(std::is_nothrow_default_constructible_v, T, U))
-        requires(VIOLET_TRAIT_FOR_ALL_TYPES(std::default_initializable, T, U))
-        : First()
-        , Second()
-    {
-    }
+    constexpr VIOLET_IMPLICIT Pair() noexcept(
+        std::is_nothrow_default_constructible_v<T> && std::is_nothrow_default_constructible_v<U>)
+        requires(std::default_initializable<T> && std::default_initializable<U>)
+    = default;
 
     constexpr VIOLET_EXPLICIT(!std::convertible_to<const T&, T> || !std::convertible_to<const U&, U>)
         Pair(const T& first, const U& second) noexcept(
-            VIOLET_TRAIT_FOR_ALL_TYPES(std::is_nothrow_copy_constructible_v, T, U))
-        requires(VIOLET_TRAIT_FOR_ALL_TYPES(std::copy_constructible, T, U))
+            std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_constructible_v<U>)
+        requires(std::copy_constructible<T> && std::copy_constructible<U>)
         : First(first)
         , Second(second)
     {
@@ -96,8 +94,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") Pair final {
         requires(std::constructible_from<T, X> && std::constructible_from<U, Y>)
     constexpr VIOLET_EXPLICIT(!std::convertible_to<X, T> || !std::convertible_to<Y, U>) Pair(
         Pair<X, Y>&& other) noexcept(std::is_nothrow_constructible_v<T, X> && std::is_nothrow_constructible_v<U, Y>)
-        : First(VIOLET_FWD(X, other.First))
-        , Second(VIOLET_FWD(Y, other.Second))
+        : First(VIOLET_MOVE(other.First))
+        , Second(VIOLET_MOVE(other.Second))
     {
     }
 
@@ -106,15 +104,15 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") Pair final {
         return Pair(VIOLET_MOVE(first), VIOLET_MOVE(second));
     }
 
-    constexpr void swap(Pair& other) noexcept(VIOLET_TRAIT_FOR_ALL_TYPES(std::is_nothrow_swappable_v, T, U))
-        requires(VIOLET_TRAIT_FOR_ALL_TYPES(std::swappable, T, U))
+    constexpr void swap(Pair& other) noexcept(std::is_nothrow_swappable_v<T> && std::is_nothrow_swappable_v<U>)
+        requires(std::swappable<T> && std::swappable<U>)
     {
         std::ranges::swap(this->First, other.First);
         std::ranges::swap(this->Second, other.Second);
     }
 
     constexpr friend void swap(Pair& lhs, Pair& rhs) noexcept(noexcept(lhs.swap(rhs)))
-        requires(VIOLET_TRAIT_FOR_ALL_TYPES(std::swappable, T, U))
+        requires(std::swappable<T> && std::swappable<U>)
     {
         lhs.swap(rhs);
     }

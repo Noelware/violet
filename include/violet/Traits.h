@@ -87,8 +87,13 @@ inline constexpr bool instanceof_v = instanceof<Template, T>::value;
 ///
 /// @note Prefer the [`violet::pack_element_t`] alias to avoid the trailing `::type`.
 /// @note Index `I` must be less than `sizeof...(Ts)`; out-of-range access is a compile error.
-template<std::size_t I, typename T, typename... Ts>
+template<std::size_t I, typename... Ts>
 struct NOELDOC_SINCE("26.04.01") pack_element {
+    static_assert(I < sizeof...(Ts), "`violet::pack_element`: index is out of range for the pack");
+};
+
+template<std::size_t I, typename T, typename... Ts>
+struct NOELDOC_SINCE("26.04.01") pack_element<I, T, Ts...> {
     using type = pack_element<I - 1, Ts...>::type;
 };
 
@@ -100,7 +105,7 @@ struct NOELDOC_SINCE("26.04.01") pack_element<0, T, Ts...> {
 // As 18/04/26, GCC doesn't implement mangle pack indexing, so for now, we only
 // enable using the pack indexing operator on Clang or if a compiler (that isn't
 // GCC) has `__cpp_pack_indexing`
-#if ((defined(__cpp_pack_indexing) >= 202311L) && !VIOLET_COMPILER(GCC)) || VIOLET_COMPILER(CLANG)
+#if (defined(__cpp_pack_indexing) && __cpp_pack_indexing >= 202311L && !VIOLET_COMPILER(GCC)) || VIOLET_COMPILER(CLANG)
 /// Convenience alias for using the pack indexing operator on newer compiler
 /// versions that support it
 ///
