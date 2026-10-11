@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <violet/Experimental/Coroutines/Internals/IO/Driver.h>
 #include <violet/Experimental/Coroutines/Internals/Scheduler.h>
 #include <violet/Experimental/Coroutines/Internals/Timers/Driver.h>
 #include <violet/Experimental/Coroutines/JoinHandle.h>
@@ -38,6 +39,7 @@ struct Runtime;
 struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Handle final {
     NOELDOC_HIDE const struct Clock* Clock;
     NOELDOC_HIDE internals::timers::Driver* Timers;
+    NOELDOC_HIDE internals::io::Driver* IO;
 
     static auto Current(SourceLocation loc = std::source_location::current()) noexcept -> Handle&;
     static auto TryCurrent() noexcept -> Optional<Handle>;
@@ -48,10 +50,11 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Handle final {
 private:
     friend struct Runtime;
 
-    VIOLET_EXPLICIT Handle(
-        internals::Scheduler* scheduler, internals::timers::Driver* timers, const struct Clock* clock) noexcept
+    VIOLET_EXPLICIT Handle(internals::Scheduler* scheduler, internals::timers::Driver* timers,
+        internals::io::Driver* io, const struct Clock* clock) noexcept
         : Clock(clock)
         , Timers(timers)
+        , IO(io)
         , n_scheduler(scheduler)
     {
     }
@@ -85,7 +88,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Runtime final {
     ~Runtime();
 
     NOELDOC_HIDE VIOLET_EXPLICIT Runtime(ctor_key, const Clock& clock, ptr::Unique<internals::timers::Driver> timers,
-        ptr::Unique<internals::Scheduler> scheduler) noexcept;
+        ptr::Unique<internals::io::Driver> io, ptr::Unique<internals::Scheduler> scheduler) noexcept;
 
     template<typename T>
     auto BlockOn(Task<T> task) -> T;
@@ -103,6 +106,7 @@ private:
 
     const Clock* n_clock;
     ptr::Unique<internals::timers::Driver> n_timers;
+    ptr::Unique<internals::io::Driver> n_io;
     ptr::Unique<internals::Scheduler> n_scheduler;
     struct Handle n_handle;
 };
@@ -132,6 +136,9 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Runtime::Builder final {
     auto EnableTimers() & noexcept -> Builder&;
     auto EnableTimers() && noexcept -> Builder&&;
 
+    auto EnableIO() & noexcept -> Builder&;
+    auto EnableIO() && noexcept -> Builder&&;
+
     auto EnableAll() & noexcept -> Builder&;
     auto EnableAll() && noexcept -> Builder&&;
 
@@ -146,6 +153,7 @@ private:
 
     const Clock* n_clock = std::addressof(Clock::System());
     ptr::Unique<internals::timers::Driver> n_timers;
+    ptr::Unique<internals::io::Driver> n_io;
     ptr::Unique<internals::Scheduler> n_scheduler;
 };
 

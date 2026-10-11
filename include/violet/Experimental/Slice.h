@@ -294,6 +294,17 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
         this->n_size = 0;
     }
 
+    /// Marks the first `size` slots as initialized without constructing.
+    ///
+    /// ## Safety
+    /// The caller must have fully written the first `size` elements (i.e., via a `syscall` into `Data()`).
+    constexpr void AssumeInit(Unsafe, size_type size) noexcept
+        requires(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+    {
+        VIOLET_DEBUG_ASSERT(size <= N, "`violet::experimental::Slice`: AssumemInit() was called past its capacity");
+        this->n_size = size;
+    }
+
     [[nodiscard("violet iterators are lazily-evaluated")]] auto Iter() -> slice::Iter<T, N>;
     [[nodiscard("violet iterators are lazily-evaluated")]] auto Iter() const -> slice::Iter<const T, N>;
 

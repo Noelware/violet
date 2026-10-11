@@ -90,6 +90,39 @@ type you annotate and confirmed none is self-referential or externally registere
 }
 
 STRING_FLAGS = {
+    "coroutines_io_driver": {
+        "default": "platform-dependent",
+        "doc": """\
+Selects the I/O driver that the Coroutines runtime uses for asynchronous I/O operations (sockets, pipes, files). The driver
+is what tasks suspend on while waiting for I/O, and what wakes them once the operation is ready or complete. When you don't
+depend on any I/O target inside of `//violet/experimental/coroutines`, this setting has no effect.
+
+By default, the driver is picked from the target platform:
+
+* Linux: `epoll`
+* macOS and the BSDs: `kqueue`
+* Windows: `iocp`
+
+`io_uring` is never selected by default, even on Linux: it is frequently disabled by container runtimes and seccomp profiles,
+and its availability depends on the running kernel rather than the build. Opt in explicitly when you control the
+deployment environment.
+
+* `platform-dependent`: Picks the driver listed above for the target platform. Recommended on most instances.
+* `epoll` [Linux only]: Readiness-based driver built on `epoll(7)`. Operations are attempted non-blocking and
+                        retried once the descriptor reports readiness.
+* `kqueue` [macOS, BSDs]: Readiness-based driver built on `kqueue(2)`. Same model as `epoll`.
+* `iouring` [Linux only]: Completion-based driver built on `io_uring(7)` via `liburing`. Requires Linux 5.6 or
+                          newer at runtime. Enables `VIOLET_FEATURE_COROUTINES_IO_URING_DRIVER` in C++.
+                          Operations own their buffers: a cancelled operation is kept alive until the kernel reports
+                          its completion, so a buffer is never freed while the kernel may still write into it.
+* `iocp` (PLANNED) [Windows only]: Completion-based driver built on Windows I/O completion ports. Not implemented yet;
+                                    selecting it is a build error.
+* `none`: Builds the runtime without an I/O driver. `Runtime::Builder::EnableIO()` is unavailable, and timers,
+          `Sleep`, and every non-I/O primitive keep working. Use this to bring your own driver by implementing
+          the `Driver` interface yourself.
+""",
+        "values": ["platform-dependent", "iouring", "epoll", "kqueue", "iocp", "none"],
+    },
     "dwarf_backend": {
         "default": "libdwarf",
         "doc": """The backend to use when parsing DWARF object files, primarily used in Linux. This is mainly used by the `Noelware.Violet.Experimental.Debugging`

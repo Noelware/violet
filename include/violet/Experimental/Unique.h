@@ -157,7 +157,8 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") Unique final {
     ///
     /// @param args forwarded arguments to construct `U`.
     template<typename U = T, typename... Args>
-        requires(std::constructible_from<U, Args...> && std::same_as<Deleter, DefaultDelete<T>>)
+        requires(
+            requires(Args&&... args) { ::new U(VIOLET_FWD(Args, args)...); } && std::same_as<Deleter, DefaultDelete<T>>)
     static auto New(Args&&... args) -> Unique
     {
         static_assert(!std::is_abstract_v<T> || std::derived_from<U, T>, "ensure `U` is inherited from `T`");

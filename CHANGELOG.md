@@ -25,6 +25,10 @@ availableAt:
 - Added **VIOLET_TRAIT_FOR_ALL_TYPES** macro ([`@auguwu`])
 - Added **VIOLET_TRAIT_FOR_ANY_TYPES** macro ([`@auguwu`])
 - Added **VIOLET_FEATURE_CPP_REFLECTION** macro ([`@auguwu`])
+- Add **violet::formattable** concept, which uses C++23's `std::formattable` when available and a C++20 fallback otherwise ([`@auguwu`])
+- Type-trait-like classes are no longer `final`: `is_optional`, `is_result`, `pack_element`, `pack_index`, `is_shared_ptr`, `FunctionParams`, and `trivially_relocatable<T[N]>` ([`@auguwu`])
+- Fix **pack_element** failing to compile on GCC when named with an empty pack; an out-of-range index now fails with a readable `static_assert` ([`@auguwu`])
+- Fix the `__cpp_pack_indexing` feature check for **pack_element_t**, which compared `defined(...)` against the version number and was always false ([`@auguwu`])
 
 #### Noelware.Violet.Experimental
 - Added **Synchroized\<T\>::With(<lambda>)** method ([`@auguwu`])
@@ -38,6 +42,8 @@ availableAt:
 - Added new types: Pair and Tuple ([`@auguwu`])
     - They mimic the STL types but adds combinators and makes code less "funky" in my opinion
 - Added **LockUntil** and **AwaitUntil** for `Mutex` ([`@auguwu`])
+- **is_owned** is no longer `final` ([`@auguwu`])
+- Added **Buf** and **Bytes** containers ([`@auguwu`])
 
 #### Noelware.Violet.Experimental.Coroutines
 This is a new experimental framework that works with C++20 coroutines.
@@ -77,6 +83,7 @@ New Bazel build flags are now provided:
 - Fix `TimePoint::IntoISO8601` to write into a bounds-checked buffer and assert on truncation instead of a fixed `char[32]` with an unchecked `snprintf` ([`@auguwu`])
 - Added Abseil and `std::time_t` conversions and constructors for `Duration` ([`@auguwu`])
 - Added Abseil conversions for `TimePoint` ([`@auguwu`])
+- Fix default-constructed **Duration** holding an uninitialized (garbage) value instead of zero, which also corrupted every **Duration::FromStr** result ([`@auguwu`])
 
 [`std::ptr::NonNull`]: https://doc.rust-lang.org/std/ptr/struct.NonNull.html
 

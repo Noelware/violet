@@ -53,11 +53,12 @@ HandleGuard::~HandleGuard()
 }
 
 Runtime::Runtime(ctor_key, const Clock& clock, ptr::Unique<internals::timers::Driver> timers,
-    ptr::Unique<internals::Scheduler> scheduler) noexcept
+    ptr::Unique<internals::io::Driver> io, ptr::Unique<internals::Scheduler> scheduler) noexcept
     : n_clock(std::addressof(clock))
     , n_timers(VIOLET_MOVE(timers))
+    , n_io(VIOLET_MOVE(io))
     , n_scheduler(VIOLET_MOVE(scheduler))
-    , n_handle(this->n_scheduler.Get(), this->n_timers.Get(), this->n_clock)
+    , n_handle(this->n_scheduler.Get(), this->n_timers.Get(), this->n_io.Get(), this->n_clock)
 {
 }
 
@@ -70,10 +71,11 @@ Runtime::~Runtime()
         this->n_timers->Clear();
     }
 
-    // if (this->n_io != nullptr) this->n_io->DoCompletionOfAllTasks();
-
     // Cancell all pending tasks.
     this->n_scheduler->CancelAll();
+
+    // Give the kernel back every buffer that we had.
+    this->n_io.Reset();
 }
 
 auto Runtime::Handle() noexcept -> struct Handle&
@@ -98,10 +100,46 @@ auto Runtime::Builder::EnableTimers() && noexcept -> Builder&&
     return VIOLET_MOVE(*this);
 }
 
+auto Runtime::Builder::EnableAll() & noexcept -> Builder&
+{
+    if (this->n_timers == nullptr) {
+        this->n_timers.Reset(new internals::timers::Driver(this->n_clock->Now()));
+    }
+
+    if (this->n_io == nullptr) {
+        internals::io::DriverOptions options;
+
+        auto driver = internals::io::CreateDriver(options);
+        VIOLET_ASSERT_FMT(driver.Ok(), "failed to build I/O driver: {}", driver.Error());
+
+        this->n_io = VIOLET_MOVE(driver).Value();
+    }
+
+    return *this;
+}
+
+auto Runtime::Builder::EnableAll() && noexcept -> Builder&&
+{
+    if (this->n_timers == nullptr) {
+        this->n_timers.Reset(new internals::timers::Driver(this->n_clock->Now()));
+    }
+
+    if (this->n_io == nullptr) {
+        internals::io::DriverOptions options;
+
+        auto driver = internals::io::CreateDriver(options);
+        VIOLET_ASSERT_FMT(driver.Ok(), "failed to build I/O driver: {}", driver.Error());
+
+        this->n_io = VIOLET_MOVE(driver).Value();
+    }
+
+    return VIOLET_MOVE(*this);
+}
+
 auto Runtime::Builder::Build() && -> ptr::Unique<Runtime>
 {
-    return ptr::Unique<Runtime>::New(
-        ctor_key{}, *this->n_clock, VIOLET_MOVE(this->n_timers), VIOLET_MOVE(this->n_scheduler));
+    return ptr::Unique<Runtime>::New(ctor_key{}, *this->n_clock, VIOLET_MOVE(this->n_timers), VIOLET_MOVE(this->n_io),
+        VIOLET_MOVE(this->n_scheduler));
 }
 
 } // namespace violet::experimental::coro

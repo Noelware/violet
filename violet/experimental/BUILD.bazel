@@ -44,6 +44,19 @@ violet_cc_test(
 )
 
 violet_cc_library(
+    name = "buf",
+    srcs = ["//src/experimental:Buf.cc"],
+    hdrs = ["//include/violet/Experimental:Buf.h"],
+    deps = ["//violet/experimental/memory:non_null"],
+)
+
+violet_cc_test(
+    name = "buf_test",
+    srcs = ["//tests/experimental:Buf.test.cc"],
+    deps = [":buf"],
+)
+
+violet_cc_library(
     name = "mutex",
     srcs = select({
         "//buildsystem/bazel/flags:abseil_enabled": ["//src/experimental:Mutex.abseil.cc"],

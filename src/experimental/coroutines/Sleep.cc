@@ -30,8 +30,6 @@ void SleepAwaiter::await_suspend(std::coroutine_handle<>) noexcept
     auto* self = CurrentTask();
     VIOLET_DEBUG_ASSERT(self != nullptr, "`Sleep` awaited outside of a runtime");
 
-    RetainRawTask(Unsafe("we are running as the current task"), self);
-
     this->n_entry.Waiter = Waker::ForCurrentTask();
     this->n_entry.Fire = &SleepAwaiter::fire;
     this->n_driver = handle.Timers;

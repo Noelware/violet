@@ -78,7 +78,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.03.09") NOELDOC_STABLIZED_SINCE
     ///
     /// @tparam M size of the string; deduced from the array size (including null-terminator).
     template<size_t M>
-        requires((M <= N + 1))
+        requires(M <= N + 1)
     constexpr VIOLET_IMPLICIT SmolString(const char (&str)[M]) noexcept
         : Size(M - 1)
     {
@@ -188,7 +188,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.03.09") NOELDOC_STABLIZED_SINCE
 
     constexpr VIOLET_EXPLICIT operator std::string_view() const noexcept
     {
-        return { this->Data.data(), this->Size };
+        return {this->Data.data(), this->Size};
     }
 
     /// ## Notes

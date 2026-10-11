@@ -282,3 +282,13 @@ static_assert(AsFd<violet::io::experimental::Descriptor::Borrowed>,
 
 VIOLET_FORMATTER(violet::io::experimental::Descriptor);
 VIOLET_FORMATTER(violet::io::experimental::Descriptor::Borrowed);
+
+/// @since current
+template<>
+struct std::hash<violet::io::experimental::Descriptor::Borrowed> final {
+    auto operator()(const violet::io::experimental::Descriptor::Borrowed& fd) noexcept -> violet::UInt
+    {
+        constexpr std::hash<violet::io::experimental::RawFd> hasher{};
+        return hasher(fd.Get());
+    }
+};

@@ -61,6 +61,12 @@ violet_cc_library(
     ],
 )
 
+violet_cc_library(
+    name = "io",
+    hdrs = ["//include/violet/Experimental/Coroutines:IO.h"],
+    deps = ["//violet/experimental/coroutines/internals/io:op"],
+)
+
 violet_cc_test(
     name = "generator_test",
     srcs = ["//tests/experimental/coroutines:Generator.test.cc"],
