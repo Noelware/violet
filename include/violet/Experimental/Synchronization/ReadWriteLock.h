@@ -369,7 +369,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
         return this->TryReadUntil(dur.Cast<std::chrono::nanoseconds>());
     }
 
-#if VIOLET_FEATURE(ABSEIL)
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
     /// Attempts to acquire a read lock, blocking for at most `timeout`.
     ///
     /// Returns [`violet::Nothing`] if the timeout expires before a read
@@ -431,7 +431,7 @@ struct VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.07") ReadWriteLock 
         return this->TryWriteUntil(dur.Cast<std::chrono::nanoseconds>());
     }
 
-#if VIOLET_FEATURE(ABSEIL)
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
     /// Attempts to acquire an exclusive write lock, blocking for at
     /// most `timeout`.
     ///
@@ -512,7 +512,7 @@ private:
             && callable<Action, ReadWriteLock&> && callable_returns<Action, void, ReadWriteLock&>)
     void await(Fun&& predicate, Action&& action)
     {
-#if VIOLET_FEATURE(ABSEIL)
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
         MutexLock lock(this->n_mux);
         this->n_mux.Await([this, pred = VIOLET_FWD(Fun, predicate)] -> bool { return std::invoke(pred, *this); });
 #else

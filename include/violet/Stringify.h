@@ -49,7 +49,7 @@ concept has_to_string_member = requires(const std::remove_cvref_t<T> ty) {
     { ty.ToString() } -> std::convertible_to<std::string>;
 };
 
-#if VIOLET_FEATURE(ABSEIL) && VIOLET_FEATURE_ABSEIL
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
 template<typename T>
 concept HasAbslStringify = absl::HasAbslStringify<std::remove_cvref_t<T>>::value;
 #endif

@@ -26,8 +26,6 @@
     "https://bcr.bazel.build/modules/abseil-cpp/20260817.0/source.json": "d25e9948901242071dd567462d04fa13c40bfe27ad8b9a4bbc9cc243e84202cb",
     "https://bcr.bazel.build/modules/abseil-py/2.1.0/MODULE.bazel": "5ebe5bf853769c65707e5c28f216798f7a4b1042015e6a36e6d03094d94bec8a",
     "https://bcr.bazel.build/modules/abseil-py/2.1.0/source.json": "0e8fc4f088ce07099c1cd6594c20c7ddbb48b4b3c0849b7d94ba94be88ff042b",
-    "https://bcr.bazel.build/modules/ada-url/4.0.0/MODULE.bazel": "88fbf7dca2ce802db919832e100f92245ef7c258089daf8206fa0c959b007b9b",
-    "https://bcr.bazel.build/modules/ada-url/4.0.0/source.json": "5fc8e5fcf937146e6eb9d9f616d3dc045fef91de55ae3c73e8527652394e2c9f",
     "https://bcr.bazel.build/modules/apple_support/1.11.1/MODULE.bazel": "1843d7cd8a58369a444fc6000e7304425fba600ff641592161d9f15b179fb896",
     "https://bcr.bazel.build/modules/apple_support/1.13.0/MODULE.bazel": "7c8cdea7e031b7f9f67f0b497adf6d2c6a2675e9304ca93a9af6ed84eef5a524",
     "https://bcr.bazel.build/modules/apple_support/1.15.1/MODULE.bazel": "a0556fefca0b1bb2de8567b8827518f94db6a6e7e7d632b4c48dc5f865bc7c85",

@@ -21,7 +21,7 @@
 
 #include <violet/Language/Macros.h>
 
-#if VIOLET_FEATURE(PTHREADS)
+#if defined(VIOLET_FEATURE_PTHREADS) && VIOLET_FEATURE(PTHREADS)
 
 #include <violet/Defer.h>
 #include <violet/Experimental/Threading/Thread.h>
@@ -92,7 +92,7 @@ auto normalizeStackSize(UInt bytes) noexcept -> UInt
 } // namespace
 
 struct Thread::start final {
-    Own<State> State;
+    Own<Thread::State> State;
     ptr::Unique<Runnable> Task;
 };
 

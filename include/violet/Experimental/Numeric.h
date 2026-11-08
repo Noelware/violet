@@ -42,9 +42,9 @@
 
 #if VIOLET_PLATFORM(APPLE_MACOS)
 #define VIOLET_FEATURE_FROM_CHARS_FLOAT 0
-#elif VIOLET_STDLIB(LIBCXX) && _LIBCPP_VERSION >= 170000
+#elif defined(VIOLET_STD_LIBCXX) && VIOLET_STDLIB(LIBCXX) && _LIBCPP_VERSION >= 170000
 #define VIOLET_FEATURE_FROM_CHARS_FLOAT 1
-#elif VIOLET_STDLIB(GNU) && defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
+#elif defined(VIOLET_STD_GNU) && VIOLET_STDLIB(GNU) && defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
 #define VIOLET_FEATURE_FROM_CHARS_FLOAT 1
 #else
 #define VIOLET_FEATURE_FROM_CHARS_FLOAT 0
