@@ -157,6 +157,26 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.03.09") NOELDOC_STABLIZED_SINCE
         return *this;
     }
 
+    constexpr auto size() noexcept -> decltype(this->Size)
+    {
+        return this->Size;
+    }
+
+    constexpr auto size() const noexcept -> decltype(this->Size)
+    {
+        return this->Size;
+    }
+
+    constexpr auto data() noexcept -> decltype(this->Data.data())
+    {
+        return this->Data.data();
+    }
+
+    constexpr auto data() const noexcept -> decltype(this->Data.data())
+    {
+        return this->Data.data();
+    }
+
     /// Support for C++ iterators. Resolves to [`std::array<char, N>::data`].
     constexpr auto begin() noexcept -> char*
     {

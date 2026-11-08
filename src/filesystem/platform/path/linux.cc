@@ -30,40 +30,20 @@
 #include <climits> // IWYU pragma: keep
 #include <unistd.h>
 
-using violet::Array;
-using violet::Err;
-using violet::Int64;
-using violet::Ok;
-using violet::String;
-using violet::filesystem::Path;
-using violet::io::Error;
-using violet::io::FileDescriptor;
-using violet::io::Result;
+namespace violet::filesystem {
 
-namespace {
-
-auto impl(const FileDescriptor& descriptor) -> Result<Path>
+auto Path::FromFileDescriptor(const io::FileDescriptor& descriptor) -> Result<Path, io::Error>
 {
     Array<char, PATH_MAX> buf;
     Int64 length = ::readlink(std::format("/proc/self/fd/{}", descriptor.Get()).c_str(), buf.data(), buf.size());
 
     if (length == -1) {
-        return Err(Error::OSError());
+        return Err(io::Error::OSError());
     }
 
-    return Ok(Path(buf.data(), buf.size()));
+    return Ok<Path>(buf.data(), buf.size());
 }
 
-} // namespace
-
-auto violet::filesystem::PathRef::FromFileDescriptor(const FileDescriptor& descriptor) -> Result<Path, Error>
-{
-    return impl(VIOLET_MOVE(descriptor));
-}
-
-auto violet::filesystem::Path::FromFileDescriptor(const FileDescriptor& descriptor) -> Result<Path, Error>
-{
-    return impl(VIOLET_MOVE(descriptor));
-}
+} // namespace violet::filesystem
 
 #endif

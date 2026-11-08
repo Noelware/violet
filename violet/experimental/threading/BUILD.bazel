@@ -29,11 +29,123 @@ violet_cc_library(
     name = "cancellation_token",
     srcs = ["//src/experimental/threading:CancellationToken.cc"],
     hdrs = ["//include/violet/Experimental/Threading:CancellationToken.h"],
-    deps = ["//violet/events:emitter"],
+    deps = [
+        "//violet/events:emitter",
+        "//violet/experimental:mutex",
+    ],
 )
 
 violet_cc_test(
     name = "cancellation_token_test",
     srcs = ["//tests/experimental/threading:CancellationToken.test.cc"],
     deps = [":cancellation_token"],
+)
+
+violet_cc_library(
+    name = "parallelism",
+    srcs = select({
+        "@platforms//os:linux": ["//src/experimental/threading/parallelism:linux.cc"],
+        "@platforms//os:macos": ["//src/experimental/threading/parallelism:macos.cc"],
+        "//conditions:default": ["//src/experimental/threading/parallelism:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Experimental/Threading:Parallelism.h"],
+    deps = select({
+        "@platforms//os:linux": [
+            "//violet/container:optional",
+            "//violet/experimental/threading/internals:cgroup",
+            "//violet/filesystem:file",
+            "//violet/io/experimental:error",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+violet_cc_test(
+    name = "parallelism_test",
+    srcs = ["//tests/experimental/threading:Parallelism.test.cc"],
+    deps = [
+        ":parallelism",
+        "//violet/system",
+    ],
+)
+
+violet_cc_library(
+    name = "sleep",
+    srcs = select({
+        "@platforms//os:linux": ["//src/experimental/threading/sleep:linux.cc"],
+        "@platforms//os:macos": ["//src/experimental/threading/sleep:unix.cc"],
+        "//conditions:default": ["//src/experimental/threading/sleep:unsupported.cc"],
+    }) + select({
+        "//buildsystem/bazel/flags:abseil_enabled": ["//src/experimental/threading:Sleep.abseil.cc"],
+        "//conditions:default": [],
+    }),
+    hdrs = ["//include/violet/Experimental/Threading:Sleep.h"],
+    deps = ["//violet/experimental/time:duration"],
+)
+
+violet_cc_library(
+    name = "thread",
+    srcs = ["//src/experimental/threading:Thread.cc"] + select({
+        "@platforms//os:linux": ["//src/experimental/threading/thread:pthreads.cc"],
+        "@platforms//os:macos": ["//src/experimental/threading/thread:pthreads.cc"],
+        "//conditions:default": ["//src/experimental/threading/thread:unsupported.cc"],
+    }),
+    hdrs = ["//include/violet/Experimental/Threading:Thread.h"],
+    copts = select({
+        "@platforms//os:linux": ["-pthread"],
+        "//conditions:default": [],
+    }),
+    defines = select({
+        "@platforms//os:linux": ["VIOLET_FEATURE_PTHREADS"],
+        "@platforms//os:macos": ["VIOLET_FEATURE_PTHREADS"],
+        "//conditions:default": [],
+    }),
+    linkopts = select({
+        "@platforms//os:linux": ["-pthread"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":cancellation_token",
+        "//violet/experimental:own",
+        "//violet/experimental:unique",
+        "//violet/io/experimental:error",
+    ] + select({
+        "@platforms//os:linux": ["//violet:defer"],
+        "@platforms//os:macos": ["//violet:defer"],
+        "//conditions:default": [],
+    }),
+)
+
+violet_cc_library(
+    name = "thread_pool",
+    srcs = ["//src/experimental/threading:ThreadPool.cc"],
+    hdrs = ["//include/violet/Experimental/Threading:ThreadPool.h"],
+    deps = [
+        ":parallelism",
+        ":thread",
+        "//violet/experimental:mutex",
+        "//violet/experimental:slice",
+        "//violet/experimental/collections:hash_map",
+        "//violet/experimental/time:duration",
+    ],
+)
+
+violet_cc_test(
+    name = "thread_pool_test",
+    srcs = ["//tests/experimental/threading:ThreadPool.test.cc"],
+    deps = [
+        ":sleep",
+        ":thread_pool",
+    ],
+)
+
+violet_cc_test(
+    name = "thread_test",
+    srcs = ["//tests/experimental/threading:Thread.test.cc"],
+    deps = [
+        ":thread",
+        "//violet/experimental:mutex",
+        "//violet/experimental:slice",
+        "//violet/experimental/collections:hash_set",
+    ],
 )

@@ -1505,3 +1505,19 @@
 #else
 #define VIOLET_CONSTINIT const
 #endif
+
+/**
+ * @macro VIOLET_THROW
+ * @param ex
+ * @param ...
+ * @since current
+ */
+#if VIOLET_FEATURE(EXCEPTIONS)
+#define VIOLET_THROW(ex, ...)                                                                                          \
+    throw ex                                                                                                           \
+    {                                                                                                                  \
+        __VA_ARGS__                                                                                                    \
+    }
+#else
+#define VIOLET_THROW(ex, ...) VIOLET_UNREACHABLE()
+#endif

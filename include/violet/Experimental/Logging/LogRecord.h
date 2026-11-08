@@ -57,7 +57,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") AttributeValue final
     {
     }
 
-    template<Stringify T>
+    template<stringify_internal::has_to_string_member T>
     VIOLET_IMPLICIT AttributeValue(T value) noexcept
         : OneOf(OneOf::New<String>(value.ToString()))
     {

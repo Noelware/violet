@@ -35,4 +35,5 @@ Checks: >
   -cppcoreguidelines-narrowing-conversions,
   -readability-static-accessed-through-instance,
   -modernize-use-std-print,
-  -readability-inconsistent-ifelse-braces
+  -readability-inconsistent-ifelse-braces,
+  -misc-override-with-different-visibility

@@ -44,7 +44,10 @@ violet_cc_library(
         "//buildsystem/bazel/flags:abseil_enabled": ["VIOLET_FEATURE_ABSEIL"],
         "//conditions:default": [],
     }),
-    deps = ["//violet/experimental:numeric"] + select({
+    deps = [
+        "//violet/experimental:numeric",
+        "//violet/experimental:pair",
+    ] + select({
         "//buildsystem/bazel/flags:abseil_enabled": ["@absl//absl/time"],
         "//conditions:default": [],
     }),

@@ -59,6 +59,7 @@
 #pragma once
 
 #include <violet/Experimental/Numeric.h>
+#include <violet/Experimental/OneOf.h>
 
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
 #include "absl/time/time.h"
@@ -66,6 +67,7 @@
 
 #include <chrono>
 #include <ctime>
+#include <system_error>
 
 namespace violet::experimental::chrono {
 namespace internals {
@@ -104,6 +106,63 @@ constexpr auto doCheckedMul(T one, T two, CStr context) noexcept -> T
 }
 
 } // namespace internals
+
+namespace duration {
+
+struct InputEmpty final {
+    [[nodiscard]]
+    auto ToString() const -> CStr
+    {
+        return "empty input was provided";
+    }
+};
+
+struct DoNotPrefix final {
+    String Input;
+
+    [[nodiscard]]
+    auto ToString() const -> String
+    {
+        return std::format("do not prefix duration with `+` or `-` (input: {})", this->Input);
+    }
+};
+
+struct MissingUnit final {
+    String Input;
+    String At;
+
+    [[nodiscard]]
+    auto ToString() const -> String
+    {
+        return std::format("expected unit after '{}' (input: {})", this->At, this->Input);
+    }
+};
+
+struct NotFinite final {
+    String Component;
+    String Unit;
+
+    [[nodiscard]]
+    auto ToString() const -> String
+    {
+        return std::format("invalid duration component '{}{}'", this->Component, this->Unit);
+    }
+};
+
+} // namespace duration
+
+struct VIOLET_API NOELDOC_SINCE("current") ParseDurationError final
+    : public OneOf<numeric::Error, std::error_code, duration::InputEmpty, duration::DoNotPrefix, duration::MissingUnit,
+          duration::NotFinite> {
+    using OneOf::OneOf;
+
+    [[nodiscard]]
+    auto ToString() const -> String
+    {
+        return this->Match([](const std::error_code& ec) -> String { return ec.message(); },
+            [](const auto& err) -> String { return err.ToString(); });
+    }
+};
 
 /// A span of time with nanosecond resolution.
 ///
@@ -230,7 +289,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
     ///
     /// @param input the textual duration to parse.
     /// @return the parsed [`Duration`], or an error describing why parsing failed.
-    static auto FromStr(Str input) noexcept -> anyhow::Result<Duration>;
+    static auto FromStr(Str input) noexcept -> Result<Duration, ParseDurationError>;
 
     /// Casts this [`Duration`] to an arbitrary [`std::chrono::duration`] type `Dur`.
     ///

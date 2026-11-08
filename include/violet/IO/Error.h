@@ -213,6 +213,9 @@ VIOLET_TO_STRING(violet::io::ErrorKind, self, {
 });
 
 namespace violet::io {
+namespace experimental {
+struct Error;
+}
 
 struct Error;
 
@@ -292,10 +295,12 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Error final {
 
 #if VIOLET_FEATURE(RTTI)
     template<typename T>
-    auto Downcast() const noexcept -> violet::Optional<T>;
+    auto Downcast() const noexcept -> Optional<T>;
 #endif
 
 private:
+    friend struct experimental::Error;
+
     constexpr VIOLET_IMPLICIT Error() = default;
 
     struct simple_message {

@@ -147,7 +147,8 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Descriptor final: public
         ~Borrowed() = default;
 
         /// Returns the raw value type of this descriptor.
-        [[nodiscard]] auto Get() const noexcept -> value_type
+        [[nodiscard]]
+        auto Get() const noexcept -> value_type
         {
             return this->n_fd;
         }
@@ -155,9 +156,20 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Descriptor final: public
         /// A borrow of a borrow is just copied. This allows us to pass in
         /// `Descriptor::Borrowed` values into any I/O code that might
         /// constrain [`AsFd`].
-        [[nodiscard]] auto Borrow() const noexcept -> Borrowed
+        [[nodiscard]]
+        auto Borrow() const noexcept -> Borrowed
         {
             return *this;
+        }
+
+        constexpr VIOLET_EXPLICIT operator bool() const noexcept
+        {
+            return this->Get() != kInvalidRawFd;
+        }
+
+        constexpr VIOLET_IMPLICIT operator RawFd() const noexcept
+        {
+            return this->Get();
         }
 
     private:
@@ -190,19 +202,22 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Descriptor final: public
     }
 
     /// Takes ownership of a file descriptor and returns this structure.
-    [[nodiscard("owned fds can be dropped")]] static auto FromRaw(value_type value) noexcept -> Descriptor
+    [[nodiscard("owned fds can be dropped")]]
+    static auto FromRaw(value_type value) noexcept -> Descriptor
     {
         return Descriptor(value);
     }
 
     /// Returns the raw value type of this file descriptor.
-    [[nodiscard]] auto Get() const noexcept -> value_type
+    [[nodiscard]]
+    auto Get() const noexcept -> value_type
     {
         return this->n_fd;
     }
 
     /// Returns a non-owning file descriptor. The borrowed fd must not outlive `*this`.
-    [[nodiscard]] auto Borrow() const noexcept -> Borrowed
+    [[nodiscard]]
+    auto Borrow() const noexcept -> Borrowed
     {
         return Borrowed(this->n_fd);
     }

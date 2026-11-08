@@ -193,7 +193,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     ///
     /// @param input the textual timestamp to parse.
     /// @return the parsed [`TimePoint`], or an error describing why parsing failed.
-    static auto FromISO8601(Str input) -> anyhow::Result<TimePoint>;
+    static auto FromISO8601(Str input) -> Result<TimePoint, numeric::Error>;
 
     /// Formats this [`TimePoint`] as an ISO 8601 / RFC 3339 timestamp string.
     [[nodiscard]] auto IntoISO8601() const -> String;

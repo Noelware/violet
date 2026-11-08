@@ -26,6 +26,23 @@ package(
 )
 
 violet_cc_library(
+    name = "int128",
+    hdrs = ["//include/violet/Experimental/Language:Int128.h"],
+    deps = [
+        "//violet:smol_string",
+        "//violet/container:optional",
+        "//violet/container:result",
+        "//violet/experimental:pair",
+    ],
+)
+
+violet_cc_test(
+    name = "int128_test",
+    srcs = ["//tests/experimental/language:Int128.test.cc"],
+    deps = [":int128"],
+)
+
+violet_cc_library(
     name = "typeid",
     hdrs = ["//include/violet/Experimental/Language:TypeId.h"],
     deps = [

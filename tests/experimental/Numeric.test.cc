@@ -24,7 +24,7 @@
 
 #include <limits>
 
-using namespace violet::numeric;
+using namespace violet::experimental::numeric;
 using violet::Int16;
 using violet::Int32;
 using violet::Int64;

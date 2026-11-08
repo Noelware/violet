@@ -48,8 +48,7 @@ union storage<T, Ts...> final { // NOLINT(cppcoreguidelines-special-member-funct
 };
 
 template<>
-union storage<> final {
-};
+union storage<> final { };
 
 /// Returns a reference to the element at compile-time index `I` inside
 /// `storage`.
@@ -122,7 +121,9 @@ constexpr void DestroyActiveElementInStorage(UInt active, storage<Ts...>& storag
 ///
 /// There is intentionally only one overload, const-ness is encoded in
 /// the `Storage` type parameter so overload resolution is never ambiguous.
-template<typename ReturnType, typename Visitor, typename Storage, UInt... Is>
+/// When `Rvalue` is `true`, each element is passed to `visitor` as an rvalue
+/// so move-only alternatives can be consumed by value.
+template<typename ReturnType, typename Visitor, typename Storage, bool Rvalue, UInt... Is>
 constexpr auto CreateVisitorDispatchTable(std::index_sequence<Is...>)
     -> Slice<ReturnType (*)(Visitor&&, Storage&), sizeof...(Is)>
 {
@@ -130,15 +131,19 @@ constexpr auto CreateVisitorDispatchTable(std::index_sequence<Is...>)
     return Slice<function, sizeof...(Is)>{
         // clang-format off
         +[](Visitor&& visitor, Storage& storage) -> ReturnType {
-            return std::invoke(VIOLET_MOVE(visitor), GetElement<Is>(storage));
+            if constexpr (Rvalue) {
+                return std::invoke(VIOLET_MOVE(visitor), VIOLET_MOVE(GetElement<Is>(storage)));
+            } else {
+                return std::invoke(VIOLET_MOVE(visitor), GetElement<Is>(storage));
+            }
         }...
         // clang-format on
     };
 }
 
-template<typename ReturnType, typename Visitor, typename Storage, typename... Ts>
+template<typename ReturnType, typename Visitor, typename Storage, bool Rvalue, typename... Ts>
 constexpr inline auto DispatchTableFor
-    = CreateVisitorDispatchTable<ReturnType, Visitor, Storage>(std::index_sequence_for<Ts...>{});
+    = CreateVisitorDispatchTable<ReturnType, Visitor, Storage, Rvalue>(std::index_sequence_for<Ts...>{});
 
 } // namespace oneof_internal
 
@@ -170,6 +175,9 @@ template<typename... Fs>
 struct Overloaded final: std::decay_t<Fs>... {
     using std::decay_t<Fs>::operator()...;
 };
+
+template<typename... Fs>
+Overloaded(Fs...) -> Overloaded<Fs...>;
 
 template<typename... Ts>
 struct OneOf {
@@ -326,7 +334,7 @@ struct OneOf {
 
         return std::invoke(
             // clang-format off
-            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, oneof_internal::storage<Ts...>, Ts...>[this->n_index],
+            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, oneof_internal::storage<Ts...>, false, Ts...>[this->n_index],
             VIOLET_FWD(Visitor, visitor), this->n_storage
             // clang-format on
         );
@@ -335,13 +343,13 @@ struct OneOf {
     template<typename Visitor>
     constexpr auto Visit(Visitor&& visitor) const& -> decltype(auto)
     {
-        using return_type = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&>;
+        using return_type = std::invoke_result_t<Visitor, const std::tuple_element_t<0, std::tuple<Ts...>>&>;
         static_assert((std::is_same_v<return_type, std::invoke_result_t<Visitor, const Ts&>> && ...),
             "all `OneOf::Visit` alternatives must return the same type");
 
         return std::invoke(
             // clang-format off
-            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, const oneof_internal::storage<Ts...>, Ts...>[this->n_index],
+            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, const oneof_internal::storage<Ts...>, false, Ts...>[this->n_index],
             VIOLET_FWD(Visitor, visitor), this->n_storage
             // clang-format on
         );
@@ -350,13 +358,13 @@ struct OneOf {
     template<typename Visitor>
     constexpr auto Visit(Visitor&& visitor) && -> decltype(auto)
     {
-        using return_type = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&>;
+        using return_type = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&&>;
         static_assert((std::is_same_v<return_type, std::invoke_result_t<Visitor, Ts&&>> && ...),
             "all `OneOf::Visit` alternatives must return the same type");
 
         return std::invoke(
             // clang-format off
-            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, oneof_internal::storage<Ts...>, Ts...>[this->n_index],
+            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, oneof_internal::storage<Ts...>, true, Ts...>[this->n_index],
             VIOLET_FWD(Visitor, visitor), this->n_storage
             // clang-format on
         );
@@ -365,13 +373,13 @@ struct OneOf {
     template<typename Visitor>
     constexpr auto Visit(Visitor&& visitor) const&& -> decltype(auto)
     {
-        using return_type = std::invoke_result_t<Visitor, std::tuple_element_t<0, std::tuple<Ts...>>&>;
+        using return_type = std::invoke_result_t<Visitor, const std::tuple_element_t<0, std::tuple<Ts...>>&&>;
         static_assert((std::is_same_v<return_type, std::invoke_result_t<Visitor, const Ts&&>> && ...),
             "all `OneOf::Visit` alternatives must return the same type");
 
         return std::invoke(
             // clang-format off
-            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, const oneof_internal::storage<Ts...>, Ts...>[this->n_index],
+            oneof_internal::DispatchTableFor<return_type, std::decay_t<Visitor>, const oneof_internal::storage<Ts...>, true, Ts...>[this->n_index],
             VIOLET_FWD(Visitor, visitor), this->n_storage
             // clang-format on
         );
@@ -393,6 +401,12 @@ struct OneOf {
     constexpr auto Match(Fs&&... funcs) && -> decltype(auto)
     {
         return VIOLET_MOVE(*this).Visit(Overloaded<Fs...>{VIOLET_FWD(Fs, funcs)...});
+    }
+
+    [[nodiscard]]
+    auto ToString() const -> String
+    {
+        return this->Visit([](const auto& value) -> String { return violet::ToString(value); });
     }
 
     constexpr friend void swap(OneOf& o1, OneOf& o2) noexcept
@@ -457,7 +471,7 @@ private:
 
         return result;
     }
-};
+}; // namespace violet::experimental
 
 } // namespace violet::experimental
 

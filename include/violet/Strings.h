@@ -26,74 +26,397 @@
 
 namespace violet::strings {
 
-/// Removes any leading ASCII whitespace from `input`.
+/// Resolves the character type of `StringType`.
 ///
-/// Whitespace characters are those for which [`std::isspace`] would return
-/// **true** in the default C locale (i.e, spaces, `\t`, `\n`, `\r\`, etc.) or
-/// any implementation from the `fun` parameter.
+/// This is `StringType::character` for Violet's string types, or `StringType::value_type` for the
+/// standard library's string types.
 ///
-/// This is a zero-allocation function, the return [`Str`] is a view into
-/// the original [`input`].
+/// ## Remarks
+/// For any other type (i.e, `const char*`), the trait has no `type` member. Overloads constrained on
+/// [`character_t`] are dropped from overload resolution rather than causing a hard error.
 ///
-/// @param input string view to trim
-/// @param fun the function to call to determine if a character is whitespace, defaults to [`std::isspace`].
-/// @returns view of `input` with leading whitespace removed
-template<typename Fun = int (*)(int)>
-    requires(callable<Fun, unsigned char> && std::convertible_to<std::invoke_result_t<Fun&, unsigned char>, bool>)
-VIOLET_API auto TrimStart(Str input, Fun&& fun = std::isspace) noexcept(
-    noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<unsigned char>()))) -> Str
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// static_assert(std::same_as<violet::strings::character_t<std::string>, char>);
+/// static_assert(std::same_as<violet::strings::character_t<std::u16string_view>, char16_t>);
+/// ```
+///
+/// @tparam StringType the string type to inspect
+template<typename StringType>
+struct NOELDOC_SINCE("current") character { };
+
+template<typename StringType>
+    requires(
+        requires { typename StringType::value_type; } && !requires { typename StringType::character; })
+struct NOELDOC_SINCE("current") character<StringType> {
+    using type = StringType::value_type;
+};
+
+template<typename StringType>
+    requires requires { typename StringType::character; }
+struct NOELDOC_SINCE("current") character<StringType> {
+    using type = StringType::character;
+};
+
+/// Shorthand for `character<StringType>::type`.
+/// @since current
+template<typename StringType>
+using character_t = character<StringType>::type;
+
+/// Resolves the unsigned counterpart of [`character_t`], which is what character predicates
+/// like [`std::isspace`] are called with.
+///
+/// ## Remarks
+/// As with [`character`], this has no `type` member if `StringType` isn't a string type.
+///
+/// @tparam StringType the string type to inspect
+template<typename StringType>
+struct NOELDOC_SINCE("current") unsigned_char { };
+
+template<typename StringType>
+    requires requires { typename character_t<StringType>; }
+struct NOELDOC_SINCE("current") unsigned_char<StringType> {
+    using type = std::make_unsigned_t<character_t<StringType>>;
+};
+
+/// Shorthand for `unsigned_char<StringType>::type`.
+/// @since current
+template<typename StringType>
+using unsigned_char_t = unsigned_char<StringType>::type;
+
+/// Whether `StringType` is a non-owning string view (any [`std::basic_string_view`]).
+/// @tparam StringType the string type to inspect
+template<typename StringType>
+struct NOELDOC_SINCE("current") is_view_type: std::false_type { };
+
+template<typename CharT, typename Traits>
+struct NOELDOC_SINCE("current") is_view_type<std::basic_string_view<CharT, Traits>>: std::true_type { };
+
+/// Shorthand for `is_view_type<StringType>::value`.
+template<typename StringType>
+NOELDOC_SINCE("current")
+[[maybe_unused]] inline constexpr static bool is_view_type_v = is_view_type<StringType>::value;
+
+/// Resolves the non-owning view type of `StringType`.
+///
+/// [`std::basic_string`] and [`std::basic_string_view`] both resolve to [`std::basic_string_view`].
+/// Any other type has to provide a `view_type` member.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// static_assert(std::same_as<violet::strings::view_type<std::string>, std::string_view>);
+/// ```
+///
+/// @tparam StringType the string type to inspect
+template<typename StringType>
+struct NOELDOC_SINCE("current") view {
+    using type = StringType::view_type;
+};
+
+template<typename CharT, typename Traits, typename Alloc>
+struct NOELDOC_SINCE("current") view<std::basic_string<CharT, Traits, Alloc>> {
+    using type = std::basic_string_view<CharT, Traits>;
+};
+
+template<typename CharT, typename Traits>
+struct NOELDOC_SINCE("current") view<std::basic_string_view<CharT, Traits>> {
+    using type = std::basic_string_view<CharT, Traits>;
+};
+
+/// Shorthand for `view<StringType>::type`.
+/// @since current
+template<typename StringType>
+using view_type = view<StringType>::type;
+
+/// Resolves the owning string type of `StringType`.
+///
+/// This is the inverse of [`view`]. [`std::basic_string_view`] and [`std::basic_string`] both resolve to
+/// [`std::basic_string`]. Any other type has to provide an `owned_type` member.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// static_assert(std::same_as<violet::strings::owned_type<std::string_view>, std::string>);
+/// ```
+///
+/// @tparam StringType the string type to inspect
+template<typename StringType>
+struct NOELDOC_SINCE("current") owned {
+    using type = StringType::owned_type;
+};
+
+template<typename CharT, typename Traits>
+struct NOELDOC_SINCE("current") owned<std::basic_string_view<CharT, Traits>> {
+    using type = std::basic_string<CharT, Traits>;
+};
+
+template<typename CharT, typename Traits>
+struct NOELDOC_SINCE("current") owned<std::basic_string<CharT, Traits>> {
+    using type = std::basic_string<CharT, Traits>;
+};
+
+/// Shorthand for `owned<StringType>::type`.
+/// @since current
+template<typename StringType>
+using owned_type = owned<StringType>::type;
+
+/// Whether `StringType` is an owning string (any [`std::basic_string`]).
+///
+/// @tparam StringType the string type to inspect
+template<typename StringType>
+struct NOELDOC_SINCE("current") is_owned_type: std::false_type { };
+
+template<typename CharT, typename Traits, typename Alloc>
+struct NOELDOC_SINCE("current") is_owned_type<std::basic_string<CharT, Traits, Alloc>>: std::true_type { };
+
+/// Shorthand for `is_owned_type<StringType>::value`.
+template<typename StringType>
+NOELDOC_SINCE("current")
+[[maybe_unused]] inline constexpr static bool is_owned_type_v = is_owned_type<StringType>::value;
+
+/// Removes leading whitespace from `input`.
+///
+/// Whitespace characters are those for which `fun` returns **true**. By default, that's [`std::isspace`] in the
+/// default C locale (i.e, spaces, `\t`, `\n`, `\r`, etc.).
+///
+/// ## Remarks
+/// - Views ([`Str`], any [`std::basic_string_view`]) are trimmed without allocating; the result points into the
+///   same buffer as `input`.
+/// - Owned strings (any [`std::basic_string`]) are trimmed in place and returned by value.
+/// - Types that provide their own `TrimStart` or `trim_start` method are dispatched to it.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// using namespace std::string_view_literals;
+///
+/// assert(violet::strings::TrimStart("  hello  "sv) == "hello  ");
+/// assert(violet::strings::TrimStart("//usr"sv, [](unsigned char ch) { return ch == '/'; }) == "usr");
+/// ```
+///
+/// @param input string to trim
+/// @param fun predicate that returns **true** for characters to remove, defaults to [`std::isspace`]
+/// @return `input` with leading whitespace removed
+template<typename StringType = Str, typename Fun = int (*)(int)>
+    requires(callable<Fun, unsigned_char_t<StringType>>
+        && std::convertible_to<std::invoke_result_t<Fun&, unsigned_char_t<StringType>>, bool>)
+auto TrimStart(StringType input, Fun&& fun = std::isspace) noexcept(
+    VIOLET_NOEXCEPT_FUN(fun, unsigned_char_t<StringType>)) -> StringType
 {
-    auto&& pred = VIOLET_FWD(Fun, fun);
-    while (!input.empty() && std::invoke(pred, static_cast<unsigned char>(input.front()))) {
-        input.remove_prefix(1);
+    auto pred = VIOLET_FWD(Fun, fun);
+    if constexpr (requires { input.trim_start(pred); }) {
+        return input.trim_start(pred);
     }
 
-    return input;
-}
-
-/// Removes trailing ASCII whitespace from `input`.
-///
-/// Whitespace characters are those for which [`std::isspace`] would return
-/// **true** in the default C locale (i.e, spaces, `\t`, `\n`, `\r\`, etc.) or
-/// any implementation from the `fun` parameter.
-///
-/// This is a zero-allocation function, the return [`Str`] is a view into
-/// the original [`input`].
-///
-/// @param input string view to trim
-/// @param fun the function to call to determine if a character is whitespace, defaults to [`std::isspace`].
-/// @returns view of `input` with leading whitespace removed
-template<typename Fun = int (*)(int)>
-    requires(callable<Fun, unsigned char> && std::convertible_to<std::invoke_result_t<Fun&, unsigned char>, bool>)
-VIOLET_API auto TrimEnd(Str input, Fun&& fun = std::isspace) noexcept(
-    noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<unsigned char>()))) -> Str
-{
-    auto&& pred = VIOLET_FWD(Fun, fun);
-    while (!input.empty() && std::invoke(pred, static_cast<unsigned char>(input.back()))) {
-        input.remove_suffix(1);
+    if constexpr (requires { input.TrimStart(pred); }) {
+        return input.TrimStart(pred);
     }
 
-    return input;
+    if constexpr (is_view_type_v<StringType> && requires {
+                      { input.front() };
+                      { input.empty() };
+                      { input.remove_prefix(1) };
+                  }) {
+        while (!input.empty() && std::invoke(pred, static_cast<unsigned_char_t<StringType>>(input.front()))) {
+            input.remove_prefix(1);
+        }
+
+        return input;
+    }
+
+    if constexpr (is_owned_type_v<StringType>
+        && requires { input.erase(0, std::declval<typename StringType::size_type>()); }) {
+        const auto size = input.size();
+        UInt skip = 0;
+
+        while (skip < size && std::invoke(pred, static_cast<unsigned_char_t<StringType>>(input[skip]))) {
+            ++skip;
+        }
+
+        input.erase(0, skip);
+
+        return input;
+    }
+
+    // At this point, we don't know what to do.
+    VIOLET_UNREACHABLE();
 }
 
-/// Removes leading and trailing ASCII whitespace from `input`.
+/// Removes trailing whitespace from `input`.
 ///
-/// This is a zero-allocation function, the return [`Str`] is a view into
-/// the original [`input`].
+/// Whitespace characters are those for which `fun` returns **true**. By default, that's [`std::isspace`] in the
+/// default C locale (i.e, spaces, `\t`, `\n`, `\r`, etc.).
 ///
-/// @param input string view to trim
-/// @param fun the function to call to determine if a character is whitespace, defaults to [`std::isspace`].
-/// @returns view of `input` with leading whitespace removed
-template<typename Fun = int (*)(int)>
-    requires(callable<Fun, unsigned char> && std::convertible_to<std::invoke_result_t<Fun&, unsigned char>, bool>)
-VIOLET_API auto Trim(Str input, Fun&& fun = std::isspace) noexcept(
-    noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<unsigned char>()))) -> Str
+/// ## Remarks
+/// - Views ([`Str`], any [`std::basic_string_view`]) are trimmed without allocating; the result points into the
+///   same buffer as `input`.
+/// - Owned strings (any [`std::basic_string`]) are trimmed in place and returned by value.
+/// - Types that provide their own `TrimEnd` or `trim_end` method are dispatched to it.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// using namespace std::string_view_literals;
+///
+/// assert(violet::strings::TrimEnd("  hello  "sv) == "  hello");
+/// assert(violet::strings::TrimEnd("/usr/lib//"sv, [](unsigned char ch) { return ch == '/'; }) == "/usr/lib");
+/// ```
+///
+/// @param input string to trim
+/// @param fun predicate that returns **true** for characters to remove, defaults to [`std::isspace`]
+/// @return `input` with trailing whitespace removed
+template<typename StringType = Str, typename Fun = int (*)(int)>
+    requires(callable<Fun, unsigned_char_t<StringType>>
+        && std::convertible_to<std::invoke_result_t<Fun&, unsigned_char_t<StringType>>, bool>)
+auto TrimEnd(StringType input, Fun&& fun = std::isspace) noexcept(
+    noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<unsigned_char_t<StringType>>()))) -> StringType
 {
-    auto&& pred = VIOLET_FWD(Fun, fun);
+    auto pred = VIOLET_FWD(Fun, fun);
+    if constexpr (requires { input.TrimEnd(pred); }) {
+        return input.TrimEnd(pred);
+    }
+
+    if constexpr (requires { input.trim_end(pred); }) {
+        return input.trim_end(pred);
+    }
+
+    if constexpr (is_view_type_v<StringType> && requires {
+                      { input.front() };
+                      { input.empty() };
+                      { input.remove_suffix(1) };
+                  }) {
+        while (!input.empty() && std::invoke(pred, static_cast<unsigned_char_t<StringType>>(input.back()))) {
+            input.remove_suffix(1);
+        }
+
+        return input;
+    }
+
+    if constexpr (is_owned_type_v<StringType>
+        && requires { input.erase(std::declval<typename StringType::size_type>()); }) {
+        auto end = input.size();
+        while (end > 0 && std::invoke(pred, static_cast<unsigned_char_t<StringType>>(input[end - 1]))) {
+            --end;
+        }
+
+        input.erase(end);
+        return input;
+    }
+
+    // At this point, we don't know what to do.
+    VIOLET_UNREACHABLE();
+}
+
+/// Removes leading and trailing whitespace from `input`.
+///
+/// Whitespace characters are those for which `fun` returns **true**. By default, that's [`std::isspace`] in the
+/// default C locale (i.e, spaces, `\t`, `\n`, `\r`, etc.).
+///
+/// ## Remarks
+/// - Views ([`Str`], any [`std::basic_string_view`]) are trimmed without allocating; the result points into the
+///   same buffer as `input`.
+/// - Owned strings (any [`std::basic_string`]) are returned by value. Assigning the result to a [`Str`]
+///   (`Str s = Trim(someString)`) leaves a view into a destroyed temporary.
+/// - Types that provide their own `Trim` or `trim` method are dispatched to it.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// using namespace std::string_view_literals;
+///
+/// assert(violet::strings::Trim("  hello  "sv) == "hello");
+/// assert(violet::strings::Trim(std::string("\thello\n")) == "hello");
+/// ```
+///
+/// @param input string to trim
+/// @param fun predicate that returns **true** for characters to remove, defaults to [`std::isspace`]
+/// @return `input` with leading and trailing whitespace removed
+template<typename StringType = Str, typename Fun = int (*)(int)>
+    requires(callable<Fun, unsigned_char_t<StringType>>
+        && std::convertible_to<std::invoke_result_t<Fun&, unsigned_char_t<StringType>>, bool>)
+auto Trim(StringType input, Fun&& fun = std::isspace) noexcept(
+    noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<unsigned_char_t<StringType>>()))) -> StringType
+{
+    auto pred = VIOLET_FWD(Fun, fun);
+    if constexpr (requires { input.Trim(pred); }) {
+        return input.Trim(pred);
+    }
+
+    if constexpr (requires { input.trim(pred); }) {
+        return input.trim(pred);
+    }
+
     return TrimEnd(TrimStart(input, pred), pred);
 }
 
-/// Splits `input` at the first occurence of `delim`.
+/// Removes leading whitespace from the C-style string `input`.
+///
+/// This is the overload for string literals and `const CharT*`: `input` is trimmed as a
+/// [`std::basic_string_view`] without allocating, and the result points into `input`.
+///
+/// @param input NUL-terminated string to trim
+/// @param fun predicate that returns **true** for characters to remove, defaults to [`std::isspace`]
+/// @return a view of `input` with leading whitespace removed
+template<typename CharT, typename Fun = int (*)(int)>
+    requires(callable<Fun, std::make_unsigned_t<CharT>>
+        && std::convertible_to<std::invoke_result_t<Fun&, std::make_unsigned_t<CharT>>, bool>)
+auto TrimStart(const CharT* input, Fun&& fun = std::isspace) noexcept(
+    std::is_nothrow_invocable_v<Fun&, std::make_unsigned_t<CharT>>) -> std::basic_string_view<CharT>
+{
+    return TrimStart(std::basic_string_view<CharT>(input), VIOLET_FWD(Fun, fun));
+}
+
+/// Removes trailing whitespace from the C-style string `input`.
+///
+/// This is the overload for string literals and `const CharT*`: `input` is trimmed as a
+/// [`std::basic_string_view`] without allocating, and the result points into `input`.
+///
+/// @param input NUL-terminated string to trim
+/// @param fun predicate that returns **true** for characters to remove, defaults to [`std::isspace`]
+/// @return a view of `input` with trailing whitespace removed
+template<typename CharT, typename Fun = int (*)(int)>
+    requires(callable<Fun, std::make_unsigned_t<CharT>>
+        && std::convertible_to<std::invoke_result_t<Fun&, std::make_unsigned_t<CharT>>, bool>)
+auto TrimEnd(const CharT* input, Fun&& fun = std::isspace) noexcept(
+    std::is_nothrow_invocable_v<Fun&, std::make_unsigned_t<CharT>>) -> std::basic_string_view<CharT>
+{
+    return TrimEnd(std::basic_string_view<CharT>(input), VIOLET_FWD(Fun, fun));
+}
+
+/// Removes leading and trailing whitespace from the C-style string `input`.
+///
+/// This is the overload for string literals and `const CharT*`: `input` is trimmed as a
+/// [`std::basic_string_view`] without allocating, and the result points into `input`.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// auto trimmed = violet::strings::Trim("  hello  ");
+/// assert(trimmed == "hello");
+/// ```
+///
+/// @param input NUL-terminated string to trim
+/// @param fun predicate that returns **true** for characters to remove, defaults to [`std::isspace`]
+/// @return a view of `input` with leading and trailing whitespace removed
+template<typename CharT, typename Fun = int (*)(int)>
+    requires(callable<Fun, std::make_unsigned_t<CharT>>
+        && std::convertible_to<std::invoke_result_t<Fun&, std::make_unsigned_t<CharT>>, bool>)
+auto Trim(const CharT* input, Fun&& fun = std::isspace) noexcept(
+    std::is_nothrow_invocable_v<Fun&, std::make_unsigned_t<CharT>>) -> std::basic_string_view<CharT>
+{
+    return Trim(std::basic_string_view<CharT>(input), VIOLET_FWD(Fun, fun));
+}
+
+/// Splits `input` at the first occurrence of `delim`.
 ///
 /// The string is divided into at most two parts:
 /// - The substring before the first occurrence of `delim`.
@@ -114,33 +437,50 @@ VIOLET_API auto Trim(Str input, Fun&& fun = std::isspace) noexcept(
 ///
 /// @param input string view to split
 /// @param delim delimiter character
-VIOLET_API auto SplitOnce(Str input, char delim) noexcept -> Pair<Str, Optional<Str>>;
+/// @return the part before `delim`, and the part after it if `delim` was found
+VIOLET_API
+auto SplitOnce(Str input, char delim) noexcept -> Pair<Str, Optional<Str>>;
 
-/// Joins a collection of elements into a single string with a delimiter.
+/// Joins a collection of elements into a single string, separated by `delim`.
+///
+/// Each element is converted with [`violet::ToString`].
 ///
 /// ## Example
-///
 /// ```cpp
 /// #include <violet/Strings.h>
 ///
-/// using namespace violet::strings;
-///
-/// auto basic = Join(Vec<String>{"Bob", "Alice"}, ", ");
-/// // => "Bob, Alice"
-///
-/// auto mapped = Join(Vec<String>{"Bob", "Alice"}, ", ", [](const String& name) -> String {
-///     return std::format("'{}'", name);
-/// });
-/// // => "'Bob', 'Alice'"
+/// auto joined = violet::strings::Join(Vec<String>{"Bob", "Alice"}, ", ");
+/// assert(joined == "Bob, Alice");
 /// ```
+///
+/// @param range elements to join
+/// @param delim separator placed between each element
+/// @return the joined string
 template<std::ranges::input_range Range>
-    requires(violet::Stringify<std::ranges::range_value_t<Range>>)
-VIOLET_API auto Join(const Range& range, Str delim) noexcept -> violet::String
+    requires(Stringify<std::ranges::range_value_t<Range>>)
+auto Join(const Range& range, Str delim) noexcept -> String
 {
     return Join(range, delim, [](const auto& value) -> String { return violet::ToString(value); });
 }
 
-/// Joins a collection of elements into a single string with a delimiter with a designated mapper.
+/// Joins a collection of elements into a single string, separated by `delim`, mapping each element through
+/// `mapper`.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Strings.h>
+///
+/// auto mapped = violet::strings::Join(Vec<String>{"Bob", "Alice"}, ", ", [](const String& name) -> String {
+///     return std::format("'{}'", name);
+/// });
+///
+/// assert(mapped == "'Bob', 'Alice'");
+/// ```
+///
+/// @param range elements to join
+/// @param delim separator placed between each element
+/// @param mapper converts each element into a [`String`]
+/// @return the joined string
 template<std::ranges::input_range Range, typename Fun>
 #if VIOLET_COMPILER(GCC)
     requires(requires(Fun fn, const std::ranges::range_value_t<Range>& v) {
@@ -150,7 +490,7 @@ template<std::ranges::input_range Range, typename Fun>
     requires(callable<Fun, const std::ranges::range_value_t<Range>&>,
         callable_returns<Fun, violet::String, const std::ranges::range_value_t<Range>&>)
 #endif
-VIOLET_API auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> violet::String
+auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> String
 {
     String result;
     bool first = true;
@@ -170,9 +510,7 @@ VIOLET_API auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> vi
 
 /// Replaces all occurrences of `pattern` in `input` with `replacement`.
 ///
-/// Returns a new [`String`] with the substitutions applied. If `pattern` is not found,
-/// return a copy of `input` unchanged. If `pattern` is empty, returns a copy of `input`
-/// unchanged.
+/// If `pattern` is empty or isn't found, a copy of `input` is returned unchanged.
 ///
 /// ## Example
 /// ```cpp
@@ -181,7 +519,13 @@ VIOLET_API auto Join(const Range& range, Str delim, Fun&& mapper) noexcept -> vi
 /// auto result = violet::strings::ReplaceAll("hello %d world!", "%d", "420");
 /// assert(result == "hello 420 world!");
 /// ```
-NOELDOC_SINCE("26.07") constexpr auto ReplaceAll(Str input, Str pattern, Str replacement) -> String
+///
+/// @param input string to search
+/// @param pattern substring to replace
+/// @param replacement string to put in place of each `pattern`
+/// @return a new [`String`] with every `pattern` replaced
+NOELDOC_SINCE("26.07")
+constexpr auto ReplaceAll(Str input, Str pattern, Str replacement) -> String
 {
     if (pattern.empty()) {
         return String(input);
@@ -213,17 +557,17 @@ static_assert(ReplaceAll("", "%t", "42").empty());
 static_assert(ReplaceAll("a%tb%tc", "%t", "") == "abc");
 static_assert(ReplaceAll("%t%t", "%t", "ab") == "abab");
 
-/// An iterator that yields substrings of `input` separated by a delimiter.
+/// An iterator that yields the substrings of `input` separated by a delimiter.
 ///
-/// `Split` produces non-owning views into the original string. It does not
-/// allocate or copy the underlying data.
+/// Every substring is a view into `input`; nothing is allocated or copied. The delimiter defaults to `' '`.
 ///
-/// By default, the delimiter is implementation-defined (typically space),
-/// or may be explicitly specified.
+/// ## Remarks
+/// - Consecutive delimiters yield empty substrings (`"a,,b"` yields `"a"`, `""`, `"b"`).
+/// - A trailing delimiter does not yield a trailing empty substring (`"a,"` yields only `"a"`).
 ///
 /// This type satisfies [`violet::Iterable`].
 ///
-/// # Examples
+/// ## Example
 /// ```cpp
 /// #include <violet/Strings.h>
 ///
@@ -231,22 +575,19 @@ static_assert(ReplaceAll("%t%t", "%t", "ab") == "abab");
 ///     // Yields: "a", "b", "c"
 /// }
 /// ```
-///
-/// Empty segments may be yielded if consecutive delimiters are present,
-/// depending on implementation semantics.
 struct VIOLET_API Split final: public violet::Iterator<Split> {
-    /// Creates a `Split` iterator over `input` using the default delimiter.
+    /// Creates a `Split` iterator over `input`, separated by `' '`.
     /// @param input string view to iterate over
     VIOLET_IMPLICIT Split(Str input) noexcept;
 
-    /// Creates a `Split` iterator over `input` using `delim` as the separator
+    /// Creates a `Split` iterator over `input`, separated by `delim`.
     /// @param input string view to iterate over
     /// @param delim delimiter character
     VIOLET_IMPLICIT Split(Str input, char delim) noexcept;
 
     /// Advances the iterator and returns the next substring.
-    /// @returns the next segement if available, or [`Nothing`] if iteration is complete.
-    VIOLET_API auto Next() noexcept -> Optional<Str>;
+    /// @return the next substring, or [`Nothing`] once iteration is complete
+    auto Next() noexcept -> Optional<Str>;
 
 private:
     Str n_input;
@@ -257,38 +598,36 @@ private:
 
 static_assert(Iterable<Split>, "`Split` is not a valid iterable");
 
-/// A fixed-count, splitting iterator over a string slice.
+/// An iterator that splits a string at most `N` times.
 ///
-/// `SplitN<N>` will split the input string atmost `N` times using a given delimiter
-/// or `' '` as the default delimiter. After `N` splits, the remainder of the string is returned
-/// as the last element.
+/// After `N` splits, the rest of the string, delimiters included, is yielded as the last substring. The
+/// delimiter defaults to `' '`. Every substring is a view into the input.
 ///
-/// ### Example
+/// ## Example
 /// ```cpp
 /// #include <violet/Strings.h>
 ///
 /// auto it = violet::strings::SplitN<2>("a:b:c:d", ':');
 ///
-/// auto a = it.Next();
-/// assert(a.HasValueAnd([](const Str& input) -> bool { return input == "a"; }));
-///
-/// auto b = it.Next();
-/// assert(b.HasValueAnd([](const Str& input) -> bool { return input == "b"; }));
-///
-/// auto c = it.Next();
-/// assert(!e.HasValue());
+/// assert(it.Next().HasValueAnd([](const Str& part) -> bool { return part == "a"; }));
+/// assert(it.Next().HasValueAnd([](const Str& part) -> bool { return part == "b"; }));
+/// assert(it.Next().HasValueAnd([](const Str& part) -> bool { return part == "c:d"; }));
+/// assert(!it.Next().HasValue());
 /// ```
+///
+/// @tparam N the maximum number of splits
 template<UInt N>
-struct VIOLET_API SplitN final: public Iterator<SplitN<N>> {
-    /// Construct the iterator with a given input using the default delimiter (`' '`)
+struct SplitN final: public Iterator<SplitN<N>> {
+    /// Creates a `SplitN` iterator over `input`, separated by `' '`.
+    /// @param input string view to iterate over
     VIOLET_IMPLICIT SplitN(Str input) noexcept
         : SplitN<N>(input, ' ')
     {
     }
 
-    /// Construct the iterator with a given input and delimiter.
-    /// @param input input to split
-    /// @param delim the delimiter to check
+    /// Creates a `SplitN` iterator over `input`, separated by `delim`.
+    /// @param input string view to iterate over
+    /// @param delim delimiter character
     VIOLET_IMPLICIT SplitN(Str input, char delim) noexcept
         : n_input(input)
         , n_delim(delim)
@@ -296,8 +635,8 @@ struct VIOLET_API SplitN final: public Iterator<SplitN<N>> {
     }
 
     /// Advances the iterator and returns the next substring.
-    /// @returns the next segement if available, or [`Nothing`] if iteration is complete.
-    VIOLET_API auto Next() noexcept -> Optional<Str>
+    /// @return the next substring, or [`Nothing`] once iteration is complete
+    auto Next() noexcept -> Optional<Str>
     {
         if (this->n_pos >= this->n_input.size()) {
             return Nothing;
@@ -333,26 +672,39 @@ private:
     UInt n_splits = 0;
 };
 
-/// A lazy, zero-copyable iterator over lines (`\n`, `\r`, `\r\n`) in a string.
+/// A lazy, zero-copy iterator over the lines of a string.
+///
+/// Lines can end in `\n`, `\r`, or `\r\n`. Line endings are not included in the yielded lines, and every line is a
+/// view into the input.
+///
+/// ## Remarks
+/// If the text ends with a line ending, a final empty line is yielded (`"a\n"` yields `"a"`, `""`).
 ///
 /// ## Example
 /// ```cpp
 /// #include <violet/Strings.h>
 ///
-/// auto text = "hello\nworld\r\nfoo\rbar"sv;
-/// auto lines = violet::strings::Lines(text).Count();
+/// using namespace std::string_view_literals;
+///
+/// auto lines = violet::strings::Lines("hello\nworld\r\nfoo\rbar"sv).Count();
 /// assert(lines == 4);
 /// ```
 struct VIOLET_API Lines final: public Iterator<Lines> {
     using Item = Str;
 
+    /// Creates an empty iterator that yields nothing.
     constexpr Lines() noexcept = default;
+
+    /// Creates an iterator over the lines of `text`.
+    /// @param text the text to iterate over
     constexpr VIOLET_IMPLICIT Lines(Str text) noexcept
         : n_remaining(text)
     {
     }
 
-    VIOLET_API constexpr auto Next() noexcept -> Optional<Item>
+    /// Advances the iterator and returns the next line.
+    /// @return the next line, or [`Nothing`] once iteration is complete
+    constexpr auto Next() noexcept -> Optional<Item>
     {
         if (this->n_done) {
             return Nothing;
@@ -391,13 +743,15 @@ struct VIOLET_API Lines final: public Iterator<Lines> {
         return line;
     }
 
-    [[nodiscard]] constexpr auto SizeHint() const noexcept -> violet::SizeHint
+    /// Returns the bounds on the number of lines left: at least one until the iterator is done.
+    [[nodiscard]]
+    constexpr auto SizeHint() const noexcept -> violet::SizeHint
     {
         if (this->n_done) {
-            return { 0, Some<UInt>(0) };
+            return {0, Some<UInt>(0)};
         }
 
-        return { 1, Nothing };
+        return {1, Nothing};
     }
 
 private:

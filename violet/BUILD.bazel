@@ -60,10 +60,15 @@ violet_cc_library(
     hdrs = ["//include/violet:Violet.h"],
     deps = [
         ":assert",
+        ":drop",
+        ":infallible",
         ":macros",
         ":panic",
         ":policy_checks",
+        ":stringify",
         ":traits",
+        ":type_aliases",
+        ":unsafe",
     ],
 )
 
@@ -199,4 +204,41 @@ violet_cc_test(
     name = "refcnt_test",
     srcs = ["//tests:RefCnt.test.cc"],
     deps = [":refcnt"],
+)
+
+violet_cc_library(
+    name = "stringify",
+    hdrs = ["//include/violet:Stringify.h"],
+    defines = select({
+        "//buildsystem/bazel/flags:abseil_enabled": ["VIOLET_FEATURE_ABSEIL"],
+        "//conditions:default": [],
+    }),
+    deps = [":macros"] + select({
+        "//buildsystem/bazel/flags:abseil_enabled": ["@absl//absl/strings"],
+        "//conditions:default": [],
+    }),
+)
+
+violet_cc_library(
+    name = "drop",
+    hdrs = ["//include/violet/Language:Drop.h"],
+    deps = [":macros"],
+)
+
+violet_cc_library(
+    name = "infallible",
+    hdrs = ["//include/violet/Language:Infallible.h"],
+    deps = [":macros"],
+)
+
+violet_cc_library(
+    name = "type_aliases",
+    hdrs = ["//include/violet/Language:TypeAliases.h"],
+    deps = [":macros"],
+)
+
+violet_cc_library(
+    name = "unsafe",
+    hdrs = ["//include/violet/Language:Unsafe.h"],
+    deps = [":macros"],
 )

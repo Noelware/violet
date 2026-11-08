@@ -22,9 +22,9 @@
 #include <gtest/gtest.h>
 #include <violet/Filesystem/Path.h>
 
-using namespace violet; // NOLINT(google-build-using-namespace)
-using namespace violet::io; // NOLINT(google-build-using-namespace)
-using namespace violet::filesystem; // NOLINT(google-build-using-namespace)
+#include <compare>
+
+namespace violet::filesystem {
 
 TEST(Paths, Empty)
 {
@@ -152,3 +152,106 @@ TEST(Paths, Operators)
     EXPECT_TRUE(a != c);
     EXPECT_FALSE(a == c);
 }
+
+#if !VIOLET_PLATFORM(WINDOWS)
+TEST(Paths, SlashOperator)
+{
+    Path base("/home/noeltowa");
+
+    EXPECT_EQ((base / "docs").Data(), "/home/noeltowa/docs");
+    EXPECT_EQ((base / "docs" / "file.txt").Data(), "/home/noeltowa/docs/file.txt");
+    EXPECT_EQ((base / String("docs")).Data(), "/home/noeltowa/docs");
+    EXPECT_EQ((base / Str("docs")).Data(), "/home/noeltowa/docs");
+    EXPECT_EQ((base / Path("docs")).Data(), "/home/noeltowa/docs");
+
+    // an absolute right-hand side replaces the base, like `Join`
+    EXPECT_EQ((base / "/etc/passwd").Data(), "/etc/passwd");
+
+    // no doubled separator when the base already ends with one
+    Path trailing("/usr/");
+    EXPECT_EQ((trailing / "bin").Data(), "/usr/bin");
+
+    // joining onto a borrowed path produces an owned one
+    PathRef ref("/usr/local");
+    auto joined = ref / "bin";
+    static_assert(std::same_as<decltype(joined), Path>);
+    EXPECT_EQ(joined.Data(), "/usr/local/bin");
+}
+#endif
+
+TEST(Paths, ThreeWayComparison)
+{
+    PathRef a("/home/user/file.txt");
+    PathRef b("/home/user/file.txt");
+    PathRef c("/home/user/other.txt");
+
+    // path <=> path
+    EXPECT_EQ(a <=> b, std::strong_ordering::equal);
+    EXPECT_EQ(a <=> c, std::strong_ordering::less);
+    EXPECT_EQ(c <=> a, std::strong_ordering::greater);
+    EXPECT_TRUE(a < c);
+    EXPECT_TRUE(c > a);
+    EXPECT_TRUE(a <= b);
+    EXPECT_TRUE(a >= b);
+
+    Path owned("/home/user/file.txt");
+    Path ownedOther("/home/user/other.txt");
+    EXPECT_TRUE(owned < ownedOther);
+    EXPECT_EQ(owned <=> Path("/home/user/file.txt"), std::strong_ordering::equal);
+
+    // path <=> string types, including the reversed forms
+    EXPECT_EQ(a <=> "/home/user/file.txt", std::strong_ordering::equal);
+    EXPECT_TRUE(a < "/home/user/other.txt");
+    EXPECT_TRUE("/home/user/other.txt" > a);
+    EXPECT_TRUE(a < Str("/home/user/other.txt"));
+    EXPECT_TRUE(owned < String("/home/user/other.txt"));
+
+    // Path <=> PathRef, both ways
+    EXPECT_EQ(owned <=> a, std::strong_ordering::equal);
+    EXPECT_TRUE(owned < c);
+    EXPECT_TRUE(c > owned);
+}
+
+TEST(Paths, StartsWith)
+{
+    PathRef path("/usr/lib/libc.so");
+
+    EXPECT_TRUE(path.StartsWith(PathRef("/usr/lib")));
+    EXPECT_TRUE(path.StartsWith(PathRef("/usr/lib/")));
+    EXPECT_TRUE(path.StartsWith(PathRef("/usr")));
+    EXPECT_TRUE(path.StartsWith(PathRef("/")));
+    EXPECT_TRUE(path.StartsWith(path));
+    EXPECT_TRUE(path.StartsWith(PathRef("")));
+
+    // compares whole components, not raw prefixes
+    EXPECT_FALSE(path.StartsWith(PathRef("/usr/li")));
+    EXPECT_FALSE(PathRef("/usr/libexec").StartsWith(PathRef("/usr/lib")));
+    EXPECT_FALSE(path.StartsWith(PathRef("/usr/lib/libc.so/extra")));
+    EXPECT_FALSE(path.StartsWith(PathRef("/opt")));
+
+    // a non-const lvalue still picks the component-wise overload, not the variadic one
+    PathRef prefix("/usr/lib");
+    EXPECT_FALSE(PathRef("/usr/libexec").StartsWith(prefix));
+
+    Path owned("/home/noeltowa/docs/file.txt");
+    Path ownedPrefix("/home/noeltowa");
+    EXPECT_TRUE(owned.StartsWith(ownedPrefix));
+    EXPECT_FALSE(owned.StartsWith(Path("/home/noel")));
+}
+
+TEST(Paths, StartsWithString)
+{
+    // string arguments forward to the underlying string's `starts_with`, so they're raw prefix checks
+    PathRef path("/usr/libexec");
+
+    EXPECT_TRUE(path.StartsWith("/usr/lib"));
+    EXPECT_TRUE(path.StartsWith(Str("/usr/lib")));
+    EXPECT_TRUE(path.StartsWith('/'));
+    EXPECT_FALSE(path.StartsWith("/opt"));
+
+    Path owned("/usr/libexec");
+    EXPECT_TRUE(owned.StartsWith("/usr/lib"));
+    EXPECT_TRUE(owned.StartsWith(String("/usr")));
+}
+
+} // namespace violet::filesystem

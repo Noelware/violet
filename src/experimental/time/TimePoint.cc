@@ -73,9 +73,15 @@ auto TimePoint::ToAbsl() const noexcept -> absl::Time
 
 #endif
 
-auto TimePoint::FromISO8601(Str input) -> anyhow::Result<TimePoint>
+auto TimePoint::FromISO8601(Str input) -> Result<TimePoint, numeric::Error>
 {
-    ENSURE_FMT(input.size() >= 20, "ISO-8601 input was too sore: {}", input);
+    const auto invalid = [] -> Err<std::error_code> { return Err(std::make_error_code(std::errc::invalid_argument)); };
+    const auto outOfRange
+        = [] -> Err<std::error_code> { return Err(std::make_error_code(std::errc::result_out_of_range)); };
+
+    if (input.size() < 20) {
+        return invalid();
+    }
 
     String buf(input);
     std::tm tm{};
@@ -90,14 +96,13 @@ auto TimePoint::FromISO8601(Str input) -> anyhow::Result<TimePoint>
     if (const Int32 matched
         = ::sscanf(buf.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &year, &month, &day, &hour, &minute, &second);
         matched != 6) {
-        return Err(ANYHOW_FMT("malformed ISO-8601 prefix: {}", input));
+        return invalid();
     }
 
-    ENSURE_FMT(month > 1 && month < 12, "ISO-8601 month field [{}] out of range: {}", month, input);
-    ENSURE_FMT(day > 1 && day < 31, "ISO-8601 day field [{}] out of range: {}", day, input);
-    ENSURE_FMT(hour > 1 && hour < 23, "ISO-8601 hour field [{}] out of range: {}", hour, input);
-    ENSURE_FMT(minute > 1 && minute < 60, "ISO-8601 minute [{}] field out of range: {}", minute, input);
-    ENSURE_FMT(second > 1 && second < 60, "ISO-8601 second [{}] field out of range: {}", second, input);
+    if (month < 1 || month > 12 || day < 1 || day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59
+        || second < 0 || second > 60) {
+        return outOfRange();
+    }
 
     tm.tm_year = year - 1900;
     tm.tm_mon = month - 1;
@@ -132,7 +137,9 @@ auto TimePoint::FromISO8601(Str input) -> anyhow::Result<TimePoint>
     }
 
     // require a timezone designator
-    ENSURE_FMT(pos <= input.size(), "missing timezone designator: {}", input);
+    if (pos >= input.size()) {
+        return invalid();
+    }
 
     Int64 offsetSeconds = 0;
     const char tz = input[pos];
@@ -142,17 +149,17 @@ auto TimePoint::FromISO8601(Str input) -> anyhow::Result<TimePoint>
     } else if (tz == '+' || tz == '-') {
         // +HH:MM or -HH:MM
         if (input.size() < pos + 6) {
-            return Err(ANYHOW_FMT("truncated timezone offset: {}", input));
+            return invalid();
         }
 
         Int32 offsetHour = 0;
         Int32 offsetMin = 0;
         if (::sscanf(buf.c_str() + pos + 1, "%2d:%2d", &offsetHour, &offsetMin) != 2) {
-            return Err(ANYHOW_FMT("malformed timezone offset: {}", input));
+            return invalid();
         }
 
         if (offsetHour < 0 || offsetHour > 23 || offsetMin < 0 || offsetMin > 59) {
-            return Err(ANYHOW_FMT("timezone offset out of range: {}", input));
+            return outOfRange();
         }
 
         offsetSeconds = (static_cast<Int64>(offsetHour) * 3600) + (offsetMin * 60);
@@ -162,10 +169,12 @@ auto TimePoint::FromISO8601(Str input) -> anyhow::Result<TimePoint>
 
         pos += 6;
     } else {
-        return Err(ANYHOW_FMT("unknown timezone marker [{}] in: {}", tz, input));
+        return invalid();
     }
 
-    ENSURE_FMT(pos == input.size(), "trailing characters after ISO-8601: {}", input);
+    if (pos != input.size()) {
+        return Err(numeric::error::TrailingGarbage{});
+    }
 
 #if VIOLET_PLATFORM(UNIX)
 #define timegm(tm) timegm(&tm)
@@ -174,7 +183,9 @@ auto TimePoint::FromISO8601(Str input) -> anyhow::Result<TimePoint>
 #endif
 
     const time_t time = timegm(tm);
-    ENSURE_FMT(time != -1, "date not representable as `time_t`: {}", input);
+    if (time == -1) {
+        return Err(std::make_error_code(std::errc::value_too_large));
+    }
 
     const Int64 totalMillis = ((static_cast<Int64>(time) - offsetSeconds) * 1000) + ms;
     return TimePoint::FromUnixMillis(totalMillis);

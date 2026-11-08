@@ -43,7 +43,7 @@ auto CancellationTokenSource::RequestsCancellation() const noexcept -> bool
 void CancellationTokenSource::Cancel() const noexcept
 {
     {
-        std::unique_lock lock(this->n_state->Mux);
+        violet::experimental::MutexLock lock(this->n_state->Mux);
         if (this->RequestsCancellation()) {
             return;
         }
@@ -51,7 +51,7 @@ void CancellationTokenSource::Cancel() const noexcept
         this->n_state->Cancelled.store(true, std::memory_order_release);
     }
 
-    this->n_state->CV.notify_all();
+    this->n_state->CV.SignalAll();
     this->n_state->Emitter.Fire(CancellationRequestedEvent());
 }
 
@@ -70,6 +70,6 @@ void CancellationToken::WaitForCancellation() const noexcept
         return;
     }
 
-    std::unique_lock lock(this->n_state->Mux);
-    this->n_state->CV.wait(lock, [this] -> bool { return this->RequestsCancellation(); });
+    violet::experimental::MutexLock lock(this->n_state->Mux);
+    this->n_state->CV.WaitUntil(&this->n_state->Mux, [this]() -> bool { return this->RequestsCancellation(); });
 }

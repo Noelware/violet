@@ -20,48 +20,58 @@
 // SOFTWARE.
 
 #include <violet/Experimental/Numeric.h>
+#include <violet/Experimental/Pair.h>
 #include <violet/Experimental/Time/Duration.h>
 
 #include <cmath>
 
-using violet::experimental::chrono::Duration;
-
-using violet::Array;
-using violet::Err;
-using violet::Int32;
-using violet::Int64;
-using violet::Nothing;
-using violet::Optional;
-using violet::Pair;
-using violet::Str;
-using violet::String;
-using violet::UInt;
-
+namespace violet::experimental::chrono {
 namespace {
 
 struct Unit final {
     Str Name;
     Int64 Nanos;
+
+    static auto Match(Str input, UInt position) noexcept -> Optional<Pair<Unit, UInt>>;
 };
 
-// clang-format off
 constexpr Array<Unit, 7> kUnits = {
-    Unit{.Name = "ns", .Nanos =1 },
-    {.Name = "us", .Nanos = 1'000},
-    {.Name = "ms", .Nanos = 1'000'000},
-    {.Name = "s",  .Nanos = 1'000'000'000LL},
-    {.Name = "m",  .Nanos = 60LL * 1'000'000'000LL},
-    {.Name = "h",  .Nanos = 3600LL * 1'000'000'000LL},
-    {.Name = "d",  .Nanos = 86400LL * 1'000'000'000LL},
+    Unit{
+        .Name = "ns",
+        .Nanos = 1,
+    },
+    {
+        .Name = "us",
+        .Nanos = 1'000,
+    },
+    {
+        .Name = "ms",
+        .Nanos = 1'000'000,
+    },
+    {
+        .Name = "s",
+        .Nanos = 1'000'000'000LL,
+    },
+    {
+        .Name = "m",
+        .Nanos = 60LL * 1'000'000'000LL,
+    },
+    {
+        .Name = "h",
+        .Nanos = 3600LL * 1'000'000'000LL,
+    },
+    {
+        .Name = "d",
+        .Nanos = 86400LL * 1'000'000'000LL,
+    },
 };
-// clang-format on
 
-auto matchUnit(Str input, UInt pos) -> Optional<Pair<Unit, UInt>>
+auto Unit::Match(Str input, UInt position) noexcept -> Optional<Pair<Unit, UInt>>
 {
     for (const auto& unit: kUnits) {
         const auto len = unit.Name.size();
-        if (input.size() - pos >= len && input.substr(pos, len) == unit.Name) {
-            return std::make_pair(unit, len);
+        if (input.size() - position >= len && input.substr(position, len) == unit.Name) {
+            return Some<Pair<Unit, UInt>>(unit, len);
         }
     }
 
@@ -70,13 +80,15 @@ auto matchUnit(Str input, UInt pos) -> Optional<Pair<Unit, UInt>>
 
 } // namespace
 
-auto Duration::FromStr(Str input) noexcept -> violet::anyhow::Result<Duration>
+auto Duration::FromStr(Str input) noexcept -> Result<Duration, ParseDurationError>
 {
-    ENSURE(!input.empty(), "empty string");
+    if (input.empty()) {
+        return Err(duration::InputEmpty{});
+    }
 
     UInt pos = 0;
     if (input[pos] == '-' || input[pos] == '+') {
-        return Err(ANYHOW_FMT("do not prefix duration with `+` or `-` ({})", input));
+        return Err(duration::DoNotPrefix{.Input = String(input)});
     }
 
     Duration total;
@@ -87,37 +99,36 @@ auto Duration::FromStr(Str input) noexcept -> violet::anyhow::Result<Duration>
         }
 
         if (pos == numStart) {
-            return Err(ANYHOW_FMT("expected number in duration: {}", input));
+            return Err(std::make_error_code(std::errc::invalid_argument));
         }
 
         const auto numStr = input.substr(numStart, pos - numStart);
-        auto unit = matchUnit(input, pos);
+        auto unit = Unit::Match(input, pos);
         if (!unit.HasValue()) {
-            return Err(ANYHOW_FMT("expected unit after '{}' (input={})", numStr, input));
+            return Err(duration::MissingUnit{.Input = String(input), .At = String(numStr)});
         }
 
-        const auto [theUnit, len] = unit.Value();
-        pos += len;
+        const auto& matched = unit->First;
+        pos += unit->Second;
 
         auto value = numeric::Parse<double>(numStr);
         if (value.Err()) {
-            return Err(
-                ANYHOW_FMT("invalid number '{}' in duration {}", numStr, input).Context(VIOLET_MOVE(value).Error()));
+            return Err(VIOLET_MOVE(value).Error());
         }
 
-        const auto nsd = *value * static_cast<double>(theUnit.Nanos);
+        const auto nsd = *value * static_cast<double>(matched.Nanos);
         if (!std::isfinite(nsd)) {
-            return Err(ANYHOW_FMT("invalid duration component '{}{}'", numStr, theUnit.Name));
+            return Err(duration::NotFinite{.Component = String(numStr), .Unit = String(matched.Name)});
         }
 
         constexpr double kInt64SafeMax = 9.22e18;
         if (nsd > kInt64SafeMax) {
-            return Err(ANYHOW_FMT("duration component '{}{}' exceeds representable range", numStr, theUnit.Name));
+            return Err(std::make_error_code(std::errc::result_out_of_range));
         }
 
         auto sum = total.CheckedAdd(Duration::Nanoseconds(static_cast<Int64>(nsd)));
         if (!sum.HasValue()) {
-            return Err(ANYHOW_FMT("duration [{}] overflows", input));
+            return Err(std::make_error_code(std::errc::result_out_of_range));
         }
 
         total = *sum;
@@ -178,3 +189,5 @@ auto Duration::ToString() const -> String
 
     return out;
 }
+
+} // namespace violet::experimental::chrono

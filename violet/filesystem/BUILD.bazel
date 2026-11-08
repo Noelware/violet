@@ -88,6 +88,7 @@ violet_cc_library(
     hdrs = ["//include/violet/Filesystem:Path.h"],
     deps = [
         "//violet",
+        "//violet:strings",
         "//violet/container:optional",
         "//violet/io:descriptor",
         "//violet/io:error",

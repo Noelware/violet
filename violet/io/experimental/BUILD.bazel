@@ -57,6 +57,7 @@ violet_cc_library(
         "//violet/container:optional",
         "//violet/container:result",
         "//violet/experimental:oneof",
+        "//violet/io:error",
     ],
 )
 

@@ -29,6 +29,53 @@ availableAt:
 - Type-trait-like classes are no longer `final`: `is_optional`, `is_result`, `pack_element`, `pack_index`, `is_shared_ptr`, `FunctionParams`, and `trivially_relocatable<T[N]>` ([`@auguwu`])
 - Fix **pack_element** failing to compile on GCC when named with an empty pack; an out-of-range index now fails with a readable `static_assert` ([`@auguwu`])
 - Fix the `__cpp_pack_indexing` feature check for **pack_element_t**, which compared `defined(...)` against the version number and was always false ([`@auguwu`])
+- Add string type traits to `violet::strings` ([`@auguwu`])
+    - **character** / **character_t**: the character type of a string (`value_type`, or `character` for Violet's string types)
+    - **unsigned_char** / **unsigned_char_t**: the unsigned counterpart of `character_t`
+    - **view** / **view_type**: the non-owning view of a string (`std::basic_string` ~> `std::basic_string_view`, or a type's `view_type`)
+    - **owned** / **owned_type**: the owning counterpart of a string (`std::basic_string_view` ~> `std::basic_string`, or a type's `owned_type`)
+    - **is_view_type** / **is_view_type_v** and **is_owned_type** / **is_owned_type_v**
+- **strings::TrimStart**, **strings::TrimEnd**, and **strings::Trim** are now generic over the string type ([`@auguwu`])
+    - Views (`Str`, any `std::basic_string_view`) are trimmed without allocating; owned strings (any `std::basic_string`) are trimmed in place and returned by value
+    - The predicate is called with `unsigned_char_t<StringType>` instead of `unsigned char`
+    - Types providing their own `TrimStart`/`trim_start`, `TrimEnd`/`trim_end`, or `Trim`/`trim` methods are dispatched to them
+    - C-style strings and string literals (`const CharT*`) are trimmed as a `std::basic_string_view<CharT>`
+- Split `violet/Violet.h` into smaller headers, which `Violet.h` still re-exports ([`@auguwu`])
+    - Type aliases (`Int64`, `String`, `Str`, `Vec`, ...) are in `violet/Language/TypeAliases.h` (`//violet:type_aliases`)
+    - **Unsafe** is in `violet/Language/Unsafe.h` (`//violet:unsafe`)
+    - **Infallible** is in `violet/Language/Infallible.h` (`//violet:infallible`)
+    - **Drop** is in `violet/Language/Drop.h` (`//violet:drop`)
+    - **ToString** and **Stringify** are in `violet/Stringify.h` (`//violet:stringify`)
+    - `Violet.h` no longer includes `<format>` or `<cstddef>`. Code that relied on them coming in transitively has to include them directly
+- **breaking**: Rework **violet::ToString** and the **Stringify** concept ([`@auguwu`])
+    - `Stringify<T>` is now satisfied by anything `violet::ToString` accepts (strings, `bool`, `nullptr`, characters, numbers, types with a `ToString()` member), instead of only types with a `ToString()` member. It takes an optional `Char` parameter (`Stringify<T, wchar_t>`) and ignores cv/ref-qualifiers on `T`
+    - The `bool` overload only accepts an actual `bool`; pointers, `char`, and unscoped enums no longer silently become `"true"`/`"false"`
+    - Add overloads for C-style strings and single characters of any character type (`char`, `wchar_t`, `char8_t`, `char16_t`, `char32_t`). A null C-string becomes an empty string
+    - Numbers are now formatted with `std::to_string` instead of `std::format("{}", ...)`, so floating-point output changes (`1.5` is now `1.500000`)
+    - `ToString` on a type with a `ToString()` member always returns `std::string` instead of `decltype(auto)`, which could dangle on temporaries
+    - Add an overload for types with an `AbslStringify` extension when built with Abseil (`VIOLET_FEATURE_ABSEIL`). A `ToString()` member takes priority
+    - Remove the `Str`, <code>Pair\<T, U\></code>, and `std::nullopt_t` overloads
+- Add **VIOLET_THROW(ex, ...)** macro, which throws `ex{...}` when exceptions are enabled and is unreachable otherwise ([`@auguwu`])
+- Add **size()** and **data()** to `SmolString` ([`@auguwu`])
+
+#### Noelware.Violet.Filesystem
+- **BasePath** can now be backed by any standard library string type or Violet's experimental string types, and exposes `size_type` and `character` member aliases ([`@auguwu`])
+- **BasePath** methods now return the path's own types instead of always allocating ([`@auguwu`])
+    - `Filename()`, `Stem()`, `Extension()`, and `ToString()` return `StringType` (a `Str` view for `PathRef`) instead of `String`
+    - `Parent()`, `Join()`, `WithFilename()`, and `WithExtension()` return `Derived` instead of `Path`, and take `StringType` instead of `Str`
+- Add **BasePath::Size()** ([`@auguwu`])
+- Add **BasePath::StartsWith(...)**, which forwards to the underlying string's `starts_with`. The `StartsWith(const Derived&)` overload compares by path component, so `/usr/libexec` does not start with `/usr/lib` ([`@auguwu`])
+- Add **operator/** to `Path` and `PathRef` as a shorthand for `Join()` ([`@auguwu`])
+- Add **operator<=>** between paths and any type their string is three-way comparable with, and between `Path` and `PathRef` ([`@auguwu`])
+- **Path**/**PathRef** `operator==` / `operator!=` now accept any type their string is equality comparable with, rather than a fixed set of `CStr`, `String`, and `Str` overloads ([`@auguwu`])
+- **PathRef**'s conversions to `Str` and `const char*`, and **BasePath**'s conversion to its string type, are now implicit (previously explicit) ([`@auguwu`])
+- **WithCStr** now passes `const character*` and propagates the callable's `noexcept` ([`@auguwu`])
+- Remove the `std::ostream` `operator<<` for paths; use `std::format` instead ([`@auguwu`])
+- Remove **PathRef::FromFileDescriptor**; use `Path::FromFileDescriptor` instead ([`@auguwu`])
+- **BasePath**, **Path::FromFileDescriptor**, and **PathRef::Canonicalize** are no longer `VIOLET_API`-exported ([`@auguwu`])
+- **PathSeparator** is now `inline constexpr` ([`@auguwu`])
+- Fix **Canonicalize** only stripping the separator before `..` instead of the previous component; `..` can no longer escape the root (`/..` is `/`), leading `..` in relative paths are kept, and a relative path that collapses entirely becomes `.` ([`@auguwu`])
+- Fix **Parent()** dropping the leading `/` from absolute paths (`/home/noeltowa/file.txt` returned `home/noeltowa`) ([`@auguwu`])
 
 #### Noelware.Violet.Experimental
 - Added **Synchroized\<T\>::With(<lambda>)** method ([`@auguwu`])
@@ -44,9 +91,17 @@ availableAt:
 - Added **LockUntil** and **AwaitUntil** for `Mutex` ([`@auguwu`])
 - **is_owned** is no longer `final` ([`@auguwu`])
 - Added **Buf** and **Bytes** containers ([`@auguwu`])
-
-#### Noelware.Violet.Experimental.Coroutines
-This is a new experimental framework that works with C++20 coroutines.
+- Added **UInt128**/**Int128** types ([`@auguwu`])
+- **breaking**: Move `violet::numeric` to `violet::experimental::numeric` ([`@auguwu`])
+- **breaking**: **numeric::Parse** returns <code>Result\<N, numeric::Error\></code> instead of <code>anyhow::Result\<N\></code> ([`@auguwu`])
+    - **numeric::Error** is a `OneOf` of `std::error_code`, `error::TrailingGarbage`, and `error::InputTooLong`, and has a `ToString()` method
+    - Out-of-range integers report `std::errc::result_out_of_range`
+- Add **VIOLET_FEATURE_PORTABLE_ARITHEMTIC** to force the portable `Checked{Add,Sub,Mul}` fallbacks. `VIOLET_USE_PORTABLE_ARITHEMTIC` still works but is deprecated and emits a warning ([`@auguwu`])
+- **WouldAddingOverflow**, **WouldSubtractingOverflow**, **CheckedAdd**, **CheckedSub**, and **CheckedMul** are now `noexcept` and constrained on `std::signed_integral` ([`@auguwu`])
+- Add **ToString()** to `OneOf`, which stringifies the active alternative with `violet::ToString` ([`@auguwu`])
+- `OneOf::Visit` on an rvalue `OneOf` now passes the alternative as an rvalue, so move-only alternatives can be consumed ([`@auguwu`])
+- Fix `OneOf::Visit` on a `const` `OneOf` computing its return type from a non-`const` reference ([`@auguwu`])
+- Add a deduction guide for **Overloaded** ([`@auguwu`])
 
 #### Noelware.Violet.Experimental.IO
 - Added an experimental implementation of `violet::io::Error` called `violet::io::experimental::Error` ([`@auguwu`])
@@ -70,6 +125,9 @@ This is a new experimental framework that works with C++20 coroutines.
         ```
     - Once the interface and implementation is stablised, this will replace `violet::io::FileDescriptor`. This will be a breaking change. Violet doesn't guarantee ABI compatibility as of September 3rd, 2026.
 
+- `violet::io::experimental::Error` can be constructed from a `violet::io::Error`, and `PlatformError` from a `violet::io::PlatformError` ([`@auguwu`])
+- **Descriptor::Borrowed** is now explicitly convertible to `bool` (whether it holds a valid descriptor) and implicitly convertible to `RawFd` ([`@auguwu`])
+
 #### Noelware.Violet.Experimental.Logging
 This is a whole new framework that is a port of Noel's [`logrin`] library that is now a Violet framework since we heavily use it.
 
@@ -79,7 +137,22 @@ New Bazel build flags are now provided:
 [`@opentelemetry`]: https://registry.bazel.build/modules/opentelemetry-cpp
 [`logrin`]: https://github.com/auguwu/logrin
 
+#### Noelware.Violet.Experimental.Threading
+- Add **Thread**, **Thread::Builder**, and **ThreadId** (`//violet/experimental/threading:thread`), backed by pthreads on Linux and macOS ([`@auguwu`])
+    - `Thread::Builder` can set a thread's name and stack size, and `Spawn` returns <code>io::experimental::Result\<Thread\></code>
+    - `Thread::Current()` and `Thread::Main()` return the calling thread and the main thread
+- Add **SleepFor**, which takes a `chrono::Duration` or, when built with Abseil, an `absl::Duration` (`//violet/experimental/threading:sleep`) ([`@auguwu`])
+- Add **AvailableParallelism**, which returns how many threads the process can run in parallel (`//violet/experimental/threading:parallelism`) ([`@auguwu`])
+    - On Linux, this respects the CPU affinity mask and cgroup v1/v2 CPU quotas
+- **CancellationTokenSource** now uses `violet::experimental::Mutex` and `violet::experimental::Condvar` (backed by Abseil when `VIOLET_FEATURE_ABSEIL` is enabled), and `//violet/experimental/threading:cancellation_token` now depends on `//violet/experimental:mutex` ([`@auguwu`])
+- Fix **CancellationTokenSource** having a different memory layout depending on whether `violet/Experimental/Mutex.h` was included before `violet/Experimental/Threading/CancellationToken.h`, which could hang or crash in **Cancel()** with `mutex lock failed: Invalid argument` ([`@auguwu`])
+- Fix **CancellationToken::OnCancelled** invoking a moved-from callable when the token was already cancelled ([`@auguwu`])
+
 #### Noelware.Violet.Experimental.Time
+- **breaking**: **Duration::FromStr** returns <code>Result\<Duration, ParseDurationError\></code> instead of <code>anyhow::Result\<Duration\></code> ([`@auguwu`])
+    - **ParseDurationError** is a `OneOf` of `numeric::Error`, `std::error_code`, and the `duration::InputEmpty`, `duration::DoNotPrefix`, `duration::MissingUnit`, and `duration::NotFinite` errors, and has a `ToString()` method
+- **breaking**: **TimePoint::FromISO8601** returns <code>Result\<TimePoint, numeric::Error\></code> instead of <code>anyhow::Result\<TimePoint\></code> ([`@auguwu`])
+- Fix **TimePoint::FromISO8601** rejecting valid timestamps: January, December, the 1st of the month, hours `0`, `1`, and `23`, and minutes or seconds of `0` or `1`. It also no longer reads past the end of input that has no timezone designator ([`@auguwu`])
 - Fix `TimePoint::IntoISO8601` to write into a bounds-checked buffer and assert on truncation instead of a fixed `char[32]` with an unchecked `snprintf` ([`@auguwu`])
 - Added Abseil and `std::time_t` conversions and constructors for `Duration` ([`@auguwu`])
 - Added Abseil conversions for `TimePoint` ([`@auguwu`])

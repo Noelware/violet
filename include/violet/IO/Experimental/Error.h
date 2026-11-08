@@ -25,6 +25,9 @@
 
 #pragma once
 
+#include <violet/IO/Error.h>
+#undef VIOLET_IO_ERROR
+
 #include <violet/Container/Optional.h>
 #include <violet/Container/Result.h>
 #include <violet/Experimental/OneOf.h>
@@ -149,8 +152,16 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") PlatformError final {
 private:
     friend struct Error;
 
+    template<typename...>
+    struct OneOf;
+
     VIOLET_EXPLICIT PlatformError() noexcept; // NOLINT(modernize-use-equals-delete)
     VIOLET_EXPLICIT PlatformError(error_type value) noexcept;
+
+    VIOLET_EXPLICIT PlatformError(violet::io::PlatformError old) noexcept
+        : n_value(old.Get())
+    {
+    }
 
     error_type n_value;
 };
@@ -170,6 +181,31 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Error final {
     constexpr VIOLET_IMPLICIT Error(
         ErrorKind kind, Str message, SourceLocation loc = std::source_location::current()) noexcept
         : Error(repr::New<SimpleMessage>(kind, message), loc)
+    {
+    }
+
+    NOELDOC_SINCE("current")
+    constexpr VIOLET_IMPLICIT Error(violet::io::Error old) noexcept
+        : n_loc(old.n_loc)
+        , n_repr(
+              std::visit(violet::experimental::Overloaded{[](std::monostate) -> repr { VIOLET_UNREACHABLE(); },
+                             [](Pair<violet::io::ErrorKind, Any>&) -> repr { VIOLET_UNREACHABLE(); },
+                             [](violet::io::PlatformError error) noexcept -> repr {
+                                 PlatformError err(VIOLET_MOVE(error));
+                                 return repr::New<PlatformError>(err);
+                             },
+                             [](violet::io::ErrorKind kind) noexcept -> repr {
+                                 VIOLET_DEBUG_ASSERT0(
+                                     kind != violet::io::ErrorKind::Other && kind != violet::io::ErrorKind::__other);
+                                 return repr::New<ErrorKind>(
+                                     static_cast<ErrorKind>(static_cast<std::underlying_type_t<ErrorKind>>(kind)));
+                             },
+                             [](violet::io::Error::simple_message msg) noexcept -> repr {
+                                 return repr::New<SimpleMessage>(
+                                     static_cast<ErrorKind>(static_cast<std::underlying_type_t<ErrorKind>>(msg.Kind())),
+                                     msg.Message());
+                             }},
+                  old.n_repr))
     {
     }
 

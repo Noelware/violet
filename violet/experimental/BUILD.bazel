@@ -85,8 +85,9 @@ violet_cc_library(
     name = "numeric",
     hdrs = ["//include/violet/Experimental:Numeric.h"],
     deps = [
-        "//violet:anyhow",
-        "//violet/container:optional",
+        ":oneof",
+        ":slice",
+        "//violet/container",
     ],
 )
 

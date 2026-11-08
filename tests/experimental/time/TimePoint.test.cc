@@ -22,6 +22,8 @@
 #include <gtest/gtest.h>
 #include <violet/Experimental/Time/TimePoint.h>
 
+#include <iostream>
+
 using namespace std::chrono_literals;
 using namespace violet::experimental::chrono;
 using namespace violet;
@@ -298,7 +300,7 @@ TEST(TimePoint, ParseBasicUtc)
 {
     auto r = TimePoint::FromISO8601("2026-04-17T22:05:31Z");
     if (r.Err()) {
-        r.Error().Print();
+        std::cerr << r.Error().ToString() << '\n';
     }
 
     ASSERT_TRUE(r);
@@ -309,7 +311,7 @@ TEST(TimePoint, ParseWithMilliseconds)
 {
     auto r = TimePoint::FromISO8601("2026-04-17T22:05:31.142Z");
     if (r.Err()) {
-        r.Error().Print();
+        std::cerr << r.Error().ToString() << '\n';
     }
 
     ASSERT_TRUE(r);
@@ -341,7 +343,7 @@ TEST(TimePoint, ParseShortFractionPadsToMillis)
 {
     auto r = TimePoint::FromISO8601("2026-04-17T22:05:31.5Z");
     if (r.Err()) {
-        r.Error().Print();
+        std::cerr << r.Error().ToString() << '\n';
     }
 
     ASSERT_TRUE(r);
@@ -352,7 +354,7 @@ TEST(TimePoint, ParseExtraFractionTruncates)
 {
     auto r = TimePoint::FromISO8601("2026-04-17T22:05:31.142999999Z");
     if (r.Err()) {
-        r.Error().Print();
+        std::cerr << r.Error().ToString() << '\n';
     }
 
     ASSERT_TRUE(r);

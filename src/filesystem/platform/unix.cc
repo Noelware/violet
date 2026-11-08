@@ -256,7 +256,7 @@ struct WalkDirs::Impl final {
                 if (subdir.Err()) {
                     this->n_pending = VIOLET_MOVE(subdir.Error());
                 } else {
-                    this->n_stack.push_back({ .Entry = VIOLET_MOVE(subdir.Value()), .Path = path });
+                    this->n_stack.push_back({.Entry = VIOLET_MOVE(subdir.Value()), .Path = path});
                 }
             }
 
@@ -367,7 +367,7 @@ auto violet::filesystem::CreateDirectory(PathRef path) -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return { };
+    return {};
 }
 
 auto violet::filesystem::CreateDirectories(PathRef path) -> io::Result<void>
@@ -405,7 +405,7 @@ auto violet::filesystem::CreateDirectories(PathRef path) -> io::Result<void>
         }
     }
 
-    return { };
+    return {};
 }
 
 auto violet::filesystem::RemoveDirectory(PathRef path) -> io::Result<void>
@@ -414,7 +414,7 @@ auto violet::filesystem::RemoveDirectory(PathRef path) -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return { };
+    return {};
 }
 
 auto violet::filesystem::RemoveAllDirs(PathRef path) -> io::Result<void>
@@ -486,7 +486,7 @@ auto violet::filesystem::TryExists(PathRef path) -> io::Result<bool>
         return Err(err);
     }
 
-    struct stat st{ };
+    struct stat st{};
     if (::fstat(file->Descriptor(), &st) < 0) {
         return Err(io::Error::OSError());
     }
@@ -500,7 +500,7 @@ auto violet::filesystem::RemoveFile(PathRef path) -> io::Result<void>
         return Err(io::Error::OSError());
     }
 
-    return { };
+    return {};
 }
 
 auto violet::filesystem::SetPermissions(PathRef path, Permissions perms) -> io::Result<void>
@@ -509,7 +509,7 @@ auto violet::filesystem::SetPermissions(PathRef path, Permissions perms) -> io::
         return Err(io::Error::OSError());
     }
 
-    return { };
+    return {};
 }
 
 auto violet::filesystem::Rename(PathRef old, PathRef newPath) -> io::Result<void>
@@ -520,7 +520,7 @@ auto violet::filesystem::Rename(PathRef old, PathRef newPath) -> io::Result<void
         return Err(io::Error::OSError());
     }
 
-    return { };
+    return {};
 }
 
 auto violet::filesystem::Executable(PathRef path) -> io::Result<bool>

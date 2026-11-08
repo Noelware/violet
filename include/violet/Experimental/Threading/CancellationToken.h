@@ -24,6 +24,7 @@
 #pragma once
 
 #include <violet/Events/EventEmitter.h>
+#include <violet/Experimental/Mutex.h>
 
 namespace violet::experimental::threading {
 
@@ -116,8 +117,8 @@ private:
     friend struct CancellationToken;
 
     struct state_t final {
-        Mutex Mux;
-        Condvar CV;
+        experimental::Mutex Mux;
+        experimental::Condvar CV;
         std::atomic<bool> Cancelled = false;
         events::Emitter<CancellationRequestedEvent> Emitter;
     };
@@ -184,19 +185,19 @@ struct VIOLET_API CancellationToken final {
 
         auto callable = VIOLET_FWD(Fun, fun);
         if (this->RequestsCancellation()) {
-            std::invoke(fun, CancellationRequestedEvent{ });
+            std::invoke(callable, CancellationRequestedEvent{ });
             return { };
         }
 
-        std::unique_lock lock(this->n_state->Mux);
-        if (this->n_state->Cancelled.load(std::memory_order_relaxed)) {
-            lock.unlock();
-            std::invoke(fun, CancellationRequestedEvent{ });
-
-            return { };
+        {
+            MutexLock lock(this->n_state->Mux);
+            if (!this->n_state->Cancelled.load(std::memory_order_relaxed)) {
+                return this->n_state->Emitter.On(callable, /*persist=*/false);
+            }
         }
 
-        return this->n_state->Emitter.On(callable, /*persist=*/false);
+        std::invoke(callable, CancellationRequestedEvent{ });
+        return { };
     }
 
 private:
