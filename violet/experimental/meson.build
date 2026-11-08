@@ -55,7 +55,7 @@ violet_experimental_dep = declare_dependency(
     include_directories: violet_include_dir,
     link_with: [violet_experimental_lib],
     dependencies: violet_experimental_consumer_deps,
-    compile_args: violet_consumer_defines,
+    compile_args: violet_consumer_defines + violet_experimental_build_defines,
 )
 
 configure_file(

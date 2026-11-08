@@ -29,6 +29,7 @@
 #include <violet/Experimental/Slice.h>
 
 #include <charconv>
+#include <cstring>
 #include <limits>
 
 #if defined(__cpp_lib_constexpr_charconv) && __cpp_lib_constexpr_charconv >= 202207L

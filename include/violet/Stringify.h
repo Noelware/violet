@@ -185,7 +185,7 @@ auto ToString(const T& val) -> std::string
     return val.ToString();
 }
 
-#if VIOLET_FEATURE(ABSEIL) && VIOLET_FEATURE_ABSEIL
+#if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
 
 /// Stringifies any type that provides an Abseil `AbslStringify` extension, using
 /// [`absl::StrCat`].

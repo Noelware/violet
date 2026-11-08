@@ -28,4 +28,4 @@ Name: violet_experimental_threading
 Description: Violet's experimental threads framework
 Version: @VERSION@
 Cflags: -I${includedir}
-Libs: -L${libdir} -lviolet -lviolet_experimental_threading
+Libs: -L${libdir} -lviolet -lviolet_experimental -lviolet_experimental_threading

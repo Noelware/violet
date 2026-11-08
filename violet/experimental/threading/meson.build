@@ -26,13 +26,14 @@ violet_experimental_threading_lib = library(
     libviolet_experimental_threading_srcs,
     include_directories: violet_include_dir,
     cpp_args: violet_build_defines,
+    dependencies: [violet_experimental_dep],
     install: true,
 )
 
 violet_experimental_threading_dep = declare_dependency(
     include_directories: violet_include_dir,
     link_with: [violet_experimental_threading_lib],
-    dependencies: [violet_dep],
+    dependencies: [violet_dep, violet_experimental_dep],
     compile_args: violet_consumer_defines,
 )
 

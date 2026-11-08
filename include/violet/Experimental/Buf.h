@@ -38,6 +38,7 @@
 #include <violet/Experimental/Memory/NonNull.h>
 
 #include <algorithm>
+#include <cstring>
 
 namespace violet::experimental {
 
