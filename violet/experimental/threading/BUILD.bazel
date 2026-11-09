@@ -56,6 +56,7 @@ violet_cc_library(
             "//violet/filesystem:file",
             "//violet/io/experimental:error",
         ],
+        "@platforms//os:macos": ["//violet:macros"],
         "//conditions:default": [],
     }),
 )

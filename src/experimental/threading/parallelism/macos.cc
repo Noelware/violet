@@ -22,4 +22,26 @@
 #include <violet/Language/Macros.h>
 
 #if VIOLET_PLATFORM(APPLE_MACOS)
+
+#include <violet/Experimental/Threading/Parallelism.h>
+
+#include <sys/sysctl.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+auto violet::experimental::threading::AvailableParallelism() noexcept -> UInt
+{
+    static constexpr auto kActiveCPUs = "hw.activecpu";
+
+    Int32 count = 0;
+    UInt size = sizeof(count);
+
+    if (::sysctlbyname(kActiveCPUs, &count, &size, nullptr, 0) == 0 && count > 0) {
+        return static_cast<UInt>(count);
+    }
+
+    const auto online = ::sysconf(_SC_NPROCESSORS_ONLN);
+    return online > 0 ? static_cast<UInt>(online) : 1;
+}
+
 #endif
