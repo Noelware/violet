@@ -255,9 +255,8 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Buf final {
     [[nodiscard]]
     auto Data() const noexcept -> ptr::NonNull<const std::byte>
     {
-        return ptr::NonNull<const std::byte>::NewUnchecked(
-            Unsafe("safe to reinterpret; if `data` is nil, then it's moved from, which is invalid to begin with"),
-            reinterpret_cast<const std::byte*>(this->n_data));
+        return ptr::NonNull<const std::byte>::New(reinterpret_cast<const std::byte*>(this->n_data))
+            .UnwrapOr(ptr::NonNull<const std::byte>::Dangling());
     }
 
     [[nodiscard]]
@@ -465,7 +464,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Bytes final {
     [[nodiscard]]
     auto Data() const noexcept -> ptr::NonNull<const std::byte>
     {
-        return ptr::NonNull<const std::byte>::NewUnchecked(Unsafe("data is never non-nil"), this->n_data);
+        return ptr::NonNull<const std::byte>::New(this->n_data).UnwrapOr(ptr::NonNull<const std::byte>::Dangling());
     }
 
     [[nodiscard]]

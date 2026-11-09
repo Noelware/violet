@@ -349,6 +349,7 @@ auto Thread::Spawn(Fun&& fun) -> io::experimental::Result<Thread>
 ///     Thread::Yield();
 /// }
 /// ```
+VIOLET_API
 void Yield() noexcept;
 
 } // namespace violet::experimental::threading

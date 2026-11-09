@@ -41,6 +41,7 @@ void wakeOne(std::atomic<UInt32>& word) noexcept;
 /// - **x86**:     `pause` (this will avoid a memory-order mis-speculation flush on loop exit and save power)
 /// - **aarch64**: `isb`   (same choice as Rust's `spin_loop`; `yield` is a nop on most cores)
 /// - Others:      not implemented
+VIOLET_API
 void RelaxCPU();
 
 /// An adaptive, 4-byte lock. It spins for a bounded time, then sleeps in the kernel (`futex` on Linux,
