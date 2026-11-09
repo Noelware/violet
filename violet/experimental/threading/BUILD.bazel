@@ -49,14 +49,16 @@ violet_cc_library(
         "//conditions:default": ["//src/experimental/threading/parallelism:unsupported.cc"],
     }),
     hdrs = ["//include/violet/Experimental/Threading:Parallelism.h"],
-    deps = select({
+    deps = [
+        "//violet",
+        "//violet:macros",
+    ] + select({
         "@platforms//os:linux": [
             "//violet/container:optional",
             "//violet/experimental/threading/internals:cgroup",
             "//violet/filesystem:file",
             "//violet/io/experimental:error",
         ],
-        "@platforms//os:macos": ["//violet:macros"],
         "//conditions:default": [],
     }),
 )
