@@ -41,6 +41,32 @@ violet_cc_test(
 )
 
 violet_cc_library(
+    name = "spin_lock",
+    srcs = ["//src/experimental/synchronization:SpinLock.cc"] + select({
+        "@platforms//cpu:aarch64": ["//src/experimental/synchronization/spin_lock/relax_cpu:aarch64.cc"],
+        "@platforms//cpu:x86_64": ["//src/experimental/synchronization/spin_lock/relax_cpu:x86.cc"],
+    }) + select({
+        "@platforms//os:linux": ["//src/experimental/synchronization/spin_lock:linux.cc"],
+        "//conditions:default": ["//src/experimental/synchronization/spin_lock:unspecified.cc"],
+    }),
+    hdrs = ["//include/violet/Experimental/Synchronization:SpinLock.h"],
+    deps = [
+        "//violet/experimental:mutex",
+        "//violet/experimental/threading:parallelism",
+    ],
+)
+
+violet_cc_test(
+    name = "spin_lock_test",
+    srcs = ["//tests/experimental/synchronization:SpinLock.test.cc"],
+    deps = [
+        ":spin_lock",
+        "//violet/experimental/threading:sleep",
+        "//violet/experimental/threading:thread",
+    ],
+)
+
+violet_cc_library(
     name = "wait_group",
     srcs = ["//src/experimental/synchronization:WaitGroup.cc"],
     hdrs = ["//include/violet/Experimental/Synchronization:WaitGroup.h"],

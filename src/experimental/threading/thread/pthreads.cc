@@ -28,6 +28,7 @@
 
 #include <bit>
 #include <pthread.h>
+#include <sched.h>
 #include <unistd.h>
 
 namespace violet::experimental::threading {
@@ -239,6 +240,11 @@ auto Thread::Builder::spawn(ptr::Unique<Runnable> runnable) -> io::experimental:
     thread.n_joinable = true;
 
     return thread;
+}
+
+void Yield() noexcept
+{
+    ::sched_yield();
 }
 
 } // namespace violet::experimental::threading

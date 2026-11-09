@@ -137,6 +137,9 @@ New Bazel build flags are now provided:
 [`@opentelemetry`]: https://registry.bazel.build/modules/opentelemetry-cpp
 [`logrin`]: https://github.com/auguwu/logrin
 
+#### Noelware.Violet.Experimental.Synchronization
+- Added **SpinLock**: an adaptive, word-sized lock ([`@auguwu`])
+
 #### Noelware.Violet.Experimental.Threading
 - Add **Thread**, **Thread::Builder**, and **ThreadId** (`//violet/experimental/threading:thread`), backed by pthreads on Linux and macOS ([`@auguwu`])
     - `Thread::Builder` can set a thread's name and stack size, and `Spawn` returns <code>io::experimental::Result\<Thread\></code>
@@ -147,6 +150,7 @@ New Bazel build flags are now provided:
 - **CancellationTokenSource** now uses `violet::experimental::Mutex` and `violet::experimental::Condvar` (backed by Abseil when `VIOLET_FEATURE_ABSEIL` is enabled), and `//violet/experimental/threading:cancellation_token` now depends on `//violet/experimental:mutex` ([`@auguwu`])
 - Fix **CancellationTokenSource** having a different memory layout depending on whether `violet/Experimental/Mutex.h` was included before `violet/Experimental/Threading/CancellationToken.h`, which could hang or crash in **Cancel()** with `mutex lock failed: Invalid argument` ([`@auguwu`])
 - Fix **CancellationToken::OnCancelled** invoking a moved-from callable when the token was already cancelled ([`@auguwu`])
+- Added **Yield** ([`@auguwu`])
 
 #### Noelware.Violet.Experimental.Time
 - **breaking**: **Duration::FromStr** returns <code>Result\<Duration, ParseDurationError\></code> instead of <code>anyhow::Result\<Duration\></code> ([`@auguwu`])

@@ -809,7 +809,7 @@
  */
 #if VIOLET_HAS_CPP_ATTRIBUTE(gnu::cold)
 #define VIOLET_COLD [[gnu::cold]]
-#elif VIOLET_PLATFORM(WINDOWS)
+#elif VIOLET_COMPILER(MSVC)
 #define VIOLET_COLD __declspec(noinline)
 #else
 #define VIOLET_COLD
@@ -1520,4 +1520,16 @@
     }
 #else
 #define VIOLET_THROW(ex, ...) VIOLET_UNREACHABLE()
+#endif
+
+/**
+ * @macro VIOLET_NO_INLINE
+ * @since current
+ */
+#if VIOLET_HAS_CPP_ATTRIBUTE(gnu::noinline)
+#define VIOLET_NO_INLINE [[gnu::noinline]]
+#elif VIOLET_COMPILER(MSVC)
+#define VIOLET_NO_INLINE __declspec(noinline)
+#else
+#define VIOLET_NO_INLINE
 #endif

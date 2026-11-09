@@ -212,6 +212,15 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Thread final {
     /// The returned handle is not joinable.
     static auto Main() noexcept -> Thread;
 
+    template<std::derived_from<Runnable> R, typename... Args>
+        requires std::constructible_from<R, Args...>
+    static auto Spawn(Args&&... args) -> io::experimental::Result<Thread>;
+
+    template<typename Fun>
+        requires((callable<Fun> || callable<Fun, const CancellationToken&>)
+            && (callable_returns<Fun, void> || callable_returns<Fun, void, const CancellationToken&>))
+    static auto Spawn(Fun&& fun) -> io::experimental::Result<Thread>;
+
     /// Returns this thread's unique identifier.
     /// Identifiers are unique among threads that exist at the same time.
     [[nodiscard]]
@@ -308,13 +317,47 @@ private:
     Optional<UInt> n_stackSize;
 };
 
+template<std::derived_from<Runnable> R, typename... Args>
+    requires std::constructible_from<R, Args...>
+auto Thread::Spawn(Args&&... args) -> io::experimental::Result<Thread>
+{
+    return Thread::Builder{}.Spawn<R>(VIOLET_FWD(Args, args)...);
+}
+
+template<typename Fun>
+    requires((callable<Fun> || callable<Fun, const CancellationToken&>)
+        && (callable_returns<Fun, void> || callable_returns<Fun, void, const CancellationToken&>))
+auto Thread::Spawn(Fun&& fun) -> io::experimental::Result<Thread>
+{
+    return Thread::Builder{}.Spawn(VIOLET_FWD(Fun, fun));
+}
+
+/// Hints to the scheduler that the calling thread is willing to give up the rest of its time slice.
+///
+/// The operating system may run another ready thread in its place, or return immediately if there is
+/// none. This is a scheduler hint, not a synchronization primitive, so don't rely on it for ordering
+/// or progress.
+///
+/// ## Remarks
+/// This is not the same as a CPU relax/`pause` hint: that one stays on
+/// the core and only tells the pipeline it's in a spin loop. `Yield()` makes a syscall and can
+/// cause a context switch.
+///
+/// ## Example
+/// ```cpp
+/// while (!ready.load(std::memory_order_acquire)) {
+///     Thread::Yield();
+/// }
+/// ```
+void Yield() noexcept;
+
 } // namespace violet::experimental::threading
 
 VIOLET_FORMATTER(violet::experimental::threading::ThreadId);
 
 template<>
 struct std::hash<violet::experimental::threading::ThreadId> {
-    auto operator()(const violet::experimental::threading::ThreadId& self) noexcept -> violet::UInt
+    auto operator()(const violet::experimental::threading::ThreadId& self) const noexcept -> violet::UInt
     {
         constexpr std::hash<uintptr_t> hasher{};
         return hasher(self.n_value);

@@ -31,7 +31,7 @@ namespace violet::experimental::threading {
 
 __unsupported__(auto ThreadId::Current() noexcept -> ThreadId);
 __unsupported__(auto ThreadId::Main() noexcept -> ThreadId);
-__unsupported__(auto ThreadId::ToString() const noexcept -> String);
+__unsupported__(auto ThreadId::ToString() const->String);
 
 __unsupported__(Thread::Thread(Thread&&) noexcept);
 __unsupported__(Thread::~Thread());
@@ -52,5 +52,7 @@ __unsupported__(auto Thread::Builder::WithName(Str) && noexcept -> Builder&&);
 __unsupported__(auto Thread::Builder::WithStackSize(UInt) & noexcept -> Builder&);
 __unsupported__(auto Thread::Builder::WithStackSize(UInt) && noexcept -> Builder&&);
 __unsupported__(auto Thread::Builder::spawn(ptr::Unique<Runnable>)->io::experimental::Result<Thread>);
+
+__unsupported__(void Yield() noexcept);
 
 } // namespace violet::experimental::threading
