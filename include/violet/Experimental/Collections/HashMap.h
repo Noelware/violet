@@ -113,10 +113,10 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
     using size_type = UInt;
 
     /// A mutable iterator over `(key, value)` pairs, delegating to [`implementation::iterator`].
-    using iterator = typename implementation::iterator;
+    using iterator = implementation::iterator;
 
     /// A read-only iterator over `(key, value)` pairs, delegating to [`implementation::const_iterator`].
-    using const_iterator = typename implementation::const_iterator;
+    using const_iterator = implementation::const_iterator;
 
     /// The type returned by wrapping [`implementation`] in Violet's iterator framework, used
     /// to expose combinator-based iteration over this map.
@@ -177,28 +177,28 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
     /// @tparam Q any type comparable with `K`, which enables heterogeneous (transparent) lookup
     template<typename Q>
         requires std::equality_comparable_with<std::decay_t<Q>, K>
-    auto Get(const Q& key) -> Optional<std::reference_wrapper<V>>
+    auto Get(const Q& key) -> Optional<V&>
     {
         auto it = this->n_impl.find(K(key));
         if (it == this->n_impl.end()) {
             return Nothing;
         }
 
-        return std::ref(it->second);
+        return it->second;
     }
 
     /// Returns a const reference to the value for `key`, or [`Nothing`] if the key is not present.
     /// @tparam Q any type comparable with `K`, which enables heterogeneous (transparent) lookup
     template<typename Q>
         requires std::equality_comparable_with<std::decay_t<Q>, K>
-    auto Get(const Q& key) const -> Optional<std::reference_wrapper<const V>>
+    auto Get(const Q& key) const -> Optional<const V&>
     {
         auto it = this->n_impl.find(K(key));
         if (it == this->n_impl.end()) {
             return Nothing;
         }
 
-        return std::cref(it->second);
+        return it->second;
     }
 
     /// Returns **true** if the map contains an entry for `key`.
@@ -367,7 +367,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
         return this->n_impl[VIOLET_MOVE(key)];
     }
 
-    auto operator[](const K& key) const -> Optional<std::reference_wrapper<const V>>
+    auto operator[](const K& key) const -> Optional<const V&>
     {
         return this->Get(key);
     }
@@ -429,14 +429,14 @@ private:
 
     using map = HashMap<K, V, Hasher, Equality, Alloc>;
 
-    VIOLET_EXPLICIT OccupiedEntry(map* map, typename map::iterator it) noexcept
+    VIOLET_EXPLICIT OccupiedEntry(map* map, map::iterator it) noexcept
         : n_map(map)
         , n_it(it)
     {
     }
 
     map* n_map;
-    typename map::iterator n_it;
+    map::iterator n_it;
 };
 
 /// A view into an vacant entry, obtained via [`Entry::Vacant()`]
@@ -552,7 +552,7 @@ struct Entry final {
 
     /// Returns a reference to the underlying [`OccupiedEntry`], or [`Nothing`] if this entry
     /// is vacant.
-    auto AsOccupied() noexcept -> Optional<std::reference_wrapper<OccupiedEntry<K, V, Hasher, Equality, Alloc>>>
+    auto AsOccupied() noexcept -> Optional<OccupiedEntry<K, V, Hasher, Equality, Alloc>&>
     {
         return this->n_state.template Get<OccupiedEntry<K, V, Hasher, Equality, Alloc>>();
     }
@@ -560,15 +560,14 @@ struct Entry final {
     /// A `const`-qualified overload of [`AsOccupied`].
     ///
     /// [`AsOccupied`]: AsOccupied
-    auto AsOccupied() const noexcept
-        -> Optional<const std::reference_wrapper<OccupiedEntry<K, V, Hasher, Equality, Alloc>>>
+    auto AsOccupied() const noexcept -> Optional<const OccupiedEntry<K, V, Hasher, Equality, Alloc>&>
     {
         return this->n_state.template Get<OccupiedEntry<K, V, Hasher, Equality, Alloc>>();
     }
 
     /// Returns a reference to the underlying [`VacantEntry`], or [`Nothing`] if this entry is
     /// occupied.
-    auto AsVacant() noexcept -> Optional<std::reference_wrapper<VacantEntry<K, V, Hasher, Equality, Alloc>>>
+    auto AsVacant() noexcept -> Optional<VacantEntry<K, V, Hasher, Equality, Alloc>&>
     {
         return this->n_state.template Get<VacantEntry<K, V, Hasher, Equality, Alloc>>();
     }
@@ -576,7 +575,7 @@ struct Entry final {
     /// A `const`-qualified overload of [`AsVacant`].
     ///
     /// [`AsVacant`]: AsVacant
-    auto AsVacant() const noexcept -> Optional<const std::reference_wrapper<VacantEntry<K, V, Hasher, Equality, Alloc>>>
+    auto AsVacant() const noexcept -> Optional<const VacantEntry<K, V, Hasher, Equality, Alloc>&>
     {
         return this->n_state.template Get<VacantEntry<K, V, Hasher, Equality, Alloc>>();
     }

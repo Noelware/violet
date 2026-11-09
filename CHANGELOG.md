@@ -20,6 +20,26 @@ availableAt:
 - Allow copy/move assignment for <code>Optional = Some\<T\></code> ([`@auguwu`])
 - Allow implicit conversion from <code>Some\<T\></code> to <code>Optional\<T\></code> and `std::optional<T>` (previously explicit-only), with separate rvalue-qualified overloads that move instead of copy ([`@auguwu`])
 - Add **operator==** / **operator!=** between <code>Optional\<T\></code> and <code>Some\<T\></code> ([`@auguwu`])
+- **breaking**: Rework **Optional\<T\>** ([`@auguwu`])
+    - <code>Optional\<T&\></code> is supported directly and replaces <code>Optional\<std::reference_wrapper\<T\>\></code>. `std::reference_wrapper` is no longer unwrapped and is treated like any other value type
+    - <code>Optional\<T&\></code> stores a pointer, so it is the same size as `T*` and trivially copyable
+    - Assigning to an <code>Optional\<T&\></code> rebinds the reference instead of assigning through it, and a `const` <code>Optional\<T&\></code> still gives a mutable `T&`
+    - <code>Optional\<T&\></code> can't be bound to a temporary: constructing, assigning, `std::in_place`-constructing, or calling `Replace` with an rvalue is deleted, including for <code>Optional\<const T&\></code>
+    - On <code>Optional\<T&\></code>, `Value`, `Unwrap`, `Expect`, `UnwrapUnchecked`, `operator*`, and `operator->` return the referred-to object. `UnwrapOr` returns a copy when `T` is copyable; otherwise it only accepts an lvalue fallback and returns a reference. `UnwrapOrDefault` always returns a copy
+    - `Map` on <code>Optional\<T&\></code> passes `T&` to the function, and a function returning an lvalue reference produces <code>Optional\<U&\></code>. On an rvalue <code>Optional\<T\></code>, `Map` always stores its result by value
+    - `Take` on <code>Optional\<T&\></code> returns an <code>Optional\<T&\></code> referring to the same object
+    - Copy and move operations are trivial when `T`'s are, so <code>Optional\<T\></code> is trivially copyable whenever `T` is
+    - A moved-from <code>Optional\<T\></code> now still holds its (moved-from) value, like `std::optional`. Previously it was left empty; use `Take()` for that
+    - Constructing from a value now forwards it instead of always copying, so move-only types like `std::unique_ptr` can be stored directly
+    - **violet::Nothing** is now its own type (`violet::nothing_t`) instead of an alias for `std::nullopt`
+    - `std::optional` interop (constructors, assignment, comparisons, and conversion to `std::optional`) is guarded by `VIOLET_FEATURE_BACKWARDS_STL_OPTIONAL`, which is enabled by default. Converting to `std::optional` from an rvalue moves the value
+    - Rename **Except** to **Expect**
+    - `Unwrap`, `Expect`, `UnwrapOr`, and `UnwrapOrDefault` have `const&` and `&&` overloads only, and `UnwrapOr`/`UnwrapOrDefault` are only `noexcept` when copying or moving `T` is
+    - `MapOr` returns <code>std::remove_cvref_t\<U\></code>, so passing an lvalue fallback no longer makes it return a reference
+    - `operator!=` is no longer declared; C++20 rewrites `a != b` from `operator==`, so existing code keeps working
+    - `operator==` with a value takes <code>const value_type&</code>, so <code>Optional\<T&\></code> can be compared with `const` objects and temporaries
+- Add **VIOLET_UNWRAP(decl, expr)** macro, which declares `decl` from an `Optional`'s value or returns `Nothing` from the enclosing function if it is empty. Unlike `VIOLET_TRY`, it doesn't use statement expressions, so it works on every compiler ([`@auguwu`])
+- **Some\<T\>** can be default-constructed when `T` is, and its copy and move constructors are constrained on `std::copyable<T>` and `std::movable<T>` ([`@auguwu`])
 - Fix **RefCnt**'s `Traits::BumpRef`/`DecRef`/`Valid` `noexcept` checks to use `std::is_nothrow_invocable_v` instead of a bare `noexcept(...)` expression ([`@auguwu`])
 - Add move-construction into iterator adapters ([`@auguwu`])
 - Added **VIOLET_TRAIT_FOR_ALL_TYPES** macro ([`@auguwu`])
@@ -102,6 +122,13 @@ availableAt:
 - `OneOf::Visit` on an rvalue `OneOf` now passes the alternative as an rvalue, so move-only alternatives can be consumed ([`@auguwu`])
 - Fix `OneOf::Visit` on a `const` `OneOf` computing its return type from a non-`const` reference ([`@auguwu`])
 - Add a deduction guide for **Overloaded** ([`@auguwu`])
+- **breaking**: APIs that returned <code>Optional\<std::reference_wrapper\<T\>\></code> now return <code>Optional\<T&\></code> ([`@auguwu`])
+    - **OneOf::Get**
+    - **Slice::Front** and **Slice::Back**
+    - **HashMap::Get**, `HashMap::operator[] const`, and **Entry::AsOccupied** / **Entry::AsVacant**
+    - **HashSet::Get**
+- Fix the `const` overloads of **Entry::AsOccupied** and **Entry::AsVacant** returning a `const` `std::reference_wrapper` to a mutable entry instead of a reference to a `const` entry ([`@auguwu`])
+- Fix **numeric::Parse** for floating-point types tripping `Slice`'s bounds assertion when writing the NUL terminator, which also broke **Duration::FromStr** ([`@auguwu`])
 
 #### Noelware.Violet.Experimental.IO
 - Added an experimental implementation of `violet::io::Error` called `violet::io::experimental::Error` ([`@auguwu`])

@@ -25,18 +25,202 @@
 #include <violet/SourceLocation.h>
 #include <violet/Violet.h>
 
+#ifndef VIOLET_FEATURE_BACKWARDS_STL_OPTIONAL
+#define VIOLET_FEATURE_BACKWARDS_STL_OPTIONAL 1
+#endif
+
 #include <functional>
+
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
 #include <optional>
-#include <source_location>
+#endif
 
 namespace violet {
+namespace NOELDOC_HIDE optional_internal {
+
+/// The `Optional` type produced by mapping over a value with a function returning `R`.
+///
+/// Lvalue references are kept, so mapping to a member reference produces `Optional<U&>`. Everything
+/// else is stripped of references and cv-qualifiers so it can be stored by value.
+template<typename R>
+using map_result_t = std::conditional_t<std::is_lvalue_reference_v<R>, R, std::remove_cvref_t<R>>;
+
+template<typename T>
+struct storage {
+    bool n_engaged = false;
+    union {
+        char Dummy;
+        T Data;
+    };
+
+    constexpr VIOLET_IMPLICIT storage() noexcept
+        : Dummy('\0')
+    {
+    }
+
+    constexpr VIOLET_IMPLICIT storage(const storage&)
+        requires std::is_trivially_copy_constructible_v<T>
+    = default;
+
+    constexpr VIOLET_IMPLICIT storage(const storage& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires(std::is_copy_constructible_v<T> && !std::is_trivially_copy_constructible_v<T>)
+        : Dummy('\0')
+    {
+        if (other.Engaged()) {
+            this->Construct(other.Data);
+        }
+    }
+
+    constexpr auto operator=(const storage&) -> storage&
+        requires(std::is_trivially_copy_constructible_v<T> && std::is_trivially_copy_assignable_v<T>
+                    && std::is_trivially_destructible_v<T>)
+    = default;
+
+    constexpr auto operator=(const storage& other) noexcept(std::is_nothrow_copy_constructible_v<T>
+        && (!std::is_copy_assignable_v<T> || std::is_nothrow_copy_assignable_v<T>)) -> storage&
+        requires(std::is_copy_constructible_v<T>
+            && !(std::is_trivially_copy_constructible_v<T> && std::is_trivially_copy_assignable_v<T>
+                && std::is_trivially_destructible_v<T>))
+    {
+        if (this == &other) {
+            return *this;
+        }
+
+        if (!other.Engaged()) {
+            this->Disengage();
+            return *this;
+        }
+
+        if constexpr (std::is_copy_assignable_v<T>) {
+            if (this->Engaged()) {
+                this->Data = other.Data;
+                return *this;
+            }
+        }
+
+        this->Construct(other.Data);
+        return *this;
+    }
+
+    constexpr VIOLET_IMPLICIT storage(storage&&)
+        requires std::is_trivially_move_constructible_v<T>
+    = default;
+
+    constexpr VIOLET_IMPLICIT storage(storage&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires(std::is_move_constructible_v<T> && !std::is_trivially_move_constructible_v<T>)
+        : Dummy('\0')
+    {
+        if (other.Engaged()) {
+            this->Construct(VIOLET_MOVE(other.Data));
+        }
+    }
+
+    constexpr auto operator=(storage&&) -> storage&
+        requires(std::is_trivially_move_constructible_v<T> && std::is_trivially_move_assignable_v<T>
+                    && std::is_trivially_destructible_v<T>)
+    = default;
+
+    constexpr auto operator=(storage&& other) noexcept(std::is_nothrow_move_constructible_v<T>
+        && (!std::is_move_assignable_v<T> || std::is_nothrow_move_assignable_v<T>)) -> storage&
+        requires(std::is_move_constructible_v<T>
+            && !(std::is_trivially_move_constructible_v<T> && std::is_trivially_move_assignable_v<T>
+                && std::is_trivially_destructible_v<T>))
+    {
+        if (this == &other) {
+            return *this;
+        }
+
+        if (!other.Engaged()) {
+            this->Disengage();
+            return *this;
+        }
+
+        if constexpr (std::is_move_assignable_v<T>) {
+            if (this->Engaged()) {
+                this->Data = VIOLET_MOVE(other.Data);
+                return *this;
+            }
+        }
+
+        this->Construct(VIOLET_MOVE(other.Data));
+        return *this;
+    }
+
+    constexpr ~storage()
+        requires std::is_trivially_destructible_v<T>
+    = default;
+
+    constexpr ~storage()
+    {
+        this->Disengage();
+    }
+
+    [[nodiscard]]
+    constexpr auto Engaged() const noexcept -> bool
+    {
+        return this->n_engaged;
+    }
+
+    template<typename... Args>
+    constexpr void Construct(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+    {
+        if (this->n_engaged) {
+            this->Disengage();
+        }
+
+        std::construct_at(std::addressof(this->Data), VIOLET_FWD(Args, args)...);
+        this->n_engaged = true;
+    }
+
+    constexpr void Disengage() noexcept
+    {
+        if (this->n_engaged) {
+            std::destroy_at(std::addressof(this->Data));
+            this->n_engaged = false;
+        }
+    }
+};
+
+template<typename T>
+struct storage<T&> {
+    T* Data = nullptr;
+
+    constexpr VIOLET_IMPLICIT storage() noexcept = default;
+
+    [[nodiscard]]
+    constexpr auto Engaged() const noexcept -> bool
+    {
+        return this->Data != nullptr;
+    }
+
+    constexpr void Construct(T& value) noexcept
+    {
+        this->Data = std::addressof(value);
+    }
+
+    constexpr void Construct(std::remove_reference_t<T>&&) = delete;
+
+    constexpr void Disengage() noexcept
+    {
+        this->Data = nullptr;
+    }
+};
+
+} // namespace NOELDOC_HIDE optional_internal
 
 template<typename T>
 struct Optional;
 
+/// Type for representing a empty `Optional<T>`. This is not useful for consumers, use [`Nothing`].
+struct VIOLET_API NOELDOC_SINCE("current") nothing_t final {
+    struct VIOLET_API NOELDOC_HIDE secret final { };
+
+    constexpr VIOLET_EXPLICIT nothing_t(secret, secret) noexcept { }
+};
+
 /// Marker for representing a empty `Optional<T>`.
 NOELDOC_SINCE("26.02")
-constexpr static std::nullopt_t Nothing = std::nullopt;
+static inline constexpr nothing_t Nothing{nothing_t::secret{}, nothing_t::secret{}};
 
 /// Type trait that detects whether a type `T` is a `Optional<...>` or `std::optional<...>`.
 ///
@@ -55,8 +239,14 @@ struct NOELDOC_SINCE("26.02.03") is_optional: std::false_type { };
 template<typename T>
 struct NOELDOC_SINCE("26.02.03") is_optional<Optional<T>>: std::true_type { };
 
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+/// Specialization for [`is_optional`] for `std::optional`.
+///
+/// ## Remarks
+/// As of {current}, this is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
 template<typename T>
 struct NOELDOC_SINCE("26.02.03") is_optional<std::optional<T>>: std::true_type { };
+#endif
 
 template<typename T>
 NOELDOC_SINCE("26.02.03")
@@ -78,12 +268,17 @@ struct VIOLET_API NOELDOC_SINCE("26.03.05") optional_type<Optional<U>> {
     using type = U;
 };
 
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
 /// Specialization of [`optional_type`] for [`std::optional`].
+///
+/// ## Remarks
+/// As of {current}, this is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
 template<class U>
 struct VIOLET_API NOELDOC_SINCE("26.03.05") optional_type<std::optional<U>> {
     /// Extracted inner type from [`violet::Optional`]
     using type = U;
 };
+#endif
 
 /// Convenience alias for accessing the extracted inner type.
 ///
@@ -94,8 +289,45 @@ struct VIOLET_API NOELDOC_SINCE("26.03.05") optional_type<std::optional<U>> {
 template<class T>
 using optional_type_t = optional_type<T>::type;
 
+/// Marks a value as present, so it can be converted into an engaged [`Optional`].
+///
+/// `Some<T>` is a small wrapper type with no other job than to say that "this value exists". It turns
+/// into an [`Optional<T>`] (or [`std::optional<T>`] if the `BACKWARDS_STL_OPTIONAL` is enabled) wherever
+/// one is expected, so code reads like Rust's [`Some(value)`].
+///
+/// [`Some(value)`]: https://doc.rust-lang.org/stable/std/option/enum.Option.html#variant.Some
+///
+/// ```cpp
+/// auto value = Some(42);  // CTAD deduces this to `Some<Int32>`
+/// Optional opt(Some(42)); // CTAD deduces this to `Optional<Int32>`
+/// ```
+///
+/// `Some<T>` has no accessors of its own. Convert it to an [`Optional<T>`] to read the value or to use
+/// combinators like `Map` and `UnwrapOr`.
+///
+/// ## Example
+/// ```cpp
+/// #include <violet/Container/Optional.h>
+///
+/// using violet::Optional;
+/// using violet::Some;
+///
+/// auto findUser(int id) -> Optional<violet::String>
+/// {
+///     if (id == 1) {
+///         return Some("Noel");
+///     }
+///
+///     return violet::Nothing;
+/// }
+///
+/// auto user = findUser(1);
+/// VIOLET_ASSERT(user.HasValue(), "doctest failed: expected a user");
+/// ```
+///
+/// @tparam T The type of the wrapped value.
 template<typename T>
-struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
+struct NOELDOC_SINCE("26.02") Some final {
     static_assert(std::is_object_v<T>, "`Some<T>` requires `T` to be a object type");
     static_assert(!std::is_void_v<T>, "`Some<void>` is ill-formed");
     static_assert(!std::is_array_v<T>, "`Some<T>` must wrap an array type");
@@ -104,33 +336,87 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
         "`Some<T>` requires `T` to be movable or copyable");
     static_assert(!std::same_as<T, Some<T>>, "`Some<Some<T>>` is ill-formed");
 
-    NOELDOC_SINCE("26.05.02") VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Some);
+    /// Default-initializes this [`Some<T>`] if `T` is default-initialized.
+    ///
+    /// ## Remarks
+    /// ### Since `26.05.02`
+    /// `Some<T>` was not allowed to be default-initialized.
+    ///
+    /// ### Since `{current}`
+    /// `Some<T>` is now allowed to be default-initialized if `T` is default constructible.
+    constexpr VIOLET_IMPLICIT Some() noexcept(std::is_nothrow_default_constructible_v<T>)
+        requires std::default_initializable<T>
+    = default;
 
+    /// Converting from a mutable lvalue `Some<Other>` is deleted.
+    ///
+    /// Converting would need either a copy or a move of the source. A copy may be surprising to
+    /// the caller, and a move would empty an object the caller still owns. Write
+    /// `VIOLET_MOVE(other)` to convert explicitly instead.
+    ///
+    /// @tparam Other The source wrapper's value type. It must convert to `T`.
     template<typename Other>
         requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
     NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_IMPLICIT Some(Some<std::decay_t<Other>>&) = delete;
 
+    /// Converts a `Some<Other>` rvalue into a `Some<T>` by moving its value and constructing `T` from it.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// Some<violet::String> name = Some("Noel");  // `Some<const char*>` -> `Some<String>`
+    /// ```
+    ///
+    /// @tparam Other The source wrapper's value type. It must convert to `T`.
+    /// @param other The wrapper to move from.
     template<typename Other>
         requires(!std::same_as<T, std::decay_t<Other>> && std::constructible_from<T, std::decay_t<Other>>)
     NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_IMPLICIT Some(Some<Other>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
-        : n_value(T(VIOLET_MOVE(other).n_value))
+        : n_value(VIOLET_MOVE(other).n_value)
     {
     }
 
+    /// Wraps a copy of `value`.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// The copy constructor for `Some<T>` is now guarded by [`std::copyable<T>`].
+    ///
+    /// @param value The value to copy into the wrapper.
     NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_EXPLICIT Some(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires std::copyable<T>
         : n_value(value)
     {
     }
 
+    /// Wraps `value` by moving it into the wrapper.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// The copy constructor for `Some<T>` is now guarded by [`std::movable<T>`].
+    ///
+    /// @param value The value to move into the wrapper.
     NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_EXPLICIT Some(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires std::movable<T>
         : n_value(VIOLET_MOVE(value))
     {
     }
 
+    /// Constructs the wrapped `T` in place from `args`.
+    ///
+    /// This overload is excluded when the only argument is already a `T`, so the copy and move
+    /// constructors handle that case.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto pair = Some<std::pair<int, int>>(1, 2);
+    /// ```
+    ///
+    /// @tparam Args The argument types forwarded to `T`'s constructor.
+    /// @param args The arguments to forward.
     template<typename... Args>
         requires(std::constructible_from<T, Args...>
             && !(sizeof...(Args) == 1 && (std::same_as<std::decay_t<Args>, T> || ...)))
@@ -140,41 +426,68 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Some final {
     {
     }
 
+    /// Converts into an engaged [`Optional<T>`] that holds a copy of the wrapped value.
+    /// @return An `Optional<T>` holding a copy of the value.
     NOELDOC_SINCE("current")
     constexpr VIOLET_IMPLICIT operator Optional<T>() const& noexcept
     {
         return Optional<T>(std::in_place, this->n_value);
     }
 
+    /// Converts into an engaged [`Optional<T>`] by moving the wrapped value into it.
+    /// @return An `Optional<T>` holding the moved value.
     NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_IMPLICIT operator Optional<T>() && noexcept
     {
         return Optional<T>(std::in_place, VIOLET_MOVE(this->n_value));
     }
 
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+    /// Converts into an engaged [`std::optional<T>`] that holds a copy of the wrapped value.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// This conversion operator is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
+    ///
+    /// @return A `std::optional<T>` holding a copy of the value.
     NOELDOC_SINCE("current")
     constexpr VIOLET_IMPLICIT operator std::optional<T>() const& noexcept
     {
         return std::optional<T>(std::in_place, this->n_value);
     }
 
+    /// Converts into an engaged [`std::optional<T>`] by moving the wrapped value into it.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// This conversion operator is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
+    ///
+    /// @return A `std::optional<T>` holding the moved value.
     NOELDOC_SINCE("26.05.02")
     constexpr VIOLET_IMPLICIT operator std::optional<T>() && noexcept
     {
         return std::optional<T>(std::in_place, VIOLET_MOVE(this->n_value));
     }
+#endif
 
 private:
-    template<typename>
-    friend struct Optional;
+    template<typename U>
+    friend struct violet::Optional;
 
     T n_value;
 };
 
-template<typename T, std::size_t N>
+/// Deduction guide: wrapping a C array (such as a string literal) decays it to a pointer.
+///
+/// ## Example
+/// ```cpp
+/// auto s = Some("hello");  // Some<const char*>
+/// ```
+template<typename T, UInt N>
 NOELDOC_SINCE("26.05.02")
 Some(T (&)[N]) -> Some<const T*>;
 
+/// Deduction guide: `Some(value)` deduces `T` with references and cv-qualifiers stripped.
 template<typename T>
 NOELDOC_SINCE("26.05.02")
 Some(T&&) -> Some<std::remove_cvref_t<T>>;
@@ -184,1108 +497,1484 @@ Some(T&&) -> Some<std::remove_cvref_t<T>>;
 ///
 /// [`Option`]: https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html
 ///
-/// ## Type Requirements
-/// - Be an object type
-/// - Not be a reference, use [`std::remove_cvref_t`] to remove const and volatile requirements.
-/// - Be destructible, copyable, and movable.
+/// `T` may be an object type or an lvalue reference to one. `Optional<U&>` stores a pointer
+/// internally and is the same size as `U*`.
 ///
-/// ## Examples
+/// ## Type Requirements
+/// - Be an object type, or an lvalue reference to an object type
+/// - Be destructible
+///
+/// ## Example
 /// ```cpp
 /// #include <violet/Container/Optional.h>
 ///
-/// using violet::Some;
-/// using violet::Optional;
 /// using violet::Nothing;
+/// using violet::Optional;
+/// using violet::Some;
 ///
-/// auto value = Some<int>(10);
+/// Optional<int> value = Some(10);
 /// auto doubled = value.Map([](int val) -> int { return val * 2; });
-/// VIOLET_ASSERT(value.HasValue(), "doctest failed: no value was provided");
-/// VIOLET_ASSERT(*value == 20, "doctest failed: didn't double up");
+/// VIOLET_ASSERT(doubled.HasValue(), "doctest failed: no value was provided");
+/// VIOLET_ASSERT(*doubled == 20, "doctest failed: didn't double up");
 ///
 /// Optional<int> empty = Nothing;
 /// VIOLET_ASSERT(empty.UnwrapOr(5) == 5, "doctest failed: wasn't `5`");
 /// ```
 ///
-/// ## Panic handling / Exceptions
-/// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-/// on if it is enabled or not.
+/// ## Remarks
+/// ### C++ Exceptions
+/// Violet supports both C++ exceptions and exception-free code, and `Optional<T>` follows suit. Accessors
+/// that cannot produce a value (like `Unwrap()`) throw [`std::logic_error`] when exceptions are enabled,
+/// and go through Violet's panic system otherwise.
 ///
-/// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-/// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-/// instrinstics if [`std::unreachable`] isn't available.
+/// ### Since `{current}`
+/// `Optional<T&>` is now supported directly; [`std::reference_wrapper`] is no longer needed. An
+/// `Optional<U&>` behaves like a nullable, rebindable pointer:
 ///
-/// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-///
-/// ### Debug Assertions
-/// This type also triggers debug assertions via the [`VIOLET_DEBUG_ASSERT`] macro. You can disable this in production
-/// with the `-DNDEBUG` flag, which will remove unnecessary assertions.
+/// - Assigning to it rebinds the reference; it never assigns through to the referred-to object.
+/// - `const Optional<U&>` still gives mutable access to the `U`, the same way `U* const` does.
+/// - It can never be bound to a temporary; those constructors and assignments are deleted.
 template<typename T>
-struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SINCE("26.02") Optional final {
-    static_assert(std::is_object_v<T>, "`Optional<T>` requires `T` to be an object type");
-    static_assert(!std::is_reference_v<T>, "`Optional<T>` cannot wrap a reference");
-    static_assert(std::is_destructible_v<T>, "`Optional<T>` requires `T` to be destructible");
+struct [[nodiscard("check the state before discarding")]] NOELDOC_SINCE("26.02") Optional final
+    : private optional_internal::storage<T> {
+    /// The contained value type.
+    ///
+    /// For `Optional<U&>`, this is `U` (keeping any `const`), so `value_type&` is always the type of
+    /// the contained or referred-to object.
+    using value_type = std::remove_reference_t<T>;
 
-    /// Contained value type of this [`Optional`].
-    using value_type = std::conditional_t<instanceof_v<std::reference_wrapper, T>,
-        std::remove_reference_t<std::unwrap_reference_t<T>>, T>;
+    static_assert(!std::is_rvalue_reference_v<T>, "`Optional<T&&>` is ill-formed");
+    static_assert(
+        std::is_object_v<value_type>, "`Optional<T>` requires `T` to be an object type or an lvalue reference to one");
+    static_assert(std::is_destructible_v<value_type>, "`Optional<T>` requires `T` to be destructible");
 
-    /// Constructs a empty optional value.
-    constexpr VIOLET_IMPLICIT Optional() noexcept { }
+private:
+    static constexpr bool kIsReference = std::is_lvalue_reference_v<T>;
+    using unqualified_type = std::remove_cv_t<value_type>;
 
-    /// Constructs a empty optional value from [`std::nullopt`] or [`violet::Nothing`].
+public:
+    /// Constructs an empty `Optional`.
+    constexpr VIOLET_IMPLICIT Optional() noexcept = default;
+
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+    /// Constructs an empty `Optional` from [`std::nullopt`].
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// [`violet::Nothing`] used to be an alias for [`std::nullopt`]; it no longer is. This overload is
+    /// kept for backwards compatibility with [`std::optional`].
     constexpr VIOLET_IMPLICIT Optional(std::nullopt_t) noexcept
         : Optional()
     {
     }
+#endif
 
-    /// Constructs a empty optional value from a copied [`std::nullopt`] or [`violet::Nothing`].
-    constexpr VIOLET_IMPLICIT Optional(std::nullopt_t&) noexcept
+    /// Constructs an empty `Optional` from [`violet::Nothing`].
+    NOELDOC_SINCE("current")
+    constexpr VIOLET_IMPLICIT Optional(nothing_t) noexcept
         : Optional()
     {
     }
 
-    /// Constructs an engaged `Optional<T>` in-place. The contained value is constructed directly from `args...`.
+    /// Constructs an engaged `Optional` whose value is built in place from `args`.
     ///
-    /// ## Exception Safety
-    /// Propagates exceptions from `T`'s constructor unless `noexcept`.
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<std::pair<int, int>> pair(std::in_place, 1, 2);
+    /// VIOLET_ASSERT0(pair->first == 1);
+    /// ```
     ///
-    /// @param args arguments forwarded to `T`'s constructor.
+    /// @param args arguments forwarded to `T`'s constructor
     template<typename... Args>
-        requires(std::is_constructible_v<T, Args...>)
+        requires(!kIsReference && std::is_constructible_v<T, Args...>)
     constexpr VIOLET_EXPLICIT Optional(std::in_place_t, Args&&... args) noexcept(
         std::is_nothrow_constructible_v<T, Args...>)
-        : n_engaged(true)
     {
-        std::construct_at(&this->n_value, VIOLET_FWD(Args, args)...);
+        this->Construct(VIOLET_FWD(Args, args)...);
     }
 
-    /// Constructs an engaged [`Optional`] from `other`.
+    /// Constructs an `Optional<U&>` that refers to `value`.
+    /// This mirrors the in-place constructor of `Optional<T>` so generic code can use `std::in_place`
+    /// for both.
     ///
-    /// This type will participate in overload resolution only if:
-    /// - `U` is not [`Optional`] or [`std::optional`]
-    /// - `T` is constructible from `U`.
+    /// @param value the object to refer to; it must outlive every use of this `Optional`
+    NOELDOC_SINCE("current")
+    constexpr VIOLET_EXPLICIT Optional(std::in_place_t, value_type& value) noexcept
+        requires kIsReference
+    {
+        this->Construct(value);
+    }
+
+    NOELDOC_SINCE("current")
+    constexpr Optional(std::in_place_t, value_type&&)
+        requires kIsReference
+    = delete;
+
+    /// Constructs an engaged `Optional` from `value`, copying or moving it depending on its value category.
+    ///
+    /// Participates in overload resolution only if:
+    /// - `T` is not a reference
+    /// - `U` is not [`Optional`], [`Some`], [`Nothing`], or `std::in_place` (nor [`std::optional`] or
+    ///   [`std::nullopt`] if the `BACKWARDS_STL_OPTIONAL` feature is enabled)
+    /// - `T` is constructible from `U&&`
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// This used to take `const U&`, which always copied and couldn't hold move-only types.
+    ///
+    /// @param value the value to copy or move in
     template<typename U = T>
-        requires(!std::is_same_v<std::remove_cvref_t<U>, Optional<T>>
-            && !violet::instanceof_v<std::optional, std::remove_cvref_t<U>> && std::constructible_from<T, const U&>)
-    constexpr VIOLET_IMPLICIT Optional(const U& other) noexcept(std::is_nothrow_constructible_v<T, const U&>)
-        : Optional(std::in_place, other)
+    // clang-format off
+    requires(
+        !kIsReference &&
+        !instanceof_v<Optional, std::remove_cvref_t<U>> &&
+        !instanceof_v<Some, std::remove_cvref_t<U>> &&
+        !std::same_as<std::remove_cvref_t<U>, nothing_t> &&
+        !std::same_as<std::remove_cvref_t<U>, std::in_place_t> &&
+        std::constructible_from<T, U&&>
+        #if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+        && !instanceof_v<std::optional, std::remove_cvref_t<U>>
+        && !std::same_as<std::remove_cvref_t<U>, std::nullopt_t>
+        #endif
+    )
+    // clang-format on
+    constexpr VIOLET_IMPLICIT Optional(U&& value) noexcept(std::is_nothrow_constructible_v<T, U&&>)
+        : Optional(std::in_place, VIOLET_FWD(U, value))
     {
     }
 
-    /// Constructs an engaged [`Optional`] by moving `other`.
+    /// Constructs an `Optional<U&>` that refers to `value`.
     ///
-    /// This type will participate in overload resolution only if:
-    /// - `U` is not [`Optional`] or [`std::optional`]
-    /// - `T` is constructible from `U`.
-    template<typename U = T>
-        requires(!std::is_same_v<std::remove_cvref_t<U>, Optional<T>>
-            && !violet::instanceof_v<std::optional, std::remove_cvref_t<U>> && std::constructible_from<T, U &&>)
-    constexpr VIOLET_IMPLICIT Optional(U&& other) noexcept(std::is_nothrow_constructible_v<T, U&&>)
-        : Optional(std::in_place, VIOLET_FWD(U, other))
+    /// ## Example
+    /// ```cpp
+    /// int x = 1;
+    /// violet::Optional<int&> ref = x;
+    ///
+    /// ref.Value() = 2;
+    /// VIOLET_ASSERT0(x == 2);
+    /// ```
+    ///
+    /// @param value the object to refer to; it must outlive every use of this `Optional`
+    NOELDOC_SINCE("current")
+    constexpr VIOLET_IMPLICIT Optional(value_type& value) noexcept
+        requires kIsReference
     {
+        this->Construct(value);
     }
 
-    /// Constructs from an existing [`std::optional`].
+    NOELDOC_SINCE("current")
+    constexpr Optional(value_type&&)
+        requires kIsReference
+    = delete;
+
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+    /// Constructs from a [`std::optional`] by copy.
     ///
-    /// If `other` contains a value, constructs `T` from `*other`. Otherwise, creates a
-    // disengaged `Optional`.
+    /// If `other` holds a value, `T` is constructed from it; otherwise this `Optional` is empty.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
+    ///
+    /// @param other the `std::optional` to copy from
     template<typename U>
-        requires(!std::is_same_v<std::remove_cvref_t<U>, Optional> && std::constructible_from<T, U>)
-    constexpr VIOLET_IMPLICIT Optional(const std::optional<U>& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        : n_engaged(other.has_value())
+        requires(
+            !kIsReference && !instanceof_v<Optional, std::remove_cvref_t<U>> && std::constructible_from<T, const U&>)
+    constexpr VIOLET_IMPLICIT Optional(const std::optional<U>& other) noexcept(
+        std::is_nothrow_constructible_v<T, const U&>)
     {
         if (other.has_value()) {
-            std::construct_at(&this->n_value, *other);
-            this->n_engaged = true;
-        } else {
-            this->n_engaged = false;
+            this->Construct(*other);
         }
     }
 
-    /// Constructs from an existing [`std::optional`] by move.
+    /// Constructs from a [`std::optional`] by move.
     ///
-    /// If engaged, moves the value and resets `other`.
+    /// If `other` holds a value, `T` is move-constructed from it; otherwise this `Optional` is empty.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
+    ///
+    /// @param other the `std::optional` to move from
     template<typename U>
-        requires(!std::is_same_v<std::remove_cvref_t<U>, Optional> && std::constructible_from<T, U>)
-    constexpr VIOLET_IMPLICIT Optional(std::optional<U>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
-        : n_engaged(other.has_value())
+        requires(!kIsReference && !instanceof_v<Optional, std::remove_cvref_t<U>> && std::constructible_from<T, U &&>)
+    constexpr VIOLET_IMPLICIT Optional(std::optional<U>&& other) noexcept(std::is_nothrow_constructible_v<T, U&&>)
     {
         if (other.has_value()) {
-            std::construct_at(&this->n_value, VIOLET_MOVE(other).value());
-            this->n_engaged = true;
-        } else {
-            this->n_engaged = false;
+            this->Construct(*VIOLET_MOVE(other));
         }
+    }
+
+    /// Assigns from a [`std::optional`] by copy, following the same rules as copy-assigning an `Optional`.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
+    ///
+    /// @param other the `std::optional` to copy from
+    constexpr auto operator=(const std::optional<T>& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        -> Optional&
+        requires(!kIsReference && std::is_copy_constructible_v<T>)
+    {
+        if (other.has_value()) {
+            this->Construct(*other);
+        } else {
+            this->Disengage();
+        }
+
+        return *this;
+    }
+
+    /// Assigns from a [`std::optional`] by move, following the same rules as move-assigning an `Optional`.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
+    ///
+    /// @param other the `std::optional` to move from
+    constexpr auto operator=(std::optional<T>&& other) noexcept(std::is_nothrow_move_constructible_v<T>) -> Optional&
+        requires(!kIsReference && std::is_move_constructible_v<T>)
+    {
+        if (other.has_value()) {
+            this->Construct(*VIOLET_MOVE(other));
+        } else {
+            this->Disengage();
+        }
+
+        return *this;
+    }
+#endif
+
+    /// Constructs an engaged `Optional` from a copy of the value wrapped in `some`.
+    /// @param some the wrapper to copy from
+    template<typename U>
+        requires(!kIsReference && std::convertible_to<const U&, T>)
+    constexpr VIOLET_IMPLICIT Optional(const Some<U>& some) noexcept(std::is_nothrow_constructible_v<T, const U&>)
+        : Optional(std::in_place, some.n_value)
+    {
+    }
+
+    /// Constructs an engaged `Optional` by moving the value out of `some`.
+    /// @param some the wrapper to move from
+    template<typename U>
+        requires(!kIsReference && std::convertible_to<U &&, T>)
+    constexpr VIOLET_IMPLICIT Optional(Some<U>&& some) noexcept(std::is_nothrow_constructible_v<T, U&&>)
+        : Optional(std::in_place, VIOLET_MOVE(some.n_value))
+    {
+    }
+
+    /// Replaces the held value with a copy of the value wrapped in `other`.
+    /// @param other the wrapper to copy from
+    template<typename U>
+        requires(!kIsReference && std::convertible_to<const U&, T>)
+    NOELDOC_SINCE("current")
+    constexpr auto operator=(const Some<U>& other) noexcept(std::is_nothrow_constructible_v<T, const U&>) -> Optional&
+    {
+        this->Construct(other.n_value);
+        return *this;
+    }
+
+    /// Replaces the held value by moving the value out of `other`.
+    /// @param other the wrapper to move from
+    template<typename U>
+        requires(!kIsReference && std::convertible_to<U &&, T>)
+    NOELDOC_SINCE("current")
+    constexpr auto operator=(Some<U>&& other) noexcept(std::is_nothrow_constructible_v<T, U&&>) -> Optional&
+    {
+        this->Construct(VIOLET_MOVE(other.n_value));
+        return *this;
     }
 
     /// Copy-constructs from another `Optional`.
     ///
-    /// If `other` is engaged, the contained value is copy-constructed. Otherwise, the result is disengaged.
-    constexpr VIOLET_IMPLICIT Optional(const Optional& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        requires(std::copy_constructible<T>)
-        : n_engaged(other.n_engaged)
-    {
-        if (other.n_engaged) {
-            std::construct_at(&this->n_value, other.n_value);
-        }
-    }
-
-    NOELDOC_SINCE("26.07")
-    constexpr VIOLET_IMPLICIT Optional(const Optional& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        requires(!std::copy_constructible<T>)
-    = delete;
-
-    template<typename U>
-        requires(std::is_convertible_v<const U&, T>)
-    constexpr VIOLET_IMPLICIT Optional(const Some<U>& some)
-        : Optional(some.n_value)
-    {
-    }
-
-    template<typename U>
-        requires(std::is_convertible_v<U &&, T>)
-    constexpr VIOLET_IMPLICIT Optional(Some<U>&& some)
-        : Optional(VIOLET_MOVE(some).n_value)
-    {
-    }
-
-    /// Copy-assigns from another `Optional`.
-    ///
-    /// - If both are engaged, copy-assigns the contained value.
-    /// - If only `other` is engaged, constructs a new value.
-    /// - If `other` is disengaged, this becomes disengaged.
-    constexpr auto operator=(const Optional& other) noexcept(
-        std::is_nothrow_copy_assignable_v<T> || std::is_nothrow_copy_constructible_v<T>) -> Optional&
-        requires(std::is_copy_assignable_v<T> || std::is_copy_constructible_v<T>)
-    {
-        if (this != &other) {
-            if (other.n_engaged) {
-                if (this->n_engaged) {
-                    if constexpr (std::is_copy_assignable_v<T>) {
-                        this->getValueRef() = other.getValueRef();
-                    } else {
-                        this->destroy();
-                        std::construct_at(&this->n_value, other.getValueRef());
-                        this->n_engaged = true;
-                    }
-                } else {
-                    std::construct_at(&this->n_value, other.getValueRef());
-                    this->n_engaged = true;
-                }
-            } else {
-                this->destroy();
-            }
-        }
-
-        return *this;
-    }
+    /// If `other` holds a value, it is copy-constructed into this `Optional`; otherwise this `Optional`
+    /// is empty. Trivial when `T` is trivially copy-constructible. For `Optional<U&>`, this copies the
+    /// reference, not the referred-to object.
+    constexpr VIOLET_IMPLICIT Optional(const Optional&) = default;
 
     /// Move-constructs from another `Optional`.
     ///
-    /// If engaged, move-constructs the contained value
-    /// and disengages `other`.
-    constexpr VIOLET_IMPLICIT Optional(Optional&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
-        requires(std::move_constructible<T>)
-        : n_engaged(other.n_engaged)
-    {
-        if (other.n_engaged) {
-            std::construct_at(&this->n_value, VIOLET_MOVE(other.n_value));
-            other.n_engaged = false;
-        }
-    }
+    /// If `other` holds a value, it is move-constructed into this `Optional`. `other` keeps holding its
+    /// (moved-from) value, matching [`std::optional`]; use [`Take`] to leave it empty instead.
+    constexpr VIOLET_IMPLICIT Optional(Optional&&) = default;
 
-    NOELDOC_SINCE("26.07")
-    constexpr VIOLET_IMPLICIT Optional(Optional&& other)
-        requires(!std::move_constructible<T>)
-    = delete;
+    constexpr ~Optional() = default;
 
-    /// Move-assigns from another `Optional`.
+    /// Copy-assigns from another `Optional`.
     ///
-    /// - If both are engaged, move-assigns.
-    /// - If only `other` is engaged, constructs.
-    /// - If `other` is disengaged, this becomes disengaged.
+    /// - If both hold a value, the value is copy-assigned.
+    /// - If only `other` holds a value, it is copy-constructed into this `Optional`.
+    /// - If `other` is empty, this `Optional` becomes empty.
     ///
-    /// Leaves `other` disengaged.
-    constexpr auto operator=(Optional&& other) noexcept(std::is_nothrow_move_constructible_v<T>) -> Optional&
-        requires(std::is_move_assignable_v<T> || std::is_move_constructible_v<T>)
+    /// For `Optional<U&>`, this rebinds the reference.
+    constexpr auto operator=(const Optional&) -> Optional& = default;
+
+    /// Move-assigns from another `Optional`, following the same rules as copy assignment but moving.
+    constexpr auto operator=(Optional&&) -> Optional& = default;
+
+    /// Empties this `Optional`, destroying the held value if there is one.
+    constexpr auto operator=(nothing_t) noexcept -> Optional&
     {
-        if (this != &other) {
-            if (other.n_engaged) {
-                if (this->n_engaged) {
-                    if constexpr (std::is_move_assignable_v<T>) {
-                        this->getValueRef() = VIOLET_MOVE(other.getValueRef());
-                    } else {
-                        this->destroy();
-                        std::construct_at(&this->n_value, VIOLET_MOVE(other.getValueRef()));
-                        this->n_engaged = true;
-                    }
-                } else {
-                    std::construct_at(&this->n_value, VIOLET_MOVE(other.getValueRef()));
-                    this->n_engaged = true;
-                }
-
-                other.destroy();
-            } else {
-                this->destroy();
-            }
-        }
-
+        this->Reset();
         return *this;
     }
 
-    constexpr ~Optional() noexcept(std::is_nothrow_destructible_v<T>)
-    {
-        this->destroy();
-    }
-
-    /// Disengages the `Optional`, destroying the contained value if present.
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+    /// Empties this `Optional`, destroying the held value if there is one.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
+    ///
+    /// @return `*this`
     constexpr auto operator=(std::nullopt_t) noexcept -> Optional&
     {
-        this->destroy();
+        this->Disengage();
         return *this;
     }
+#endif
 
-    /// Disengages the `Optional`, destroying the contained value if present.
-    constexpr auto operator=(std::nullopt_t&) noexcept -> Optional&
+    /// Replaces the held value with a copy of `value`.
+    /// @param value the value to copy in
+    constexpr auto operator=(const value_type& value) noexcept(std::is_nothrow_copy_constructible_v<value_type>)
+        -> Optional&
+        requires(!kIsReference && std::is_copy_constructible_v<value_type>)
     {
-        this->destroy();
+        this->Construct(value);
         return *this;
     }
 
-    /// Assigns from `std::optional<T>`.
+    /// Replaces the held value by moving `value` in.
+    /// @param value the value to move in
+    constexpr auto operator=(value_type&& value) noexcept(std::is_nothrow_move_constructible_v<value_type>) -> Optional&
+        requires(!kIsReference && std::is_move_constructible_v<value_type>)
+    {
+        this->Construct(VIOLET_MOVE(value));
+        return *this;
+    }
+
+    /// Rebinds this `Optional<U&>` to refer to `value`.
     ///
-    /// Mirrors assignment semantics of `Optional<T>`.
-    constexpr auto operator=(std::optional<T>& other) noexcept(
-        std::is_nothrow_copy_assignable_v<T> && std::is_nothrow_copy_constructible_v<T>) -> Optional&
-        requires(std::is_copy_assignable_v<T> || std::is_copy_constructible_v<T>)
-    {
-        if (other.has_value()) {
-            if (this->n_engaged) {
-                this->n_value = *other;
-            } else {
-                std::construct_at(&this->n_value, *other);
-                this->n_engaged = true;
-            }
-        } else {
-            this->destroy();
-        }
-
-        return *this;
-    }
-
-    /// Assigns from `std::optional<T>` by move.
+    /// The previously referred-to object is left untouched; this never assigns through the reference.
     ///
-    /// Resets `other` if engaged.
-    constexpr auto operator=(std::optional<T>&& other) noexcept(
-        std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_constructible_v<T>) -> Optional&
-        requires(std::is_move_assignable_v<T> || std::is_move_constructible_v<T>)
-    {
-        if (other.has_value()) {
-            if (this->n_engaged) {
-                this->getValueRef() = VIOLET_MOVE(other).value();
-            } else {
-                std::construct_at(&this->n_value, VIOLET_MOVE(other).value());
-                this->n_engaged = true;
-            }
-
-            other.reset();
-        } else {
-            this->destroy();
-        }
-
-        return *this;
-    }
-
-    template<typename U>
-        requires(std::is_convertible_v<const U&, T>)
+    /// ## Example
+    /// ```cpp
+    /// int a = 1;
+    /// int b = 2;
+    ///
+    /// violet::Optional<int&> ref = a;
+    /// ref = b;
+    ///
+    /// VIOLET_ASSERT0(a == 1);
+    /// VIOLET_ASSERT0(&ref.Value() == &b);
+    /// ```
+    ///
+    /// @param value the object to refer to; it must outlive every use of this `Optional`
+    /// @return `*this`
     NOELDOC_SINCE("current")
-    constexpr auto operator=(const Some<U>& other) noexcept(
-        std::is_nothrow_copy_assignable_v<T> || std::is_nothrow_copy_constructible_v<T>) -> Optional&
-        requires(std::is_copy_assignable_v<T> || std::is_copy_constructible_v<T>)
+    constexpr auto operator=(value_type& value) noexcept -> Optional&
+        requires kIsReference
     {
-        if (this->n_engaged) {
-            if constexpr (std::is_copy_assignable_v<T>) {
-                this->getValueRef() = other.n_value;
-            } else {
-                this->destroy();
-                std::construct_at(&this->n_value, other.n_value);
-                this->n_engaged = true;
-            }
-        } else {
-            std::construct_at(&this->n_value, other.n_value);
-            this->n_engaged = true;
-        }
-
+        this->Construct(value);
         return *this;
     }
 
-    template<typename U>
-        requires(std::is_convertible_v<U &&, T>)
     NOELDOC_SINCE("current")
-    constexpr auto operator=(Some<U>&& other) noexcept(
-        std::is_nothrow_move_assignable_v<T> || std::is_nothrow_move_constructible_v<T>) -> Optional&
-        requires(std::is_move_assignable_v<T> || std::is_move_constructible_v<T>)
-    {
-        if (this->n_engaged) {
-            if constexpr (std::is_copy_assignable_v<T>) {
-                this->getValueRef() = VIOLET_MOVE(other).n_value;
-            } else {
-                this->destroy();
-                std::construct_at(&this->n_value, VIOLET_MOVE(other).n_value);
-                this->n_engaged = true;
-            }
-        } else {
-            std::construct_at(&this->n_value, VIOLET_MOVE(other).n_value);
-            this->n_engaged = true;
-        }
+    constexpr auto operator=(value_type&&) -> Optional&
+        requires kIsReference
+    = delete;
 
-        return *this;
-    }
-
-    /// Assigns a new value to the `Optional`.
-    ///
-    /// If engaged, assigns to the contained value. Otherwise, constructs a new value in-place.
-    constexpr auto operator=(const T& value) noexcept(
-        std::is_nothrow_copy_assignable_v<T> && std::is_nothrow_copy_constructible_v<T>) -> Optional&
-    {
-        if (this->n_engaged) {
-            this->getValueRef() = value;
-        } else {
-            std::construct_at(&this->n_value, value);
-            this->n_engaged = true;
-        }
-
-        return *this;
-    }
-
-    /// Assigns a new value to the `Optional` by move.
-    ///
-    /// If engaged, move-assigns. Otherwise, constructs a new value in-place.
-    constexpr auto operator=(T&& value) noexcept(
-        std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_constructible_v<T>) -> Optional&
-    {
-        if (this->n_engaged) {
-            this->getValueRef() = VIOLET_MOVE(value);
-        } else {
-            std::construct_at(&this->n_value, VIOLET_MOVE(value));
-            this->n_engaged = true;
-        }
-
-        return *this;
-    }
-
-    /// Returns `true` if a value is present.
-    [[nodiscard]] constexpr auto HasValue() const noexcept -> bool
-    {
-        return this->n_engaged;
-    }
-
-    /// Returns a reference to the contained value.
-    ///
-    /// ## Panics
-    /// This will provide a debug assertion to check if a value is present.
-    [[nodiscard]] constexpr auto Value() & noexcept VIOLET_LIFETIMEBOUND -> value_type&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
-        return this->getValueRef();
-    }
-
-    /// Returns a reference to the contained value.
-    ///
-    /// ## Panics
-    /// This will provide a debug assertion to check if a value is present.
-    [[nodiscard]] constexpr auto Value() const& noexcept VIOLET_LIFETIMEBOUND -> const value_type&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
-        return this->getValueRef();
-    }
-
-    /// Returns a reference to the contained value.
-    ///
-    /// ## Panics
-    /// This will provide a debug assertion to check if a value is present.
-    [[nodiscard]] constexpr auto Value() && noexcept VIOLET_LIFETIMEBOUND -> value_type&&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
-        return VIOLET_MOVE(this->getValueRef());
-    }
-
-    /// Returns a reference to the contained value.
-    ///
-    /// ## Panics
-    /// This will provide a debug assertion to check if a value is present.
-    [[nodiscard]] constexpr auto Value() const&& noexcept VIOLET_LIFETIMEBOUND -> const value_type&&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "`Optional<T>` represents nothing");
-        return VIOLET_MOVE(this->getValueRef());
-    }
-
-    /// Forefully retrieve a value from this container or panics if no value was present.
-    ///
-    /// This will also enforce a fast, hot path if this container is engaged.
-    ///
-    /// ## Panics
-    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-    /// on if it is enabled or not.
-    ///
-    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-    /// instrinstics if [`std::unreachable`] isn't available.
-    ///
-    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) & -> value_type
-    {
-        VIOLET_LIKELY_IF(this->HasValue())
-        {
-            return this->getValueRef();
-        }
-
-        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
-    }
-
-    /// Forefully retrieve a value from this container or panics if no value was present.
-    ///
-    /// This will also enforce a fast, hot path if this container is engaged.
-    ///
-    /// ## Panics
-    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-    /// on if it is enabled or not.
-    ///
-    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-    /// instrinstics if [`std::unreachable`] isn't available.
-    ///
-    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) && -> value_type
-    {
-        VIOLET_LIKELY_IF(this->HasValue())
-        {
-            return VIOLET_MOVE(this->getValueRef());
-        }
-
-        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
-    }
-
-    /// Forefully retrieve a value from this container or panics if no value was present.
-    ///
-    /// This will also enforce a fast, hot path if this container is engaged.
-    ///
-    /// ## Panics
-    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-    /// on if it is enabled or not.
-    ///
-    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-    /// instrinstics if [`std::unreachable`] isn't available.
-    ///
-    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const& -> value_type
-    {
-        VIOLET_LIKELY_IF(this->HasValue())
-        {
-            return this->getValueRef();
-        }
-
-        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
-    }
-
-    /// Forefully retrieve a value from this container or panics if no value was present.
-    ///
-    /// This will also enforce a fast, hot path if this container is engaged.
-    ///
-    /// ## Panics
-    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-    /// on if it is enabled or not.
-    ///
-    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-    /// instrinstics if [`std::unreachable`] isn't available.
-    ///
-    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Unwrap(violet::SourceLocation loc = std::source_location::current()) const&& -> value_type
-    {
-        VIOLET_LIKELY_IF(this->HasValue())
-        {
-            return VIOLET_MOVE(this->getValueRef());
-        }
-
-        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
-    }
-
-    /// Returns the contained value or panics with `message` if no value is present.
-    ///
-    /// This will also enforce a fast, hot path if this container is engaged.
-    ///
-    /// ## Panics
-    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-    /// on if it is enabled or not.
-    ///
-    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-    /// instrinstics if [`std::unreachable`] isn't available.
-    ///
-    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) & -> value_type
-    {
-        VIOLET_LIKELY_IF(this->HasValue())
-        {
-            return this->getValueRef();
-        }
-
-        VIOLET_PANIC_USERLAND(message, loc);
-    }
-
-    /// Returns the contained value or panics with `message` if no value is present.
-    ///
-    /// This will also enforce a fast, hot path if this container is engaged.
-    ///
-    /// ## Panics
-    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-    /// on if it is enabled or not.
-    ///
-    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-    /// instrinstics if [`std::unreachable`] isn't available.
-    ///
-    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(Str message, violet::SourceLocation loc = std::source_location::current()) && -> value_type
-    {
-        VIOLET_LIKELY_IF(this->HasValue())
-        {
-            return VIOLET_MOVE(this->getValueRef());
-        }
-
-        VIOLET_PANIC_USERLAND(message, loc);
-    }
-
-    /// Returns the contained value or panics with `message` if no value is present.
-    ///
-    /// This will also enforce a fast, hot path if this container is engaged.
-    ///
-    /// ## Panics
-    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-    /// on if it is enabled or not.
-    ///
-    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-    /// instrinstics if [`std::unreachable`] isn't available.
-    ///
-    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(
-        Str message, violet::SourceLocation loc = std::source_location::current()) const& -> value_type
-    {
-        VIOLET_LIKELY_IF(this->HasValue())
-        {
-            return this->getValueRef();
-        }
-
-        VIOLET_PANIC_USERLAND(message, loc);
-    }
-
-    /// Returns the contained value or panics with `message` if no value is present.
-    ///
-    /// This will also enforce a fast, hot path if this container is engaged.
-    ///
-    /// ## Panics
-    /// Intentionally, since Violet supports both C++ exceptions and exception-free code, it'll depend
-    /// on if it is enabled or not.
-    ///
-    /// If `-fno-exceptions` (Clang/GCC), `/...` (MSVC) was passed in, then Violet will send a panic message
-    /// in the process' standard error and fully abort the process via [`std::unreachable`] or with compiler-available
-    /// instrinstics if [`std::unreachable`] isn't available.
-    ///
-    /// Otherwise, all `Unwrap` and `Expect` will throw a [`std::logic_error`] with the panic message.
-    constexpr auto Except(
-        Str message, violet::SourceLocation loc = std::source_location::current()) const&& -> value_type
-    {
-        VIOLET_LIKELY_IF(this->HasValue())
-        {
-            return VIOLET_MOVE(this->getValueRef());
-        }
-
-        VIOLET_PANIC_USERLAND(message, loc);
-    }
-
-    /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(value_type defaultValue) & noexcept -> value_type
-    {
-        return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
-    }
-
-    /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(value_type defaultValue) && noexcept -> value_type
-    {
-        return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
-    }
-
-    /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(value_type defaultValue) const& noexcept -> value_type
-    {
-        return this->HasValue() ? this->getValueRef() : VIOLET_MOVE(defaultValue);
-    }
-
-    /// Returns the contained value if present, otherwise returns `defaultValue`.
-    [[nodiscard]] constexpr auto UnwrapOr(value_type defaultValue) const&& noexcept -> value_type
-    {
-        return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : VIOLET_MOVE(defaultValue);
-    }
-
-    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
-    constexpr auto UnwrapOrDefault() & noexcept -> value_type
-        requires(std::is_default_constructible_v<value_type>)
-    {
-        return this->HasValue() ? this->getValueRef() : value_type{};
-    }
-
-    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
-    constexpr auto UnwrapOrDefault() const& noexcept -> value_type
-        requires(std::is_default_constructible_v<value_type>)
-    {
-        return this->HasValue() ? this->getValueRef() : value_type{};
-    }
-
-    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
-    constexpr auto UnwrapOrDefault() && noexcept -> value_type
-        requires(std::is_default_constructible_v<value_type>)
-    {
-        return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : value_type{};
-    }
-
-    /// Returns the contained value if it present, otherwise a default constructed `T` is used.
-    constexpr auto UnwrapOrDefault() const&& noexcept -> value_type
-        requires(std::is_default_constructible_v<value_type>)
-    {
-        return this->HasValue() ? VIOLET_MOVE(this->getValueRef()) : value_type{};
-    }
-
-    /// Returns the contained value without checking engagement.
-    ///
-    /// # Safety
-    /// Undefined behavior if no value is present.
-    [[nodiscard]] NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
-        Unsafe) & noexcept VIOLET_LIFETIMEBOUND->value_type&
-    {
-        return this->getValueRef();
-    }
-
-    /// Returns the contained value without checking engagement.
-    ///
-    /// # Safety
-    /// Undefined behavior if no value is present.
-    [[nodiscard]] NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
-        Unsafe) const& noexcept VIOLET_LIFETIMEBOUND->const value_type&
-    {
-        return this->getValueRef();
-    }
-
-    /// Returns the contained value without checking engagement.
-    ///
-    /// # Safety
-    /// Undefined behavior if no value is present.
-    [[nodiscard]] NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
-        Unsafe) && noexcept VIOLET_LIFETIMEBOUND->value_type&&
-    {
-        return VIOLET_MOVE(this->getValueRef());
-    }
-
-    /// Returns the contained value without checking engagement.
-    ///
-    /// # Safety
-    /// Undefined behavior if no value is present.
-    [[nodiscard]] NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
-        Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND->const value_type&&
-    {
-        return VIOLET_MOVE(this->getValueRef());
-    }
-
-    /// Applies `fun` to the contained value if present.
-    ///
-    /// Equivalent to Rust's [`Option::map`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map)
-    ///
-    /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
-    template<typename Fun>
-        requires(callable<Fun, value_type&>)
-    [[nodiscard]] constexpr auto Map(Fun&& fun) & noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>())))
-        -> Optional<std::invoke_result_t<Fun, value_type&>>
-    {
-        using return_type = std::invoke_result_t<Fun, value_type&>;
-        if (this->HasValue()) {
-            return Some<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef()));
-        }
-
-        return Optional<return_type>(Nothing);
-    }
-
-    /// Applies `fun` to the contained value if present.
-    ///
-    /// Equivalent to Rust's [`Option::map`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map)
-    ///
-    /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
-    template<typename Fun>
-        requires(callable<Fun, const value_type&>)
-    [[nodiscard]] constexpr auto Map(Fun&& fun) const& noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&>())))
-        -> Optional<std::invoke_result_t<Fun, const value_type&>>
-    {
-        using return_type = std::invoke_result_t<Fun, const value_type&>;
-        if (this->HasValue()) {
-            return Optional<return_type>(std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef()));
-        }
-
-        return Optional<return_type>(Nothing);
-    }
-
-    /// Applies `fun` to the contained value if present.
-    ///
-    /// Equivalent to Rust's [`Option::map`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map)
-    ///
-    /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
-    template<typename Fun>
-        requires(callable<Fun, value_type &&>)
-    [[nodiscard]] constexpr auto Map(Fun&& fun) && noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&&>())))
-        -> Optional<std::invoke_result_t<Fun, value_type&&>>
-    {
-        using return_type = std::invoke_result_t<Fun, value_type&&>;
-        if (this->HasValue()) {
-            return Some<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef())));
-        }
-
-        return Optional<return_type>(Nothing);
-    }
-
-    /// Applies `fun` to the contained value if present.
-    ///
-    /// Equivalent to Rust's [`Option::map`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map)
-    ///
-    /// @returns `Some(fun(value))` if this container is engaged, `Nothing` otherwise.
-    template<typename Fun>
-        requires(callable<Fun, const value_type &&>)
-    [[nodiscard]] constexpr auto Map(Fun&& fun) const&& noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&&>())))
-        -> Optional<std::invoke_result_t<Fun, const value_type&&>>
-    {
-        using return_type = std::invoke_result_t<Fun, const value_type&&>;
-        if (this->HasValue()) {
-            return Some<return_type>(std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef())));
-        }
-
-        return Optional<return_type>(Nothing);
-    }
-
-    /// Returns `true` if a value is present and `fun(value)` returns `true`.
-    ///
+    /// Returns `true` if this `Optional` holds a value.
     /// Equivalent to Rust's
-    /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
-    template<typename Fun>
-        requires(callable<Fun, value_type&> && callable_returns<Fun, bool, value_type&>)
-    [[nodiscard]] constexpr auto HasValueAnd(Fun&& fun) & noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>()))) -> bool
-    {
-        return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef());
-    }
-
-    /// Returns `true` if a value is present and `fun(value)` returns `true`.
+    /// [`Option::is_some`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some).
     ///
-    /// Equivalent to Rust's
-    /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
-    template<typename Fun>
-        requires(callable<Fun, const value_type&> && callable_returns<Fun, bool, const value_type&>)
-    [[nodiscard]] constexpr auto HasValueAnd(Fun&& fun) const& noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&>()))) -> bool
-    {
-        return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef());
-    }
-
-    /// Returns `true` if a value is present and `fun(value)` returns `true`.
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> some = violet::Some(1);
+    /// violet::Optional<int> none = violet::Nothing;
     ///
-    /// Equivalent to Rust's
-    /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
-    template<typename Fun>
-        requires(callable<Fun, value_type &&> && callable_returns<Fun, bool, value_type &&>)
-    [[nodiscard]] constexpr auto HasValueAnd(Fun&& fun) && noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&&>()))) -> bool
+    /// VIOLET_ASSERT0(some.HasValue());
+    /// VIOLET_ASSERT0(!none.HasValue());
+    /// ```
+    [[nodiscard]]
+    constexpr auto HasValue() const noexcept -> bool
     {
-        return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef()));
+        return this->Engaged();
     }
 
-    /// Returns `true` if a value is present and `fun(value)` returns `true`.
-    ///
-    /// Equivalent to Rust's
-    /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and)
-    template<typename Fun>
-        requires(callable<Fun, const value_type &&> && callable_returns<Fun, bool, const value_type &&>)
-    [[nodiscard]] constexpr auto HasValueAnd(Fun&& fun) const&& noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&&>()))) -> bool
-    {
-        return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef()));
-    }
-
-    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
-    ///
-    /// Equivalent to Rust's
-    /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
-    template<typename U, typename Fun>
-        requires(callable<Fun, value_type&> && std::convertible_to<std::invoke_result_t<Fun, value_type&>, U>)
-    [[nodiscard]] constexpr auto MapOr(U&& defaultValue, Fun&& fun) & noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>()))) -> U
-    {
-        if (this->HasValue()) {
-            return std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef());
-        }
-
-        return VIOLET_FWD(U, defaultValue);
-    }
-
-    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
-    ///
-    /// Equivalent to Rust's
-    /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
-    template<typename U, typename Fun>
-        requires(
-            callable<Fun, const value_type&> && std::convertible_to<std::invoke_result_t<Fun, const value_type&>, U>)
-    [[nodiscard]] constexpr auto MapOr(U&& defaultValue, Fun&& fun) const& noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&>()))) -> U
-    {
-        if (this->HasValue()) {
-            return std::invoke(VIOLET_FWD(Fun, fun), this->getValueRef());
-        }
-
-        return VIOLET_FWD(U, defaultValue);
-    }
-
-    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
-    ///
-    /// Equivalent to Rust's
-    /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
-    template<typename U, typename Fun>
-        requires(callable<Fun, value_type &&> && std::convertible_to<std::invoke_result_t<Fun, value_type &&>, U>)
-    [[nodiscard]] constexpr auto MapOr(U&& defaultValue, Fun&& fun) && noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&&>()))) -> U
-    {
-        if (this->HasValue()) {
-            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef()));
-        }
-
-        return VIOLET_FWD(U, defaultValue);
-    }
-
-    /// Applies `fun` to the contained value if present, otherwise returns `defaultValue`.
-    ///
-    /// Equivalent to Rust's
-    /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or)
-    template<typename U, typename Fun>
-        requires(callable<Fun, const value_type &&>
-            && std::convertible_to<std::invoke_result_t<Fun, const value_type &&>, U>)
-    [[nodiscard]] constexpr auto MapOr(U&& defaultValue, Fun&& fun) const&& noexcept(
-        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&&>()))) -> U
-    {
-        if (this->HasValue()) {
-            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->getValueRef()));
-        }
-
-        return VIOLET_FWD(U, defaultValue);
-    }
-
-    /// Takes the contained value, leaving this `Optional` disengaged.
-    ///
-    /// Equivalent to Rust's
-    /// [`Option::take`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.take).
-    [[nodiscard]] constexpr auto Take() noexcept -> Optional<value_type>
-        requires(!instanceof_v<std::reference_wrapper, T>)
-    {
-        if (!this->HasValue()) {
-            return {};
-        }
-
-        Optional tmp(VIOLET_MOVE(this->getValueRef()));
-        this->Reset();
-
-        return tmp;
-    }
-
-    /// Replaces the contained value with a newly constructed one.
-    ///
-    /// Destroys the previous value if present, returns a reference to the new value.
-    ///
-    /// Equivalent to Rust's
-    /// [`Option::replace`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.replace).
-    template<typename... Args>
-    [[nodiscard]] VIOLET_REINITIALIZES_MEMORY constexpr auto Replace(Args&&... args) noexcept(
-        std::is_nothrow_constructible_v<T, Args...>) -> value_type&
-        requires(!instanceof_v<std::reference_wrapper, T>)
-    {
-        if (this->HasValue()) {
-            this->Reset();
-        }
-
-        std::construct_at(&this->n_value, VIOLET_FWD(Args, args)...);
-        this->n_engaged = true;
-
-        return this->getValueRef();
-    }
-
-    /// Destroys the contained value and disengages the `Optional`.
-    VIOLET_REINITIALIZES_MEMORY constexpr void Reset() noexcept(std::is_nothrow_destructible_v<T>)
-    {
-        this->destroy();
-    }
-
-    constexpr auto operator->() noexcept -> value_type*
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
-        return std::addressof(this->getValueRef());
-    }
-
-    constexpr auto operator->() const noexcept -> const value_type*
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
-        return std::addressof(this->getValueRef());
-    }
-
-    constexpr auto operator*() & noexcept VIOLET_LIFETIMEBOUND->value_type&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
-        return this->getValueRef();
-    }
-
-    constexpr auto operator*() const& noexcept VIOLET_LIFETIMEBOUND->const value_type&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
-        return this->getValueRef();
-    }
-
-    constexpr auto operator*() && noexcept VIOLET_LIFETIMEBOUND->value_type&&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
-        return VIOLET_MOVE(this->getValueRef());
-    }
-
-    constexpr auto operator*() const&& noexcept VIOLET_LIFETIMEBOUND->const value_type&&
-    {
-        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
-        return VIOLET_MOVE(this->getValueRef());
-    }
-
+    /// Returns `true` if this `Optional` holds a value. Equivalent to [`HasValue`].
+    [[nodiscard]]
     constexpr VIOLET_EXPLICIT operator bool() const noexcept
     {
         return this->HasValue();
     }
 
-    constexpr VIOLET_EXPLICIT operator std::optional<T>() const noexcept
-        requires(!instanceof_v<std::reference_wrapper, T>)
+    /// Returns a reference to the held value.
+    ///
+    /// ## Panics
+    /// Debug-asserts that a value is present. In release builds, calling this on an empty `Optional`
+    /// is undefined behaviour; use [`Unwrap`] for a checked access.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// The debug assertion now reports the caller's location instead of `Optional<T>::Value()`'s.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> value = violet::Some(1);
+    /// value.Value() += 1;
+    ///
+    /// VIOLET_ASSERT0(value.Value() == 2);
+    /// ```
+    ///
+    /// @param loc call site reported by the debug assertion
+    /// @return a reference to the held value
+    [[nodiscard]]
+    constexpr auto Value(SourceLocation loc = std::source_location::current()) & noexcept VIOLET_LIFETIMEBOUND
+        -> value_type&
+        requires(!kIsReference)
     {
-        return this->HasValue() ? std::optional<T>(this->n_value) : Nothing;
+        VIOLET_DEBUG_ASSERT_LOC(this->HasValue(), "`Optional<T>` represents nothing", loc);
+        return this->Data;
     }
 
-    constexpr auto operator==(const std::nullopt_t&) const noexcept -> bool
+    /// Overload of [`Value`] for `const` lvalues.
+    /// @param loc call site reported by the debug assertion
+    /// @return a `const` reference to the held value
+    [[nodiscard]]
+    constexpr auto Value(SourceLocation loc = std::source_location::current()) const& noexcept VIOLET_LIFETIMEBOUND
+        -> const value_type&
+        requires(!kIsReference)
+    {
+        VIOLET_DEBUG_ASSERT_LOC(this->HasValue(), "`Optional<T>` represents nothing", loc);
+        return this->Data;
+    }
+
+    /// Overload of [`Value`] for rvalues, allowing the held value to be moved out.
+    /// @param loc call site reported by the debug assertion
+    /// @return an rvalue reference to the held value
+    [[nodiscard]]
+    constexpr auto Value(SourceLocation loc = std::source_location::current()) && noexcept VIOLET_LIFETIMEBOUND
+        -> value_type&&
+        requires(!kIsReference)
+    {
+        VIOLET_DEBUG_ASSERT_LOC(this->HasValue(), "`Optional<T>` represents nothing", loc);
+        return VIOLET_MOVE(this->Data);
+    }
+
+    /// Overload of [`Value`] for `const` rvalues.
+    /// @param loc call site reported by the debug assertion
+    /// @return a `const` rvalue reference to the held value
+    [[nodiscard]]
+    constexpr auto Value(SourceLocation loc = std::source_location::current()) const&& noexcept VIOLET_LIFETIMEBOUND
+        -> const value_type&&
+        requires(!kIsReference)
+    {
+        VIOLET_DEBUG_ASSERT_LOC(this->HasValue(), "`Optional<T>` represents nothing", loc);
+        return VIOLET_MOVE(this->Data);
+    }
+
+    /// Returns the referred-to object.
+    ///
+    /// Constness of the `Optional` does not carry over to the object: a `const Optional<U&>` still
+    /// gives `U&`, the same way a `U* const` still points at a mutable `U`. This is also safe to call
+    /// on a temporary `Optional<U&>`, since the result refers to the original object and not into the
+    /// `Optional`.
+    ///
+    /// ## Panics
+    /// Debug-asserts that a value is present. In release builds, calling this on an empty `Optional`
+    /// is undefined behaviour; use [`Unwrap`] for a checked access.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// int x = 1;
+    /// const violet::Optional<int&> ref = x;
+    ///
+    /// ref.Value() = 2;
+    /// VIOLET_ASSERT0(x == 2);
+    /// ```
+    ///
+    /// @param loc call site reported by the debug assertion
+    /// @return the referred-to object
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Value(SourceLocation loc = std::source_location::current()) const& noexcept
+        -> value_type&
+        requires kIsReference
+    {
+        VIOLET_DEBUG_ASSERT_LOC(this->HasValue(), "`Optional<T&>` represents nothing", loc);
+        return *this->Data;
+    }
+
+    /// Returns a reference to the held value. Equivalent to [`Value`].
+    ///
+    /// ## Panics
+    /// Debug-asserts that a value is present.
+    ///
+    /// @return a reference to the held value
+    [[nodiscard]]
+    constexpr auto operator*() & noexcept VIOLET_LIFETIMEBOUND->value_type&
+        requires(!kIsReference)
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return this->Data;
+    }
+
+    /// Overload of [`operator*`] for `const` lvalues.
+    /// @return a `const` reference to the held value
+    [[nodiscard]]
+    constexpr auto operator*() const& noexcept VIOLET_LIFETIMEBOUND->const value_type&
+        requires(!kIsReference)
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return this->Data;
+    }
+
+    /// Overload of [`operator*`] for rvalues, allowing the held value to be moved out.
+    /// @return an rvalue reference to the held value
+    [[nodiscard]]
+    constexpr auto operator*() && noexcept VIOLET_LIFETIMEBOUND->value_type&&
+        requires(!kIsReference)
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return VIOLET_MOVE(this->Data);
+    }
+
+    /// Overload of [`operator*`] for `const` rvalues.
+    /// @return a `const` rvalue reference to the held value
+    [[nodiscard]]
+    constexpr auto operator*() const&& noexcept VIOLET_LIFETIMEBOUND->const value_type&&
+        requires(!kIsReference)
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return VIOLET_MOVE(this->Data);
+    }
+
+    /// Returns the referred-to object. Equivalent to [`Value`].
+    ///
+    /// ## Panics
+    /// Debug-asserts that a value is present.
+    ///
+    /// @return the referred-to object
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto operator*() const& noexcept -> value_type&
+        requires kIsReference
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return *this->Data;
+    }
+
+    /// Returns a pointer to the held value, for member access.
+    ///
+    /// ## Panics
+    /// Debug-asserts that a value is present.
+    ///
+    /// @return a pointer to the held value
+    [[nodiscard]]
+    constexpr auto operator->() noexcept -> value_type*
+        requires(!kIsReference)
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return std::addressof(this->Data);
+    }
+
+    /// Overload of [`operator->`] for `const` instances.
+    /// @return a pointer to the `const` held value
+    [[nodiscard]]
+    constexpr auto operator->() const noexcept -> const value_type*
+        requires(!kIsReference)
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return std::addressof(this->Data);
+    }
+
+    /// Returns a pointer to the referred-to object, for member access.
+    ///
+    /// ## Panics
+    /// Debug-asserts that a value is present.
+    ///
+    /// @return a pointer to the referred-to object
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto operator->() const noexcept -> value_type*
+        requires kIsReference
+    {
+        VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
+        return this->Data;
+    }
+
+    /// Returns a copy of the held value, or panics if this `Optional` is empty.
+    ///
+    /// The engaged path is marked as the likely branch.
+    /// Equivalent to Rust's
+    /// [`Option::unwrap`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.unwrap).
+    ///
+    /// ## Panics
+    /// Panics if this `Optional` is empty. With C++ exceptions enabled, this throws [`std::logic_error`]
+    /// with the panic message; with them disabled, it'll passthrough Violet's panic system.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> value = violet::Some(42);
+    /// VIOLET_ASSERT0(value.Unwrap() == 42);
+    /// ```
+    ///
+    /// @param loc call site reported by the panic
+    /// @return a copy of the held value
+    [[nodiscard]]
+    constexpr auto Unwrap(
+        [[maybe_unused]] SourceLocation loc = std::source_location::current()) const& -> unqualified_type
+        requires(!kIsReference && std::is_copy_constructible_v<value_type>)
+    {
+        VIOLET_LIKELY_IF(this->HasValue())
+        {
+            return this->Data;
+        }
+
+#if VIOLET_FEATURE(EXCEPTIONS)
+        VIOLET_THROW(std::logic_error, "tried to unwrap nothing");
+#else
+        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
+#endif
+    }
+
+    /// Overload of [`Unwrap`] for rvalues - moves the held value out instead of copying it.
+    ///
+    /// ## Panics
+    /// Panics if this `Optional` is empty, or [`std::logic_error`] is thrown if exceptions
+    /// are enabled.
+    ///
+    /// @param loc call site reported by the panic
+    /// @return the held value, moved out
+    [[nodiscard]]
+    constexpr auto Unwrap([[maybe_unused]] SourceLocation loc = std::source_location::current()) && -> unqualified_type
+        requires(!kIsReference && std::is_move_constructible_v<value_type>)
+    {
+        VIOLET_LIKELY_IF(this->HasValue())
+        {
+            return VIOLET_MOVE(this->Data);
+        }
+
+#if VIOLET_FEATURE(EXCEPTIONS)
+        VIOLET_THROW(std::logic_error, "tried to unwrap nothing");
+#else
+        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
+#endif
+    }
+
+    /// Returns the referred-to object, or panics if this `Optional` is empty.
+    /// Unlike `Optional<T>::Unwrap`, this never copies: the result is the original object.
+    ///
+    /// ## Panics
+    /// Panics if this `Optional` is empty. With C++ exceptions enabled, this throws [`std::logic_error`]
+    /// with the panic message; with them disabled, it'll passthrough Violet's panic system.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::String name = "Noel";
+    /// violet::Optional<violet::String&> ref = name;
+    ///
+    /// VIOLET_ASSERT0(&ref.Unwrap() == &name);
+    /// ```
+    ///
+    /// @param loc call site reported by the panic
+    /// @return the referred-to object
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Unwrap(
+        [[maybe_unused]] SourceLocation loc = std::source_location::current()) const& -> value_type&
+        requires kIsReference
+    {
+        VIOLET_LIKELY_IF(this->HasValue())
+        {
+            return *this->Data;
+        }
+
+#if VIOLET_FEATURE(EXCEPTIONS)
+        VIOLET_THROW(std::logic_error, "tried to unwrap nothing");
+#else
+        VIOLET_PANIC_USERLAND("tried to unwrap nothing", loc);
+#endif
+    }
+
+    /// Returns a copy of the held value, or panics with `message` if this `Optional` is empty.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::expect`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.expect).
+    ///
+    /// ## Panics
+    /// Panics with `message` if this `Optional` is empty. With C++ exceptions enabled, this throws
+    /// [`std::logic_error`]; with them disabled, it'll passthrough Violet's panic system.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> port = violet::Some(8080);
+    /// VIOLET_ASSERT0(port.Expect("port should be configured") == 8080);
+    /// ```
+    ///
+    /// @param message the panic message
+    /// @param loc call site reported by the panic
+    /// @return a copy of the held value
+    [[nodiscard]]
+    constexpr auto Expect(
+        Str message, [[maybe_unused]] SourceLocation loc = std::source_location::current()) const& -> unqualified_type
+        requires(!kIsReference && std::is_copy_constructible_v<value_type>)
+    {
+        VIOLET_LIKELY_IF(this->HasValue())
+        {
+            return this->Data;
+        }
+
+#if VIOLET_FEATURE(EXCEPTIONS)
+        VIOLET_THROW(std::logic_error, String(message));
+#else
+        VIOLET_PANIC_USERLAND(message, loc);
+#endif
+    }
+
+    /// Overload of [`Expect`] for rvalues - moves the held value out instead of copying it.
+    ///
+    /// ## Panics
+    /// Panics with `message` if this `Optional` is empty or [`std::logic_error`] is thrown if exceptions
+    /// are enabled.
+    ///
+    /// @param message the panic message
+    /// @param loc call site reported by the panic
+    /// @return the held value, moved out
+    [[nodiscard]]
+    constexpr auto Expect(
+        Str message, [[maybe_unused]] SourceLocation loc = std::source_location::current()) && -> unqualified_type
+        requires(!kIsReference && std::is_move_constructible_v<value_type>)
+    {
+        VIOLET_LIKELY_IF(this->HasValue())
+        {
+            return VIOLET_MOVE(this->Data);
+        }
+
+#if VIOLET_FEATURE(EXCEPTIONS)
+        VIOLET_THROW(std::logic_error, String(message));
+#else
+        VIOLET_PANIC_USERLAND(message, loc);
+#endif
+    }
+
+    /// Returns the referred-to object, or panics with `message` if this `Optional` is empty.
+    ///
+    /// ## Panics
+    /// Panics with `message` if this `Optional` is empty. With C++ exceptions enabled, this throws
+    /// [`std::logic_error`]; with them disabled, it'll passthrough Violet's panic system.
+    ///
+    /// @param message the panic message
+    /// @param loc call site reported by the panic
+    /// @return the referred-to object
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Expect(
+        Str message, [[maybe_unused]] SourceLocation loc = std::source_location::current()) const& -> value_type&
+        requires kIsReference
+    {
+        VIOLET_LIKELY_IF(this->HasValue())
+        {
+            return *this->Data;
+        }
+
+#if VIOLET_FEATURE(EXCEPTIONS)
+        VIOLET_THROW(std::logic_error, String(message));
+#else
+        VIOLET_PANIC_USERLAND(message, loc);
+#endif
+    }
+
+    /// Returns a copy of the held value, or `fallback` if this `Optional` is empty.
+    /// Equivalent to Rust's
+    /// [`Option::unwrap_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.unwrap_or).
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> none = violet::Nothing;
+    /// VIOLET_ASSERT0(none.UnwrapOr(5) == 5);
+    /// ```
+    ///
+    /// @param fallback the value returned when this `Optional` is empty
+    /// @return the held value or `fallback`
+    [[nodiscard]]
+    constexpr auto UnwrapOr(unqualified_type fallback) const& noexcept(std::is_nothrow_copy_constructible_v<value_type>
+        && std::is_nothrow_move_constructible_v<unqualified_type>) -> unqualified_type
+        requires(!kIsReference && std::is_copy_constructible_v<value_type>)
+    {
+        return this->HasValue() ? unqualified_type(this->Data) : VIOLET_MOVE(fallback);
+    }
+
+    /// Overload of [`UnwrapOr`] for rvalues - moves the held value out instead of copying it.
+    /// @param fallback the value returned when this `Optional` is empty
+    [[nodiscard]]
+    constexpr auto UnwrapOr(unqualified_type fallback) && noexcept(
+        std::is_nothrow_move_constructible_v<unqualified_type>) -> unqualified_type
+        requires(!kIsReference && std::is_move_constructible_v<value_type>)
+    {
+        return this->HasValue() ? unqualified_type(VIOLET_MOVE(this->Data)) : VIOLET_MOVE(fallback);
+    }
+
+    /// Returns a copy of the referred-to object, or `fallback` if this `Optional` is empty.
+    ///
+    /// This returns a copy rather than a reference so a temporary `fallback` can't dangle. It is only
+    /// available when `U` is copyable; otherwise, the reference-returning overload is used.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<const int&> none = violet::Nothing;
+    /// VIOLET_ASSERT0(none.UnwrapOr(5) == 5);
+    /// ```
+    ///
+    /// @param fallback the value returned when this `Optional` is empty
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto UnwrapOr(unqualified_type fallback) const& noexcept(
+        std::is_nothrow_copy_constructible_v<value_type> && std::is_nothrow_move_constructible_v<unqualified_type>)
+        -> unqualified_type
+        requires(kIsReference && std::is_copy_constructible_v<value_type>)
+    {
+        return this->HasValue() ? unqualified_type(*this->Data) : VIOLET_MOVE(fallback);
+    }
+
+    /// Returns the referred-to object, or `fallback` if this `Optional` is empty.
+    /// Used when `U` is not copyable, so no copy can be returned. `fallback` must be an lvalue; passing
+    /// a temporary is deleted, since the returned reference would dangle.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// std::unique_ptr<int> backup = std::make_unique<int>(1);
+    /// violet::Optional<std::unique_ptr<int>&> none = violet::Nothing;
+    ///
+    /// VIOLET_ASSERT0(&none.UnwrapOr(backup) == &backup);
+    /// ```
+    ///
+    /// @param fallback the object returned when this `Optional` is empty
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto UnwrapOr(value_type& fallback VIOLET_LIFETIMEBOUND) const& noexcept
+        -> value_type&
+        requires(kIsReference && !std::is_copy_constructible_v<value_type>)
+    {
+        return this->HasValue() ? *this->Data : fallback;
+    }
+
+    /// Passing a temporary `fallback` to a non-copyable `Optional<U&>` is deleted, as the returned
+    /// reference would dangle.
+    NOELDOC_SINCE("current")
+    constexpr auto UnwrapOr(value_type&&) const& -> value_type&
+        requires(kIsReference && !std::is_copy_constructible_v<value_type>)
+    = delete;
+
+    /// Returns a copy of the held value, or a value-initialized `T` if this `Optional` is empty.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::unwrap_or_default`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.unwrap_or_default).
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> none = violet::Nothing;
+    /// VIOLET_ASSERT0(none.UnwrapOrDefault() == 0);
+    /// ```
+    [[nodiscard]]
+    constexpr auto UnwrapOrDefault() const& noexcept(std::is_nothrow_copy_constructible_v<value_type>
+        && std::is_nothrow_default_constructible_v<unqualified_type>) -> unqualified_type
+        requires(!kIsReference
+            && std::is_default_constructible_v<unqualified_type> && std::is_copy_constructible_v<value_type>)
+    {
+        return this->HasValue() ? unqualified_type(this->Data) : unqualified_type{};
+    }
+
+    /// Overload of [`UnwrapOrDefault`] for rvalues - moves the held value out instead of copying it.
+    [[nodiscard]]
+    constexpr auto UnwrapOrDefault() && noexcept(std::is_nothrow_move_constructible_v<value_type>
+        && std::is_nothrow_default_constructible_v<unqualified_type>) -> unqualified_type
+        requires(!kIsReference
+            && std::is_default_constructible_v<unqualified_type> && std::is_move_constructible_v<value_type>)
+    {
+        return this->HasValue() ? unqualified_type(VIOLET_MOVE(this->Data)) : unqualified_type{};
+    }
+
+    /// Returns a copy of the referred-to object, or a value-initialized `U` if this `Optional` is empty.
+    /// The default is a temporary, so there is nothing a reference could point at; this always returns
+    /// by value.
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto UnwrapOrDefault() const& noexcept(
+        std::is_nothrow_copy_constructible_v<value_type> && std::is_nothrow_default_constructible_v<unqualified_type>)
+        -> unqualified_type
+        requires(kIsReference
+            && std::is_default_constructible_v<unqualified_type> && std::is_copy_constructible_v<value_type>)
+    {
+        return this->HasValue() ? unqualified_type(*this->Data) : unqualified_type{};
+    }
+
+    /// Returns a reference to the held value without checking that one is present.
+    ///
+    /// ## Safety
+    /// Undefined behaviour if this `Optional` is empty.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> value = violet::Some(1);
+    /// if (value.HasValue()) {
+    ///     VIOLET_ASSERT0(value.UnwrapUnchecked(violet::Unsafe("checked above")) == 1);
+    /// }
+    /// ```
+    ///
+    /// @return a reference to the held value
+    [[nodiscard]]
+    NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(Unsafe) & noexcept VIOLET_LIFETIMEBOUND->value_type&
+        requires(!kIsReference)
+    {
+        return this->Data;
+    }
+
+    /// Overload of [`UnwrapUnchecked`] for `const` lvalues.
+    ///
+    /// ## Safety
+    /// Undefined behaviour if this `Optional` is empty.
+    [[nodiscard]]
+    NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
+        Unsafe) const& noexcept VIOLET_LIFETIMEBOUND->const value_type&
+        requires(!kIsReference)
+    {
+        return this->Data;
+    }
+
+    /// Overload of [`UnwrapUnchecked`] for rvalues, allowing the held value to be moved out.
+    ///
+    /// ## Safety
+    /// Undefined behaviour if this `Optional` is empty.
+    [[nodiscard]]
+    NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(Unsafe) && noexcept VIOLET_LIFETIMEBOUND->value_type&&
+        requires(!kIsReference)
+    {
+        return VIOLET_MOVE(this->Data);
+    }
+
+    /// Overload of [`UnwrapUnchecked`] for `const` rvalues.
+    ///
+    /// ## Safety
+    /// Undefined behaviour if this `Optional` is empty.
+    [[nodiscard]]
+    NOELDOC_SINCE("26.04") constexpr auto UnwrapUnchecked(
+        Unsafe) const&& noexcept VIOLET_LIFETIMEBOUND->const value_type&&
+        requires(!kIsReference)
+    {
+        return VIOLET_MOVE(this->Data);
+    }
+
+    /// Returns the referred-to object without checking that one is present.
+    ///
+    /// ## Safety
+    /// Undefined behaviour if this `Optional` is empty.
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> value_type&
+        requires kIsReference
+    {
+        return *this->Data;
+    }
+
+    /// Applies `fun` to the held value, if any, and wraps the result.
+    /// Equivalent to Rust's [`Option::map`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map).
+    ///
+    /// If `fun` returns an lvalue reference, the result is an `Optional<U&>` referring to it; otherwise
+    /// the result is stored by value.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> value = violet::Some(10);
+    /// auto doubled = value.Map([](int x) -> int { return x * 2; });
+    ///
+    /// VIOLET_ASSERT0(doubled.Value() == 20);
+    /// ```
+    ///
+    /// @param fun the function to apply
+    template<typename Fun>
+        requires(!kIsReference && callable<Fun, value_type&>)
+    [[nodiscard]]
+    constexpr auto Map(Fun&& fun) & noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>())))
+        -> Optional<optional_internal::map_result_t<std::invoke_result_t<Fun, value_type&>>>
+    {
+        using result_type = optional_internal::map_result_t<std::invoke_result_t<Fun, value_type&>>;
+        if (this->HasValue()) {
+            return Optional<result_type>(std::in_place, std::invoke(VIOLET_FWD(Fun, fun), this->Data));
+        }
+
+        return Nothing;
+    }
+
+    /// Overload of [`Map`] for `const` lvalues.
+    /// @param fun the function to apply
+    template<typename Fun>
+        requires(!kIsReference && callable<Fun, const value_type&>)
+    [[nodiscard]]
+    constexpr auto Map(Fun&& fun) const& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&>())))
+        -> Optional<optional_internal::map_result_t<std::invoke_result_t<Fun, const value_type&>>>
+    {
+        using result_type = optional_internal::map_result_t<std::invoke_result_t<Fun, const value_type&>>;
+        if (this->HasValue()) {
+            return Optional<result_type>(std::in_place, std::invoke(VIOLET_FWD(Fun, fun), this->Data));
+        }
+
+        return Nothing;
+    }
+
+    /// Overload of [`Map`] for rvalues - `fun` receives the held value as an rvalue.
+    ///
+    /// The result is always stored by value, even if `fun` returns a reference, since that reference
+    /// would most likely point into this dying `Optional`.
+    ///
+    /// @param fun the function to apply
+    template<typename Fun>
+        requires(!kIsReference && callable<Fun, value_type &&>)
+    [[nodiscard]]
+    constexpr auto Map(Fun&& fun) && noexcept(noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&&>())))
+        -> Optional<std::remove_cvref_t<std::invoke_result_t<Fun, value_type&&>>>
+    {
+        using result_type = std::remove_cvref_t<std::invoke_result_t<Fun, value_type&&>>;
+        if (this->HasValue()) {
+            return Optional<result_type>(std::in_place, std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->Data)));
+        }
+
+        return Nothing;
+    }
+
+    /// Overload of [`Map`] for `const` rvalues. The result is always stored by value.
+    /// @param fun the function to apply
+    template<typename Fun>
+        requires(!kIsReference && callable<Fun, const value_type &&>)
+    [[nodiscard]]
+    constexpr auto Map(Fun&& fun) const&& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&&>())))
+        -> Optional<std::remove_cvref_t<std::invoke_result_t<Fun, const value_type&&>>>
+    {
+        using result_type = std::remove_cvref_t<std::invoke_result_t<Fun, const value_type&&>>;
+        if (this->HasValue()) {
+            return Optional<result_type>(std::in_place, std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->Data)));
+        }
+
+        return Nothing;
+    }
+
+    /// Applies `fun` to the referred-to object, if any, and wraps the result.
+    ///
+    /// `fun` always receives `U&`, whatever the value category or constness of this `Optional`. If
+    /// `fun` returns an lvalue reference, the result is an `Optional<V&>` referring to it.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// struct User {
+    ///     violet::String Name;
+    /// };
+    ///
+    /// User user{.Name = "Noel"};
+    /// violet::Optional<User&> ref = user;
+    ///
+    /// violet::Optional<violet::String&> name = ref.Map([](User& u) -> violet::String& { return u.Name; });
+    /// VIOLET_ASSERT0(&name.Value() == &user.Name);
+    /// ```
+    ///
+    /// @param fun the function to apply
+    template<typename Fun>
+        requires(kIsReference && callable<Fun, value_type&>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Map(Fun&& fun) const& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>())))
+        -> Optional<optional_internal::map_result_t<std::invoke_result_t<Fun, value_type&>>>
+    {
+        using result_type = optional_internal::map_result_t<std::invoke_result_t<Fun, value_type&>>;
+        if (this->HasValue()) {
+            return Optional<result_type>(std::in_place, std::invoke(VIOLET_FWD(Fun, fun), *this->Data));
+        }
+
+        return Nothing;
+    }
+
+    /// Returns `true` if this `Optional` holds a value and `fun(value)` returns `true`.
+    /// Equivalent to Rust's
+    /// [`Option::is_some_and`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.is_some_and).
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> value = violet::Some(4);
+    /// VIOLET_ASSERT0(value.HasValueAnd([](int x) { return x % 2 == 0; }));
+    /// ```
+    ///
+    /// @param fun the predicate
+    /// @return `true` if a value is present and satisfies `fun`
+    template<typename Fun>
+        requires(!kIsReference && callable_returns<Fun, bool, value_type&>)
+    [[nodiscard]]
+    constexpr auto HasValueAnd(Fun&& fun) & noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>()))) -> bool
+    {
+        return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), this->Data);
+    }
+
+    /// Overload of [`HasValueAnd`] for `const` lvalues.
+    /// @param fun the predicate
+    /// @return `true` if a value is present and satisfies `fun`
+    template<typename Fun>
+        requires(!kIsReference && callable_returns<Fun, bool, const value_type&>)
+    [[nodiscard]]
+    constexpr auto HasValueAnd(Fun&& fun) const& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&>()))) -> bool
+    {
+        return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), this->Data);
+    }
+
+    /// Overload of [`HasValueAnd`] for rvalues - `fun` receives the held value as an rvalue.
+    /// @param fun the predicate
+    /// @return `true` if a value is present and satisfies `fun`
+    template<typename Fun>
+        requires(!kIsReference && callable_returns<Fun, bool, value_type &&>)
+    [[nodiscard]]
+    constexpr auto HasValueAnd(Fun&& fun) && noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&&>()))) -> bool
+    {
+        return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->Data));
+    }
+
+    /// Overload of [`HasValueAnd`] for `const` rvalues.
+    /// @param fun the predicate
+    /// @return `true` if a value is present and satisfies `fun`
+    template<typename Fun>
+        requires(!kIsReference && callable_returns<Fun, bool, const value_type &&>)
+    [[nodiscard]]
+    constexpr auto HasValueAnd(Fun&& fun) const&& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<const value_type&&>()))) -> bool
+    {
+        return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->Data));
+    }
+
+    /// Returns `true` if this `Optional` holds a reference and `fun(object)` returns `true`.
+    /// `fun` always receives `U&`, whatever the value category or constness of this `Optional`.
+    ///
+    /// @param fun the predicate
+    /// @return `true` if a reference is present and the referred-to object satisfies `fun`
+    template<typename Fun>
+        requires(kIsReference && callable_returns<Fun, bool, value_type&>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto HasValueAnd(Fun&& fun) const& noexcept(
+        noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>()))) -> bool
+    {
+        return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), *this->Data);
+    }
+
+    /// Applies `fun` to the held value if there is one, otherwise returns `fallback`.
+    /// Equivalent to Rust's
+    /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or).
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// The result is now always returned by value (`std::remove_cvref_t<U>`). Previously, passing an
+    /// lvalue `fallback` made the return type a reference, which couldn't bind to `fun`'s result.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<violet::String> name = violet::Nothing;
+    /// auto length = name.MapOr(violet::UInt(0),[](const violet::String& s) { return s.size(); });
+    ///
+    /// VIOLET_ASSERT0(length == 0);
+    /// ```
+    ///
+    /// @param fallback the value returned when this `Optional` is empty
+    /// @param fun the function to apply
+    template<typename U, typename Fun>
+        requires(!kIsReference && callable<Fun, value_type&>
+            && std::convertible_to<std::invoke_result_t<Fun, value_type&>, std::remove_cvref_t<U>>)
+    [[nodiscard]]
+    constexpr auto MapOr(U&& fallback, Fun&& fun) & -> std::remove_cvref_t<U>
+    {
+        if (this->HasValue()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), this->Data);
+        }
+
+        return VIOLET_FWD(U, fallback);
+    }
+
+    /// Overload of [`MapOr`] for `const` lvalues.
+    /// @param fallback the value returned when this `Optional` is empty
+    /// @param fun the function to apply
+    template<typename U, typename Fun>
+        requires(!kIsReference && callable<Fun, const value_type&>
+            && std::convertible_to<std::invoke_result_t<Fun, const value_type&>, std::remove_cvref_t<U>>)
+    [[nodiscard]]
+    constexpr auto MapOr(U&& fallback, Fun&& fun) const& -> std::remove_cvref_t<U>
+    {
+        if (this->HasValue()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), this->Data);
+        }
+
+        return VIOLET_FWD(U, fallback);
+    }
+
+    /// Overload of [`MapOr`] for rvalues - `fun` receives the held value as an rvalue.
+    /// @param fallback the value returned when this `Optional` is empty
+    /// @param fun the function to apply
+    template<typename U, typename Fun>
+        requires(!kIsReference && callable<Fun, value_type &&>
+            && std::convertible_to<std::invoke_result_t<Fun, value_type &&>, std::remove_cvref_t<U>>)
+    [[nodiscard]]
+    constexpr auto MapOr(U&& fallback, Fun&& fun) && -> std::remove_cvref_t<U>
+    {
+        if (this->HasValue()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->Data));
+        }
+
+        return VIOLET_FWD(U, fallback);
+    }
+
+    /// Overload of [`MapOr`] for `const` rvalues.
+    /// @param fallback the value returned when this `Optional` is empty
+    /// @param fun the function to apply
+    template<typename U, typename Fun>
+        requires(!kIsReference && callable<Fun, const value_type &&>
+            && std::convertible_to<std::invoke_result_t<Fun, const value_type &&>, std::remove_cvref_t<U>>)
+    [[nodiscard]]
+    constexpr auto MapOr(U&& fallback, Fun&& fun) const&& -> std::remove_cvref_t<U>
+    {
+        if (this->HasValue()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), VIOLET_MOVE(this->Data));
+        }
+
+        return VIOLET_FWD(U, fallback);
+    }
+
+    /// Applies `fun` to the referred-to object if there is one, otherwise returns `fallback`.
+    /// `fun` always receives `U&`, whatever the value category or constness of this `Optional`.
+    ///
+    /// @param fallback the value returned when this `Optional` is empty
+    /// @param fun the function to apply
+    template<typename U, typename Fun>
+        requires(kIsReference && callable<Fun, value_type&>
+            && std::convertible_to<std::invoke_result_t<Fun, value_type&>, std::remove_cvref_t<U>>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto MapOr(U&& fallback, Fun&& fun) const& -> std::remove_cvref_t<U>
+    {
+        if (this->HasValue()) {
+            return std::invoke(VIOLET_FWD(Fun, fun), *this->Data);
+        }
+
+        return VIOLET_FWD(U, fallback);
+    }
+
+    /// Takes the held value out, leaving this `Optional` empty.
+    ///
+    /// Equivalent to Rust's [`Option::take`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.take).
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// For `Optional<U&>`, this returns an `Optional<U&>` referring to the same object and leaves this
+    /// one empty; the referred-to object is never copied or moved.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> value = violet::Some(1);
+    /// auto taken = value.Take();
+    ///
+    /// VIOLET_ASSERT0(!value.HasValue());
+    /// VIOLET_ASSERT0(taken.Value() == 1);
+    /// ```
+    ///
+    /// @return the previous contents of this `Optional`
+    [[nodiscard]]
+    constexpr auto Take() noexcept(kIsReference || std::is_nothrow_move_constructible_v<value_type>) -> Optional
+        requires(kIsReference || std::is_move_constructible_v<value_type>)
+    {
+        Optional taken(VIOLET_MOVE(*this));
+        this->Disengage();
+
+        return taken;
+    }
+
+    /// Destroys any held value and constructs a new one in place from `args`.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<violet::String> name = violet::Nothing;
+    /// name.Replace("Noel");
+    ///
+    /// VIOLET_ASSERT0(name.Value() == "Noel");
+    /// ```
+    ///
+    /// @param args arguments forwarded to `T`'s constructor
+    /// @return a reference to the new value
+    template<typename... Args>
+        requires(!kIsReference && std::is_constructible_v<T, Args...>)
+    VIOLET_REINITIALIZES_MEMORY constexpr auto Replace(Args&&... args) noexcept(
+        std::is_nothrow_constructible_v<T, Args...>) VIOLET_LIFETIMEBOUND -> value_type&
+    {
+        this->Construct(VIOLET_FWD(Args, args)...);
+        return this->Data;
+    }
+
+    /// Rebinds this `Optional<U&>` to refer to `value`.
+    /// The previously referred-to object is left untouched.
+    ///
+    /// @param value the object to refer to; it must outlive every use of this `Optional`
+    /// @return the newly referred-to object
+    NOELDOC_SINCE("current")
+    VIOLET_REINITIALIZES_MEMORY constexpr auto Replace(value_type& value) noexcept -> value_type&
+        requires kIsReference
+    {
+        this->Construct(value);
+        return *this->Data;
+    }
+
+    NOELDOC_SINCE("current")
+    constexpr auto Replace(value_type&&) -> value_type&
+        requires kIsReference
+    = delete;
+
+    /// Empties this `Optional`, destroying the held value if there is one.
+    VIOLET_REINITIALIZES_MEMORY
+    constexpr void Reset() noexcept
+    {
+        this->Disengage();
+    }
+
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+    /// Converts to a [`std::optional`] holding a copy of the value, if any.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for
+    /// `Optional<U&>`, since `std::optional<U&>` does not exist before C++26.
+    ///
+    /// @return a `std::optional` with the same contents
+    constexpr VIOLET_EXPLICIT operator std::optional<T>() const& noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires(!kIsReference && std::is_copy_constructible_v<T>)
+    {
+        if (this->HasValue()) {
+            return std::optional<T>(std::in_place, this->Data);
+        }
+
+        return std::nullopt;
+    }
+
+    /// Converts to a [`std::optional`] by moving the value out, if any.
+    /// @return a `std::optional` with the same contents
+    NOELDOC_SINCE("current")
+    constexpr VIOLET_EXPLICIT operator std::optional<T>() && noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires(!kIsReference && std::is_move_constructible_v<T>)
+    {
+        if (this->HasValue()) {
+            return std::optional<T>(std::in_place, VIOLET_MOVE(this->Data));
+        }
+
+        return std::nullopt;
+    }
+#endif
+
+    /// Returns `true` if this `Optional` is empty.
+    [[nodiscard]]
+    constexpr auto operator==(nothing_t) const noexcept -> bool
     {
         return !this->HasValue();
     }
 
-    constexpr auto operator!=(const std::nullopt_t&) const noexcept -> bool
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+    /// Returns `true` if this `Optional` is empty.
+    [[nodiscard]]
+    constexpr auto operator==(std::nullopt_t) const noexcept -> bool
     {
-        return this->HasValue();
+        return !this->HasValue();
     }
+#endif
 
-    constexpr auto operator==(const Optional& other) const noexcept -> bool
-        requires(requires { this->Value() == other.Value(); })
+    /// Compares two `Optional`s, they're equal if both are empty, or both hold values that compare equal.
+    /// For `Optional<U&>`, this compares the referred-to objects, not their addresses.
+    ///
+    /// @param other the `Optional` to compare with
+    /// @return `true` if both are empty or both values are equal
+    [[nodiscard]]
+    constexpr auto operator==(const Optional& other) const -> bool
+        requires(std::equality_comparable<value_type>)
     {
         if (this->HasValue() != other.HasValue()) {
             return false;
         }
 
-        return this->Value() == other.Value();
+        return !this->HasValue() || this->Value() == other.Value();
     }
 
-    constexpr auto operator!=(const Optional& other) const noexcept -> bool
-        requires(requires { this->Value() == other.Value(); })
-    {
-        return !(*this == other);
-    }
-
-    constexpr auto operator==(const std::optional<T>& other) const noexcept -> bool
-        requires(requires { this->Value() == *other; })
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+    /// Compares with a [`std::optional`]; equal if both are empty, or both hold values that compare equal.
+    /// @param other the `std::optional` to compare with
+    /// @return `true` if both are empty or both values are equal
+    [[nodiscard]]
+    constexpr auto operator==(const std::optional<T>& other) const -> bool
+        requires(!kIsReference && std::equality_comparable<value_type>)
     {
         if (this->HasValue() != other.has_value()) {
             return false;
         }
 
-        return this->Value() == *other;
+        return !this->HasValue() || this->Value() == *other;
     }
+#endif
 
-    constexpr auto operator!=(const std::optional<T>& other) const noexcept -> bool
-        requires(requires { this->Value() == *other; })
-    {
-        return !(*this == other);
-    }
-
-    NOELDOC_SINCE("current")
-    constexpr auto operator==(const Some<T>& other) const noexcept -> bool
-        requires(std::equality_comparable<T>)
+    /// Returns `true` if this `Optional` holds a value equal to the one wrapped in `other`.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// Also available for `Optional<U&>`, comparing the referred-to object with a `Some<U>`.
+    ///
+    /// @param other the wrapped value to compare with
+    /// @return `true` if a value is present and equal to `other`'s
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto operator==(const Some<unqualified_type>& other) const -> bool
+        requires(std::equality_comparable<value_type>)
     {
         return this->HasValue() && this->Value() == other.n_value;
     }
 
-    NOELDOC_SINCE("current")
-    constexpr auto operator!=(const Some<T>& other) const noexcept -> bool
-        requires(std::equality_comparable<T>)
-    {
-        return !(*this == other);
-    }
-
-    constexpr auto operator==(const T& other) const noexcept -> bool
-        requires(requires { this->Value() == other; })
+    /// Returns `true` if this `Optional` holds a value equal to `other`.
+    ///
+    /// ## Remarks
+    /// ### Since `{current}`
+    /// Takes `const value_type&` rather than `const T&`, so `Optional<U&>` can be compared with
+    /// `const` objects and temporaries.
+    ///
+    /// @param other the value to compare with
+    /// @return `true` if a value is present and equal to `other`
+    [[nodiscard]]
+    constexpr auto operator==(const value_type& other) const -> bool
+        requires(std::equality_comparable<value_type>)
     {
         return this->HasValue() && this->Value() == other;
     }
 
-    constexpr auto operator!=(const T& other) const noexcept -> bool
-        requires(requires { this->Value() == other; })
-    {
-        return !(*this == other);
-    }
-
-    NOELDOC_SINCE("26.05.08")
-    constexpr auto operator<=>(std::nullopt_t) const -> std::strong_ordering
+    /// Orders this `Optional` against [`Nothing`]; an empty `Optional` is equal to it, and an engaged
+    /// one is greater.
+    ///
+    /// @return the ordering of `HasValue()` against `false`
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto operator<=>(nothing_t) const noexcept -> std::strong_ordering
     {
         return this->HasValue() <=> false;
     }
 
-    NOELDOC_SINCE("26.05.08")
-    constexpr auto operator<=>(const std::optional<T>& other) const -> std::strong_ordering
-        requires(std::three_way_comparable<T>)
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+    /// Orders this `Optional` against [`std::nullopt`]; an empty `Optional` is equal to it, and an
+    /// engaged one is greater.
+    ///
+    /// @return the ordering of `HasValue()` against `false`
+    [[nodiscard]]
+    NOELDOC_SINCE("26.05.08") constexpr auto operator<=>(std::nullopt_t) const noexcept -> std::strong_ordering
     {
-        if (this->HasValue() && other.has_value()) {
-            return this->Value() <=> *other;
-        }
-
-        return this->HasValue() <=> other.has_value();
+        return this->HasValue() <=> false;
     }
+#endif
 
-    NOELDOC_SINCE("26.05.08")
-    constexpr auto operator<=>(const std::optional<T>& other) const -> std::partial_ordering
-        requires(!std::three_way_comparable<T> && std::totally_ordered<T>)
-    {
-        if (this->HasValue() && other.has_value()) {
-            if (**this < *other) {
-                return std::partial_ordering::less;
-            }
-
-            if (*other < **this) {
-                return std::partial_ordering::greater;
-            }
-
-            return std::partial_ordering::equivalent;
-        }
-
-        return this->HasValue() <=> other.has_value();
-    }
-
-    NOELDOC_SINCE("26.05.08")
-    constexpr auto operator<=>(const Optional& other) const -> std::strong_ordering
-        requires(std::three_way_comparable<T>)
+    /// Orders two `Optional`s. An empty `Optional` is less than any engaged one; two engaged ones are
+    /// ordered by their values.
+    ///
+    /// @param other the `Optional` to compare with
+    /// @return the ordering of the two `Optional`s
+    template<typename U = value_type>
+        requires(std::three_way_comparable<U>)
+    [[nodiscard]]
+    NOELDOC_SINCE("26.05.08") constexpr auto operator<=>(const Optional& other) const
+        -> std::compare_three_way_result_t<U>
     {
         if (this->HasValue() && other.HasValue()) {
             return this->Value() <=> other.Value();
@@ -1294,16 +1983,19 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
         return this->HasValue() <=> other.HasValue();
     }
 
-    NOELDOC_SINCE("26.05.08")
-    constexpr auto operator<=>(const Optional& other) const -> std::partial_ordering
-        requires(!std::three_way_comparable<T> && std::totally_ordered<T>)
+    /// Orders two `Optional`s whose values have `<` but no `<=>`.
+    /// @param other the `Optional` to compare with
+    /// @return the ordering of the two `Optional`s
+    [[nodiscard]]
+    NOELDOC_SINCE("26.05.08") constexpr auto operator<=>(const Optional& other) const -> std::partial_ordering
+        requires(!std::three_way_comparable<value_type> && std::totally_ordered<value_type>)
     {
         if (this->HasValue() && other.HasValue()) {
-            if (**this < *other) {
+            if (this->Value() < other.Value()) {
                 return std::partial_ordering::less;
             }
 
-            if (*other < **this) {
+            if (other.Value() < this->Value()) {
                 return std::partial_ordering::greater;
             }
 
@@ -1313,116 +2005,109 @@ struct [[nodiscard("check its state before discarding")]] VIOLET_API NOELDOC_SIN
         return this->HasValue() <=> other.HasValue();
     }
 
-    template<typename U = T>
-    NOELDOC_SINCE("26.05.08")
-    constexpr auto operator<=>(const T& rhs) const -> std::compare_three_way_result_t<U>
-        requires std::three_way_comparable<U>
+#if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+    /// Orders this `Optional` against a [`std::optional`], with the same rules as comparing two `Optional`s.
+    /// @param other the `std::optional` to compare with
+    /// @return the ordering of the two optionals
+    template<typename U = value_type>
+        requires(!kIsReference && std::three_way_comparable<U>)
+    [[nodiscard]]
+    NOELDOC_SINCE("26.05.08") constexpr auto operator<=>(const std::optional<T>& other) const
+        -> std::compare_three_way_result_t<U>
+    {
+        if (this->HasValue() && other.has_value()) {
+            return this->Value() <=> *other;
+        }
+
+        return this->HasValue() <=> other.has_value();
+    }
+#endif
+
+    /// Orders this `Optional` against a plain value. An empty `Optional` is less than any value.
+    /// @param other the value to compare with
+    /// @return the ordering of the held value against `other`
+    template<typename U = value_type>
+        requires(std::three_way_comparable<U>)
+    [[nodiscard]]
+    NOELDOC_SINCE("26.05.08") constexpr auto operator<=>(const value_type& other) const
+        -> std::compare_three_way_result_t<U>
     {
         if (this->HasValue()) {
-            return **this <=> rhs;
+            return this->Value() <=> other;
         }
 
         return std::strong_ordering::less;
     }
 
-    [[nodiscard]] auto ToString() const noexcept -> String
+    /// Returns a string representation of the held value, or `«no value»` if this `Optional` is empty.
+    /// @return the formatted value
+    [[nodiscard]]
+    auto ToString() const noexcept -> String
     {
         if (!this->HasValue()) {
             return "«no value»";
         }
 
-        return violet::ToString(this->getValueRef());
+        return violet::ToString(this->Value());
     }
 
-    friend auto operator<<(std::ostream& os, const Optional<T>& self) -> std::ostream&
+    /// Writes [`ToString`] to `os`.
+    friend auto operator<<(std::ostream& os, const Optional& self) -> std::ostream&
     {
         return os << self.ToString();
     }
-
-private:
-    bool n_engaged = false;
-    union { // NOLINT(cppcoreguidelines-special-member-functions)
-        char dummy = '\0';
-        T n_value;
-    };
-
-    constexpr void destroy() noexcept(std::is_nothrow_destructible_v<T>)
-    {
-        if (this->n_engaged) {
-            std::destroy_at(&this->n_value);
-            this->n_engaged = false;
-        }
-    }
-
-    constexpr auto getValueRef() & noexcept -> value_type&
-    {
-        if VIOLET_IF_CONSTEVAL {
-            if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return this->n_value.get();
-            } else {
-                return this->n_value;
-            }
-        } else {
-            if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return std::launder(reinterpret_cast<T*>(&this->n_value))->get();
-            }
-
-            return *std::launder(reinterpret_cast<value_type*>(&this->n_value));
-        }
-    }
-
-    constexpr auto getValueRef() const& noexcept -> const value_type&
-    {
-        if VIOLET_IF_CONSTEVAL {
-            if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return this->n_value.get();
-            } else {
-                return this->n_value;
-            }
-        } else {
-            if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return std::launder(reinterpret_cast<const T*>(&this->n_value))->get();
-            }
-
-            return *std::launder(reinterpret_cast<const value_type*>(&this->n_value));
-        }
-    }
-
-    constexpr auto getValueRef() && noexcept -> value_type&&
-    {
-        if VIOLET_IF_CONSTEVAL {
-            if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return this->n_value.get();
-            } else {
-                return this->n_value;
-            }
-        } else {
-            if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return VIOLET_MOVE(std::launder(reinterpret_cast<T*>(&this->n_value))->get());
-            }
-
-            return VIOLET_MOVE(*std::launder(reinterpret_cast<value_type*>(&this->n_value)));
-        }
-    }
-
-    constexpr auto getValueRef() const&& noexcept -> const value_type&&
-    {
-        if VIOLET_IF_CONSTEVAL {
-            if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return this->n_value.get();
-            } else {
-                return this->n_value;
-            }
-        } else {
-            if constexpr (instanceof_v<std::reference_wrapper, T>) {
-                return VIOLET_MOVE(std::launder(reinterpret_cast<const T*>(&this->n_value))->get());
-            }
-
-            return VIOLET_MOVE(*std::launder(reinterpret_cast<const value_type*>(&this->n_value)));
-        }
-    }
 };
+
+static_assert(sizeof(Optional<int&>) == sizeof(int*));
+static_assert(std::is_trivially_copyable_v<Optional<int>>);
+static_assert(std::is_trivially_copyable_v<Optional<int&>>);
+static_assert(!std::is_constructible_v<Optional<const int&>, int>);
 
 } // namespace violet
 
 VIOLET_FORMATTER_TEMPLATE(violet::Optional<T>, typename T);
+
+#define __violet_unwrap_impl__(decl, expr, tmp)                                                                        \
+    auto&& tmp = (expr);                                                                                               \
+    static_assert(::violet::instanceof_v<::violet::Optional, ::std::remove_cvref_t<decltype(tmp)>>,                    \
+        "expression didn't return a violet::Optional");                                                                \
+    if (!(tmp).HasValue()) {                                                                                           \
+        return ::violet::Nothing;                                                                                      \
+    }                                                                                                                  \
+    decl = *VIOLET_FWD(decltype(tmp), tmp)
+
+/**
+ * @macro VIOLET_UNWRAP
+ * @param decl the declaration to initialize, such as `const auto val` or `auto& ref`
+ * @param expr an expression producing a [`violet::Optional`]
+ * @since current
+ *
+ * Declares `decl` from the value held by an [`Optional`], or returns [`Nothing`] from the enclosing
+ * function if it is empty.
+ *
+ * This is the `Optional` counterpart to [`VIOLET_TRY`], in declaration form, so it works on every
+ * compiler (no statement expressions involved). The enclosing function must return a type that
+ * [`Nothing`] converts to, such as any `Optional<U>`.
+ *
+ * If `expr` is an lvalue, its value is copied into `decl`; if it is a temporary, the value is moved.
+ * For `Optional<U&>`, `decl` binds to or copies the referred-to object, depending on how it is
+ * declared.
+ *
+ * ## Remarks
+ * This expands to several statements, so it cannot be used as the unbraced body of an `if`, `for`,
+ * or `while`. It also uses `return`, so it can't be used in coroutines.
+ *
+ * ## Example
+ * ```cpp
+ * #include <violet/Container/Optional.h>
+ *
+ * auto FindUser(int id) -> violet::Optional<User>;
+ *
+ * auto FindUserName(int id) -> violet::Optional<violet::String>
+ * {
+ *     VIOLET_UNWRAP(const auto user, FindUser(id));
+ *     return violet::Some(user.Name);
+ * }
+ * ```
+ */
+#define VIOLET_UNWRAP(decl, expr) __violet_unwrap_impl__(decl, expr, VIOLET_UNIQUE_NAME(__violet_unwrap_expr_))

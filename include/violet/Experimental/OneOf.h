@@ -289,13 +289,13 @@ struct OneOf {
 
     template<typename T>
         requires pack_contains_v<T, Ts...>
-    constexpr auto Get() noexcept -> Optional<std::reference_wrapper<T>>
+    constexpr auto Get() noexcept -> Optional<T&>
     {
         if (this->n_index != IndexOf<T>) {
             return Nothing;
         }
 
-        return Some(std::ref(oneof_internal::GetElement<IndexOf<T>>(this->n_storage)));
+        return oneof_internal::GetElement<IndexOf<T>>(this->n_storage);
     }
 
     template<typename T>
@@ -308,13 +308,13 @@ struct OneOf {
 
     template<typename T>
         requires pack_contains_v<T, Ts...>
-    constexpr auto Get() const noexcept -> Optional<std::reference_wrapper<const T>>
+    constexpr auto Get() const noexcept -> Optional<const T&>
     {
         if (this->n_index != IndexOf<T>) {
             return Nothing;
         }
 
-        return Some(std::cref(oneof_internal::GetElement<IndexOf<T>>(this->n_storage)));
+        return oneof_internal::GetElement<IndexOf<T>>(this->n_storage);
     }
 
     template<typename T>

@@ -158,7 +158,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
     }
 
     /// Returns a reference to the first element.
-    constexpr auto Front() -> Optional<std::reference_wrapper<value_type>>
+    constexpr auto Front() -> Optional<value_type&>
     {
         if (this->n_size > 0) {
             return this->at(0);
@@ -168,7 +168,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
     }
 
     /// Returns a reference to the first element.
-    constexpr auto Front() const -> Optional<std::reference_wrapper<const value_type>>
+    constexpr auto Front() const -> Optional<const value_type&>
     {
         if (this->n_size > 0) {
             return this->at(0);
@@ -178,17 +178,17 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
     }
 
     /// Returns a reference to the first element.
-    constexpr auto Back() -> Optional<std::reference_wrapper<value_type>>
+    constexpr auto Back() -> Optional<value_type&>
     {
         if (this->n_size > 0) {
-            return std::ref(this->at(this->n_size - 1));
+            return this->at(this->n_size - 1);
         }
 
         return Nothing;
     }
 
     /// Returns a reference to the first element.
-    constexpr auto Back() const -> Optional<std::reference_wrapper<const value_type>>
+    constexpr auto Back() const -> Optional<const value_type&>
     {
         if (this->n_size > 0) {
             return std::cref(this->at(this->n_size - 1));

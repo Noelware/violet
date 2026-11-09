@@ -156,8 +156,7 @@ TEST(Optional, MoveConstructEngaged)
     Optional<String> b(VIOLET_MOVE(a));
     EXPECT_TRUE(b);
     EXPECT_EQ(b.Value(), "hello");
-    // a should be disengaged after move
-    EXPECT_FALSE(a); // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(a); // NOLINT(bugprone-use-after-move): moved-from but still engaged, like std::optional
 }
 
 TEST(Optional, MoveConstructDisengaged)
@@ -308,10 +307,10 @@ TEST(Optional, UnwrapUnchecked)
     EXPECT_EQ(opt.UnwrapUnchecked(Unsafe("in test code; this will not fail")), 42);
 }
 
-TEST(Optional, ExceptEngaged)
+TEST(Optional, ExpectEngaged)
 {
     Optional<Int32> opt = 42;
-    EXPECT_EQ(opt.Except("should not panic"), 42);
+    EXPECT_EQ(opt.Expect("should not panic"), 42);
 }
 
 TEST(Optional, MapEngaged)
@@ -574,112 +573,483 @@ TEST(Optional, StreamOperator)
     EXPECT_FALSE(os.str().empty());
 }
 
-TEST(OptionalRef, ConstructWithRef)
-{
-    int value = 42;
-    Optional<std::reference_wrapper<Int32>> opt(std::ref(value));
+namespace {
 
-    ASSERT_TRUE(opt);
-    EXPECT_EQ(*opt, 42);
+template<typename Opt, typename Arg>
+concept CanReplace = requires(Opt opt, Arg&& arg) { opt.Replace(VIOLET_FWD(Arg, arg)); };
+
+template<typename Opt, typename Arg>
+concept CanUnwrapOr = requires(const Opt& opt, Arg&& arg) { opt.UnwrapOr(VIOLET_FWD(Arg, arg)); };
+
+} // namespace
+
+TEST(OptionalRef, Layout)
+{
+    static_assert(sizeof(Optional<Int32&>) == sizeof(Int32*));
+    static_assert(std::is_trivially_copyable_v<Optional<Int32&>>);
+    static_assert(std::is_trivially_copyable_v<Optional<const String&>>);
 }
 
-TEST(OptionalRef, MutatesThroughRef)
+TEST(OptionalRef, RejectsTemporaries)
 {
-    int value = 10;
+    static_assert(!std::is_constructible_v<Optional<const Int32&>, Int32>);
+    static_assert(!std::is_constructible_v<Optional<const Int32&>, Int32&&>);
+    static_assert(!std::is_constructible_v<Optional<const Int32&>, std::in_place_t, Int32>);
+    static_assert(!std::is_assignable_v<Optional<const Int32&>&, Int32>);
+    static_assert(!CanReplace<Optional<const Int32&>, Int32>);
 
-    Optional<std::reference_wrapper<Int32>> opt(std::ref(value));
-    *opt = 99;
-
-    EXPECT_EQ(value, 99);
+    static_assert(std::is_constructible_v<Optional<const Int32&>, const Int32&>);
+    static_assert(std::is_assignable_v<Optional<const Int32&>&, const Int32&>);
+    static_assert(CanReplace<Optional<const Int32&>, const Int32&>);
 }
 
-TEST(OptionalRef, NoneState)
+TEST(OptionalRef, RespectsConstness)
 {
-    Optional<std::reference_wrapper<Int32>> opt;
+    static_assert(!std::is_constructible_v<Optional<Int32&>, const Int32&>);
+    static_assert(std::is_constructible_v<Optional<const Int32&>, Int32&>);
+}
+
+TEST(OptionalRef, DefaultIsEmpty)
+{
+    Optional<Int32&> opt;
     EXPECT_FALSE(opt);
 }
 
-TEST(OptionalRef, ConstRef)
+TEST(OptionalRef, NothingIsEmpty)
+{
+    Optional<Int32&> opt = Nothing;
+    EXPECT_FALSE(opt);
+    EXPECT_EQ(opt, Nothing);
+}
+
+TEST(OptionalRef, ConstructFromLvalue)
+{
+    Int32 value = 42;
+    Optional<Int32&> opt = value;
+
+    ASSERT_TRUE(opt);
+    EXPECT_EQ(&opt.Value(), &value);
+}
+
+TEST(OptionalRef, ConstructInPlace)
+{
+    Int32 value = 42;
+    Optional<Int32&> opt(std::in_place, value);
+
+    ASSERT_TRUE(opt);
+    EXPECT_EQ(&opt.Value(), &value);
+}
+
+TEST(OptionalRef, MutatesThroughValue)
+{
+    Int32 value = 10;
+    Optional<Int32&> opt = value;
+
+    opt.Value() = 99;
+    EXPECT_EQ(value, 99);
+
+    *opt = 100;
+    EXPECT_EQ(value, 100);
+}
+
+TEST(OptionalRef, ConstOptionalGivesMutableReference)
+{
+    Int32 value = 1;
+    const Optional<Int32&> opt = value;
+
+    static_assert(std::same_as<decltype(opt.Value()), Int32&>);
+    static_assert(std::same_as<decltype(*opt), Int32&>);
+
+    opt.Value() = 2;
+    EXPECT_EQ(value, 2);
+}
+
+TEST(OptionalRef, ConstReference)
 {
     const String s = "hello";
-    Optional<std::reference_wrapper<const String>> opt(std::cref(s));
+    Optional<const String&> opt = s;
+
+    static_assert(std::same_as<decltype(opt.Value()), const String&>);
 
     ASSERT_TRUE(opt);
-    EXPECT_EQ(*opt, "hello");
+    EXPECT_EQ(opt.Value(), "hello");
+    EXPECT_EQ(&opt.Value(), &s);
 }
 
-TEST(OptionalRef, ResetFromValue)
+TEST(OptionalRef, ValueOnTemporaryOptional)
 {
-    int value = 42;
-    Optional<std::reference_wrapper<Int32>> opt(std::ref(value));
-    ASSERT_TRUE(opt);
+    Int32 value = 5;
+    Int32& ref = Optional<Int32&>(value).Value();
+
+    EXPECT_EQ(&ref, &value);
+}
+
+TEST(OptionalRef, ArrowOperator)
+{
+    String s = "hello";
+    Optional<String&> opt = s;
+
+    EXPECT_EQ(opt->size(), 5U);
+
+    opt->append(" world");
+    EXPECT_EQ(s, "hello world");
+}
+
+TEST(OptionalRef, AssignmentRebinds)
+{
+    Int32 a = 1;
+    Int32 b = 2;
+
+    Optional<Int32&> opt = a;
+    opt = b;
+
+    EXPECT_EQ(a, 1);
+    EXPECT_EQ(&opt.Value(), &b);
+}
+
+TEST(OptionalRef, CopyAssignmentRebinds)
+{
+    Int32 a = 1;
+    Int32 b = 2;
+
+    Optional<Int32&> opt_a = a;
+    Optional<Int32&> opt_b = b;
+
+    opt_a = opt_b;
+
+    EXPECT_EQ(a, 1);
+    EXPECT_EQ(&opt_a.Value(), &b);
+}
+
+TEST(OptionalRef, CopySharesReferent)
+{
+    Int32 value = 7;
+    Optional<Int32&> a = value;
+    auto b = a;
+
+    ASSERT_TRUE(b);
+    *b = 77;
+
+    EXPECT_EQ(*a, 77);
+    EXPECT_EQ(value, 77);
+}
+
+TEST(OptionalRef, MoveLeavesReferentUntouched)
+{
+    String value = "hello";
+    Optional<String&> a = value;
+    auto b = VIOLET_MOVE(a);
+
+    ASSERT_TRUE(b);
+    EXPECT_EQ(&b.Value(), &value);
+    EXPECT_EQ(value, "hello");
+}
+
+TEST(OptionalRef, AssignNothing)
+{
+    Int32 value = 42;
+    Optional<Int32&> opt = value;
+
+    opt = Nothing;
+
+    EXPECT_FALSE(opt);
+    EXPECT_EQ(value, 42);
+}
+
+TEST(OptionalRef, ResetLeavesReferentUntouched)
+{
+    String value = "hello";
+    Optional<String&> opt = value;
 
     opt.Reset();
+
     EXPECT_FALSE(opt);
+    EXPECT_EQ(value, "hello");
 }
 
-TEST(OptionalRef, MapThroughRef)
+TEST(OptionalRef, UnwrapReturnsReferent)
 {
-    int value = 5;
-    Optional<std::reference_wrapper<Int32>> opt(std::ref(value));
-    auto mapped = opt.Map([](int ref) -> int { return ref * 2; });
+    Int32 value = 42;
+    Optional<Int32&> opt = value;
 
+    static_assert(std::same_as<decltype(opt.Unwrap()), Int32&>);
+    EXPECT_EQ(&opt.Unwrap(), &value);
+}
+
+TEST(OptionalRef, ExpectReturnsReferent)
+{
+    Int32 value = 42;
+    Optional<Int32&> opt = value;
+
+    static_assert(std::same_as<decltype(opt.Expect("should not panic")), Int32&>);
+    EXPECT_EQ(&opt.Expect("should not panic"), &value);
+}
+
+TEST(OptionalRef, UnwrapOrCopyableReturnsCopy)
+{
+    Int32 value = 42;
+    Optional<const Int32&> engaged = value;
+    Optional<const Int32&> empty;
+
+    static_assert(std::same_as<decltype(engaged.UnwrapOr(0)), Int32>);
+
+    EXPECT_EQ(engaged.UnwrapOr(0), 42);
+    EXPECT_EQ(empty.UnwrapOr(5), 5);
+}
+
+TEST(OptionalRef, UnwrapOrNonCopyableReturnsReference)
+{
+    auto value = std::make_unique<Int32>(1);
+    auto fallback = std::make_unique<Int32>(2);
+
+    Optional<std::unique_ptr<Int32>&> engaged = value;
+    Optional<std::unique_ptr<Int32>&> empty;
+
+    static_assert(std::same_as<decltype(engaged.UnwrapOr(fallback)), std::unique_ptr<Int32>&>);
+    static_assert(!CanUnwrapOr<Optional<std::unique_ptr<Int32>&>, std::unique_ptr<Int32>>);
+
+    EXPECT_EQ(&engaged.UnwrapOr(fallback), &value);
+    EXPECT_EQ(&empty.UnwrapOr(fallback), &fallback);
+}
+
+TEST(OptionalRef, UnwrapOrDefault)
+{
+    Int32 value = 42;
+    Optional<Int32&> engaged = value;
+    Optional<Int32&> empty;
+
+    static_assert(std::same_as<decltype(engaged.UnwrapOrDefault()), Int32>);
+
+    EXPECT_EQ(engaged.UnwrapOrDefault(), 42);
+    EXPECT_EQ(empty.UnwrapOrDefault(), 0);
+}
+
+TEST(OptionalRef, UnwrapUnchecked)
+{
+    Int32 value = 42;
+    Optional<Int32&> opt = value;
+
+    EXPECT_EQ(&opt.UnwrapUnchecked(Unsafe("in test code; this will not fail")), &value);
+}
+
+TEST(OptionalRef, MapByValue)
+{
+    Int32 value = 5;
+    Optional<Int32&> opt = value;
+
+    auto mapped = opt.Map([](Int32& v) -> Int32 { return v * 2; });
+
+    static_assert(std::same_as<decltype(mapped), Optional<Int32>>);
     ASSERT_TRUE(mapped);
     EXPECT_EQ(*mapped, 10);
-
-    // Original unchanged
     EXPECT_EQ(value, 5);
 }
 
-TEST(OptionalRef, MapOnNone)
+TEST(OptionalRef, MapToMemberReference)
 {
-    Optional<std::reference_wrapper<Int32>> opt;
+    struct User {
+        String Name;
+    };
+
+    User user{.Name = "Noel"};
+    Optional<User&> opt = user;
+
+    auto name = opt.Map([](User& u) -> String& { return u.Name; });
+
+    static_assert(std::same_as<decltype(name), Optional<String&>>);
+    ASSERT_TRUE(name);
+    EXPECT_EQ(&name.Value(), &user.Name);
+}
+
+TEST(OptionalRef, MapOnEmpty)
+{
+    Optional<Int32&> opt;
 
     bool called = false;
-    auto mapped = opt.Map([&](int ref) -> int {
+    auto mapped = opt.Map([&](Int32& v) -> Int32 {
         called = true;
-        return ref;
+        return v;
     });
 
     EXPECT_FALSE(mapped);
     EXPECT_FALSE(called);
 }
 
-TEST(OptionalRef, EqualityBetweenRefs)
+TEST(OptionalRef, MapOr)
 {
-    int a = 42;
-    int b = 42;
+    Int32 value = 21;
+    Optional<Int32&> engaged = value;
+    Optional<Int32&> empty;
 
-    Optional<std::reference_wrapper<Int32>> opt_a(std::ref(a));
-    Optional<std::reference_wrapper<Int32>> opt_b(std::ref(b));
-    Optional<std::reference_wrapper<Int32>> none;
-
-    EXPECT_EQ(*opt_a, *opt_b);
-    EXPECT_NE(none, opt_a);
+    EXPECT_EQ(engaged.MapOr(0, [](Int32& v) { return v * 2; }), 42);
+    EXPECT_EQ(empty.MapOr(99, [](Int32& v) { return v * 2; }), 99);
 }
 
-TEST(OptionalRef, CopySemantics)
+TEST(OptionalRef, HasValueAnd)
 {
-    int value = 7;
-    Optional<std::reference_wrapper<Int32>> a(std::ref(value));
-    auto b = a;
+    Int32 value = 42;
+    Optional<Int32&> engaged = value;
+    Optional<Int32&> empty;
 
-    ASSERT_TRUE(b);
-    *b = 77;
-
-    // Both refs point to the same int
-    EXPECT_EQ(*a, 77);
-    EXPECT_EQ(value, 77);
+    EXPECT_TRUE(engaged.HasValueAnd([](Int32& v) { return v > 0; }));
+    EXPECT_FALSE(engaged.HasValueAnd([](Int32& v) { return v < 0; }));
+    EXPECT_FALSE(empty.HasValueAnd([](Int32&) { return true; }));
 }
 
-TEST(OptionalRef, MoveSemantics)
+TEST(OptionalRef, TakeMovesReferenceNotReferent)
 {
-    int value = 3;
-    Optional<std::reference_wrapper<Int32>> a(std::ref(value));
-    auto b = VIOLET_MOVE(a);
+    String value = "hello";
+    Optional<String&> opt = value;
 
+    auto taken = opt.Take();
+
+    static_assert(std::same_as<decltype(taken), Optional<String&>>);
+    EXPECT_FALSE(opt);
+    ASSERT_TRUE(taken);
+    EXPECT_EQ(&taken.Value(), &value);
+    EXPECT_EQ(value, "hello");
+}
+
+TEST(OptionalRef, ReplaceRebinds)
+{
+    Int32 a = 1;
+    Int32 b = 2;
+    Optional<Int32&> opt = a;
+
+    Int32& ref = opt.Replace(b);
+
+    EXPECT_EQ(&ref, &b);
+    EXPECT_EQ(&opt.Value(), &b);
+    EXPECT_EQ(a, 1);
+}
+
+TEST(OptionalRef, EqualityComparesValuesNotAddresses)
+{
+    Int32 a = 42;
+    Int32 b = 42;
+    Int32 c = 7;
+
+    Optional<Int32&> opt_a = a;
+    Optional<Int32&> opt_b = b;
+    Optional<Int32&> opt_c = c;
+    Optional<Int32&> none;
+
+    EXPECT_EQ(opt_a, opt_b);
+    EXPECT_NE(opt_a, opt_c);
+    EXPECT_NE(opt_a, none);
+    EXPECT_EQ(none, Nothing);
+}
+
+TEST(OptionalRef, EqualityWithValueAndSome)
+{
+    Int32 value = 42;
+    Optional<Int32&> opt = value;
+
+    EXPECT_EQ(opt, 42);
+    EXPECT_NE(opt, 0);
+    EXPECT_TRUE(opt == Some<Int32>(42));
+}
+
+TEST(OptionalRef, Ordering)
+{
+    Int32 one = 1;
+    Int32 two = 2;
+
+    Optional<Int32&> opt_one = one;
+    Optional<Int32&> opt_two = two;
+    Optional<Int32&> none;
+
+    EXPECT_LT(opt_one, opt_two);
+    EXPECT_LT(none, opt_one);
+    EXPECT_GT(opt_two, 1);
+}
+
+TEST(OptionalRef, ToString)
+{
+    Int32 value = 42;
+    Optional<Int32&> engaged = value;
+    Optional<Int32&> empty;
+
+    EXPECT_FALSE(engaged.ToString().empty());
+    EXPECT_FALSE(empty.ToString().empty());
+}
+
+namespace {
+
+constexpr Int32 kStaticValue = 42;
+
+consteval auto ConstexprRefRebind() -> Int32
+{
+    Int32 a = 1;
+    Int32 b = 2;
+
+    Optional<Int32&> opt = a;
+    opt.Value() = 10;
+
+    opt = b;
+    opt.Value() += 5;
+
+    return a + b; // 10 + 7
+}
+
+consteval auto ConstexprRefTake() -> bool
+{
+    Int32 value = 3;
+    Optional<Int32&> opt = value;
+    auto taken = opt.Take();
+
+    return !opt && taken && &taken.Value() == &value;
+}
+
+} // namespace
+
+TEST(OptionalRefConstexpr, StaticReferent)
+{
+    constexpr Optional<const Int32&> opt = kStaticValue;
+    static_assert(opt);
+    static_assert(opt.Value() == 42);
+    static_assert(opt == 42);
+}
+
+TEST(OptionalRefConstexpr, EmptyIsDisengaged)
+{
+    constexpr Optional<const Int32&> opt;
+    static_assert(!opt);
+    static_assert(opt.UnwrapOr(5) == 5);
+}
+
+TEST(OptionalRefConsteval, Rebind)
+{
+    static_assert(ConstexprRefRebind() == 17);
+}
+
+TEST(OptionalRefConsteval, Take)
+{
+    static_assert(ConstexprRefTake());
+}
+
+TEST(OptionalTraits, OptionalTypeOfReference)
+{
+    static_assert(std::same_as<optional_type_t<Optional<Int32&>>, Int32&>);
+    static_assert(std::same_as<Optional<Int32&>::value_type, Int32>);
+    static_assert(std::same_as<Optional<const Int32&>::value_type, const Int32>);
+}
+
+TEST(Optional, MovedFromStaysEngaged)
+{
+    Optional<String> a = String("hello");
+    Optional<String> b = VIOLET_MOVE(a);
+
+    EXPECT_TRUE(a); // NOLINT(bugprone-use-after-move): matches std::optional; use Take() to empty it
     ASSERT_TRUE(b);
-    EXPECT_EQ(*b, 3);
+    EXPECT_EQ(b.Value(), "hello");
+}
+
+TEST(Optional, TriviallyCopyable)
+{
+    static_assert(std::is_trivially_copyable_v<Optional<Int32>>);
+    static_assert(!std::is_copy_constructible_v<Optional<std::unique_ptr<Int32>>>);
+    static_assert(std::is_move_constructible_v<Optional<std::unique_ptr<Int32>>>);
 }
 
 TEST(OptionalFromStd, ConstructFromEngagedStdOptional)
@@ -1035,9 +1405,6 @@ consteval auto ConstexprMoveConstruct() -> int
 {
     Optional<Int32> a = 42;
     Optional<Int32> b(static_cast<Optional<Int32>&&>(a));
-    if (a) {
-        return -1; // should be disengaged
-    }
     return b.Value();
 }
 
@@ -1189,7 +1556,6 @@ TEST(OptionalNonAssignable, MoveAssignBothEngaged)
     ASSERT_TRUE(a);
     EXPECT_EQ(a->Key, "key2");
     EXPECT_EQ(a->Value, "val2");
-    EXPECT_FALSE(b);
 }
 
 TEST(OptionalNonAssignable, MoveAssignFromEngagedToEmpty)
@@ -1201,7 +1567,6 @@ TEST(OptionalNonAssignable, MoveAssignFromEngagedToEmpty)
 
     ASSERT_TRUE(a);
     EXPECT_EQ(a->Key, "key");
-    EXPECT_FALSE(b);
 }
 
 TEST(OptionalNonAssignable, MoveAssignFromEmptyToEngaged)
@@ -1224,7 +1589,6 @@ TEST(OptionalMoveOnlyNonAssignable, MoveAssignBothEngaged)
     ASSERT_TRUE(a);
     EXPECT_EQ(a->ID, 2);
     EXPECT_EQ(*a->Data, 200);
-    EXPECT_FALSE(b);
 }
 
 TEST(OptionalMoveOnlyNonAssignable, MoveAssignFromEngagedToEmpty)
@@ -1237,7 +1601,6 @@ TEST(OptionalMoveOnlyNonAssignable, MoveAssignFromEngagedToEmpty)
     ASSERT_TRUE(a);
     EXPECT_EQ(a->ID, 3);
     EXPECT_EQ(*a->Data, 300);
-    EXPECT_FALSE(b);
 }
 
 TEST(OptionalMoveOnlyNonAssignable, MoveAssignFromEmptyToEngaged)
@@ -1275,7 +1638,6 @@ TEST(OptionalSTLConstTemplate, MoveAssignBothEngaged)
     ASSERT_TRUE(a);
     EXPECT_EQ(a->first, "key2");
     EXPECT_EQ(a->second, "val2");
-    EXPECT_FALSE(b);
 }
 
 TEST(OptionalSTLConstTemplate, ChainedAssignment)
@@ -1291,7 +1653,6 @@ TEST(OptionalSTLConstTemplate, ChainedAssignment)
 
     a = VIOLET_MOVE(c);
     EXPECT_EQ(a->first, "c");
-    EXPECT_FALSE(c);
 
     a = Optional<P>{};
     EXPECT_FALSE(a);

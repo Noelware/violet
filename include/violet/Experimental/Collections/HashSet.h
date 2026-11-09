@@ -115,10 +115,10 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashSet final {
     using size_type = UInt;
 
     /// A mutable iterator over `(key, value)` pairs, delegating to [`implementation::iterator`].
-    using iterator = typename implementation::iterator;
+    using iterator = implementation::iterator;
 
     /// A read-only iterator over `(key, value)` pairs, delegating to [`implementation::const_iterator`].
-    using const_iterator = typename implementation::const_iterator;
+    using const_iterator = implementation::const_iterator;
 
     /// The type returned by wrapping [`implementation`] in Violet's iterator framework, used
     /// to expose combinator-based iteration over this map.
@@ -193,14 +193,14 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") HashSet final {
     /// such element is present.
     /// @tparam Q any type equality-comparable with `T`, which enables heterogeneous (transparent) lookup
     template<std::equality_comparable_with<T> Q>
-    auto Get(const Q& value) const -> Optional<std::reference_wrapper<const T>>
+    auto Get(const Q& value) const -> Optional<const T&>
     {
         auto it = this->n_impl.find(value);
         if (it == this->n_impl.end()) {
             return Nothing;
         }
 
-        return std::cref(*it);
+        return *it;
     }
 
     /// Inserts `value` into the set, returning **true** if it was newly inserted, or **false**
