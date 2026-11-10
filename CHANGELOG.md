@@ -37,7 +37,11 @@ availableAt:
     - `Unwrap`, `Expect`, `UnwrapOr`, and `UnwrapOrDefault` have `const&` and `&&` overloads only, and `UnwrapOr`/`UnwrapOrDefault` are only `noexcept` when copying or moving `T` is
     - `MapOr` returns <code>std::remove_cvref_t\<U\></code>, so passing an lvalue fallback no longer makes it return a reference
     - `operator!=` is no longer declared; C++20 rewrites `a != b` from `operator==`, so existing code keeps working
-    - `operator==` with a value takes <code>const value_type&</code>, so <code>Optional\<T&\></code> can be compared with `const` objects and temporaries
+    - `operator==` with a value accepts any type the held value is comparable with, like `std::optional`. Comparing <code>Optional\<String\></code> with a string literal is no longer ambiguous, and <code>Optional\<T&\></code> can be compared with `const` objects and temporaries
+    - The `std::optional` assignment, comparison, and conversion overloads are now templates, so they never name <code>std::optional\<T&\></code>. Before, comparing an <code>Optional\<T&\></code> with a value failed to compile against libstdc++
+- Add **UnwrapOrElse**, **TakeIf**, **GetOrInsert**, **GetOrInsertDefault**, **Or**, **OrElse**, **Xor**, and **Filter** to `Optional`, modeled after Rust's `Option` ([`@auguwu`])
+    - All but `GetOrInsertDefault` also work on <code>Optional\<T&\></code>, without copying the referred-to object. `GetOrInsert` on <code>Optional\<T&\></code> only accepts lvalues
+    - `UnwrapOrElse` on <code>Optional\<T&\></code> returns a reference when the callback returns one, and a copy otherwise
 - Add **VIOLET_UNWRAP(decl, expr)** macro, which declares `decl` from an `Optional`'s value or returns `Nothing` from the enclosing function if it is empty. Unlike `VIOLET_TRY`, it doesn't use statement expressions, so it works on every compiler ([`@auguwu`])
 - **Some\<T\>** can be default-constructed when `T` is, and its copy and move constructors are constrained on `std::copyable<T>` and `std::movable<T>` ([`@auguwu`])
 - Fix **RefCnt**'s `Traits::BumpRef`/`DecRef`/`Valid` `noexcept` checks to use `std::is_nothrow_invocable_v` instead of a bare `noexcept(...)` expression ([`@auguwu`])

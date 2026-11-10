@@ -30,6 +30,7 @@
 #endif
 
 #include <functional>
+#include <utility>
 
 #if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
 #include <optional>
@@ -713,9 +714,10 @@ public:
     /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
     ///
     /// @param other the `std::optional` to copy from
-    constexpr auto operator=(const std::optional<T>& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
+    template<typename U>
+        requires(!kIsReference && std::same_as<U, T> && std::is_copy_constructible_v<T>)
+    constexpr auto operator=(const std::optional<U>& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
         -> Optional&
-        requires(!kIsReference && std::is_copy_constructible_v<T>)
     {
         if (other.has_value()) {
             this->Construct(*other);
@@ -733,8 +735,9 @@ public:
     /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
     ///
     /// @param other the `std::optional` to move from
-    constexpr auto operator=(std::optional<T>&& other) noexcept(std::is_nothrow_move_constructible_v<T>) -> Optional&
-        requires(!kIsReference && std::is_move_constructible_v<T>)
+    template<typename U>
+        requires(!kIsReference && std::same_as<U, T> && std::is_move_constructible_v<T>)
+    constexpr auto operator=(std::optional<U>&& other) noexcept(std::is_nothrow_move_constructible_v<T>) -> Optional&
     {
         if (other.has_value()) {
             this->Construct(*VIOLET_MOVE(other));
@@ -1403,6 +1406,97 @@ public:
         return this->HasValue() ? unqualified_type(*this->Data) : unqualified_type{};
     }
 
+    /// Returns a copy of the held value, or the result of calling `fun` if this `Optional` is empty.
+    ///
+    /// Unlike [`UnwrapOr`], the fallback is only computed when it's needed.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::unwrap_or_else`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.unwrap_or_else).
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<violet::String> name = violet::Nothing;
+    /// VIOLET_ASSERT0(name.UnwrapOrElse([] { return violet::String("anonymous"); }) == "anonymous");
+    /// ```
+    ///
+    /// @param fun called with no arguments to produce the fallback
+    /// @return the held value or `fun()`
+    template<typename Fun>
+        requires(!kIsReference && std::is_copy_constructible_v<value_type> && callable_returns<Fun, unqualified_type>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto UnwrapOrElse(Fun&& fun) const& -> unqualified_type
+    {
+        if (this->HasValue()) {
+            return this->Data;
+        }
+
+        return std::invoke(VIOLET_FWD(Fun, fun));
+    }
+
+    /// Overload of [`UnwrapOrElse`] for rvalues - moves the held value out instead of copying it.
+    /// @param fun called with no arguments to produce the fallback
+    template<typename Fun>
+        requires(!kIsReference && std::is_move_constructible_v<value_type> && callable_returns<Fun, unqualified_type>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto UnwrapOrElse(Fun&& fun) && -> unqualified_type
+    {
+        if (this->HasValue()) {
+            return VIOLET_MOVE(this->Data);
+        }
+
+        return std::invoke(VIOLET_FWD(Fun, fun));
+    }
+
+    /// Returns a copy of the referred-to object, or the result of calling `fun` if this `Optional` is empty.
+    ///
+    /// Chosen when `fun` returns a value. Returning a reference here would dangle from `fun`'s
+    /// temporary result, so this always copies; `U` must be copyable.
+    ///
+    /// @param fun called with no arguments to produce the fallback
+    /// @return a copy of the referred-to object or `fun()`
+    template<typename Fun>
+        requires(kIsReference && callable<Fun> && !std::is_lvalue_reference_v<std::invoke_result_t<Fun>>
+            && std::is_copy_constructible_v<value_type> && callable_returns<Fun, unqualified_type>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto UnwrapOrElse(Fun&& fun) const& -> unqualified_type
+    {
+        if (this->HasValue()) {
+            return *this->Data;
+        }
+
+        return std::invoke(VIOLET_FWD(Fun, fun));
+    }
+
+    /// Returns the referred-to object, or the object `fun` returns a reference to if this `Optional`
+    /// is empty.
+    ///
+    /// Chosen when `fun` returns an lvalue reference, so neither path copies. This also works when
+    /// `U` isn't copyable.
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::String fallback = "anonymous";
+    /// violet::Optional<violet::String&> none = violet::Nothing;
+    ///
+    /// violet::String& name = none.UnwrapOrElse([&]() -> violet::String& { return fallback; });
+    /// VIOLET_ASSERT0(&name == &fallback);
+    /// ```
+    ///
+    /// @param fun called with no arguments; must return an lvalue reference that outlives the result
+    /// @return the referred-to object or `fun()`
+    template<typename Fun>
+        requires(kIsReference && callable<Fun> && std::is_lvalue_reference_v<std::invoke_result_t<Fun>>
+            && std::convertible_to<std::invoke_result_t<Fun>, value_type&>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto UnwrapOrElse(Fun&& fun) const& -> value_type&
+    {
+        if (this->HasValue()) {
+            return *this->Data;
+        }
+
+        return std::invoke(VIOLET_FWD(Fun, fun));
+    }
+
     /// Returns a reference to the held value without checking that one is present.
     ///
     /// ## Safety
@@ -1756,8 +1850,244 @@ public:
         return VIOLET_FWD(U, fallback);
     }
 
-    /// Takes the held value out, leaving this `Optional` empty.
+    /// Returns this `Optional` if it holds a value that satisfies `pred`, otherwise [`Nothing`].
+    /// Equivalent to Rust's
+    /// [`Option::filter`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.filter).
     ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> value = violet::Some(4);
+    ///
+    /// VIOLET_ASSERT0(value.Filter([](const int& x) { return x % 2 == 0; }).HasValue());
+    /// VIOLET_ASSERT0(!value.Filter([](const int& x) { return x > 10; }).HasValue());
+    /// ```
+    ///
+    /// @param pred the predicate, called with the held value
+    /// @return a copy of this `Optional` if `pred` returns `true`, `Nothing` otherwise
+    template<typename Pred>
+        requires(!kIsReference
+            && std::is_copy_constructible_v<value_type> && callable_returns<Pred, bool, const value_type&>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Filter(Pred&& pred) const& -> Optional
+    {
+        if (this->HasValue() && std::invoke(VIOLET_FWD(Pred, pred), this->Data)) {
+            return *this;
+        }
+
+        return Nothing;
+    }
+
+    /// Overload of [`Filter`] for rvalues - moves the held value into the result instead of copying it.
+    /// @param pred the predicate, called with the held value
+    /// @return this `Optional`, moved, if `pred` returns `true`, `Nothing` otherwise
+    template<typename Pred>
+        requires(!kIsReference
+            && std::is_move_constructible_v<value_type> && callable_returns<Pred, bool, const value_type&>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Filter(Pred&& pred) && -> Optional
+    {
+        if (this->HasValue() && std::invoke(VIOLET_FWD(Pred, pred), std::as_const(this->Data))) {
+            return VIOLET_MOVE(*this);
+        }
+
+        return Nothing;
+    }
+
+    /// Returns this `Optional<U&>` if it refers to an object that satisfies `pred`, otherwise [`Nothing`].
+    /// `pred` receives `U&`, whatever the constness of this `Optional`.
+    ///
+    /// @param pred the predicate, called with the referred-to object
+    /// @return an `Optional<U&>` referring to the same object if `pred` returns `true`, `Nothing` otherwise
+    template<typename Pred>
+        requires(kIsReference && callable_returns<Pred, bool, value_type&>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Filter(Pred&& pred) const& -> Optional
+    {
+        if (this->HasValue() && std::invoke(VIOLET_FWD(Pred, pred), *this->Data)) {
+            return *this;
+        }
+
+        return Nothing;
+    }
+
+    /// Returns this `Optional` if it holds a value, otherwise `other`.
+    /// `other` is always evaluated; use [`OrElse`] to compute it only when needed.
+    ///
+    /// Equivalent to Rust's [`Option::or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.or).
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> none = violet::Nothing;
+    /// VIOLET_ASSERT0(none.Or(violet::Some(2)).Value() == 2);
+    /// ```
+    ///
+    /// @param other the fallback `Optional`
+    /// @return a copy of this `Optional` if it holds a value, `other` otherwise
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Or(Optional other) const& -> Optional
+        requires(!kIsReference && std::is_copy_constructible_v<value_type>)
+    {
+        if (this->HasValue()) {
+            return *this;
+        }
+
+        return other;
+    }
+
+    /// Overload of [`Or`] for rvalues - moves this `Optional` into the result instead of copying it.
+    /// @param other the fallback `Optional`
+    /// @return this `Optional`, moved, if it holds a value, `other` otherwise
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Or(Optional other) && -> Optional
+        requires(!kIsReference && std::is_move_constructible_v<value_type>)
+    {
+        if (this->HasValue()) {
+            return VIOLET_MOVE(*this);
+        }
+
+        return other;
+    }
+
+    /// Returns this `Optional<U&>` if it refers to an object, otherwise `other`.
+    /// @param other the fallback `Optional<U&>`
+    /// @return an `Optional<U&>` referring to this or `other`'s object
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Or(Optional other) const& noexcept -> Optional
+        requires kIsReference
+    {
+        if (this->HasValue()) {
+            return *this;
+        }
+
+        return other;
+    }
+
+    /// Returns this `Optional` if it holds a value, otherwise the result of calling `fun`.
+    /// Equivalent to Rust's
+    /// [`Option::or_else`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.or_else).
+    ///
+    /// ## Example
+    /// ```cpp
+    /// auto FromEnv() -> violet::Optional<violet::String>;
+    /// auto FromConfig() -> violet::Optional<violet::String>;
+    ///
+    /// auto token = FromEnv().OrElse([] { return FromConfig(); });
+    /// ```
+    ///
+    /// @param fun called with no arguments to produce the fallback `Optional`
+    /// @return a copy of this `Optional` if it holds a value, `fun()` otherwise
+    template<typename Fun>
+        requires(!kIsReference && std::is_copy_constructible_v<value_type> && callable_returns<Fun, Optional>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto OrElse(Fun&& fun) const& -> Optional
+    {
+        if (this->HasValue()) {
+            return *this;
+        }
+
+        return std::invoke(VIOLET_FWD(Fun, fun));
+    }
+
+    /// Overload of [`OrElse`] for rvalues - moves this `Optional` into the result instead of copying it.
+    /// @param fun called with no arguments to produce the fallback `Optional`
+    /// @return this `Optional`, moved, if it holds a value, `fun()` otherwise
+    template<typename Fun>
+        requires(!kIsReference && std::is_move_constructible_v<value_type> && callable_returns<Fun, Optional>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto OrElse(Fun&& fun) && -> Optional
+    {
+        if (this->HasValue()) {
+            return VIOLET_MOVE(*this);
+        }
+
+        return std::invoke(VIOLET_FWD(Fun, fun));
+    }
+
+    /// Returns this `Optional<U&>` if it refers to an object, otherwise the result of calling `fun`.
+    /// @param fun called with no arguments to produce the fallback `Optional<U&>`
+    /// @return an `Optional<U&>` referring to this or `fun()`'s object
+    template<typename Fun>
+        requires(kIsReference && callable_returns<Fun, Optional>)
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto OrElse(Fun&& fun) const& -> Optional
+    {
+        if (this->HasValue()) {
+            return *this;
+        }
+
+        return std::invoke(VIOLET_FWD(Fun, fun));
+    }
+
+    /// Returns whichever of this `Optional` and `other` holds a value, if exactly one does; otherwise
+    /// [`Nothing`].
+    /// Equivalent to Rust's [`Option::xor`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.xor).
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> some = violet::Some(1);
+    /// violet::Optional<int> none = violet::Nothing;
+    ///
+    /// VIOLET_ASSERT0(some.Xor(none).Value() == 1);
+    /// VIOLET_ASSERT0(!some.Xor(violet::Some(2)).HasValue());
+    /// VIOLET_ASSERT0(!none.Xor(violet::Nothing).HasValue());
+    /// ```
+    ///
+    /// @param other the `Optional` to compare against
+    /// @return the only engaged `Optional` of the two, or `Nothing`
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Xor(Optional other) const& -> Optional
+        requires(!kIsReference && std::is_copy_constructible_v<value_type>)
+    {
+        if (this->HasValue() && !other.HasValue()) {
+            return *this;
+        }
+
+        if (!this->HasValue() && other.HasValue()) {
+            return other;
+        }
+
+        return Nothing;
+    }
+
+    /// Overload of [`Xor`] for rvalues - moves this `Optional` into the result instead of copying it.
+    /// @param other the `Optional` to compare against
+    /// @return the only engaged `Optional` of the two, or `Nothing`
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Xor(Optional other) && -> Optional
+        requires(!kIsReference && std::is_move_constructible_v<value_type>)
+    {
+        if (this->HasValue() && !other.HasValue()) {
+            return VIOLET_MOVE(*this);
+        }
+
+        if (!this->HasValue() && other.HasValue()) {
+            return other;
+        }
+
+        return Nothing;
+    }
+
+    /// Returns whichever of this `Optional<U&>` and `other` refers to an object, if exactly one does;
+    /// otherwise [`Nothing`].
+    ///
+    /// @param other the `Optional<U&>` to compare against
+    /// @return the only engaged `Optional<U&>` of the two, or `Nothing`
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto Xor(Optional other) const& noexcept -> Optional
+        requires kIsReference
+    {
+        if (this->HasValue() && !other.HasValue()) {
+            return *this;
+        }
+
+        if (!this->HasValue() && other.HasValue()) {
+            return other;
+        }
+
+        return Nothing;
+    }
+
+    /// Takes the held value out, leaving this `Optional` empty.
     /// Equivalent to Rust's [`Option::take`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.take).
     ///
     /// ## Remarks
@@ -1824,6 +2154,117 @@ public:
         requires kIsReference
     = delete;
 
+    /// Takes the held value out, leaving this `Optional` empty, but only if `pred` returns `true` for it.
+    /// `pred` receives a mutable reference, so it may modify the value before deciding.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::take_if`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.take_if).
+    ///
+    /// ## Remarks
+    /// For `Optional<U&>`, this takes the reference, not the referred-to object, like [`Take`].
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> value = violet::Some(4);
+    ///
+    /// auto odd = value.TakeIf([](int& x) { return x % 2 != 0; });
+    /// VIOLET_ASSERT0(!odd.HasValue() && value.HasValue());
+    ///
+    /// auto even = value.TakeIf([](int& x) { return x % 2 == 0; });
+    /// VIOLET_ASSERT0(even.Value() == 4 && !value.HasValue());
+    /// ```
+    ///
+    /// @param pred the predicate, called with the held value
+    /// @return the previous contents if `pred` returned `true`, `Nothing` otherwise
+    template<typename Pred>
+        requires(
+            callable_returns<Pred, bool, value_type&> && (kIsReference || std::is_move_constructible_v<value_type>))
+    [[nodiscard]]
+    NOELDOC_SINCE("current") constexpr auto TakeIf(Pred&& pred) -> Optional
+    {
+        if (this->HasValue() && std::invoke(VIOLET_FWD(Pred, pred), this->Value())) {
+            return this->Take();
+        }
+
+        return Nothing;
+    }
+
+    /// Returns a reference to the held value, inserting `value` first if this `Optional` is empty.
+    /// `value` is always evaluated; it is discarded if a value is already present.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::get_or_insert`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.get_or_insert).
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<int> none = violet::Nothing;
+    /// none.GetOrInsert(5) += 1;
+    ///
+    /// VIOLET_ASSERT0(none.Value() == 6);
+    /// ```
+    ///
+    /// @param value the value to insert if this `Optional` is empty
+    /// @return a reference to the held value
+    NOELDOC_SINCE("current")
+    constexpr auto GetOrInsert(unqualified_type value) & noexcept(
+        std::is_nothrow_constructible_v<T, unqualified_type&&>) VIOLET_LIFETIMEBOUND -> value_type&
+        requires(!kIsReference && std::is_constructible_v<T, unqualified_type &&>)
+    {
+        if (!this->HasValue()) {
+            this->Construct(VIOLET_MOVE(value));
+        }
+
+        return this->Data;
+    }
+
+    /// Returns the referred-to object, binding this `Optional<U&>` to `value` first if it is empty.
+    /// @param value the object to refer to if this `Optional` is empty; it must outlive every use of this `Optional`
+    /// @return the referred-to object
+    NOELDOC_SINCE("current")
+    constexpr auto GetOrInsert(value_type& value) & noexcept -> value_type&
+        requires kIsReference
+    {
+        if (!this->HasValue()) {
+            this->Construct(value);
+        }
+
+        return *this->Data;
+    }
+
+    NOELDOC_SINCE("current")
+    constexpr auto GetOrInsert(value_type&&) & -> value_type&
+        requires kIsReference
+    = delete;
+
+    /// Returns a reference to the held value, inserting a value-initialized `T` first if this
+    /// `Optional` is empty.
+    ///
+    /// Not available for `Optional<U&>`, since there is no object a default could refer to.
+    ///
+    /// Equivalent to Rust's
+    /// [`Option::get_or_insert_default`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.get_or_insert_default).
+    ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<violet::Vec<int>> items = violet::Nothing;
+    /// items.GetOrInsertDefault().push_back(1);
+    ///
+    /// VIOLET_ASSERT0(items->size() == 1);
+    /// ```
+    ///
+    /// @return a reference to the held value
+    NOELDOC_SINCE("current")
+    constexpr auto GetOrInsertDefault() & noexcept(std::is_nothrow_default_constructible_v<T>) VIOLET_LIFETIMEBOUND
+        -> value_type&
+        requires(!kIsReference && std::is_default_constructible_v<T>)
+    {
+        if (!this->HasValue()) {
+            this->Construct();
+        }
+
+        return this->Data;
+    }
+
     /// Empties this `Optional`, destroying the held value if there is one.
     VIOLET_REINITIALIZES_MEMORY
     constexpr void Reset() noexcept
@@ -1840,8 +2281,9 @@ public:
     /// `Optional<U&>`, since `std::optional<U&>` does not exist before C++26.
     ///
     /// @return a `std::optional` with the same contents
-    constexpr VIOLET_EXPLICIT operator std::optional<T>() const& noexcept(std::is_nothrow_copy_constructible_v<T>)
-        requires(!kIsReference && std::is_copy_constructible_v<T>)
+    template<typename U = T>
+        requires(!kIsReference && std::same_as<U, T> && std::is_copy_constructible_v<T>)
+    constexpr VIOLET_EXPLICIT operator std::optional<U>() const& noexcept(std::is_nothrow_copy_constructible_v<T>)
     {
         if (this->HasValue()) {
             return std::optional<T>(std::in_place, this->Data);
@@ -1852,9 +2294,10 @@ public:
 
     /// Converts to a [`std::optional`] by moving the value out, if any.
     /// @return a `std::optional` with the same contents
+    template<typename U = T>
+        requires(!kIsReference && std::same_as<U, T> && std::is_move_constructible_v<T>)
     NOELDOC_SINCE("current")
-    constexpr VIOLET_EXPLICIT operator std::optional<T>() && noexcept(std::is_nothrow_move_constructible_v<T>)
-        requires(!kIsReference && std::is_move_constructible_v<T>)
+    constexpr VIOLET_EXPLICIT operator std::optional<U>() && noexcept(std::is_nothrow_move_constructible_v<T>)
     {
         if (this->HasValue()) {
             return std::optional<T>(std::in_place, VIOLET_MOVE(this->Data));
@@ -1900,9 +2343,10 @@ public:
     /// Compares with a [`std::optional`]; equal if both are empty, or both hold values that compare equal.
     /// @param other the `std::optional` to compare with
     /// @return `true` if both are empty or both values are equal
+    template<typename U>
+        requires(!kIsReference && std::same_as<U, T> && std::equality_comparable<value_type>)
     [[nodiscard]]
-    constexpr auto operator==(const std::optional<T>& other) const -> bool
-        requires(!kIsReference && std::equality_comparable<value_type>)
+    constexpr auto operator==(const std::optional<U>& other) const -> bool
     {
         if (this->HasValue() != other.has_value()) {
             return false;
@@ -1929,16 +2373,42 @@ public:
 
     /// Returns `true` if this `Optional` holds a value equal to `other`.
     ///
+    /// `other` can be any type the held value compares equal with, like `std::optional`'s
+    /// heterogeneous comparison.
+    ///
     /// ## Remarks
     /// ### Since `{current}`
-    /// Takes `const value_type&` rather than `const T&`, so `Optional<U&>` can be compared with
-    /// `const` objects and temporaries.
+    /// This now accepts any type comparable with `T` instead of only `const T&`. Comparing with a
+    /// value that converts to both `T` and `Optional<T>`, such as a string literal against
+    /// `Optional<String>`, was ambiguous before. `Optional<U&>` can also be compared with `const`
+    /// objects and temporaries.
     ///
+    /// ## Example
+    /// ```cpp
+    /// violet::Optional<violet::String> name = violet::String("Noel");
+    /// VIOLET_ASSERT0(name == "Noel");
+    /// ```
+    ///
+    /// @tparam U the type of the value to compare with
     /// @param other the value to compare with
     /// @return `true` if a value is present and equal to `other`
+    template<typename U>
+    // clang-format off
+    requires(
+        !instanceof_v<Optional, std::remove_cvref_t<U>> &&
+        !instanceof_v<Some, std::remove_cvref_t<U>> &&
+        !std::same_as<std::remove_cvref_t<U>, nothing_t> &&
+        #if VIOLET_FEATURE(BACKWARDS_STL_OPTIONAL)
+        !instanceof_v<std::optional, std::remove_cvref_t<U>> &&
+        !std::same_as<std::remove_cvref_t<U>, std::nullopt_t> &&
+        #endif
+        requires(const value_type& lhs, const U& rhs) {
+            { lhs == rhs } -> std::convertible_to<bool>;
+        }
+    )
+    // clang-format on
     [[nodiscard]]
-    constexpr auto operator==(const value_type& other) const -> bool
-        requires(std::equality_comparable<value_type>)
+    constexpr auto operator==(const U& other) const -> bool
     {
         return this->HasValue() && this->Value() == other;
     }
@@ -2009,10 +2479,10 @@ public:
     /// Orders this `Optional` against a [`std::optional`], with the same rules as comparing two `Optional`s.
     /// @param other the `std::optional` to compare with
     /// @return the ordering of the two optionals
-    template<typename U = value_type>
-        requires(!kIsReference && std::three_way_comparable<U>)
+    template<typename U>
+        requires(!kIsReference && std::same_as<U, T> && std::three_way_comparable<U>)
     [[nodiscard]]
-    NOELDOC_SINCE("26.05.08") constexpr auto operator<=>(const std::optional<T>& other) const
+    NOELDOC_SINCE("26.05.08") constexpr auto operator<=>(const std::optional<U>& other) const
         -> std::compare_three_way_result_t<U>
     {
         if (this->HasValue() && other.has_value()) {

@@ -581,6 +581,9 @@ concept CanReplace = requires(Opt opt, Arg&& arg) { opt.Replace(VIOLET_FWD(Arg, 
 template<typename Opt, typename Arg>
 concept CanUnwrapOr = requires(const Opt& opt, Arg&& arg) { opt.UnwrapOr(VIOLET_FWD(Arg, arg)); };
 
+template<typename Opt, typename Arg>
+concept CanGetOrInsert = requires(Opt& opt, Arg&& arg) { opt.GetOrInsert(VIOLET_FWD(Arg, arg)); };
+
 } // namespace
 
 TEST(OptionalRef, Layout)
@@ -1050,6 +1053,193 @@ TEST(Optional, TriviallyCopyable)
     static_assert(std::is_trivially_copyable_v<Optional<Int32>>);
     static_assert(!std::is_copy_constructible_v<Optional<std::unique_ptr<Int32>>>);
     static_assert(std::is_move_constructible_v<Optional<std::unique_ptr<Int32>>>);
+}
+
+TEST(OptionalCombinators, UnwrapOrElse)
+{
+    Optional<String> some = String("noel");
+    Optional<String> none;
+
+    bool called = false;
+    EXPECT_EQ(some.UnwrapOrElse([&] {
+        called = true;
+        return String("fallback");
+    }),
+        "noel");
+    EXPECT_FALSE(called);
+
+    EXPECT_EQ(none.UnwrapOrElse([] { return String("fallback"); }), "fallback");
+}
+
+TEST(OptionalCombinators, UnwrapOrElseReference)
+{
+    String value = "noel";
+    String fallback = "fallback";
+
+    Optional<String&> some = value;
+    Optional<String&> none;
+
+    static_assert(std::same_as<decltype(none.UnwrapOrElse([&]() -> String& { return fallback; })), String&>);
+    static_assert(std::same_as<decltype(none.UnwrapOrElse([] { return String("x"); })), String>);
+
+    EXPECT_EQ(&some.UnwrapOrElse([&]() -> String& { return fallback; }), &value);
+    EXPECT_EQ(&none.UnwrapOrElse([&]() -> String& { return fallback; }), &fallback);
+    EXPECT_EQ(none.UnwrapOrElse([] { return String("copy"); }), "copy");
+}
+
+TEST(OptionalCombinators, Filter)
+{
+    Optional<Int32> value = 4;
+    Optional<Int32> none;
+
+    EXPECT_EQ(value.Filter([](const Int32& x) { return x % 2 == 0; }), 4);
+    EXPECT_FALSE(value.Filter([](const Int32& x) { return x > 10; }));
+    EXPECT_FALSE(none.Filter([](const Int32&) { return true; }));
+    EXPECT_EQ(Optional<String>(String("hi")).Filter([](const String& s) { return !s.empty(); }), "hi");
+}
+
+TEST(OptionalCombinators, FilterReference)
+{
+    Int32 value = 4;
+    Optional<Int32&> opt = value;
+
+    auto kept = opt.Filter([](Int32& x) { return x == 4; });
+    ASSERT_TRUE(kept);
+    EXPECT_EQ(&kept.Value(), &value);
+    EXPECT_FALSE(opt.Filter([](Int32& x) { return x == 5; }));
+}
+
+TEST(OptionalCombinators, Or)
+{
+    Optional<Int32> some = 1;
+    Optional<Int32> none;
+
+    EXPECT_EQ(some.Or(Some(2)), 1);
+    EXPECT_EQ(none.Or(Some(2)), 2);
+    EXPECT_FALSE(none.Or(Nothing));
+}
+
+TEST(OptionalCombinators, OrElse)
+{
+    Optional<Int32> some = 1;
+    Optional<Int32> none;
+
+    bool called = false;
+    EXPECT_EQ(some.OrElse([&] {
+        called = true;
+        return Optional<Int32>(2);
+    }),
+        1);
+    EXPECT_FALSE(called);
+
+    EXPECT_EQ(none.OrElse([] { return Optional<Int32>(2); }), 2);
+    EXPECT_FALSE(none.OrElse([] { return Optional<Int32>(Nothing); }));
+}
+
+TEST(OptionalCombinators, OrReference)
+{
+    Int32 a = 1;
+    Int32 b = 2;
+
+    Optional<Int32&> opt_a = a;
+    Optional<Int32&> opt_b = b;
+    Optional<Int32&> none;
+
+    EXPECT_EQ(&opt_a.Or(opt_b).Value(), &a);
+    EXPECT_EQ(&none.Or(opt_b).Value(), &b);
+    EXPECT_EQ(&none.OrElse([&] { return opt_b; }).Value(), &b);
+}
+
+TEST(OptionalCombinators, Xor)
+{
+    Optional<Int32> some = 1;
+    Optional<Int32> other = 2;
+    Optional<Int32> none;
+
+    EXPECT_EQ(some.Xor(none), 1);
+    EXPECT_EQ(none.Xor(other), 2);
+    EXPECT_FALSE(some.Xor(other));
+    EXPECT_FALSE(none.Xor(Nothing));
+}
+
+TEST(OptionalCombinators, TakeIf)
+{
+    Optional<Int32> value = 4;
+
+    auto odd = value.TakeIf([](Int32& x) { return x % 2 != 0; });
+    EXPECT_FALSE(odd);
+    EXPECT_TRUE(value);
+
+    auto even = value.TakeIf([](Int32& x) {
+        x += 1;
+        return true;
+    });
+    EXPECT_EQ(even, 5);
+    EXPECT_FALSE(value);
+}
+
+TEST(OptionalCombinators, TakeIfReference)
+{
+    String s = "hello";
+    Optional<String&> opt = s;
+
+    auto taken = opt.TakeIf([](String& v) { return v == "hello"; });
+
+    EXPECT_FALSE(opt);
+    ASSERT_TRUE(taken);
+    EXPECT_EQ(&taken.Value(), &s);
+}
+
+TEST(OptionalCombinators, GetOrInsert)
+{
+    Optional<Int32> none;
+    none.GetOrInsert(5) += 1;
+    EXPECT_EQ(none, 6);
+
+    Optional<Int32> some = 1;
+    EXPECT_EQ(some.GetOrInsert(5), 1);
+}
+
+TEST(OptionalCombinators, GetOrInsertReference)
+{
+    Int32 a = 1;
+    Int32 b = 2;
+    Optional<Int32&> none;
+
+    EXPECT_EQ(&none.GetOrInsert(a), &a);
+    EXPECT_EQ(&none.GetOrInsert(b), &a);
+
+    static_assert(!CanGetOrInsert<Optional<const Int32&>, Int32>);
+    static_assert(CanGetOrInsert<Optional<const Int32&>, const Int32&>);
+}
+
+TEST(OptionalCombinators, GetOrInsertDefault)
+{
+    Optional<Vec<Int32>> items;
+    items.GetOrInsertDefault().push_back(1);
+    items.GetOrInsertDefault().push_back(2);
+
+    ASSERT_TRUE(items);
+    EXPECT_EQ(items->size(), 2U);
+}
+
+namespace {
+
+consteval auto ConstexprCombinators() -> Int32
+{
+    Optional<Int32> none;
+    Int32 total = none.GetOrInsert(1);
+    total += Optional<Int32>(2).Filter([](const Int32& x) { return x == 2; }).UnwrapOr(0);
+    total += Optional<Int32>().Or(Some(3)).UnwrapOrElse([] { return 0; });
+    total += Optional<Int32>(4).Xor(Nothing).UnwrapOr(0);
+    return total; // 1 + 2 + 3 + 4
+}
+
+} // namespace
+
+TEST(OptionalCombinatorsConsteval, Chain)
+{
+    static_assert(ConstexprCombinators() == 10);
 }
 
 TEST(OptionalFromStd, ConstructFromEngagedStdOptional)
