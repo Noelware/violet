@@ -7,6 +7,9 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.11...master>
+
+### 26.11
 #### Noelware.Violet
 - Add **VIOLET_ASSUME** macro, expanding to `[[assume(expr)]]` when available ([`@auguwu`])
 - Add **violet::trivially_relocatable** / **is_trivially_relocatable_v**, plus **VIOLET_DECLARE_TRIVIALLY_RELOCATABLE** and **VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE** to opt types into relocation-by-memcpy ([`@auguwu`])
@@ -195,7 +198,7 @@ New Bazel build flags are now provided:
 
 [`std::ptr::NonNull`]: https://doc.rust-lang.org/std/ptr/struct.NonNull.html
 
-**Git History**: <https://github.com/Noelware/violet/compare/26.07.03...master>
+**Git History**: <https://github.com/Noelware/violet/compare/26.07.03...26.11>
 
 ### 26.07.03
 #### Noelware.Violet.Experimental
