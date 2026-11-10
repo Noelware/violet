@@ -388,8 +388,8 @@ auto Parse(Str input) noexcept -> Result<F, Error>
     }
 
     ::memcpy(buf.Data(), input.data(), input.size());
-    buf[input.size()] = '\0';
     buf.AssumeInit(Unsafe("memcpy operation + NUL terminator"), input.size() + 1 /* size + NUL */);
+    buf[input.size()] = '\0';
 
     char* end = nullptr;
     errno = 0;
