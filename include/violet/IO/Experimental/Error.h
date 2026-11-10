@@ -82,11 +82,11 @@ struct Error;
 
 #if VIOLET_PLATFORM(UNIX)
 /// This platform's native error code type.
-/// @since current
+/// @since 26.11
 using NativeErrorCode = std::remove_cvref_t<decltype(errno)>;
 #elif VIOLET_PLATFORM(WINDOWS)
 /// This platform's native error code type.
-/// @since current
+/// @since 26.11
 using NativeErrorCode = UInt32;
 #else
 using NativeErrorCode = void*;
@@ -104,7 +104,7 @@ constexpr inline UInt8 kErrorKindCount = static_cast<UInt8>(std::size(kErrorKind
 
 } // namespace NOELDOC_HIDE error_internal
 
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") SimpleMessage final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") SimpleMessage final {
     ErrorKind Kind;
     String Message;
 
@@ -115,13 +115,13 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") SimpleMessage final {
     }
 };
 
-enum struct NOELDOC_EXPERIMENTAL_SINCE("current") ErrorKind : UInt8 { // NOLINT(readability-enum-initial-value)
+enum struct NOELDOC_EXPERIMENTAL_SINCE("26.11") ErrorKind : UInt8 { // NOLINT(readability-enum-initial-value)
 #define VIOLET_IO_ERROR_KIND_ENUMERATOR(NAME, MESSAGE) NAME,
     VIOLET_IO_ERROR_KINDS(VIOLET_IO_ERROR_KIND_ENUMERATOR)
 #undef VIOLET_IO_ERROR_KIND_ENUMERATOR
 };
 
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") PlatformError final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") PlatformError final {
     using error_type = NativeErrorCode;
 
     VIOLET_IMPLICIT_COPY_AND_MOVE(PlatformError);
@@ -166,7 +166,7 @@ private:
     error_type n_value;
 };
 
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Error final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Error final {
     using native_error_code = NativeErrorCode;
 
     VIOLET_IMPLICIT_CONSTEXPR_COPY_AND_MOVE(Error);
@@ -184,7 +184,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Error final {
     {
     }
 
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_IMPLICIT Error(violet::io::Error old) noexcept
         : n_loc(old.n_loc)
         , n_repr(
@@ -239,7 +239,7 @@ private:
     repr n_repr;
 };
 
-/// @since current
+/// @since 26.11
 template<typename T = void>
 using Result = violet::Result<T, Error>;
 
@@ -254,7 +254,7 @@ VIOLET_TO_STRING(violet::io::experimental::ErrorKind, self, {
 
 /**
  * @macro VIOLET_IO_ERROR
- * @since current
+ * @since 26.11
  * @param KIND The `violet::io::ErrorKind` variant (without qualification).
  * @param ... An optional static message.
  *

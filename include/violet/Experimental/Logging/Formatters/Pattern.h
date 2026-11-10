@@ -38,8 +38,8 @@ namespace violet::experimental::log::formatter {
 /// **Pattern** iterates a pre-parsed sequence of [`Segment`]s,
 /// resolving each directive against the provided [`LogRecord`] and the current
 /// terminal capabilities.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Pattern final: public Formatter {
-    struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Config final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Pattern final: public Formatter {
+    struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Config final {
         /// Force-toggle colour output. If [`Nothing`] is used, the formatter
         /// defers to [`terminal::ColoursEnabled()`].
         Optional<bool> UseColours = Nothing;

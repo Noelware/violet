@@ -103,7 +103,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
         }
     }
 
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_IMPLICIT Slice(const Slice& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
         requires std::copyable<T>
     {
@@ -112,7 +112,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.07") Slice final {
         }
     }
 
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto operator=(const Slice& other) noexcept(std::is_nothrow_copy_assignable_v<T>) -> Slice&
         requires std::copyable<T>
     {

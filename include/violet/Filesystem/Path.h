@@ -337,7 +337,7 @@ struct NOELDOC_SINCE("26.02") BasePath {
 
     /// Returns the length of the path string.
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Size() const noexcept -> size_type
+    NOELDOC_SINCE("26.11") constexpr auto Size() const noexcept -> size_type
     {
         return path_internal::Size(this->Data());
     }
@@ -695,7 +695,7 @@ struct NOELDOC_SINCE("26.02") BasePath {
     /// @param args arguments forwarded to `StringType::starts_with` (or `StartsWith`)
     template<typename... Args>
         requires(sizeof...(Args) != 1 || !std::same_as<std::remove_cvref_t<pack_element_t<0, Args...>>, Derived>)
-    [[nodiscard]] NOELDOC_SINCE("current") constexpr auto StartsWith(Args&&... args) const noexcept -> bool
+    [[nodiscard]] NOELDOC_SINCE("26.11") constexpr auto StartsWith(Args&&... args) const noexcept -> bool
     {
         if constexpr (requires(const StringType& str) { str.StartsWith(VIOLET_FWD(Args, args)...); }) {
             return this->Data().StartsWith(VIOLET_FWD(Args, args)...);
@@ -723,7 +723,7 @@ struct NOELDOC_SINCE("26.02") BasePath {
     }
 
     /// Orders two paths of the same type by their strings.
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     friend constexpr auto operator<=>(const Derived& lhs, const Derived& rhs) noexcept
     {
         return lhs.Data() <=> rhs.Data();
@@ -754,7 +754,7 @@ struct NOELDOC_SINCE("26.02") BasePath {
     template<typename Self, typename T>
         requires(std::same_as<Self, Derived> && !std::derived_from<std::remove_cvref_t<T>, BasePath>
             && std::three_way_comparable_with<StringType, std::decay_t<T>>)
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     friend constexpr auto operator<=>(const Self& self, const T& rhs) noexcept
     {
         return self.Data() <=> rhs;
@@ -763,7 +763,7 @@ struct NOELDOC_SINCE("26.02") BasePath {
     /// Shorthand for [`Join`](BasePath::Join): `base / "docs" / "file.txt"`.
     template<typename T>
         requires std::constructible_from<StringType, const T&>
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     friend constexpr auto operator/(const BasePath& self, const T& rhs) noexcept
     {
         return self.Join(StringType(rhs));
@@ -969,7 +969,7 @@ struct VIOLET_API NOELDOC_SINCE("26.02") Path final: public BasePath<Path, Strin
     }
 
     /// Orders an owned path against a borrowed one by their strings.
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr friend auto operator<=>(const Path& lhs, const PathRef& rhs) noexcept
     {
         return lhs.n_path <=> rhs.n_path;

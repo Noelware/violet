@@ -99,7 +99,7 @@ using std::erase_if;
 /// ```
 template<typename T, typename Hasher = hashset::default_hasher<T>, typename Equality = hashset::default_equality<T>,
     typename Alloc = std::allocator<T>>
-struct NOELDOC_EXPERIMENTAL_SINCE("current") HashSet final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") HashSet final {
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
     /// Underlying implementation: `absl::flat_hash_map`
     using implementation = absl::flat_hash_set<T, Hasher, Equality, Alloc>;

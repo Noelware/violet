@@ -144,7 +144,7 @@ concept byte_owner = std::move_constructible<T> && std::ranges::contiguous_range
 /// Buf body = Buf::FromOwner(std::string{"hello"});
 /// Buf copy = body;
 /// ```
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Buf final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Buf final {
     constexpr VIOLET_IMPLICIT Buf() noexcept = default;
 
     constexpr VIOLET_IMPLICIT Buf(const Buf& other) noexcept
@@ -400,7 +400,7 @@ private:
 
 /// A unique, growable byte buffer with an uninitialized tail, analogous to [`bytes::BytesMut`].
 /// [`bytes::BytesMut`]: https://docs.rs/bytes/latest/bytes/struct.BytesMut.html
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Bytes final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Bytes final {
     VIOLET_DISALLOW_COPY(Bytes);
 
     constexpr VIOLET_IMPLICIT Bytes() noexcept = default;

@@ -47,7 +47,7 @@ namespace violet::experimental::chrono {
 /// [`system_clock::time_point`]: std::chrono::system_clock::time_point
 struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     /// The underlying standard-library clock representation.
-    /// @since current
+    /// @since 26.11
     using clock_type = std::chrono::system_clock;
 
     /// The underlying standard-library representation, [`std::chrono::system_clock::time_point`].
@@ -90,12 +90,12 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
     /// Construct a [`TimePoint`] from [`absl::Time`]. Returns a saturated value for infinite
     /// times or values outside `TimePoint`'s representable range.
     [[nodiscard]]
-    NOELDOC_SINCE("current") static auto FromAbsl(absl::Time time) noexcept -> TimePoint;
+    NOELDOC_SINCE("26.11") static auto FromAbsl(absl::Time time) noexcept -> TimePoint;
 
     /// Construct a [`TimePoint`] from [`absl::Time`]. Returns `Nothing` for infinite times
     /// or values outside `TimePoint`'s representable range instead of saturating.
     [[nodiscard]]
-    NOELDOC_SINCE("current") static auto TryFrom(absl::Time time) noexcept -> Optional<TimePoint>;
+    NOELDOC_SINCE("26.11") static auto TryFrom(absl::Time time) noexcept -> Optional<TimePoint>;
 #endif
 
     /// Converts back to a [`std::chrono::system_clock::time_point`].
@@ -137,7 +137,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") TimePoint final {
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE_ABSEIL
     /// Construct a [`absl::Time`] from this time point object.
     [[nodiscard]]
-    NOELDOC_SINCE("current") auto ToAbsl() const noexcept -> absl::Time;
+    NOELDOC_SINCE("26.11") auto ToAbsl() const noexcept -> absl::Time;
 #endif
 
     /// Adds `dur` to this [`TimePoint`], returning [`Nothing`] on overflow.

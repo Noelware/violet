@@ -49,7 +49,7 @@ void RelaxCPU();
 ///
 /// This should be only used in short crticial sections that are usually uncontended. It is neither fair
 /// nor reentrant; locking twice on the same thread deadlocks.
-struct VIOLET_API VIOLET_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("current") SpinLock final {
+struct VIOLET_API VIOLET_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.11") SpinLock final {
     VIOLET_DISALLOW_COPY_AND_MOVE(SpinLock);
 
     constexpr VIOLET_IMPLICIT SpinLock() noexcept = default;
@@ -111,7 +111,7 @@ private:
 };
 
 /// A RAII guard for [`SpinLock`]; the counterpart of [`MutexLock`].
-struct VIOLET_API VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("current") SpinLockGuard final {
+struct VIOLET_API VIOLET_SCOPED_LOCKABLE NOELDOC_EXPERIMENTAL_SINCE("26.11") SpinLockGuard final {
     VIOLET_DISALLOW_COPY_AND_MOVE(SpinLockGuard);
 
     VIOLET_EXPLICIT SpinLockGuard(SpinLock& lock) noexcept VIOLET_EXCLUSIVE_LOCK_FUNCTION(lock)

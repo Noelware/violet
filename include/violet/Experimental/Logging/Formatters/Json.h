@@ -49,8 +49,8 @@ namespace formatter {
 /// // Pretty-printed with default 4-space indentation
 /// auto formatter = violet::experimental::log::formatter::Json().Pretty();
 /// ```
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Json final: public Formatter {
-    struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Config final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Json final: public Formatter {
+    struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Config final {
         /// Whether to emit pretty-printed (indented, multi-line) JSON.
         bool Pretty = false;
 

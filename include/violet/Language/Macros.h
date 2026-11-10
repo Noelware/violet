@@ -1350,7 +1350,7 @@
 
 /**
  * @macro VIOLET_TRAIT_FOR_ALL_TYPES
- * @since current
+ * @since 26.11
  */
 #define VIOLET_TRAIT_FOR_ALL_TYPES(trait, ...)                                                                         \
     ([]<typename... Ts>() consteval -> decltype(auto) {                                                                \
@@ -1359,7 +1359,7 @@
 
 /**
  * @macro VIOLET_TRAIT_FOR_ANY_TYPES
- * @since current
+ * @since 26.11
  */
 #define VIOLET_TRAIT_FOR_ANY_TYPES(trait, ...)                                                                         \
     ([]<typename... Ts>() consteval -> decltype(auto) {                                                                \
@@ -1368,7 +1368,7 @@
 
 /**
  * @macro VIOLET_FEATURE_CPP_REFLECTION
- * @since current
+ * @since 26.11
  */
 
 #ifdef VIOLET_FEATURE_CPP_REFLECTION
@@ -1384,7 +1384,7 @@
 
 /**
  * @macro NOELDOC_NON_CONSTEXPR_SINCE
- * @since current
+ * @since 26.11
  *
  * Marks a declaration non-`constexpr` since a given version if it was `constexpr`
  */
@@ -1393,7 +1393,7 @@
 /**
  * @macro VIOLET_ASSUME
  * @param expr A boolean expression the optimizer may assume to always be `true`.
- * @since current
+ * @since 26.11
  *
  * Tells the compiler that `expr` is always true at this point, without evaluating it, so it
  * can be optimized accordingly; behaviour is undefined if `expr` is actually `false` at runtime.
@@ -1408,7 +1408,7 @@
 
 /**
  * @macro VIOLET_FEATURE_TRIVIAL_RELOCATION
- * @since current
+ * @since 26.11
  *
  * Defined to `1` when the standard library provides `std::is_trivially_relocatable`, `0` otherwise.
  */
@@ -1422,7 +1422,7 @@
 
 /**
  * @macro VIOLET_STD_LIBCXX
- * @since current
+ * @since 26.11
  *
  * Defined to `1` when the active standard library is LLVM `libc++`, detected
  * via `_LIBCPP_VERSION`. Undefined otherwise.
@@ -1430,7 +1430,7 @@
 
 /**
  * @macro VIOLET_STD_GNU
- * @since current
+ * @since 26.11
  *
  * Defined to `1` when the active standard library is GNU `libstdc++`, detected
  * via `__GLIBCXX__`/`__GLIBCPP__`. Undefined otherwise.
@@ -1438,7 +1438,7 @@
 
 /**
  * @macro VIOLET_STD_MSVC
- * @since current
+ * @since 26.11
  *
  * Defined to `1` when the active standard library is Microsoft's STL (https://github.com/microsoft/stl),
  * detected via `_MSVC_STL_VERSION`. Undefined otherwise.
@@ -1455,13 +1455,13 @@
 
 /**
  * @macro VIOLET_STDLIB
- * @since current
+ * @since 26.11
  */
 #define VIOLET_STDLIB(x) VIOLET_STD_##x
 
 /**
  * @macro VIOLET_CORO_AWAIT_ELIABLE
- * @since current
+ * @since 26.11
  *
  * Expands to `[[clang::coro_await_elidable]]` when the compiler supports it, marking
  * a coroutine-returning function as eligible for HALO (heap allocation elision) at
@@ -1475,7 +1475,7 @@
 
 /**
  * @macro VIOLET_RETURN_ADDRESS
- * @since current
+ * @since 26.11
  *
  * Returns the return address of the current function, i.e, the address execution
  * resumes after this function returns.
@@ -1492,13 +1492,13 @@
  * @macro VIOLET_NOEXCEPT_FUN
  * @param fun
  * @param ...
- * @since current
+ * @since 26.11
  */
 #define VIOLET_NOEXCEPT_FUN(fun, ...) noexcept(::std::is_nothrow_invocable_v<decltype(fun) __VA_OPT__(, ) __VA_ARGS__>)
 
 /**
  * @macro VIOLET_CONSTINIT
- * @since current
+ * @since 26.11
  */
 #if defined(__cpp_constinit) && __cpp_constinit >= 201907L
 #define VIOLET_CONSTINIT constinit
@@ -1510,7 +1510,7 @@
  * @macro VIOLET_THROW
  * @param ex
  * @param ...
- * @since current
+ * @since 26.11
  */
 #if VIOLET_FEATURE(EXCEPTIONS)
 #define VIOLET_THROW(ex, ...)                                                                                          \
@@ -1524,7 +1524,7 @@
 
 /**
  * @macro VIOLET_NO_INLINE
- * @since current
+ * @since 26.11
  */
 #if VIOLET_HAS_CPP_ATTRIBUTE(gnu::noinline)
 #define VIOLET_NO_INLINE [[gnu::noinline]]

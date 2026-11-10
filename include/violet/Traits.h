@@ -213,7 +213,7 @@ concept collectable = requires(T& ty, Item value) {
     { cnt.push_back(value) };
 };
 
-/// @since 26.08
+/// @since 26.11
 template<typename T, typename... Args>
 concept constructible
     = std::constructible_from<T, Args...> && !(sizeof...(Args) == 1 && (std::same_as<std::decay_t<Args>, T> || ...));
@@ -294,7 +294,7 @@ struct NOELDOC_SINCE("26.06.05") FunctionParams<R(Args...)> {
 /// This excludes `void`, function types, incomplete class types, and arrays of
 /// unknown bound.
 ///
-/// @since current
+/// @since 26.11
 template<typename T>
 concept complete_object = requires { sizeof(T); };
 static_assert(complete_object<int32_t>);
@@ -311,7 +311,7 @@ static_assert(!complete_object<int32_t[]>);
 /// accepts it as a GNU extension (which returns `1`, which makes it "alignable"). So, function types
 /// are permitted on GCC only, Clang/MSVC are a hard error.
 ///
-/// @since current
+/// @since 26.11
 #if VIOLET_COMPILER(GCC)
 template<typename T>
 concept alignable = requires { alignof(T); } && !std::is_function_v<T>;
@@ -368,10 +368,10 @@ constexpr inline bool detect_relocatable_v = std::is_trivially_copyable_v<T>;
 ///           [`is_trivially_relocatable_v`] before reaching the template, so specialization are
 ///           written for unqualified CV types.
 template<typename T>
-struct NOELDOC_SINCE("current") trivially_relocatable: std::bool_constant<traits_internal::detect_relocatable_v<T>> { };
+struct NOELDOC_SINCE("26.11") trivially_relocatable: std::bool_constant<traits_internal::detect_relocatable_v<T>> { };
 
 template<typename T, std::size_t N>
-struct NOELDOC_SINCE("current") NOELDOC_SEE("violet::trivially_relocatable")
+struct NOELDOC_SINCE("26.11") NOELDOC_SEE("violet::trivially_relocatable")
     trivially_relocatable<T[N]>: trivially_relocatable<std::remove_cv_t<T>> { };
 
 /// Whether `T` is trivially relocatable.
@@ -381,7 +381,7 @@ struct NOELDOC_SINCE("current") NOELDOC_SEE("violet::trivially_relocatable")
 ///
 /// @tparam T The type being queried; must be complete.
 template<typename T>
-NOELDOC_SINCE("current")
+NOELDOC_SINCE("26.11")
 constexpr inline bool is_trivially_relocatable_v = trivially_relocatable<std::remove_cv_t<T>>::value;
 
 /// Satisfied when `T` can be formatted with `std::format` using character type `CharT`.
@@ -389,7 +389,7 @@ constexpr inline bool is_trivially_relocatable_v = trivially_relocatable<std::re
 /// Equivalent to C++23's [`std::formattable`]; falls back to a C++20 approximation when the
 /// standard library doesn't provide it.
 ///
-/// @since current
+/// @since 26.11
 template<typename T, typename CharT = char>
 concept formattable =
 #if defined(__cpp_lib_format_ranges) && __cpp_lib_format_ranges >= 202207L
@@ -406,7 +406,7 @@ concept formattable =
 
 /**
  * @macro VIOLET_DECLARE_TRIVIALLY_RELOCATABLE_UNSAFE
- * @since current
+ * @since 26.11
  *
  * Permits polymorphic types to be opted into trivial relocation. Disabled by default.
  *
@@ -438,7 +438,7 @@ concept formattable =
 
 /**
  * @macro VIOLET_DECLARE_TRIVIALLY_RELOCATABLE
- * @since current
+ * @since 26.11
  */
 #define VIOLET_DECLARE_TRIVIALLY_RELOCATABLE(...)                                                                      \
     template<>                                                                                                         \

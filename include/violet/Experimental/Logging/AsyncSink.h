@@ -44,7 +44,7 @@ struct Record;
 ///
 /// Destructors must not return until all owned resources (threads, file handles, etc) have
 /// been released.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") AsyncSink {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") AsyncSink {
     /// Destroys the sink and releases all owned resources.
     ///
     /// Implementations must ensure that all background workers have terminated

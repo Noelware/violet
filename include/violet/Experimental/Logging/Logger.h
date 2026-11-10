@@ -37,7 +37,7 @@ struct Logger;
 ///
 /// A `LogEntry` is a handle returned by `Logger` when logging a message. It allows attaching
 /// additional attributes before the entry is emitted.
-struct NOELDOC_EXPERIMENTAL_SINCE("current") VIOLET_API Entry final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") VIOLET_API Entry final {
     VIOLET_DISALLOW_CONSTEXPR_CONSTRUCTOR(Entry);
     VIOLET_DISALLOW_COPY_AND_MOVE(Entry);
     ~Entry();
@@ -75,7 +75,7 @@ private:
 ///
 /// Provides convenience methods for logging at different levels (Trace, Debug, Info, etc.).
 /// Supports adding synchronous and asynchronous sinks.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Logger final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Logger final {
     VIOLET_DISALLOW_CONSTRUCTOR(Logger);
     ~Logger();
 

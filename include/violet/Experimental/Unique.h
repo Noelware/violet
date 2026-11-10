@@ -74,7 +74,7 @@
 namespace violet::experimental::ptr {
 
 template<typename T>
-struct NOELDOC_EXPERIMENTAL_SINCE("current") DefaultDelete final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") DefaultDelete final {
     static_assert(!std::is_function_v<T>, "`DefaultDelete` cannot be instantiated for function types");
 
     constexpr VIOLET_IMPLICIT DefaultDelete() noexcept = default;
@@ -97,7 +97,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("current") DefaultDelete final {
 /// A move-only smart pointer providing exclusive ownership of a heap-allocated object of
 /// type `T`. View the [module documentation](#) for more information.
 template<typename T, typename Deleter = DefaultDelete<T>>
-struct NOELDOC_EXPERIMENTAL_SINCE("current") Unique final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") Unique final {
     VIOLET_DISALLOW_COPY(Unique);
 
     static_assert(!std::is_array_v<T>, "`Unique<T>` is not supported; use `Own<T>` or `Vec<T>`");

@@ -38,7 +38,7 @@ namespace violet::experimental::log::formatter::pattern {
 /// - [`Alignment::Right`] (`>`): `"    INFO"`
 /// - [`Alignment::Center] (`^`): `"  INFO  "`
 /// - [`Alignment::None`]:        `"INFO"`
-enum struct NOELDOC_EXPERIMENTAL_SINCE("current") Alignment : UInt8 {
+enum struct NOELDOC_EXPERIMENTAL_SINCE("26.11") Alignment : UInt8 {
     /// No alignment was specified. Padding is not applied.
     None,
 
@@ -61,7 +61,7 @@ enum struct NOELDOC_EXPERIMENTAL_SINCE("current") Alignment : UInt8 {
 ///
 /// [`Directive`]s fall into four capability groups that determine their optional specification (`{...}`)
 /// is parsed. You can use [`GetSegmentCapability`] for all the capabilities.
-enum struct NOELDOC_EXPERIMENTAL_SINCE("current") SegmentKind : UInt8 {
+enum struct NOELDOC_EXPERIMENTAL_SINCE("26.11") SegmentKind : UInt8 {
     /// Verbatim text from the pattern string. The [`Text`][Segment::Text] on the parent [`Segment`]
     /// delimits the literal span.
     Literal,
@@ -266,7 +266,7 @@ enum struct NOELDOC_EXPERIMENTAL_SINCE("current") SegmentKind : UInt8 {
 ///
 /// Each [`SegmentKind`] maps to exactly one capability, which determines how the brace content
 /// is parsed by [`Directive::Parse`].
-enum struct NOELDOC_EXPERIMENTAL_SINCE("current") SegmentCapability : UInt8 {
+enum struct NOELDOC_EXPERIMENTAL_SINCE("26.11") SegmentCapability : UInt8 {
     /// No `{...}` block is accepted.
     ///
     /// Used by style directives that take no arguments and by content directives
@@ -338,7 +338,7 @@ constexpr auto GetSegmentCapability(SegmentKind kind) noexcept -> SegmentCapabil
 ///
 /// Not all directives accept a `{...}` block, and those that do may support only
 /// a spec, only padding, or both. See [`SegmentKind`] for per-directive capabilities.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Directive final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Directive final {
     /// Byte offset of the spec content within the original pattern string.
     UInt16 SpecOffset = 0;
 
@@ -396,7 +396,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Directive final {
 /// logical style stack, and `StyleEnd` pops from it. The `Depth` field tracks
 /// the current nesting level at each segment, enabling formatters to validate
 /// balanced styling or to emit nested ANSI escape sequences correctly.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Segment final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Segment final {
     /// The kind of content this segment represents.
     SegmentKind Kind;
 

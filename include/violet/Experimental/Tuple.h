@@ -90,7 +90,7 @@ constexpr inline from_tag_t from_tag{};
 } // namespace tuple_internal
 
 template<typename T>
-struct NOELDOC_EXPERIMENTAL_SINCE("current") is_tuple: public std::false_type { };
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") is_tuple: public std::false_type { };
 
 template<typename... Ts>
 struct is_tuple<Tuple<Ts...>>: public std::true_type { };
@@ -101,16 +101,15 @@ struct is_tuple<std::tuple<Ts...>>: public std::true_type { };
 #endif
 
 template<typename T>
-NOELDOC_EXPERIMENTAL_SINCE("current")
+NOELDOC_EXPERIMENTAL_SINCE("26.11")
 constexpr inline bool is_tuple_v = is_tuple<T>::value;
 
-/// @since current
+/// @since 26.11
 template<typename T>
 concept tuple_like = is_tuple_v<std::remove_cvref_t<T>>;
 
 template<typename... Ts>
-class NOELDOC_EXPERIMENTAL_SINCE("current") Tuple final
-    : tuple_internal::Storage<std::index_sequence_for<Ts...>, Ts...> {
+class NOELDOC_EXPERIMENTAL_SINCE("26.11") Tuple final: tuple_internal::Storage<std::index_sequence_for<Ts...>, Ts...> {
     using Storage = tuple_internal::Storage<std::index_sequence_for<Ts...>, Ts...>;
 
     template<UInt I>

@@ -50,7 +50,7 @@ struct Record;
 ///
 /// log.Info("hello, world!");
 /// ```
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Formatter {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Formatter {
     virtual ~Formatter() = default;
 
     /// Converts a log record into a string.

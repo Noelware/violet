@@ -27,11 +27,11 @@ namespace violet::io::experimental {
 
 #if VIOLET_PLATFORM(UNIX)
 /// This platform's raw file descriptor type.
-/// @since current
+/// @since 26.11
 using RawFd = Int32;
 #elif VIOLET_PLATFORM(WINDOWS)
 /// This platform's raw file descriptor type.
-/// @since current
+/// @since 26.11
 using RawFd = void*;
 #else
 /// This platform's raw file descriptor type.
@@ -40,14 +40,14 @@ using RawFd = void*;
 
 #if VIOLET_PLATFORM(UNIX)
 /// A sentinel value meaning "this descriptor doesn't refer to anything"
-NOELDOC_EXPERIMENTAL_SINCE("current")
+NOELDOC_EXPERIMENTAL_SINCE("26.11")
 constexpr inline RawFd kInvalidRawFd = -1;
 #elif VIOLET_PLATFORM(WINDOWS)
 /// A sentinel value meaning "this descriptor doesn't refer to anything"
-NOELDOC_EXPERIMENTAL_SINCE("current")
+NOELDOC_EXPERIMENTAL_SINCE("26.11")
 inline const RawFd kInvalidRawFd = reintepret_cast<RawFd>(static_cast<std::intptr_t>(-1));
 #else
-NOELDOC_EXPERIMENTAL_SINCE("current")
+NOELDOC_EXPERIMENTAL_SINCE("26.11")
 inline const RawFd kInvalidRawFd = nullptr;
 #endif
 
@@ -128,10 +128,10 @@ private:
 
 /// A zero-cost, tiny abstraction around OS-related file descriptors that owns
 /// the handle and closes it on destruction.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Descriptor final: public fd_internal::Ops<Descriptor> {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Descriptor final: public fd_internal::Ops<Descriptor> {
     /// A non-owning view of a descriptor. Pass this by value wherever a function needs to
     /// read from or write to a descriptor it doesn't own.
-    struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Borrowed final: public fd_internal::Ops<Borrowed> {
+    struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Borrowed final: public fd_internal::Ops<Borrowed> {
         using value_type = RawFd;
 
         VIOLET_IMPLICIT_COPY_AND_MOVE(Borrowed);
@@ -269,7 +269,7 @@ private:
 /// }
 /// ```
 ///
-/// @since current
+/// @since 26.11
 template<typename T>
 concept AsFd = requires(const T& value) {
     { value.Borrow() } noexcept -> std::same_as<Descriptor::Borrowed>;
@@ -298,7 +298,7 @@ static_assert(AsFd<violet::io::experimental::Descriptor::Borrowed>,
 VIOLET_FORMATTER(violet::io::experimental::Descriptor);
 VIOLET_FORMATTER(violet::io::experimental::Descriptor::Borrowed);
 
-/// @since current
+/// @since 26.11
 template<>
 struct std::hash<violet::io::experimental::Descriptor::Borrowed> final {
     auto operator()(const violet::io::experimental::Descriptor::Borrowed& fd) noexcept -> violet::UInt

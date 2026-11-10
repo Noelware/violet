@@ -94,7 +94,7 @@ using std::erase_if;
 /// - Uses Violet's iterator framework for pluggable combinators for iteration.
 template<typename K, typename V, typename Hasher = hashmap::default_hasher<K>,
     typename Equality = hashmap::default_equality<K>, typename Alloc = std::allocator<Pair<const K, V>>>
-struct NOELDOC_EXPERIMENTAL_SINCE("current") HashMap final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") HashMap final {
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
     /// Underlying implementation: `absl::flat_hash_map`
     using implementation = absl::flat_hash_map<K, V, Hasher, Equality, Alloc>;

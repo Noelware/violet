@@ -80,7 +80,7 @@ auto ShutDownError() -> io::experimental::Error;
 ///
 /// Tasks receive a [`CancellationToken`] that is cancelled by [`ThreadPool::ShutdownNow()`].
 template<UInt MaxThreads = std::dynamic_extent>
-struct NOELDOC_EXPERIMENTAL_SINCE("current") ThreadPool final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") ThreadPool final {
     static_assert(MaxThreads > 0, "a fixed-size `ThreadPool` needs atleast one thread!");
 
     VIOLET_DISALLOW_CONSTRUCTOR(ThreadPool);
@@ -194,7 +194,7 @@ private:
 
 /// A [`ThreadPool`] that spawns workers on demand, up to a maximum.
 template<>
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") ThreadPool<std::dynamic_extent> final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") ThreadPool<std::dynamic_extent> final {
     struct Builder;
 
     VIOLET_DISALLOW_CONSTRUCTOR(ThreadPool);
@@ -253,7 +253,7 @@ private:
     Own<Core> n_core;
 };
 
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") ThreadPool<std::dynamic_extent>::Builder final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") ThreadPool<std::dynamic_extent>::Builder final {
     VIOLET_DISALLOW_COPY_AND_MOVE(Builder);
     VIOLET_IMPLICIT Builder() noexcept = default;
     ~Builder() = default;

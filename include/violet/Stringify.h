@@ -69,7 +69,7 @@ inline auto ToString(std::string str) -> std::string
 /// Converts a boolean to `"true"` or `"false"`.
 ///
 /// ## Remarks
-/// Since "current", this overload only accepts an actual `bool`. Earlier versions took
+/// Since "26.11", this overload only accepts an actual `bool`. Earlier versions took
 /// `bool` by value, which allowed implicit conversions: pointers, `char`, `short` and
 /// unscoped enums all silently became `"true"` or `"false"`.
 ///
@@ -112,7 +112,7 @@ constexpr auto ToString(std::nullptr_t) -> std::string
 /// violet::ToString((const char*)nullptr); // std::string{}
 /// ```
 template<stringify_internal::is_char_type Char>
-NOELDOC_SINCE("current")
+NOELDOC_SINCE("26.11")
 auto ToString(const Char* str) -> std::basic_string<Char>
 {
     return str != nullptr ? std::basic_string<Char>{str} : std::basic_string<Char>{};
@@ -125,7 +125,7 @@ auto ToString(const Char* str) -> std::basic_string<Char>
 /// violet::ToString('a'); // std::string{"a"}
 /// ```
 template<stringify_internal::is_char_type Char>
-NOELDOC_SINCE("current")
+NOELDOC_SINCE("26.11")
 auto ToString(Char ch) -> std::basic_string<Char>
 {
     return std::basic_string<Char>(1, ch);
@@ -149,7 +149,7 @@ auto ToString(Char ch) -> std::basic_string<Char>
 /// violet::ToString(short{ 5 }); // "5"
 /// ```
 template<stringify_internal::is_numeric T>
-NOELDOC_SINCE("current")
+NOELDOC_SINCE("26.11")
 auto ToString(T value) -> std::string
 {
     return std::to_string(value);
@@ -161,7 +161,7 @@ auto ToString(T value) -> std::string
 /// [`std::string`].
 ///
 /// ## Remarks
-/// Since "current":
+/// Since "26.11":
 /// * the result is always a [`std::string`]. Earlier versions used `decltype(auto)`,
 ///   which could return a reference into the argument and dangle when called on a
 ///   temporary.
@@ -206,7 +206,7 @@ auto ToString(const T& val) -> std::string
 /// ```
 template<stringify_internal::HasAbslStringify T>
     requires(!stringify_internal::has_to_string_member<T>)
-NOELDOC_SINCE("current")
+NOELDOC_SINCE("26.11")
 auto ToString(const T& value) -> std::string
 {
     return absl::StrCat(value);
@@ -235,7 +235,7 @@ auto ToString(const T& value) -> std::string
 /// `Stringify<int, wchar_t>` is `false`.
 ///
 /// ## Remarks
-/// Since "current", this concept is defined in terms of [`violet::ToString`] itself and
+/// Since "26.11", this concept is defined in terms of [`violet::ToString`] itself and
 /// cv/ref-qualifiers on `T` are ignored, so `Stringify<const Foo&>` is equivalent to
 /// `Stringify<Foo>`. Earlier versions only checked for a `ToString()` member and could
 /// fail to compile because of a recursive constraint.

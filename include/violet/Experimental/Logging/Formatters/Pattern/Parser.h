@@ -33,7 +33,7 @@
 namespace violet::experimental::log::formatter::pattern {
 
 /// Configuration for [`Parse`] that controls the parsing itself.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") ParseConfig final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") ParseConfig final {
     /// The set of segment kinds that the parser will accept. An empty set
     /// is treated as "allow all."
     HashSet<SegmentKind> AllowedSegments;
@@ -52,7 +52,7 @@ inline constexpr static UInt kValidSegments = 64;
 /// This contains the original pattern string, decompsed segments,
 /// and a count indicating how many segments were populated. Segments beyond
 /// `Count` in the array are default-initialized and should not be read.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") ParsedPattern final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") ParsedPattern final {
     /// The parsed segments, stored in a fixed-capacity array of at most 64
     /// entries. Only the first [`Count`] elements are valid.
     Slice<Segment, kValidSegments> Segments;
@@ -121,7 +121,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") ParsedPattern final {
 /// @param input  pattern string to parse
 /// @param config optional parse configuration
 VIOLET_API
-NOELDOC_EXPERIMENTAL_SINCE("current")
+NOELDOC_EXPERIMENTAL_SINCE("26.11")
 auto Parse(Str input, const ParseConfig& config = {}) noexcept -> anyhow::Result<ParsedPattern>;
 
 } // namespace violet::experimental::log::formatter::pattern

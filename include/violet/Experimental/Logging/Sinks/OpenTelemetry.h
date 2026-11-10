@@ -51,10 +51,9 @@ namespace violet::experimental::log::sinks {
 /// The sink owns a single worker thread that drains the internal queue. The thread
 /// is started during construction and joined during destruction, ensuring no records
 /// are silently dropped on shutdown.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") OpenTelemetry final: public AsyncSink {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") OpenTelemetry final: public AsyncSink {
     /// The options to passthrough the internal batch queue.
-    struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Options final
-        : public internals::BatchQueue<Record>::Options {
+    struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Options final: public internals::BatchQueue<Record>::Options {
         String Name;
         String Version;
         String SchemaUrl;

@@ -217,7 +217,7 @@ struct VIOLET_API VIOLET_LOCKABLE Mutex final {
     void Await(F&& predicate) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(this);
 
     template<typename F>
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     bool AwaitUntil(F&& predicate, chrono::Instant deadline) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(this);
 
     /// Acquires the mutex, then blocks until `predicate` returns `true`.
@@ -230,7 +230,7 @@ struct VIOLET_API VIOLET_LOCKABLE Mutex final {
     void LockUntil(F&& predicate) VIOLET_NO_THREAD_SAFETY_ANALYSIS;
 
     template<typename F>
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     bool LockUntil(F&& predicate, chrono::Instant deadline) VIOLET_NO_THREAD_SAFETY_ANALYSIS;
 
 private:
@@ -360,7 +360,7 @@ struct VIOLET_API Condvar final {
     ///
     /// @param mux      mutex that guards the shared state.
     /// @param deadline monotonic point in time to stop waiting at.
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     bool WaitUntil(Mutex* mux, chrono::Instant deadline) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(mux);
 
     /// Blocks until `predicate` returns **true** or `deadline` is reached.
@@ -382,7 +382,7 @@ struct VIOLET_API Condvar final {
     /// mux.Unlock();
     /// ```
     template<typename F>
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     // `predicate` is invoked repeatedly, so it is never forwarded.
     // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
     bool WaitUntil(Mutex* mux, F&& predicate, chrono::Instant deadline) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(mux)
@@ -413,7 +413,7 @@ struct VIOLET_API Condvar final {
     /// ```
     template<typename F>
         requires std::predicate<F&>
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     // `predicate` is invoked repeatedly, so it is never forwarded.
     // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
     void WaitUntil(Mutex* mux, F&& predicate) VIOLET_EXCLUSIVE_LOCKS_REQUIRED(mux)
@@ -485,7 +485,7 @@ inline auto Mutex::AwaitUntil(F&& predicate, chrono::Instant deadline) -> bool
 
     predicate_fn local = VIOLET_FWD(F, predicate);
     return this->n_mux.AwaitWithTimeout(absl::Condition(
-                                     +[](predicate_fn* pred) -> bool { return std::invoke(*pred); }, &local),
+                                            +[](predicate_fn* pred) -> bool { return std::invoke(*pred); }, &local),
         mutex_internal::ToAbslT(deadline));
 }
 

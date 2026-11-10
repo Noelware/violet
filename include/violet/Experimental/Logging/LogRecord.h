@@ -32,7 +32,7 @@
 namespace violet::experimental::log {
 
 /// The severity level of a log record.
-enum struct NOELDOC_EXPERIMENTAL_SINCE("current") LogLevel : violet::UInt8 {
+enum struct NOELDOC_EXPERIMENTAL_SINCE("26.11") LogLevel : violet::UInt8 {
     Trace, ///< fine-grained diagnostic information
     Debug, ///< debug-level messages that are useful during development
     Info, ///< informational message describing normal operations.
@@ -47,7 +47,7 @@ enum struct NOELDOC_EXPERIMENTAL_SINCE("current") LogLevel : violet::UInt8 {
 /// AttributeValue represents a small, closed set of value types that can be attached
 /// to log records as structured metadata. It is designed to be type-safe, allocation-aware,
 /// and RTTI-free.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") AttributeValue final
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") AttributeValue final
     : public OneOf<Mono, bool, Int64, UInt64, double, String> {
     using OneOf::OneOf;
 
@@ -83,7 +83,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") AttributeValue final
 /// This struct represents a single logging event produced by a `Logger` and
 /// delivered to one or more sinks. It contains both unstructured text and
 /// structured key-value fields for rich diagnostics.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Record final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Record final {
     chrono::TimePoint Timestamp; ///< time point at which this log record was created
     LogLevel Level; ///< severity of the log event.
     String Message; ///< primary log message

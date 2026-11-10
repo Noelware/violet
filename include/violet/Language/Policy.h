@@ -34,7 +34,7 @@
  * The minimum C++ standard version that Violet can be built with.
  * Currently set to C++20 (`202002L`).
  *
- * As of 26.08, you can set this to any C++ standard you like (lower than C++20
+ * As of 26.11, you can set this to any C++ standard you like (lower than C++20
  * is a hard error).
  *
  * @since 26.02

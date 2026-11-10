@@ -37,7 +37,7 @@
 namespace violet::experimental {
 
 template<typename T, typename U>
-struct NOELDOC_EXPERIMENTAL_SINCE("current") Pair final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") Pair final {
     static_assert(!std::is_void_v<T> && !std::is_void_v<U>, "`Pair`: cannot hold `void`");
     static_assert(!std::is_reference_v<T> && !std::is_reference_v<U>, "`Pair`: cannot hold reference members");
     static_assert(!std::is_function_v<T> && !std::is_function_v<U>,

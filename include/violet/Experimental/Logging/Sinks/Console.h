@@ -43,7 +43,7 @@ namespace violet::experimental::log::sinks {
 /// ## Thread Safety
 /// Emission is internally synchronized via a Mutex. Concurrent calls to [`Console::Emit`]
 /// and [`Console::Flush`] are safe, through ordering between is not guaranteed.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Console final: public Sink {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Console final: public Sink {
     VIOLET_DISALLOW_COPY_AND_MOVE(Console);
     ~Console() override = default;
 

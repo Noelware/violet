@@ -213,7 +213,7 @@ template<typename T>
 struct Optional;
 
 /// Type for representing a empty `Optional<T>`. This is not useful for consumers, use [`Nothing`].
-struct VIOLET_API NOELDOC_SINCE("current") nothing_t final {
+struct VIOLET_API NOELDOC_SINCE("26.11") nothing_t final {
     struct VIOLET_API NOELDOC_HIDE secret final { };
 
     constexpr VIOLET_EXPLICIT nothing_t(secret, secret) noexcept { }
@@ -244,7 +244,7 @@ struct NOELDOC_SINCE("26.02.03") is_optional<Optional<T>>: std::true_type { };
 /// Specialization for [`is_optional`] for `std::optional`.
 ///
 /// ## Remarks
-/// As of {current}, this is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
+/// As of 26.11, this is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
 template<typename T>
 struct NOELDOC_SINCE("26.02.03") is_optional<std::optional<T>>: std::true_type { };
 #endif
@@ -273,7 +273,7 @@ struct VIOLET_API NOELDOC_SINCE("26.03.05") optional_type<Optional<U>> {
 /// Specialization of [`optional_type`] for [`std::optional`].
 ///
 /// ## Remarks
-/// As of {current}, this is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
+/// As of 26.11, this is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
 template<class U>
 struct VIOLET_API NOELDOC_SINCE("26.03.05") optional_type<std::optional<U>> {
     /// Extracted inner type from [`violet::Optional`]
@@ -343,7 +343,7 @@ struct NOELDOC_SINCE("26.02") Some final {
     /// ### Since `26.05.02`
     /// `Some<T>` was not allowed to be default-initialized.
     ///
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// `Some<T>` is now allowed to be default-initialized if `T` is default constructible.
     constexpr VIOLET_IMPLICIT Some() noexcept(std::is_nothrow_default_constructible_v<T>)
         requires std::default_initializable<T>
@@ -381,7 +381,7 @@ struct NOELDOC_SINCE("26.02") Some final {
     /// Wraps a copy of `value`.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// The copy constructor for `Some<T>` is now guarded by [`std::copyable<T>`].
     ///
     /// @param value The value to copy into the wrapper.
@@ -395,7 +395,7 @@ struct NOELDOC_SINCE("26.02") Some final {
     /// Wraps `value` by moving it into the wrapper.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// The copy constructor for `Some<T>` is now guarded by [`std::movable<T>`].
     ///
     /// @param value The value to move into the wrapper.
@@ -429,7 +429,7 @@ struct NOELDOC_SINCE("26.02") Some final {
 
     /// Converts into an engaged [`Optional<T>`] that holds a copy of the wrapped value.
     /// @return An `Optional<T>` holding a copy of the value.
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_IMPLICIT operator Optional<T>() const& noexcept
     {
         return Optional<T>(std::in_place, this->n_value);
@@ -447,11 +447,11 @@ struct NOELDOC_SINCE("26.02") Some final {
     /// Converts into an engaged [`std::optional<T>`] that holds a copy of the wrapped value.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This conversion operator is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
     ///
     /// @return A `std::optional<T>` holding a copy of the value.
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_IMPLICIT operator std::optional<T>() const& noexcept
     {
         return std::optional<T>(std::in_place, this->n_value);
@@ -460,7 +460,7 @@ struct NOELDOC_SINCE("26.02") Some final {
     /// Converts into an engaged [`std::optional<T>`] by moving the wrapped value into it.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This conversion operator is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
     ///
     /// @return A `std::optional<T>` holding the moved value.
@@ -528,7 +528,7 @@ Some(T&&) -> Some<std::remove_cvref_t<T>>;
 /// that cannot produce a value (like `Unwrap()`) throw [`std::logic_error`] when exceptions are enabled,
 /// and go through Violet's panic system otherwise.
 ///
-/// ### Since `{current}`
+/// ### Since `26.11`
 /// `Optional<T&>` is now supported directly; [`std::reference_wrapper`] is no longer needed. An
 /// `Optional<U&>` behaves like a nullable, rebindable pointer:
 ///
@@ -561,7 +561,7 @@ public:
     /// Constructs an empty `Optional` from [`std::nullopt`].
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// [`violet::Nothing`] used to be an alias for [`std::nullopt`]; it no longer is. This overload is
     /// kept for backwards compatibility with [`std::optional`].
     constexpr VIOLET_IMPLICIT Optional(std::nullopt_t) noexcept
@@ -571,7 +571,7 @@ public:
 #endif
 
     /// Constructs an empty `Optional` from [`violet::Nothing`].
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_IMPLICIT Optional(nothing_t) noexcept
         : Optional()
     {
@@ -599,14 +599,14 @@ public:
     /// for both.
     ///
     /// @param value the object to refer to; it must outlive every use of this `Optional`
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_EXPLICIT Optional(std::in_place_t, value_type& value) noexcept
         requires kIsReference
     {
         this->Construct(value);
     }
 
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr Optional(std::in_place_t, value_type&&)
         requires kIsReference
     = delete;
@@ -620,7 +620,7 @@ public:
     /// - `T` is constructible from `U&&`
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This used to take `const U&`, which always copied and couldn't hold move-only types.
     ///
     /// @param value the value to copy or move in
@@ -656,14 +656,14 @@ public:
     /// ```
     ///
     /// @param value the object to refer to; it must outlive every use of this `Optional`
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_IMPLICIT Optional(value_type& value) noexcept
         requires kIsReference
     {
         this->Construct(value);
     }
 
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr Optional(value_type&&)
         requires kIsReference
     = delete;
@@ -674,7 +674,7 @@ public:
     /// If `other` holds a value, `T` is constructed from it; otherwise this `Optional` is empty.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
     ///
     /// @param other the `std::optional` to copy from
@@ -694,7 +694,7 @@ public:
     /// If `other` holds a value, `T` is move-constructed from it; otherwise this `Optional` is empty.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
     ///
     /// @param other the `std::optional` to move from
@@ -710,7 +710,7 @@ public:
     /// Assigns from a [`std::optional`] by copy, following the same rules as copy-assigning an `Optional`.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
     ///
     /// @param other the `std::optional` to copy from
@@ -731,7 +731,7 @@ public:
     /// Assigns from a [`std::optional`] by move, following the same rules as move-assigning an `Optional`.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for `Optional<U&>`.
     ///
     /// @param other the `std::optional` to move from
@@ -771,7 +771,7 @@ public:
     /// @param other the wrapper to copy from
     template<typename U>
         requires(!kIsReference && std::convertible_to<const U&, T>)
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto operator=(const Some<U>& other) noexcept(std::is_nothrow_constructible_v<T, const U&>) -> Optional&
     {
         this->Construct(other.n_value);
@@ -782,7 +782,7 @@ public:
     /// @param other the wrapper to move from
     template<typename U>
         requires(!kIsReference && std::convertible_to<U &&, T>)
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto operator=(Some<U>&& other) noexcept(std::is_nothrow_constructible_v<T, U&&>) -> Optional&
     {
         this->Construct(VIOLET_MOVE(other.n_value));
@@ -827,7 +827,7 @@ public:
     /// Empties this `Optional`, destroying the held value if there is one.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature.
     ///
     /// @return `*this`
@@ -875,7 +875,7 @@ public:
     ///
     /// @param value the object to refer to; it must outlive every use of this `Optional`
     /// @return `*this`
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto operator=(value_type& value) noexcept -> Optional&
         requires kIsReference
     {
@@ -883,7 +883,7 @@ public:
         return *this;
     }
 
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto operator=(value_type&&) -> Optional&
         requires kIsReference
     = delete;
@@ -920,7 +920,7 @@ public:
     /// is undefined behaviour; use [`Unwrap`] for a checked access.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// The debug assertion now reports the caller's location instead of `Optional<T>::Value()`'s.
     ///
     /// ## Example
@@ -1001,7 +1001,7 @@ public:
     /// @param loc call site reported by the debug assertion
     /// @return the referred-to object
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Value(SourceLocation loc = std::source_location::current()) const& noexcept
+    NOELDOC_SINCE("26.11") constexpr auto Value(SourceLocation loc = std::source_location::current()) const& noexcept
         -> value_type&
         requires kIsReference
     {
@@ -1060,7 +1060,7 @@ public:
     ///
     /// @return the referred-to object
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto operator*() const& noexcept -> value_type&
+    NOELDOC_SINCE("26.11") constexpr auto operator*() const& noexcept -> value_type&
         requires kIsReference
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
@@ -1098,7 +1098,7 @@ public:
     ///
     /// @return a pointer to the referred-to object
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto operator->() const noexcept -> value_type*
+    NOELDOC_SINCE("26.11") constexpr auto operator->() const noexcept -> value_type*
         requires kIsReference
     {
         VIOLET_DEBUG_ASSERT(this->HasValue(), "cannot dereference nothing");
@@ -1182,7 +1182,7 @@ public:
     /// @param loc call site reported by the panic
     /// @return the referred-to object
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Unwrap(
+    NOELDOC_SINCE("26.11") constexpr auto Unwrap(
         [[maybe_unused]] SourceLocation loc = std::source_location::current()) const& -> value_type&
         requires kIsReference
     {
@@ -1269,7 +1269,7 @@ public:
     /// @param loc call site reported by the panic
     /// @return the referred-to object
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Expect(
+    NOELDOC_SINCE("26.11") constexpr auto Expect(
         Str message, [[maybe_unused]] SourceLocation loc = std::source_location::current()) const& -> value_type&
         requires kIsReference
     {
@@ -1328,7 +1328,7 @@ public:
     ///
     /// @param fallback the value returned when this `Optional` is empty
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto UnwrapOr(unqualified_type fallback) const& noexcept(
+    NOELDOC_SINCE("26.11") constexpr auto UnwrapOr(unqualified_type fallback) const& noexcept(
         std::is_nothrow_copy_constructible_v<value_type> && std::is_nothrow_move_constructible_v<unqualified_type>)
         -> unqualified_type
         requires(kIsReference && std::is_copy_constructible_v<value_type>)
@@ -1350,7 +1350,7 @@ public:
     ///
     /// @param fallback the object returned when this `Optional` is empty
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto UnwrapOr(value_type& fallback VIOLET_LIFETIMEBOUND) const& noexcept
+    NOELDOC_SINCE("26.11") constexpr auto UnwrapOr(value_type& fallback VIOLET_LIFETIMEBOUND) const& noexcept
         -> value_type&
         requires(kIsReference && !std::is_copy_constructible_v<value_type>)
     {
@@ -1359,7 +1359,7 @@ public:
 
     /// Passing a temporary `fallback` to a non-copyable `Optional<U&>` is deleted, as the returned
     /// reference would dangle.
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto UnwrapOr(value_type&&) const& -> value_type&
         requires(kIsReference && !std::is_copy_constructible_v<value_type>)
     = delete;
@@ -1397,7 +1397,7 @@ public:
     /// The default is a temporary, so there is nothing a reference could point at; this always returns
     /// by value.
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto UnwrapOrDefault() const& noexcept(
+    NOELDOC_SINCE("26.11") constexpr auto UnwrapOrDefault() const& noexcept(
         std::is_nothrow_copy_constructible_v<value_type> && std::is_nothrow_default_constructible_v<unqualified_type>)
         -> unqualified_type
         requires(kIsReference
@@ -1424,7 +1424,7 @@ public:
     template<typename Fun>
         requires(!kIsReference && std::is_copy_constructible_v<value_type> && callable_returns<Fun, unqualified_type>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto UnwrapOrElse(Fun&& fun) const& -> unqualified_type
+    NOELDOC_SINCE("26.11") constexpr auto UnwrapOrElse(Fun&& fun) const& -> unqualified_type
     {
         if (this->HasValue()) {
             return this->Data;
@@ -1438,7 +1438,7 @@ public:
     template<typename Fun>
         requires(!kIsReference && std::is_move_constructible_v<value_type> && callable_returns<Fun, unqualified_type>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto UnwrapOrElse(Fun&& fun) && -> unqualified_type
+    NOELDOC_SINCE("26.11") constexpr auto UnwrapOrElse(Fun&& fun) && -> unqualified_type
     {
         if (this->HasValue()) {
             return VIOLET_MOVE(this->Data);
@@ -1458,7 +1458,7 @@ public:
         requires(kIsReference && callable<Fun> && !std::is_lvalue_reference_v<std::invoke_result_t<Fun>>
             && std::is_copy_constructible_v<value_type> && callable_returns<Fun, unqualified_type>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto UnwrapOrElse(Fun&& fun) const& -> unqualified_type
+    NOELDOC_SINCE("26.11") constexpr auto UnwrapOrElse(Fun&& fun) const& -> unqualified_type
     {
         if (this->HasValue()) {
             return *this->Data;
@@ -1488,7 +1488,7 @@ public:
         requires(kIsReference && callable<Fun> && std::is_lvalue_reference_v<std::invoke_result_t<Fun>>
             && std::convertible_to<std::invoke_result_t<Fun>, value_type&>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto UnwrapOrElse(Fun&& fun) const& -> value_type&
+    NOELDOC_SINCE("26.11") constexpr auto UnwrapOrElse(Fun&& fun) const& -> value_type&
     {
         if (this->HasValue()) {
             return *this->Data;
@@ -1558,7 +1558,7 @@ public:
     /// ## Safety
     /// Undefined behaviour if this `Optional` is empty.
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> value_type&
+    NOELDOC_SINCE("26.11") constexpr auto UnwrapUnchecked(Unsafe) const& noexcept -> value_type&
         requires kIsReference
     {
         return *this->Data;
@@ -1669,7 +1669,7 @@ public:
     template<typename Fun>
         requires(kIsReference && callable<Fun, value_type&>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Map(Fun&& fun) const& noexcept(
+    NOELDOC_SINCE("26.11") constexpr auto Map(Fun&& fun) const& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>())))
         -> Optional<optional_internal::map_result_t<std::invoke_result_t<Fun, value_type&>>>
     {
@@ -1746,7 +1746,7 @@ public:
     template<typename Fun>
         requires(kIsReference && callable_returns<Fun, bool, value_type&>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto HasValueAnd(Fun&& fun) const& noexcept(
+    NOELDOC_SINCE("26.11") constexpr auto HasValueAnd(Fun&& fun) const& noexcept(
         noexcept(std::invoke(VIOLET_FWD(Fun, fun), std::declval<value_type&>()))) -> bool
     {
         return this->HasValue() && std::invoke(VIOLET_FWD(Fun, fun), *this->Data);
@@ -1757,7 +1757,7 @@ public:
     /// [`Option::map_or`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.map_or).
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// The result is now always returned by value (`std::remove_cvref_t<U>`). Previously, passing an
     /// lvalue `fallback` made the return type a reference, which couldn't bind to `fun`'s result.
     ///
@@ -1841,7 +1841,7 @@ public:
         requires(kIsReference && callable<Fun, value_type&>
             && std::convertible_to<std::invoke_result_t<Fun, value_type&>, std::remove_cvref_t<U>>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto MapOr(U&& fallback, Fun&& fun) const& -> std::remove_cvref_t<U>
+    NOELDOC_SINCE("26.11") constexpr auto MapOr(U&& fallback, Fun&& fun) const& -> std::remove_cvref_t<U>
     {
         if (this->HasValue()) {
             return std::invoke(VIOLET_FWD(Fun, fun), *this->Data);
@@ -1868,7 +1868,7 @@ public:
         requires(!kIsReference
             && std::is_copy_constructible_v<value_type> && callable_returns<Pred, bool, const value_type&>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Filter(Pred&& pred) const& -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto Filter(Pred&& pred) const& -> Optional
     {
         if (this->HasValue() && std::invoke(VIOLET_FWD(Pred, pred), this->Data)) {
             return *this;
@@ -1884,7 +1884,7 @@ public:
         requires(!kIsReference
             && std::is_move_constructible_v<value_type> && callable_returns<Pred, bool, const value_type&>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Filter(Pred&& pred) && -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto Filter(Pred&& pred) && -> Optional
     {
         if (this->HasValue() && std::invoke(VIOLET_FWD(Pred, pred), std::as_const(this->Data))) {
             return VIOLET_MOVE(*this);
@@ -1901,7 +1901,7 @@ public:
     template<typename Pred>
         requires(kIsReference && callable_returns<Pred, bool, value_type&>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Filter(Pred&& pred) const& -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto Filter(Pred&& pred) const& -> Optional
     {
         if (this->HasValue() && std::invoke(VIOLET_FWD(Pred, pred), *this->Data)) {
             return *this;
@@ -1924,7 +1924,7 @@ public:
     /// @param other the fallback `Optional`
     /// @return a copy of this `Optional` if it holds a value, `other` otherwise
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Or(Optional other) const& -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto Or(Optional other) const& -> Optional
         requires(!kIsReference && std::is_copy_constructible_v<value_type>)
     {
         if (this->HasValue()) {
@@ -1938,7 +1938,7 @@ public:
     /// @param other the fallback `Optional`
     /// @return this `Optional`, moved, if it holds a value, `other` otherwise
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Or(Optional other) && -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto Or(Optional other) && -> Optional
         requires(!kIsReference && std::is_move_constructible_v<value_type>)
     {
         if (this->HasValue()) {
@@ -1952,7 +1952,7 @@ public:
     /// @param other the fallback `Optional<U&>`
     /// @return an `Optional<U&>` referring to this or `other`'s object
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Or(Optional other) const& noexcept -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto Or(Optional other) const& noexcept -> Optional
         requires kIsReference
     {
         if (this->HasValue()) {
@@ -1979,7 +1979,7 @@ public:
     template<typename Fun>
         requires(!kIsReference && std::is_copy_constructible_v<value_type> && callable_returns<Fun, Optional>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto OrElse(Fun&& fun) const& -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto OrElse(Fun&& fun) const& -> Optional
     {
         if (this->HasValue()) {
             return *this;
@@ -1994,7 +1994,7 @@ public:
     template<typename Fun>
         requires(!kIsReference && std::is_move_constructible_v<value_type> && callable_returns<Fun, Optional>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto OrElse(Fun&& fun) && -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto OrElse(Fun&& fun) && -> Optional
     {
         if (this->HasValue()) {
             return VIOLET_MOVE(*this);
@@ -2009,7 +2009,7 @@ public:
     template<typename Fun>
         requires(kIsReference && callable_returns<Fun, Optional>)
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto OrElse(Fun&& fun) const& -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto OrElse(Fun&& fun) const& -> Optional
     {
         if (this->HasValue()) {
             return *this;
@@ -2035,7 +2035,7 @@ public:
     /// @param other the `Optional` to compare against
     /// @return the only engaged `Optional` of the two, or `Nothing`
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Xor(Optional other) const& -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto Xor(Optional other) const& -> Optional
         requires(!kIsReference && std::is_copy_constructible_v<value_type>)
     {
         if (this->HasValue() && !other.HasValue()) {
@@ -2053,7 +2053,7 @@ public:
     /// @param other the `Optional` to compare against
     /// @return the only engaged `Optional` of the two, or `Nothing`
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Xor(Optional other) && -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto Xor(Optional other) && -> Optional
         requires(!kIsReference && std::is_move_constructible_v<value_type>)
     {
         if (this->HasValue() && !other.HasValue()) {
@@ -2073,7 +2073,7 @@ public:
     /// @param other the `Optional<U&>` to compare against
     /// @return the only engaged `Optional<U&>` of the two, or `Nothing`
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto Xor(Optional other) const& noexcept -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto Xor(Optional other) const& noexcept -> Optional
         requires kIsReference
     {
         if (this->HasValue() && !other.HasValue()) {
@@ -2091,7 +2091,7 @@ public:
     /// Equivalent to Rust's [`Option::take`](https://doc.rust-lang.org/1.93.0/std/option/enum.Option.html#method.take).
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// For `Optional<U&>`, this returns an `Optional<U&>` referring to the same object and leaves this
     /// one empty; the referred-to object is never copied or moved.
     ///
@@ -2141,7 +2141,7 @@ public:
     ///
     /// @param value the object to refer to; it must outlive every use of this `Optional`
     /// @return the newly referred-to object
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     VIOLET_REINITIALIZES_MEMORY constexpr auto Replace(value_type& value) noexcept -> value_type&
         requires kIsReference
     {
@@ -2149,7 +2149,7 @@ public:
         return *this->Data;
     }
 
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto Replace(value_type&&) -> value_type&
         requires kIsReference
     = delete;
@@ -2180,7 +2180,7 @@ public:
         requires(
             callable_returns<Pred, bool, value_type&> && (kIsReference || std::is_move_constructible_v<value_type>))
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto TakeIf(Pred&& pred) -> Optional
+    NOELDOC_SINCE("26.11") constexpr auto TakeIf(Pred&& pred) -> Optional
     {
         if (this->HasValue() && std::invoke(VIOLET_FWD(Pred, pred), this->Value())) {
             return this->Take();
@@ -2205,7 +2205,7 @@ public:
     ///
     /// @param value the value to insert if this `Optional` is empty
     /// @return a reference to the held value
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto GetOrInsert(unqualified_type value) & noexcept(
         std::is_nothrow_constructible_v<T, unqualified_type&&>) VIOLET_LIFETIMEBOUND -> value_type&
         requires(!kIsReference && std::is_constructible_v<T, unqualified_type &&>)
@@ -2220,7 +2220,7 @@ public:
     /// Returns the referred-to object, binding this `Optional<U&>` to `value` first if it is empty.
     /// @param value the object to refer to if this `Optional` is empty; it must outlive every use of this `Optional`
     /// @return the referred-to object
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto GetOrInsert(value_type& value) & noexcept -> value_type&
         requires kIsReference
     {
@@ -2231,7 +2231,7 @@ public:
         return *this->Data;
     }
 
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto GetOrInsert(value_type&&) & -> value_type&
         requires kIsReference
     = delete;
@@ -2253,7 +2253,7 @@ public:
     /// ```
     ///
     /// @return a reference to the held value
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr auto GetOrInsertDefault() & noexcept(std::is_nothrow_default_constructible_v<T>) VIOLET_LIFETIMEBOUND
         -> value_type&
         requires(!kIsReference && std::is_default_constructible_v<T>)
@@ -2276,7 +2276,7 @@ public:
     /// Converts to a [`std::optional`] holding a copy of the value, if any.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This is now guarded by the `BACKWARDS_STL_OPTIONAL` feature, and is unavailable for
     /// `Optional<U&>`, since `std::optional<U&>` does not exist before C++26.
     ///
@@ -2296,7 +2296,7 @@ public:
     /// @return a `std::optional` with the same contents
     template<typename U = T>
         requires(!kIsReference && std::same_as<U, T> && std::is_move_constructible_v<T>)
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_EXPLICIT operator std::optional<U>() && noexcept(std::is_nothrow_move_constructible_v<T>)
     {
         if (this->HasValue()) {
@@ -2359,13 +2359,13 @@ public:
     /// Returns `true` if this `Optional` holds a value equal to the one wrapped in `other`.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// Also available for `Optional<U&>`, comparing the referred-to object with a `Some<U>`.
     ///
     /// @param other the wrapped value to compare with
     /// @return `true` if a value is present and equal to `other`'s
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto operator==(const Some<unqualified_type>& other) const -> bool
+    NOELDOC_SINCE("26.11") constexpr auto operator==(const Some<unqualified_type>& other) const -> bool
         requires(std::equality_comparable<value_type>)
     {
         return this->HasValue() && this->Value() == other.n_value;
@@ -2377,7 +2377,7 @@ public:
     /// heterogeneous comparison.
     ///
     /// ## Remarks
-    /// ### Since `{current}`
+    /// ### Since `26.11`
     /// This now accepts any type comparable with `T` instead of only `const T&`. Comparing with a
     /// value that converts to both `T` and `Optional<T>`, such as a string literal against
     /// `Optional<String>`, was ambiguous before. `Optional<U&>` can also be compared with `const`
@@ -2418,7 +2418,7 @@ public:
     ///
     /// @return the ordering of `HasValue()` against `false`
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto operator<=>(nothing_t) const noexcept -> std::strong_ordering
+    NOELDOC_SINCE("26.11") constexpr auto operator<=>(nothing_t) const noexcept -> std::strong_ordering
     {
         return this->HasValue() <=> false;
     }
@@ -2550,7 +2550,7 @@ VIOLET_FORMATTER_TEMPLATE(violet::Optional<T>, typename T);
  * @macro VIOLET_UNWRAP
  * @param decl the declaration to initialize, such as `const auto val` or `auto& ref`
  * @param expr an expression producing a [`violet::Optional`]
- * @since current
+ * @since 26.11
  *
  * Declares `decl` from the value held by an [`Optional`], or returns [`Nothing`] from the enclosing
  * function if it is empty.

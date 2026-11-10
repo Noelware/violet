@@ -58,7 +58,7 @@ struct AsyncSink;
 /// auto logger = log::GetLogger("main");
 /// logger.Info("hello, world!");
 /// ```
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") LogFactory final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") LogFactory final {
     /// Retrieves a logger with the specified name.
     ///
     /// If the logger doesn't exist already, it'll be created and stored internally.

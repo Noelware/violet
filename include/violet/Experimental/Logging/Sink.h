@@ -39,7 +39,7 @@ struct Record;
 /// Implementations of [`Sink`] should usually be thread-safe unless explicitly documentated
 /// else-where if whether or not this requirement must be met. Violet may call [`Sink::Emit`] concurrently
 /// from multiple threads.
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Sink {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Sink {
     /// Destructor of a sink.
     ///
     /// Implementations should ensure that all resources are released and any

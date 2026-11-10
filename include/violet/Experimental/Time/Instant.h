@@ -61,7 +61,7 @@ namespace violet::experimental::chrono {
 /// ```
 struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Instant final {
     /// The underlying standard-library clock representation.
-    /// @since current
+    /// @since 26.11
     using clock_type = std::chrono::steady_clock;
 
     /// The underlying standard-library representation, [`std::chrono::steady_clock::time_point`].
@@ -83,7 +83,7 @@ struct NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Instant final {
     }
 
     /// Returns the maximum, representable `Instant`.
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr static auto Max() noexcept -> Instant
     {
         return {std_type::max()};

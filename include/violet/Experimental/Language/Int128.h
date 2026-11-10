@@ -143,7 +143,7 @@ struct
 #if VIOLET_FEATURE(NATIVE_INT128)
     alignas(unsigned __int128)
 #endif
-        VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") UInt128 final {
+        VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") UInt128 final {
     constexpr VIOLET_IMPLICIT UInt128() noexcept = default;
 
     template<std::integral N>
@@ -716,7 +716,7 @@ constexpr auto UInt128::DivRem(UInt128 lhs, UInt128 rhs) noexcept -> Pair<UInt12
 /// constexpr auto x = -170141183460469231731687303715884105727_i128;
 /// static_assert(x - 1 == violet::experimental::Int128::Min());
 /// ```
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Int128 final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Int128 final {
     constexpr VIOLET_IMPLICIT Int128() noexcept = default;
 
     template<std::integral N>

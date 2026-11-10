@@ -45,23 +45,23 @@ namespace violet::strings {
 ///
 /// @tparam StringType the string type to inspect
 template<typename StringType>
-struct NOELDOC_SINCE("current") character { };
+struct NOELDOC_SINCE("26.11") character { };
 
 template<typename StringType>
     requires(
         requires { typename StringType::value_type; } && !requires { typename StringType::character; })
-struct NOELDOC_SINCE("current") character<StringType> {
+struct NOELDOC_SINCE("26.11") character<StringType> {
     using type = StringType::value_type;
 };
 
 template<typename StringType>
     requires requires { typename StringType::character; }
-struct NOELDOC_SINCE("current") character<StringType> {
+struct NOELDOC_SINCE("26.11") character<StringType> {
     using type = StringType::character;
 };
 
 /// Shorthand for `character<StringType>::type`.
-/// @since current
+/// @since 26.11
 template<typename StringType>
 using character_t = character<StringType>::type;
 
@@ -73,30 +73,30 @@ using character_t = character<StringType>::type;
 ///
 /// @tparam StringType the string type to inspect
 template<typename StringType>
-struct NOELDOC_SINCE("current") unsigned_char { };
+struct NOELDOC_SINCE("26.11") unsigned_char { };
 
 template<typename StringType>
     requires requires { typename character_t<StringType>; }
-struct NOELDOC_SINCE("current") unsigned_char<StringType> {
+struct NOELDOC_SINCE("26.11") unsigned_char<StringType> {
     using type = std::make_unsigned_t<character_t<StringType>>;
 };
 
 /// Shorthand for `unsigned_char<StringType>::type`.
-/// @since current
+/// @since 26.11
 template<typename StringType>
 using unsigned_char_t = unsigned_char<StringType>::type;
 
 /// Whether `StringType` is a non-owning string view (any [`std::basic_string_view`]).
 /// @tparam StringType the string type to inspect
 template<typename StringType>
-struct NOELDOC_SINCE("current") is_view_type: std::false_type { };
+struct NOELDOC_SINCE("26.11") is_view_type: std::false_type { };
 
 template<typename CharT, typename Traits>
-struct NOELDOC_SINCE("current") is_view_type<std::basic_string_view<CharT, Traits>>: std::true_type { };
+struct NOELDOC_SINCE("26.11") is_view_type<std::basic_string_view<CharT, Traits>>: std::true_type { };
 
 /// Shorthand for `is_view_type<StringType>::value`.
 template<typename StringType>
-NOELDOC_SINCE("current")
+NOELDOC_SINCE("26.11")
 [[maybe_unused]] inline constexpr static bool is_view_type_v = is_view_type<StringType>::value;
 
 /// Resolves the non-owning view type of `StringType`.
@@ -113,22 +113,22 @@ NOELDOC_SINCE("current")
 ///
 /// @tparam StringType the string type to inspect
 template<typename StringType>
-struct NOELDOC_SINCE("current") view {
+struct NOELDOC_SINCE("26.11") view {
     using type = StringType::view_type;
 };
 
 template<typename CharT, typename Traits, typename Alloc>
-struct NOELDOC_SINCE("current") view<std::basic_string<CharT, Traits, Alloc>> {
+struct NOELDOC_SINCE("26.11") view<std::basic_string<CharT, Traits, Alloc>> {
     using type = std::basic_string_view<CharT, Traits>;
 };
 
 template<typename CharT, typename Traits>
-struct NOELDOC_SINCE("current") view<std::basic_string_view<CharT, Traits>> {
+struct NOELDOC_SINCE("26.11") view<std::basic_string_view<CharT, Traits>> {
     using type = std::basic_string_view<CharT, Traits>;
 };
 
 /// Shorthand for `view<StringType>::type`.
-/// @since current
+/// @since 26.11
 template<typename StringType>
 using view_type = view<StringType>::type;
 
@@ -146,22 +146,22 @@ using view_type = view<StringType>::type;
 ///
 /// @tparam StringType the string type to inspect
 template<typename StringType>
-struct NOELDOC_SINCE("current") owned {
+struct NOELDOC_SINCE("26.11") owned {
     using type = StringType::owned_type;
 };
 
 template<typename CharT, typename Traits>
-struct NOELDOC_SINCE("current") owned<std::basic_string_view<CharT, Traits>> {
+struct NOELDOC_SINCE("26.11") owned<std::basic_string_view<CharT, Traits>> {
     using type = std::basic_string<CharT, Traits>;
 };
 
 template<typename CharT, typename Traits>
-struct NOELDOC_SINCE("current") owned<std::basic_string<CharT, Traits>> {
+struct NOELDOC_SINCE("26.11") owned<std::basic_string<CharT, Traits>> {
     using type = std::basic_string<CharT, Traits>;
 };
 
 /// Shorthand for `owned<StringType>::type`.
-/// @since current
+/// @since 26.11
 template<typename StringType>
 using owned_type = owned<StringType>::type;
 
@@ -169,14 +169,14 @@ using owned_type = owned<StringType>::type;
 ///
 /// @tparam StringType the string type to inspect
 template<typename StringType>
-struct NOELDOC_SINCE("current") is_owned_type: std::false_type { };
+struct NOELDOC_SINCE("26.11") is_owned_type: std::false_type { };
 
 template<typename CharT, typename Traits, typename Alloc>
-struct NOELDOC_SINCE("current") is_owned_type<std::basic_string<CharT, Traits, Alloc>>: std::true_type { };
+struct NOELDOC_SINCE("26.11") is_owned_type<std::basic_string<CharT, Traits, Alloc>>: std::true_type { };
 
 /// Shorthand for `is_owned_type<StringType>::value`.
 template<typename StringType>
-NOELDOC_SINCE("current")
+NOELDOC_SINCE("26.11")
 [[maybe_unused]] inline constexpr static bool is_owned_type_v = is_owned_type<StringType>::value;
 
 /// Removes leading whitespace from `input`.

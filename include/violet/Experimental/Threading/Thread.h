@@ -61,7 +61,7 @@ namespace violet::experimental::threading {
 /// // join the thread explicitly
 /// thread.Join();
 /// ```
-struct NOELDOC_EXPERIMENTAL_SINCE("current") Runnable {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") Runnable {
     virtual ~Runnable() = default;
 
     /// Creates a [`Runnable`] object from a function.
@@ -117,7 +117,7 @@ protected:
 /// ## Remarks
 /// Like C++'s [`std::thread::id`], the value of a **ThreadId** may be reused by the operating system once the thread
 /// it identifies has terminated and been joined (or detached).
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") ThreadId final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") ThreadId final {
     VIOLET_IMPLICIT_COPY_AND_MOVE(ThreadId);
     VIOLET_IMPLICIT ThreadId() noexcept = default;
     ~ThreadId() = default;
@@ -180,7 +180,7 @@ private:
 ///     worker->CancelAndJoin();
 /// }
 /// ```
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Thread final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Thread final {
     struct Builder;
 
     VIOLET_DISALLOW_CONSTRUCTOR(Thread);
@@ -284,7 +284,7 @@ private:
     Own<State> n_state;
 };
 
-struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("current") Thread::Builder final {
+struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.11") Thread::Builder final {
     VIOLET_DISALLOW_COPY_AND_MOVE(Builder);
     VIOLET_IMPLICIT Builder() noexcept = default;
     ~Builder() = default;

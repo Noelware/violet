@@ -77,7 +77,7 @@ static_assert(!sentinel_constructible<void()>);
 ///
 /// View the [module documentation](#) for more information.
 template<typename T>
-struct NOELDOC_EXPERIMENTAL_SINCE("current") NonNull final {
+struct NOELDOC_EXPERIMENTAL_SINCE("26.11") NonNull final {
     static_assert(!std::is_reference_v<T>, "`NonNull<T&>` is not a thing; use `NonNull<T>`");
     static_assert(!std::is_pointer_v<T>, "`NonNull<T*>` is illegal; use `NonNull<T>`");
 

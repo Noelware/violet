@@ -151,7 +151,7 @@ struct NotFinite final {
 
 } // namespace duration
 
-struct VIOLET_API NOELDOC_SINCE("current") ParseDurationError final
+struct VIOLET_API NOELDOC_SINCE("26.11") ParseDurationError final
     : public OneOf<numeric::Error, std::error_code, duration::InputEmpty, duration::DoNotPrefix, duration::MissingUnit,
           duration::NotFinite> {
     using OneOf::OneOf;
@@ -193,7 +193,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
 
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
     /// Constructs a [`Duration`] from [`absl::Duration`].
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     VIOLET_IMPLICIT Duration(absl::Duration dur)
         : n_ns(absl::ToChronoNanoseconds(dur))
     {
@@ -256,7 +256,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
 
     /// Converts a [`time_t`] struct into Violet's `Duration` object, otherwise `Nothing` is returned
     /// if the conversion failed.
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr static auto TryFrom(::time_t tm) noexcept -> Optional<Duration>
     {
         constexpr auto kMaxSeconds = std_type::max().count() / 1'000'000'000;
@@ -272,7 +272,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
     /// Converts a [`absl::Duration`] struct into Violet's `Duration` object, otherwise `Nothing` is returned
     /// if the conversion failed.
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr static auto TryFrom(absl::Duration dur) noexcept -> Optional<Duration>
     {
         constexpr auto kMax = absl::Nanoseconds(std::numeric_limits<Int64>::max());
@@ -426,7 +426,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
     /// Returns a [`absl::Duration`] from this object.
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto ToAbsl() const noexcept -> absl::Duration
+    NOELDOC_SINCE("26.11") constexpr auto ToAbsl() const noexcept -> absl::Duration
     {
         return absl::FromChrono(this->n_ns);
     }
@@ -434,7 +434,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
 
     /// Returns a [`std::time_t`] from this object.
     [[nodiscard]]
-    NOELDOC_SINCE("current") constexpr auto ToTimeT() const noexcept -> ::time_t
+    NOELDOC_SINCE("26.11") constexpr auto ToTimeT() const noexcept -> ::time_t
     {
         return static_cast<::time_t>(std::chrono::floor<std::chrono::seconds>(this->n_ns).count());
     }
@@ -453,7 +453,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
 
 #if defined(VIOLET_FEATURE_ABSEIL) && VIOLET_FEATURE(ABSEIL)
     /// Explicitly converts to [`absl::Duration`]
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_EXPLICIT operator absl::Duration() const noexcept
     {
         return this->ToAbsl();
@@ -461,7 +461,7 @@ struct VIOLET_API NOELDOC_EXPERIMENTAL_SINCE("26.06.05") Duration final {
 #endif
 
     /// Explicitly converts to [`std::time_t`]
-    NOELDOC_SINCE("current")
+    NOELDOC_SINCE("26.11")
     constexpr VIOLET_EXPLICIT operator ::time_t() const noexcept
     {
         return this->ToTimeT();
