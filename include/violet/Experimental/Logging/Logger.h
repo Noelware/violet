@@ -23,14 +23,14 @@
 
 #pragma once
 
+#include <violet/Experimental/Logging/AsyncSink.h>
 #include <violet/Experimental/Logging/LogRecord.h>
+#include <violet/Experimental/Logging/Sink.h>
 #include <violet/Experimental/Own.h>
 #include <violet/Experimental/Unique.h>
 
 namespace violet::experimental::log {
 
-struct Sink;
-struct AsyncSink;
 struct Logger;
 
 /// Represents a single log entry.

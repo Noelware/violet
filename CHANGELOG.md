@@ -7,6 +7,12 @@ availableAt:
 ---
 
 ### unreleased
+**Git History**: <https://github.com/Noelware/violet/compare/26.11.1...master>
+
+### 26.11.1
+#### Noelware.Violet.Experimental.Logging
+- Include `AsyncSink.h` and `Sink.h` so that `Own`'s constructors work with `std::default_delete` ([`@auguwu`])
+
 **Git History**: <https://github.com/Noelware/violet/compare/26.11...master>
 
 ### 26.11
