@@ -29,7 +29,7 @@ set -eu pipefail
 declare -A gccimages
 
 # renovate: ref=gcc:16.2-trixie
-gccimages["gcc-16"]="sha256:07280eb2e744f1b7a2d8d4a3894c089ea07266c109758afc388a634bd098e4eb"
+gccimages["gcc-16"]="sha256:b560ecf8f694944afa8137ba7462a73f75bb799880535fcd7e0dfc890ba8b27a"
 
 # renovate: ref=gcc:15.3-trixie
 gccimages["gcc-15"]="sha256:60a0af4b79226d7cb062cc18dcb56f91b4385aace8f6d514f114c3f1af363ef1"
